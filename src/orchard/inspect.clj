@@ -1,5 +1,13 @@
-(ns cider.nrepl.middleware.util.inspect
-  "Adapted from swank-clojure and javert."
+(ns orchard.inspect
+  "Clojure data structure inspection functionality.
+  This code has a long history and at various points of
+  time it lived in different projects. Originally
+  it was part of swank-clojure, afterwards it was moved to
+  javert, then forked to another project from which it
+  was contributed to cider-nrepl. Finally cider-nrepl
+  was split into two libraries and the code ended up here.
+
+  Pretty wild, right?"
   (:require [clojure.string :as s])
   (:import (java.lang.reflect Field)
            clojure.lang.Seqable))
