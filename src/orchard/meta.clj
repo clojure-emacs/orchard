@@ -38,7 +38,7 @@
 
 (defn- maybe-add-spec
   "If the var `v` has a spec has associated with it, assoc that into meta-map.
-  The spec is formatted to avoid processing it in CIDER."
+  The spec is formatted to avoid processing in the client (e.g. CIDER)."
   [v meta-map]
   (if-let [spec (when v (spec/spec-form (var-name v)))]
     (merge meta-map {:spec spec})
