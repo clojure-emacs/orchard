@@ -43,7 +43,6 @@
                         (i/down 1) (i/down 2)
                         (i/down 10)
                         (i/down 1) (i/down 1))]
-      inspector
       (is (= '[:a (nth 2) :b :c (nth 9) (find :foo) first] (:path inspector)))
       (is (= '[:a (nth 2) :b :c (nth 9) (find :foo) first class]
              (:path (-> inspector (i/down 0)))))
