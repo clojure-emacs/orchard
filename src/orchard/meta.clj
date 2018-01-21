@@ -135,13 +135,11 @@
   ([v] (var-meta v var-meta-whitelist))
   ([v whitelist]
    (when (var? v)
-    (let [meta-map (-> (meta v)
-                       maybe-protocol
-                       (select-keys (or whitelist var-meta-whitelist))
-                       map-seq maybe-add-file maybe-add-url)]
-      (maybe-add-spec v meta-map)))))
-
-
+     (let [meta-map (-> (meta v)
+                        maybe-protocol
+                        (select-keys (or whitelist var-meta-whitelist))
+                        map-seq maybe-add-file maybe-add-url)]
+       (maybe-add-spec v meta-map)))))
 
 (def special-forms
   "Special forms that can be apropo'ed."

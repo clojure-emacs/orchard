@@ -80,14 +80,14 @@
   (testing "Includes special forms when `search-ns` is nil"
     (is (not-empty (filter #(= "if" (:name %))
                            (find-symbols1 nil "if" nil
-                                         false false false nil)))))
+                                          false false false nil)))))
 
   (testing "Includes special forms when `search-ns` is \"clojure.core\""
     (is (not-empty (filter #(= "if" (:name %))
                            (find-symbols1 nil "if" "clojure.core"
-                                         false false false nil)))))
+                                          false false false nil)))))
 
   (testing "Excludes special forms when `search-ns` is some other ns"
     (is (empty? (filter #(= "if" (:name %))
                         (find-symbols1 nil "if" "clojure.set"
-                                      false false false nil))))))
+                                       false false false nil))))))
