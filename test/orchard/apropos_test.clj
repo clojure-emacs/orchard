@@ -6,7 +6,6 @@
             [clojure.string :as str]))
 
 (def ^{:doc "Test1. Test2. Test3."} public-var [1 2 3])
-(def ^:private ^{:doc "Can't. See. Me"} private-var [:a :b :c])
 
 (defn find-symbols1 [ns query search-ns docs? privates? case-sensitive? filter-regexps]
   (find-symbols {:ns ns :query query :search-ns search-ns
