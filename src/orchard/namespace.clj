@@ -96,13 +96,13 @@
 (defn- get-clojure-sources-in-jar
   [^JarFile jar]
   (let [path-to-jar (.getName jar)]
-    (map #(str "jar:file:" path-to-jar "!/" %) (ns-find/clojure-sources-in-jar jar))))
+    (map #(str "jar:file:" path-to-jar "!/" %) (ns-find/sources-in-jar jar))))
 
 (defn- all-clj-files-on-cp []
   (let [dirs-on-cp (filter #(.isDirectory %) (cp/classpath))
         jars-on-cp (map #(JarFile. %) (filter jar-file? (cp/classpath)))]
     (concat (->> dirs-on-cp
-                 (mapcat ns-find/find-clojure-sources-in-dir)
+                 (mapcat ns-find/find-sources-in-dir)
                  (map #(.getAbsolutePath %)))
             (mapcat get-clojure-sources-in-jar jars-on-cp))))
 
