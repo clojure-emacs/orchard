@@ -11,14 +11,13 @@
            java.util.zip.ZipEntry))
 
 (deftest classpath-boot-test
-  (let [fake-paths [(System/getProperty "java.io.tmpdir")]
-        fake-classpath (str/join File/pathSeparator fake-paths)]
+  (let [fake-path (map io/file [(System/getProperty "java.io.tmpdir")])]
     (testing "when fake.class.path is not set"
-      (is (not= fake-classpath (map str (sut/classpath)))))
+      (is (not= fake-path (sut/classpath))))
     (testing "when fake.class.path is set"
       (try
-        (System/setProperty "fake.class.path" fake-classpath)
-        (is (= fake-paths (map str (sut/classpath))))
+        (System/setProperty "fake.class.path" (str/join File/pathSeparator fake-path))
+        (is (= fake-path (sut/classpath)))
         (finally
           (System/clearProperty "fake.class.path"))))))
 
