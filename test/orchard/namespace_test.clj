@@ -2,7 +2,9 @@
   (:require [clojure.test :refer :all])
   (:require [orchard.namespace :as n]))
 
-(deftest project-namespaces-test
+;; Temporarily exclude this test under Java 9
+;; See http://bit.ly/2DtfMMl for details
+(deftest ^:java9-excluded project-namespaces-test
   (is (contains? (into #{} (n/project-namespaces))
                  'orchard.namespace)))
 

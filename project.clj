@@ -8,6 +8,8 @@
                  [org.clojure/tools.namespace "0.3.0-alpha4"]]
   :exclusions [org.clojure/clojure] ; see versions matrix below
 
+  :test-selectors {:java9.0 (complement :java9-excluded)}
+
   :profiles {
              ;; Clojure versions matrix
              :1.7 {:dependencies [[org.clojure/clojure "1.7.0"]]}
