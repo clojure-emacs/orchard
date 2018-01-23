@@ -2,8 +2,13 @@
 
 VERSION ?= 1.9
 
+# Some tests need to be filtered based on JVM version.  This selector
+# will be mapped to a function in project.clj, and that function
+# determines which `deftest` to run based on their metadata.
+TEST_SELECTOR = :java$(shell lein version | cut -d " " -f 5 | cut -d "." -f 1-2)
+
 test:
-	lein with-profile +$(VERSION) test
+	lein with-profile +$(VERSION) test $(TEST_SELECTOR)
 
 # Eastwood can't handle orchard.java.parser at the moment, because
 # tools.jar isn't in the classpath when Eastwood runs.

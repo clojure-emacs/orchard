@@ -11,12 +11,12 @@ env:
   - VERSION=1.8 TARGET=test
   - VERSION=1.9 TARGET=test
 jdk:
-  - oraclejdk7
+  - openjdk7
   - oraclejdk8
   - oraclejdk9
 matrix:
   include:
-    # Test OpenJDK against latest Clojure stable
+    # Test latest OpenJDK against latest Clojure stable
     - env: VERSION=1.9 TARGET=test
       jdk: openjdk8
 
