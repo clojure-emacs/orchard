@@ -3,9 +3,11 @@
   :url "https://github.com/clojure-emacs/orchard"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.tcrawley/dynapath "1.0.0"]
+  :dependencies [[cljs-tooling "0.2.0"]
+                 [compliment "0.3.5"]
                  [org.clojure/java.classpath "0.2.3"]
-                 [org.clojure/tools.namespace "0.3.0-alpha4"]]
+                 [org.clojure/tools.namespace "0.3.0-alpha4"]
+                 [org.tcrawley/dynapath "1.0.0"]]
   :exclusions [org.clojure/clojure] ; see versions matrix below
 
   :test-selectors {:java9.0 (complement :java9-excluded)}
