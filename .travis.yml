@@ -14,7 +14,12 @@ jdk:
   - openjdk7
   - oraclejdk8
   - oraclejdk9
-matrix:
+stages:
+  - name: test
+  - name: check
+  - name: deploy
+    if: branch = master
+jobs:
   include:
     # Test latest OpenJDK against latest Clojure stable
     - env: VERSION=1.9 TARGET=test
@@ -24,18 +29,28 @@ matrix:
     - env: VERSION=master TARGET=test
       jdk: oraclejdk8
 
-    # Eastwood linter
-    - env: VERSION=1.9 TARGET=eastwood
-      jdk: oraclejdk8
-
-    # Check cljfmt
-    - env: VERSION=1.9 TARGET=cljfmt
-      jdk: oraclejdk8
-
     # Coverage analysis
     - env: VERSION=1.9 TARGET=cloverage
       jdk: oraclejdk8
-      after_success: bash <(curl -s https://codecov.io/bash) -f target/coverage/codecov.json
+      after_success:
+      - >
+        test $TARGET = "cloverage" &&
+        bash <(curl -s https://codecov.io/bash) -f target/coverage/codecov.json
+
+    # Eastwood linter
+    - stage: check
+      env: VERSION=1.9 TARGET=eastwood
+      jdk: oraclejdk8
+
+    # Check cljfmt
+    - stage: check
+      env: VERSION=1.9 TARGET=cljfmt
+      jdk: oraclejdk8
+
+    # Deployment
+    - stage: deploy
+      env: TARGET=deploy-xxx-dont-actually
+      jdk: oraclejdk8
 
   fast_finish: true      # don't wait for allowed failures before build finish
   allow_failures:
