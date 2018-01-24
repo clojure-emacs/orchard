@@ -14,6 +14,20 @@
 
   :test-selectors {:java9.0 (complement :java9-excluded)}
 
+  :aliases {"bump-version" ["change" "version" "leiningen.release/bump-version"]}
+
+  :release-tasks [["vcs" "assert-committed"]
+                  ["bump-version" "release"]
+                  ["vcs" "commit" "Release %s"]
+                  ["vcs" "tag" "v" "--no-sign"]
+                  ["bump-version"]
+                  ["vcs" "commit" "Begin %s"]]
+
+  :deploy-repositories [["clojars" {:url "https://clojars.org/repo"
+                                    :username :env/clojars_username
+                                    :password :env/clojars_password
+                                    :sign-releases false}]]
+
   :profiles {
              ;; Clojure versions matrix
              :provided {:dependencies [[org.clojure/clojure "1.9.0"]]}
