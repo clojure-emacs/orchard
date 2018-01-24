@@ -1,4 +1,4 @@
-.PHONY: clean test eastwood cljfmt cloverage
+.PHONY: clean test eastwood cljfmt cloverage release deploy
 
 VERSION ?= 1.9
 
@@ -28,6 +28,22 @@ cljfmt:
 cloverage:
 	lein with-profile +$(VERSION),+cloverage cloverage --codecov \
 	     -e "orchard.java.parser"
+
+# When releasing, the BUMP variable controls which field in the
+# version string will be incremented in the *next* snapshot
+# version. Typically this is either "major", "minor", or "patch".
+
+BUMP ?= patch
+
+release:
+	lein with-profile +$(VERSION) release $(BUMP)
+
+# Deploying requires the caller to set environment variables as
+# specified in project.clj, to provide a login and password to the
+# artifact repository
+
+deploy:
+	lein with-profile +$(VERSION) deploy clojars
 
 clean:
 	lein clean
