@@ -31,7 +31,7 @@
 (deftest map-structure-test
   (when jdk-tools
     (testing "Parsed map structure = reflected map structure"
-      (let [cols #{:file :line :column :doc :argnames :argtypes}
+      (let [cols #{:file :line :column :doc :argnames :argtypes :path}
             keys= #(= (set (keys (apply dissoc %1 cols)))
                       (set (keys %2)))
             c1 (class-info* 'java.lang.String)

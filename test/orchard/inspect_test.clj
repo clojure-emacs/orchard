@@ -197,7 +197,6 @@
                               render))
                    "(:newline))"))))
 
-
 (defprotocol IMyTestType
   (^String get-name [this]))
 
@@ -205,7 +204,7 @@
   IMyTestType
   (get-name [this] name))
 
-(defmethod inspect-value MyTestType [obj]
+(defmethod inspect/inspect-value MyTestType [obj]
   (str "#<MyTestType " (get-name obj) ">"))
 
 (deftest inspect-val-test
