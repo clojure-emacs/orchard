@@ -7,9 +7,13 @@ cache:
 script:
   - make $TARGET
 env:
-  - VERSION=1.7 TARGET=test
-  - VERSION=1.8 TARGET=test
-  - VERSION=1.9 TARGET=test
+  matrix:
+    - VERSION=1.7 TARGET=test
+    - VERSION=1.8 TARGET=test
+    - VERSION=1.9 TARGET=test
+  global:
+    - secure: i4nYewlsyKV2fHY1h+334VLQkKLz26ca9vIMs94aRupkTiQWzjxg8JapBoAW/XwOhc8KQCqD4u351bJVVI/mREHdpJXQ9oi2ak5ElkizYjkKUgVFRxOB4+dpj/FycyRywwWP/xzuhg/lfYejWiOCqfZywqRNgBlK+1/vwKJW9YDAVaLq8khSheV0Xyzna5QkQUqRm9wG1B5zQwhmAlVcTq0EwXsQmrB0p7kgfrp30Spam7qX/VT1+YroYSVqQ/ty1DlmYMHSy+9vwcUS4EnpGcIUXOpZGYFfSfmgAg5Ci1rdSOzQKer0zU0/tOatraNHNrQzgw2yCtdIhT8aWlbfvY1zZptES6VN+9P4ublVMjmxskr/KiLSu/FFXOtxYO9rv7OaMnUp3BQE+jsUvHzHD0AUEtHtHlPV9YdrUkW17dG4jrHlPsWxsouH+nrbsV5P6+0qRSwHkuHt6s8FztRwuTfuLSVbHVyE/lRZWumftoftemFy0vTg/8uVkGJE4jQMhkfvmnqFHLnm2C8ZqSPD0UvY1NjEQt8rWNnpt6z089erOmD83mQPR458v3zdbBXZG6+DbbZ6T2VgbwO3tFqxXRWMaxBcoyWpcmw2Gij0rw8jwm8hHBll/3QoaHbAs4QKgYSK30dMoeu/Tc1YkrxAvwrD7KOPAU6IZYfseMBWAVA=
+    - secure: ZwuyH6yQmV73stHzRj68TCbawA+eIBwhY8ATAt1vmIq0qMJsVMq7v77+tQQx1qlbznt8abNQO0cS6/JfLOFz5kznNHmN8KZuHbvLUFme4xJknwnbX9X34V07FdQuorpcit+CckCw3bfGtXE667AGW7t3I9qaHk9yRwWNDG4D/Wy2468I65KYMzAIh2jDeTi8tUD9bhbbaop+EXjiG/rV62QPq6tw2f1Mr67BXiP77dkaJDPt5E3yjoSgWd/f+zadrEEDOqU6jXWsfaUvY8tUKnJNTqNeovdQTfvcZZdmcEqthcTg7Nz+rRLgQoi7EQrXg7fXH+cTL7AGkrQcF4ugPNN+6DHDZgHOEHTo6EhxBCIj2GIuP0IZ4GpgbA6N/eGv88fVoOPJb9dY1c1hZOL47tNc+nfjH+IQP21I1sFZTkVRBLWPTZMHrAiNmynXaQE2/tcd3Gs3khKFSOF5Fb074Jqm6wTBIc1ba9De6PJoQQFBVa06jYbTj+bF7KngbkVOztyIS8mocU9RYB0VgziCK5YRBJ57Zo+gb+a37Z3l5A3PIxxLCofoNIuM5R8JLF5f8abNxETsmnVPLBG63UU5sEVl4XEw+VjgdDdsPXahaUiBV73juGFRCRtTpJ1gA78kg6ejVxcntUuxqkzxaBifR0xzIziD3easpgDjAsdiJdY=
 jdk:
   - openjdk7
   - oraclejdk8
