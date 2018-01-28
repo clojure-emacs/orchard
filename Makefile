@@ -1,4 +1,4 @@
-.PHONY: clean test eastwood cljfmt cloverage release deploy
+.PHONY: test eastwood cljfmt cloverage release deploy clean
 
 VERSION ?= 1.9
 
@@ -39,12 +39,21 @@ release:
 	lein with-profile +$(VERSION) release $(BUMP)
 
 # Deploying requires the caller to set environment variables as
-# specified in project.clj, to provide a login and password to the
-# artifact repository
+# specified in project.clj to provide a login and password to the
+# artifact repository.  We're setting TRAVIS_PULL_REQUEST to a default
+# value to avoid accidentally deploying from the command line. Inside
+# Travis CI this variable will be set to the pull request number, or
+# to "false" if it's not a pull request.
+
+TRAVIS_PULL_REQUEST ?= "true"
 
 deploy:
-	lein with-profile +$(VERSION) deploy clojars
+	if [ "$(TRAVIS_PULL_REQUEST)" != "false" ]; then \
+	    echo "Pull request detected. Skipping deploy."; \
+	else \
+	    lein with-profile +$(VERSION) deploy clojars; \
+	fi
 
 clean:
 	lein clean
-	rm .source-deps
+
