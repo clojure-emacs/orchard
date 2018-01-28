@@ -36,10 +36,7 @@ jobs:
     # Coverage analysis
     - env: VERSION=1.9 TARGET=cloverage
       jdk: oraclejdk8
-      after_success:
-      - >
-        test $TARGET = "cloverage" &&
-        bash <(curl -s https://codecov.io/bash) -f target/coverage/codecov.json
+      after_success: bash <(curl -s https://codecov.io/bash) -f target/coverage/codecov.json
 
     # Eastwood linter
     - stage: check
