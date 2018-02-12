@@ -5,7 +5,9 @@ VERSION ?= 1.9
 # Some tests need to be filtered based on JVM version.  This selector
 # will be mapped to a function in project.clj, and that function
 # determines which `deftest` to run based on their metadata.
-TEST_SELECTOR = :java$(shell lein version | cut -d " " -f 5 | cut -d "." -f 1-2)
+JAVA_VERSION = $(shell lein with-profile +sysutils \
+                       sysutils :java-version-simple | cut -d " " -f 2)
+TEST_SELECTOR = :java$(JAVA_VERSION)
 
 test:
 	lein with-profile +$(VERSION) test $(TEST_SELECTOR)

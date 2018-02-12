@@ -12,7 +12,7 @@
                  [org.clojure/tools.namespace "0.3.0-alpha4"]]
   :exclusions [org.clojure/clojure] ; see versions matrix below
 
-  :test-selectors {:java9.0 (complement :java9-excluded)}
+  :test-selectors {:java9 (complement :java9-excluded)}
 
   :aliases {"bump-version" ["change" "version" "leiningen.release/bump-version"]}
 
@@ -37,6 +37,8 @@
              :master {:repositories [["snapshots"
                                       "https://oss.sonatype.org/content/repositories/snapshots"]]
                       :dependencies [[org.clojure/clojure "1.10.0-master-SNAPSHOT"]]}
+
+             :sysutils {:plugins [[lein-sysutils "0.2.0"]]}
 
              ;; CI tools
              :cloverage {:plugins [[lein-cloverage "1.0.11-SNAPSHOT"]]}
