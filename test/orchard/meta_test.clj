@@ -1,5 +1,6 @@
 (ns orchard.meta-test
   (:require [orchard.meta :as m]
+            [clojure.java.classpath]
             [clojure.repl :as repl]
             [clojure.test :refer :all]))
 
@@ -66,3 +67,31 @@
            meta
            :random
            (= 'meta))))
+
+(deftest special-sym-meta-test
+
+  (testing "Names are correct for `&`, `catch`, `finally`"
+    (is (= '& (:name (m/special-sym-meta '&))))
+    (is (= 'catch (:name (m/special-sym-meta 'catch))))
+    (is (= 'finally (:name (m/special-sym-meta 'finally)))))
+
+  (testing "Name is correct for `clojure.core/import*`"
+    ;; Only compiler special to be namespaced
+    (is (= 'clojure.core/import* (:name (m/special-sym-meta 'clojure.core/import*)))))
+
+  (testing "No ns for &, which uses fn's info"
+    (is (nil? (:ns (m/special-sym-meta '&)))))
+
+  (testing "Returns nil for unknown symbol"
+    (is (nil? (m/special-sym-meta 'unknown)))))
+
+(deftest var-meta-test
+  ;; Test files can't be found on the class path.
+  (is (:file (m/var-meta #'m/var-meta)))
+  (is (re-find #"java\.classpath"
+               (:file (#'m/maybe-add-file
+                       {:ns (find-ns 'clojure.java.classpath)}))))
+  (is (not (re-find #"/form-init[^/]*$"
+                    (:file (m/var-meta
+                            (eval '(do (in-ns 'clojure.java.classpath)
+                                       (def pok 10)))))))))
