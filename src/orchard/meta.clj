@@ -285,17 +285,3 @@
           ;; Clojure (even though it's inside meta).
           {original-key (list 'quote (strip-meta form))}))
       expanded)))
-
-(def relevant-meta-keys
-  "Metadata keys that are useful to us.
-  This is used so that we don't crowd the ns cache with useless or
-  redudant information, such as :name and :ns."
-  [:indent :deprecated :macro :arglists :test :doc :fn
-   :cider/instrumented :style/indent :clojure.tools.trace/traced])
-
-(defn relevant-meta
-  "Filter the entries in map m by `relevant-meta-keys` and non-nil values."
-  [m]
-  (->> (select-keys m relevant-meta-keys)
-       (filter second)
-       (u/update-vals pr-str)))

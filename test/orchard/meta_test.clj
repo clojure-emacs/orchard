@@ -45,19 +45,6 @@
   ([a] nil)
   ([]))
 
-(deftest relevant-meta-test
-  (is (= (m/relevant-meta (meta #'test-fn))
-         {:arglists "([a b] [a] [])"
-          :doc "\"docstring\""}))
-  (is (= (:macro (m/relevant-meta (meta #'deftest)))
-         "true"))
-  (let [m (meta #'strip-meta-test)]
-    ;; #'strip-meta-test refers to the deftest, and not the defn
-    (alter-meta! #'strip-meta-test merge {:indent 1 :cider-instrumented 2 :something-else 3})
-    (is (= (m/relevant-meta (meta #'strip-meta-test))
-           {:indent "1", :test (pr-str (:test (meta #'strip-meta-test)))}))
-    (alter-meta! #'strip-meta-test (fn [x y] y) m)))
-
 (defmacro test-macro [& x]
   `(do ~@x))
 
