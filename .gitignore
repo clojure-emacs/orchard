@@ -1,11 +1,11 @@
-/target
-/classes
+/.lein-*
+/.nrepl-port
 /checkouts
+/classes
+/gh-pages
+/target
+autodoc.sh
 pom.xml
 pom.xml.asc
 *.jar
 *.class
-/.lein-*
-/.nrepl-port
-.hgignore
-.hg/

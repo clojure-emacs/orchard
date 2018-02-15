@@ -1,16 +1,33 @@
-.PHONY: test eastwood cljfmt cloverage release deploy clean
+.PHONY: test docs eastwood cljfmt cloverage release deploy clean
 
 VERSION ?= 1.9
 
 # Some tests need to be filtered based on JVM version.  This selector
 # will be mapped to a function in project.clj, and that function
 # determines which `deftest` to run based on their metadata.
-JAVA_VERSION = $(shell lein with-profile +sysutils \
-                       sysutils :java-version-simple | cut -d " " -f 2)
-TEST_SELECTOR = :java$(JAVA_VERSION)
+JAVA_VERSION := $(shell lein with-profile +sysutils \
+                        sysutils :java-version-simple | cut -d " " -f 2)
+TEST_SELECTOR := :java$(JAVA_VERSION)
 
 test:
 	lein with-profile +$(VERSION) test $(TEST_SELECTOR)
+
+# Documentation management via autodoc (https://github.com/plexus/autodoc)
+# Pin a specific commit in that repo to prevent accidental changes in
+# that upstream project breaking our CI. Periodically update the URL
+# below as needed.
+
+autodoc.sh:
+	curl -L https://raw.githubusercontent.com/plexus/autodoc/ffc2c72c/autodoc.sh -o $@
+	chmod +x $@
+
+docs: autodoc.sh
+	@if [[ "$(TRAVIS)" == "true" && "$(TRAVIS_PULL_REQUEST)" == "false" ]]; then \
+	    git remote set-url --push \
+	        origin https://$(GH_USER):$(GH_PASSWORD)@github.com/clojure-emacs/orchard.git; \
+	fi
+	AUTODOC_SUBDIR=`git rev-parse --abbrev-ref HEAD` \
+	AUTODOC_CMD="lein with-profile +$(VERSION),+codox codox" ./autodoc.sh
 
 # Eastwood can't handle orchard.java.parser at the moment, because
 # tools.jar isn't in the classpath when Eastwood runs.
@@ -49,4 +66,4 @@ deploy:
 
 clean:
 	lein clean
-
+	rm -rf gh-pages autodoc.sh
