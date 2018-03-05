@@ -25,9 +25,12 @@ docs: autodoc.sh
 	@if [ "$(TRAVIS)" = "true" ] && [ "$(TRAVIS_PULL_REQUEST)" = "false" ]; then \
 	    git remote set-url --push origin \
 	        https://$(GH_USER):$(GH_PASSWORD)@github.com/clojure-emacs/orchard.git; \
+	    AUTODOC_SUBDIR="$(TRAVIS_BRANCH)" \
+	    AUTODOC_CMD="lein with-profile +$(VERSION),+codox codox" ./autodoc.sh ; \
+	else \
+	    AUTODOC_SUBDIR=`git rev-parse --abbrev-ref HEAD` \
+	    AUTODOC_CMD="lein with-profile +$(VERSION),+codox codox" ./autodoc.sh ; \
 	fi
-	AUTODOC_SUBDIR=`git rev-parse --abbrev-ref HEAD` \
-	AUTODOC_CMD="lein with-profile +$(VERSION),+codox codox" ./autodoc.sh
 
 # Eastwood can't handle orchard.java.parser at the moment, because
 # tools.jar isn't in the classpath when Eastwood runs.
