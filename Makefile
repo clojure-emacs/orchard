@@ -18,13 +18,13 @@ test:
 # below as needed.
 
 autodoc.sh:
-	curl -L https://raw.githubusercontent.com/plexus/autodoc/6fdf68d6/autodoc.sh -o $@
+	curl -L https://raw.githubusercontent.com/plexus/autodoc/a540761f/autodoc.sh -o $@
 	chmod +x $@
 
 docs: autodoc.sh
 	@if [ "$(TRAVIS)" = "true" ] && [ "$(TRAVIS_PULL_REQUEST)" = "false" ]; then \
 	    git remote set-url --push origin \
-	        https://$(GH_USER):$(GH_PASSWORD)@github.com/clojure-emacs/orchard.git; \
+	        https://$(GH_USER):$(GH_PASSWORD)@github.com/$(TRAVIS_REPO_SLUG).git; \
 	    AUTODOC_SUBDIR="$(TRAVIS_BRANCH)" \
 	    AUTODOC_CMD="lein with-profile +$(VERSION),+codox codox" ./autodoc.sh ; \
 	else \
