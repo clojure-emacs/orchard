@@ -35,6 +35,10 @@ Much of the tooling code required to build Clojure editors and smart REPLs
 is tool-agnostic and *should* be reused between tools, instead of copied
 and altered in each and every tool.
 
+## API Documentation
+
+Documentation for the master branch as well as tagged releases will be generated [here](http://clojure-emacs.github.io/orchard/index.html).
+
 ## Usage
 
 Coming soon...
