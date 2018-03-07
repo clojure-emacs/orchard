@@ -54,12 +54,28 @@
       (is (not-any? #(re-find #".*orchard" (str (ns-name %)))
                     (namespaces nil nil [".*orchard"]))))))
 
+(defn- apropos-first
+  ([v]
+   (apropos-first v nil))
+  ([v search-ns]
+   (->> (find-symbols1 nil (str/escape v {\* "\\*"}) search-ns false false false nil)
+        (filter #(= (:name %) (if search-ns (format "%s/%s" search-ns v) v)))
+        first)))
+
 (deftest search-test
   (testing "Search results"
     (is (empty? (find-symbols1 nil "xxxxxxxx" nil false false false nil))
         "Failing searches should return empty.")
     (is (= 1 (count (find-symbols1 nil "find-symbols1" nil false false false nil)))
         "Search for specific fn should return it."))
+
+  (testing "Types are correct"
+    (is (= :special-form (:type (apropos-first "def"))))
+    (are [var type] (= type (:type (apropos-first var "clojure.core")))
+      "when" :macro
+      "reduce" :function
+      "print-method" :function
+      "*print-length*" :variable))
 
   (testing "Symbol vs docstring search"
     ;; Search for the same fn by name and docstring

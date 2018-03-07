@@ -3,7 +3,8 @@
   {:author "Jeff Valk"}
   (:require [orchard.meta :refer [var-name var-doc]]
             [orchard.meta :as m]
-            [orchard.namespace :as ns]))
+            [orchard.namespace :as ns])
+  (:import [clojure.lang MultiFn]))
 
 ;;; ## Overview
 ;;
@@ -51,9 +52,10 @@
                            (= 'clojure.core (symbol search-ns)))
                    m/special-forms))
          (filter (comp (partial re-find regex) search-prop))
-         (map (fn [v] {:name (var-name v)
-                       :doc  (var-doc* v)
-                       :type (cond (special-symbol? v) :special-form
-                                   (:macro (meta v))   :macro
-                                   (fn? (deref v))     :function
-                                   :else               :variable)})))))
+         (map (fn [v]
+                {:name (var-name v)
+                 :doc  (var-doc* v)
+                 :type (cond (special-symbol? v) :special-form
+                             (:macro (meta v)) :macro
+                             (or (fn? @v) (instance? MultiFn @v)) :function
+                             :else :variable)})))))
