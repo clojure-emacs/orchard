@@ -4,7 +4,9 @@
             [clojure.tools.namespace.file :as ns-file]
             [clojure.tools.namespace.find :as ns-find]
             [orchard.classloader :refer [class-loader]]
-            [orchard.classpath :as cp])
+            [orchard.classpath :as cp]
+            [clojure.string :as str]
+            [orchard.misc :as misc])
   (:import java.util.jar.JarFile))
 
 ;;; Namespace Loading
@@ -32,9 +34,14 @@
 (defn project-namespaces
   "Find all namespaces defined in source paths within the current project."
   []
-  (->> (filter (memfn isDirectory) (cp/classpath (class-loader)))
-       (filter #(.startsWith (str %) project-root))
-       (mapcat ns-find/find-namespaces-in-dir)))
+  (let [project-pred (if (misc/os-windows?)
+                       #(.startsWith
+                         (str/lower-case (str %))
+                         (str/lower-case project-root));; ignore case on Windows OSes
+                       #(.startsWith (str %) project-root))]
+    (->> (filter (memfn isDirectory) (cp/classpath (class-loader)))
+         (filter project-pred)
+         (mapcat ns-find/find-namespaces-in-dir))))
 
 (defn inlined-dependency?
   "Returns true if the namespace matches one of our, or eastwood's,
