@@ -1,6 +1,12 @@
 (ns orchard.misc
   (:require [clojure.string :as str]))
 
+(def ^:const windows-prefix
+  "Windows")
+
+(defn os-windows? []
+  (.startsWith (System/getProperty "os.name") windows-prefix))
+
 (defn boot-fake-classpath
   "Retrieve Boot's fake classpath.
   When using Boot, fake.class.path contains the original directories with source
