@@ -35,9 +35,10 @@
   "Find all namespaces defined in source paths within the current project."
   []
   (let [project-pred (if (misc/os-windows?)
+                       ;; On Windows we want to do case-insensitive path comparison
                        #(.startsWith
                          (str/lower-case (str %))
-                         (str/lower-case project-root));; ignore case on Windows OSes
+                         (str/lower-case project-root))
                        #(.startsWith (str %) project-root))]
     (->> (filter (memfn isDirectory) (cp/classpath (class-loader)))
          (filter project-pred)
