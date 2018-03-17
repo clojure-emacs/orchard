@@ -5,20 +5,21 @@
 
 # orchard (alpha)
 
-A Clojure library designed to provide common functionality for Clojure development tools (e.g. CIDER).
+A Clojure library designed to provide common functionality for Clojure
+development tools (e.g. CIDER).
 
 ## History
 
-Originally [SLIME](https://github.com/slime/slime) was the most
+Originally [SLIME][] was the most
 popular way to program in Clojure with Emacs and a lot of useful
 functionality was created for it to support things like code
 completion, value inspection, finding references, apropos and so
 on. This functionality was implemented as a swank adapter written in
 Clojure and lived in the
-[swank-clojure](https://github.com/technomancy/swank-clojure) project.
+[swank-clojure][] project.
 
-Subsequently [CIDER](https://github.com/clojure-emacs/cider) and
-[cider-nrepl](https://github.com/clojure-emacs/cider-nrepl) replaced
+Subsequently [CIDER][] and
+[cider-nrepl][] replaced
 SLIME and swank, and much code was moved from `swank-clojure` to
 `cider-nrepl` and continued to evolve there.
 
@@ -37,11 +38,24 @@ and altered in each and every tool.
 
 ## API Documentation
 
-Documentation for the master branch as well as tagged releases will be generated [here](http://clojure-emacs.github.io/orchard/index.html).
+Documentation for the master branch as well as tagged releases will be
+generated [here](http://clojure-emacs.github.io/orchard/index.html).
 
 ## Usage
 
-Coming soon...
+Just add `orchard` as a dependency and start hacking.
+
+Right now `orchard` provides functionality like:
+
+* enhanced apropos
+* classpath utils
+* value inspector
+* Java class handling utilities
+* Utilities for dealing with metadata
+* Namespace utilities
+
+Consult the API documentation to get a better idea about the
+functionality that's provided.
 
 ## License
 
@@ -49,3 +63,8 @@ Copyright © 2018 Bozhidar Batsov & contributors
 
 Distributed under the Eclipse Public License either version 1.0 or (at
 your option) any later version.
+
+[SLIME]: https://github.com/slime/slime
+[swank-clojure]: https://github.com/technomancy/swank-clojure
+[CIDER]: https://github.com/clojure-emacs/cider
+[cider-nrepl]:https://github.com/clojure-emacs/cider-nrepl
