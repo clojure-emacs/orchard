@@ -24,7 +24,7 @@
 (defn push-item-to-path
   "Takes the current inspector index, the `idx` of the value in it to be navigated
   to, and the path so far, and returns the updated path to the selected value."
-  [index idx path]
+  [index idx path current-page page-size]
   (if (>= idx (count index))
     (conj path '<unknown>)
     (if (= idx 0)
@@ -45,7 +45,9 @@
 
           ;; For sequential things going down means getting the nth value.
           ((supers klass) clojure.lang.Sequential)
-          (conj path (list 'nth (dec idx)))
+          (let [coll-idx (+ (* (or current-page 0) page-size)
+                            (dec idx))]
+            (conj path (list 'nth coll-idx)))
 
           :else (conj path '<unknown>))))))
 
@@ -93,10 +95,10 @@
    rendered value."
   [inspector idx]
   {:pre [(integer? idx)]}
-  (let [{:keys [index path current-page]} inspector
+  (let [{:keys [index path current-page page-size]} inspector
         new (get index idx)
         val (:value inspector)
-        new-path (push-item-to-path index idx path)]
+        new-path (push-item-to-path index idx path current-page page-size)]
     (-> (update-in inspector [:stack] conj val)
         (update-in [:pages-stack] conj current-page)
         (assoc :current-page 0)
