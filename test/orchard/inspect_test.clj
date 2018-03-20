@@ -17,6 +17,7 @@
 (def long-sequence (range 70))
 (def long-vector (vec (range 70)))
 (def long-map (zipmap (range 70) (range 70)))
+(def long-nested-coll (vec (map #(range (* % 10) (+ (* % 10) 80)) (range 200))))
 
 (defn inspect
   [value]
@@ -155,7 +156,21 @@
                inspect/prev-page
                inspect/next-page
                inspect/prev-page
-               :current-page)))))
+               :current-page))))
+  (testing "page numbers are tracked per nesting level"
+    (let [ins (-> long-nested-coll
+                  inspect
+                  inspect/next-page
+                  inspect/next-page
+                  inspect/next-page
+                  inspect/next-page)]
+      (is (= 4 (:current-page ins)))
+      (let [ins (-> ins
+                    (inspect/down 1)
+                    inspect/next-page
+                    inspect/next-page)]
+        (is (= 2 (:current-page ins)))
+        (is (= 4 (:current-page (inspect/up ins))))))))
 
 (deftest path-test
   (testing "inspector tracks the path in the data structure"
