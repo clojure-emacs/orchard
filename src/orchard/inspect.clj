@@ -31,21 +31,17 @@
       (conj path 'class)
       (let [klass (first index)]
         (cond
-          ;; If value's class is a map, jumping into its value means finding a
-          ;; MapEntry object for the key.
+          ;; If value's class is a map, going down means jumping into either key
+          ;; or value.
           ((supers klass) clojure.lang.IPersistentMap)
-          (conj path (list 'find (first (nth index idx))))
-
-          ;; For a MapEntry, clicking on the first item means getting the key of
-          ;; the MapEntry, second - means getting the value by the key.
-          (= klass clojure.lang.MapEntry)
-          (if (= idx 1)
-            (conj path 'first)
-            (let [[_ key] (peek path)]
-              (conj (pop path)
-                    (if (keyword? key)
-                      key
-                      (list 'get key)))))
+          (if (even? idx)
+            ;; Even index means jumping into the value by the key.
+            (let [key (nth index (dec idx))]
+              (conj path (if (keyword? key)
+                           key
+                           (list 'get key))))
+            ;; Odd index means finding the map entry and taking its key
+            (conj path (list 'find (nth index idx)) 'key))
 
           ;; For sequential things going down means getting the nth value.
           ((supers klass) clojure.lang.Sequential)
@@ -57,12 +53,8 @@
   "Takes the current inspector path, and returns an updated path one level up."
   [path]
   (let [last-node (peek path)]
-    (if (or (keyword? last-node)
-            (and (list? last-node) (= (first last-node) 'get)))
-      (let [key (if (keyword? last-node)
-                  last-node
-                  (second last-node))]
-        (conj (pop path) (list 'find key)))
+    (if (= last-node 'key)
+      (pop (pop path)) ; pop twice to remove <(find :some-key) key>
       (pop path))))
 
 (defn clear

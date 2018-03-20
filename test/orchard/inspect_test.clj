@@ -161,33 +161,24 @@
   (testing "inspector tracks the path in the data structure"
     (is (.endsWith (first (-> long-map
                               inspect
-                              (inspect/down 20)
+                              (inspect/down 39)
                               render))
-                   "\"  Path: (find 50)\")"))
+                   "\"  Path: (find 50) key\")"))
     (is (.endsWith (first (-> long-map
                               inspect
-                              (inspect/down 20)
-                              (inspect/down 1)
-                              render))
-                   "\"  Path: (find 50) first\")"))
-    (is (.endsWith (first (-> long-map
-                              inspect
-                              (inspect/down 20)
-                              (inspect/down 2)
+                              (inspect/down 40)
                               render))
                    "\"  Path: (get 50)\")"))
     (is (.endsWith (first (-> long-map
                               inspect
-                              (inspect/down 20)
-                              (inspect/down 2)
+                              (inspect/down 40)
                               (inspect/down 0)
                               render))
                    "\"  Path: (get 50) class\")")))
   (testing "doesn't show path if unknown navigation has happened"
     (is (.endsWith (first (-> long-map
                               inspect
-                              (inspect/down 20)
-                              (inspect/down 2)
+                              (inspect/down 40)
                               (inspect/down 0)
                               (inspect/down 1)
                               render))
@@ -230,18 +221,18 @@
     (let [t {:a (list 1 2 {:b {:c (vec (map (fn [x] {:foo (* x 10)}) (range 100)))}})
              :z 42}
           inspector (-> (inspect/start (inspect/fresh) t)
-                        (inspect/down 1) (inspect/down 2)
-                        (inspect/up) (inspect/up)
-                        (inspect/down 1) (inspect/down 2)
+                        (inspect/down 1)
+                        (inspect/up)
+                        (inspect/down 2)
                         (inspect/down 2)
                         (inspect/up)
                         (inspect/down 3)
-                        (inspect/down 1) (inspect/down 2)
-                        (inspect/down 1) (inspect/down 2)
+                        (inspect/down 2)
+                        (inspect/down 2)
                         (inspect/down 10)
-                        (inspect/down 1) (inspect/down 1))]
-      (is (= '[:a (nth 2) :b :c (nth 9) (find :foo) first] (:path inspector)))
-      (is (= '[:a (nth 2) :b :c (nth 9) (find :foo) first class]
+                        (inspect/down 1))]
+      (is (= '[:a (nth 2) :b :c (nth 9) (find :foo) key] (:path inspector)))
+      (is (= '[:a (nth 2) :b :c (nth 9) (find :foo) key class]
              (:path (-> inspector (inspect/down 0)))))
-      (is (= '[:a (nth 2) :b :c (nth 9) (find :foo) first class <unknown>]
+      (is (= '[:a (nth 2) :b :c (nth 9) (find :foo) key class <unknown>]
              (:path (-> inspector (inspect/down 0) (inspect/down 1))))))))
