@@ -244,10 +244,12 @@
                         (inspect/down 3)
                         (inspect/down 2)
                         (inspect/down 2)
+                        inspect/next-page
+                        inspect/next-page
                         (inspect/down 10)
                         (inspect/down 1))]
-      (is (= '[:a (nth 2) :b :c (nth 9) (find :foo) key] (:path inspector)))
-      (is (= '[:a (nth 2) :b :c (nth 9) (find :foo) key class]
+      (is (= '[:a (nth 2) :b :c (nth 73) (find :foo) key] (:path inspector)))
+      (is (= '[:a (nth 2) :b :c (nth 73) (find :foo) key class]
              (:path (-> inspector (inspect/down 0)))))
-      (is (= '[:a (nth 2) :b :c (nth 9) (find :foo) key class <unknown>]
+      (is (= '[:a (nth 2) :b :c (nth 73) (find :foo) key class <unknown>]
              (:path (-> inspector (inspect/down 0) (inspect/down 1))))))))
