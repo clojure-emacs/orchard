@@ -176,8 +176,8 @@
        (format "{ %s }")))
 
 (defmethod inspect-value :map-long [value]
-  (str "{ " (ffirst value) " "
-       (inspect-value (second (first value))) ", ... }"))
+  (let [[k v] (first value)]
+    (str "{ " (inspect-value k) " " (inspect-value v) ", ... }")))
 
 (defmethod inspect-value :vector [value]
   (safe-pr-seq value "[ %s ]"))
