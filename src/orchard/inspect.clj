@@ -61,7 +61,8 @@
   "Clear an inspector's state."
   [inspector]
   (merge (reset-index inspector)
-         {:value nil :stack [] :path [] :rendered '() :current-page 0}))
+         {:value nil, :stack [], :path [], :pages-stack [],
+          :current-page 0, :rendered '()}))
 
 (defn fresh
   "Return an empty inspector."
@@ -77,11 +78,13 @@
 (defn up
   "Pop the stack and re-render an earlier value."
   [inspector]
-  (let [stack (:stack inspector)]
+  (let [{:keys [stack pages-stack]} inspector]
     (if (empty? stack)
       (inspect-render inspector)
       (-> inspector
           (update-in [:path] pop-item-from-path)
+          (assoc :current-page (peek pages-stack))
+          (update-in [:pages-stack] pop)
           (inspect-render (last stack))
           (update-in [:stack] pop)))))
 
@@ -90,11 +93,13 @@
    rendered value."
   [inspector idx]
   {:pre [(integer? idx)]}
-  (let [{:keys [index path]} inspector
+  (let [{:keys [index path current-page]} inspector
         new (get index idx)
         val (:value inspector)
         new-path (push-item-to-path index idx path)]
     (-> (update-in inspector [:stack] conj val)
+        (update-in [:pages-stack] conj current-page)
+        (assoc :current-page 0)
         (assoc :path new-path)
         (inspect-render new))))
 
