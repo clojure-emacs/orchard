@@ -10,9 +10,9 @@
 
 (def eval-result (eval (read-string code)))
 
-(def inspect-result ["(\"Class\" \": \" (:value \"clojure.lang.PersistentTreeMap\" 0) (:newline) \"Contents: \" (:newline) \"  \" \"0\" \". \" (:value \"[ :a { :b 1 } ]\" 1) (:newline) \"  \" \"1\" \". \" (:value \"[ :c \\\"a\\\" ]\" 2) (:newline) \"  \" \"2\" \". \" (:value \"[ :d e ]\" 3) (:newline) \"  \" \"3\" \". \" (:value \"[ :f [ 2 3 ] ]\" 4) (:newline))"])
+(def inspect-result ["(\"Class\" \": \" (:value \"clojure.lang.PersistentTreeMap\" 0) (:newline) \"Contents: \" (:newline) \"  \" (:value \":a\" 1) \" = \" (:value \"{ :b 1 }\" 2) (:newline) \"  \" (:value \":c\" 3) \" = \" (:value \"\\\"a\\\"\" 4) (:newline) \"  \" (:value \":d\" 5) \" = \" (:value \"e\" 6) (:newline) \"  \" (:value \":f\" 7) \" = \" (:value \"[ 2 3 ]\" 8) (:newline))"])
 
-(def push-result ["(\"Class\" \": \" (:value \"clojure.lang.PersistentTreeMap$BlackVal\" 0) (:newline) \"Contents: \" (:newline) \"  \" \"0\" \". \" (:value \":a\" 1) (:newline) \"  \" \"1\" \". \" (:value \"{ :b 1 }\" 2) (:newline) (:newline) \"  Path: (find :a)\")"])
+(def push-result ["(\"Class\" \": \" (:value \"clojure.lang.PersistentArrayMap\" 0) (:newline) \"Contents: \" (:newline) \"  \" (:value \":b\" 1) \" = \" (:value \"1\" 2) (:newline) (:newline) \"  Path: :a\")"])
 
 (def long-sequence (range 70))
 (def long-vector (vec (range 70)))
@@ -82,7 +82,7 @@
     (is (= push-result
            (-> eval-result
                inspect
-               (inspect/down 1)
+               (inspect/down 2)
                render)))))
 
 (deftest pop-test
@@ -90,7 +90,7 @@
     (is (= inspect-result
            (-> eval-result
                inspect
-               (inspect/down 1)
+               (inspect/down 2)
                inspect/up
                render)))))
 
@@ -99,7 +99,8 @@
     (is (= 33 (-> long-sequence
                   inspect
                   :counter)))
-    (is (= 33 (-> long-map
+    ;; Twice more for maps
+    (is (= 65 (-> long-map
                   inspect
                   :counter)))
     (is (.startsWith (-> long-vector

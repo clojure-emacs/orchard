@@ -232,7 +232,32 @@
       (render-value value)
       (render-ln)))
 
-(defn render-indexed-values [inspector obj]
+(defn render-map-values [inspector mappable]
+  (reduce (fn [ins [key val]]
+            (-> ins
+                (render "  ")
+                (render-value key)
+                (render " = ")
+                (render-value val)
+                (render '(:newline))))
+          inspector
+          mappable))
+
+(defn render-indexed-values
+  ([inspector obj] (render-indexed-values inspector obj 0))
+  ([inspector obj idx-starts-from]
+   (loop [ins inspector, [c & more] obj, idx idx-starts-from]
+     (if c
+       (recur (-> ins
+                  (render "  " (str idx) ". ")
+                  (render-value c)
+                  (render '(:newline)))
+              more (inc idx))
+       ins))))
+
+(defn render-collection-paged
+  "Render a single page of either an indexed or associative collection."
+  [inspector obj]
   (let [{:keys [current-page page-size]} inspector
         last-page (if (or (instance? clojure.lang.Counted obj)
                           ;; if there are no more items after the current page,
@@ -245,8 +270,9 @@
         current-page (cond (< current-page 0) 0
                            (> current-page last-page) last-page
                            :else current-page)
-        chunk-to-display (->> (map-indexed list obj)
-                              (drop (* current-page page-size))
+        start-idx (* current-page page-size)
+        chunk-to-display (->> obj
+                              (drop start-idx)
                               (take page-size))
         paginate? (not= last-page 0)]
     (as-> inspector ins
@@ -256,13 +282,9 @@
             (render '(:newline)))
         ins)
 
-      (reduce (fn [ins [idx val]]
-                (-> ins
-                    (render "  " (str idx) ". ")
-                    (render-value val)
-                    (render '(:newline))))
-              ins
-              chunk-to-display)
+      (if (map? obj)
+        (render-map-values ins chunk-to-display)
+        (render-indexed-values ins chunk-to-display start-idx))
 
       (if (< current-page last-page)
         (render ins "  ...")
@@ -278,17 +300,6 @@
             (assoc :current-page current-page))
         ins))))
 
-(defn render-map-values [inspector mappable]
-  (reduce (fn [ins [key val]]
-            (-> ins
-                (render "  ")
-                (render-value key)
-                (render " = ")
-                (render-value val)
-                (render '(:newline))))
-          inspector
-          mappable))
-
 (defn render-meta-information [inspector obj]
   (if (seq (meta obj))
     (-> inspector
@@ -300,10 +311,10 @@
 (defn known-types [ins obj]
   (cond
     (nil? obj) :nil
-    (map? obj) :seq
-    (vector? obj) :seq
-    (seq? obj) :seq
-    (set? obj) :seq
+    (map? obj) :coll
+    (vector? obj) :coll
+    (seq? obj) :coll
+    (set? obj) :coll
     (var? obj) :var
     (string? obj) :string
     (instance? Class obj) :class
@@ -319,12 +330,12 @@
   (-> inspector
       (render-ln "nil")))
 
-(defmethod inspect :seq [inspector obj]
+(defmethod inspect :coll [inspector obj]
   (-> inspector
       (render-labeled-value "Class" (class obj))
       (render-meta-information obj)
       (render-ln "Contents: ")
-      (render-indexed-values obj)))
+      (render-collection-paged obj)))
 
 (defmethod inspect :array [inspector obj]
   (-> inspector
@@ -332,7 +343,7 @@
       (render-labeled-value "Count" (alength obj))
       (render-labeled-value "Component Type" (.getComponentType (class obj)))
       (render-ln "Contents: ")
-      (render-indexed-values obj)))
+      (render-collection-paged obj)))
 
 (defmethod inspect :var [inspector ^clojure.lang.Var obj]
   (let [header-added
