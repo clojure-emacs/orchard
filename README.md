@@ -1,7 +1,7 @@
 [![Build Status](https://travis-ci.org/clojure-emacs/orchard.png?branch=master)](https://travis-ci.org/clojure-emacs/orchard)
 [![Dependencies Status](https://versions.deps.co/clojure-emacs/orchard/status.svg)](https://versions.deps.co/clojure-emacs/orchard)
 [![Coverage](https://codecov.io/gh/clojure-emacs/orchard/branch/master/graph/badge.svg)](https://codecov.io/gh/clojure-emacs/orchard/)
-
+[![Clojars Project](https://img.shields.io/clojars/v/cider/orchard.svg)](https://clojars.org/cider/orchard)
 
 # orchard (alpha)
 
