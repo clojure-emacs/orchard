@@ -1,4 +1,6 @@
 (ns orchard.classpath
+  "A simple wrapper around `clojure.java.classpath`
+  that is Boot-aware and adds support for Java 9+."
   (:require [clojure.java.classpath :as cp]
             [clojure.string :as str]
             [orchard.classloader :as cl]
@@ -19,11 +21,12 @@
    (let [sep (re-pattern File/pathSeparator)
          boot-classpath (u/boot-fake-classpath)
          path (cond
-                boot-classpath (str/split boot-classpath sep)
-                (< u/java-api-version 9) (map str (cp/classpath classloader))
-                :else (-> (System/getProperty "java.class.path")
-                          (str/split sep)))]
-     (map #(File. %) path))))
+                boot-classpath (map #(File. %) (str/split boot-classpath sep))
+                ;; this Java version check will become redundant once
+                ;; https://dev.clojure.org/jira/browse/CLASSPATH-8 is fixed
+                (< u/java-api-version 9) (cp/classpath classloader)
+                :else (cp/system-classpath))]
+     path)))
 
 (defn classpath-directories
   "Returns a sequence of File objects for the directories on classpath.
