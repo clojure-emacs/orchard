@@ -127,7 +127,7 @@
       (is (= (:javadoc (class-info 'java.io.Closeable))
              "java/io/Closeable.html")))
 
-    (let [java-version (Integer/parseInt java-api-version)]
+    (let [java-version java-api-version]
       (if (< java-version 8)
         ;;Testing for pre-JDK 1.8 URLs
         (testing "for a member"

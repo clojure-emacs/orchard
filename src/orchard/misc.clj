@@ -55,11 +55,13 @@
 (def java-api-version
   (try
     (let [java-ver (System/getProperty "java.version")
-          [major minor _] (str/split java-ver #"\.")]
-      (if (> (bigint major) 1)
+          [major minor _] (str/split java-ver #"\.")
+          major (Integer/parseInt major)
+          minor (Integer/parseInt minor)]
+      (if (> major 1)
         major
-        (or minor "7")))
-    (catch Exception _ "7")))
+        (or minor 7)))
+    (catch Exception _ 7)))
 
 (defmulti transform-value "Transform a value for output" type)
 

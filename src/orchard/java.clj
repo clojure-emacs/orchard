@@ -81,7 +81,7 @@
   ([class member argtypes]
    (str (javadoc-url class) "#" member
         (when argtypes
-          (if (< (Integer/parseInt util/java-api-version) 8)
+          (if (< util/java-api-version 8)
             ;; Pre JDK 1.8 vs Post JDK 1.8 Javadoc URL style
             (str "(" (str/join ",%20" argtypes) ")")
             (str "-" (str/join "-" (map #(str/replace % #"\[\]" ":A") argtypes)) "-"))))))

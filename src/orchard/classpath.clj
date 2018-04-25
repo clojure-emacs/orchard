@@ -20,7 +20,7 @@
          boot-classpath (u/boot-fake-classpath)
          path (cond
                 boot-classpath (str/split boot-classpath sep)
-                (neg? (compare u/java-api-version "9")) (map str (cp/classpath classloader))
+                (< u/java-api-version 9) (map str (cp/classpath classloader))
                 :else (-> (System/getProperty "java.class.path")
                           (str/split sep)))]
      (map #(File. %) path))))
