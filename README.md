@@ -3,7 +3,7 @@
 [![Coverage](https://codecov.io/gh/clojure-emacs/orchard/branch/master/graph/badge.svg)](https://codecov.io/gh/clojure-emacs/orchard/)
 [![Clojars Project](https://img.shields.io/clojars/v/cider/orchard.svg)](https://clojars.org/cider/orchard)
 
-# orchard (alpha)
+# orchard
 
 A Clojure library designed to provide common functionality for Clojure
 development tools (e.g. CIDER).
@@ -42,6 +42,8 @@ Documentation for the master branch as well as tagged releases will be
 generated [here](http://clojure-emacs.github.io/orchard/index.html).
 
 ## Usage
+
+**orchard requires Clojure 1.7+ and Java 7+.**
 
 Just add `orchard` as a dependency and start hacking.
 
