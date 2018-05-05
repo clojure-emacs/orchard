@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+## 0.1.0 (2018-05-04)
+
 ### New features
 
 * Initial extraction of nREPL-agnostic functionality from `cider-nrepl`.
