@@ -2,6 +2,10 @@
 
 ## master (unreleased)
 
+## New features
+
+* Added a generic API for querying namespaces and vars (`orchard.query`).
+
 ## 0.1.0 (2018-05-04)
 
 ### New features
