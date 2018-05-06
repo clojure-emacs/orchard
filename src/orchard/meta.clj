@@ -130,7 +130,7 @@
    :protocol :line :column :static :added :deprecated :resource])
 
 (defn var-meta
-  "Return a map of metadata for var or special form v.
+  "Return a map of metadata for var v.
   If whitelist is missing use var-meta-whitelist."
   ([v] (var-meta v var-meta-whitelist))
   ([v whitelist]
@@ -146,11 +146,16 @@
   (concat (keys (var-get #'clojure.repl/special-doc-map))
           '[& catch finally]))
 
+(defn meta+
+  "Return special form or var's meta."
+  [v]
+  (or (special-sym-meta v)
+      (meta v)))
+
 (defn var-name
   "Return special form or var's namespace-qualified name as string."
   [v]
-  (let [mta (or (special-sym-meta v)
-                (meta v))]
+  (let [mta (meta+ v)]
     (if-let [ns (:ns mta)]
       (str (ns-name ns) "/" (:name mta))
       (name (:name mta)))))
@@ -159,8 +164,7 @@
   "Return special form or var's docstring, optionally limiting the number of
   sentences returned to n."
   ([v]
-   (or (:doc (or (special-sym-meta v)
-                 (meta v)))
+   (or (:doc (meta+ v))
        "(not documented)"))
   ([n v]
    (->> (-> (var-doc v)

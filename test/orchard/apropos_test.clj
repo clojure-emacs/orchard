@@ -7,11 +7,7 @@
 
 (def ^{:doc "Test1. Test2. Test3."} public-var [1 2 3])
 
-(defn find-symbols1 [ns query search-ns docs? privates? case-sensitive? filter-regexps]
-  (find-symbols {:ns ns :query query :search-ns search-ns
-                 :docs? docs? :privates? privates?
-                 :case-sensitive? case-sensitive?
-                 :filter-regexps filter-regexps}))
+(defn some-random-function [])
 
 (deftest var-name-test
   (testing "Returns Var's namespace-qualified name"
@@ -35,43 +31,43 @@
   (is (= (var-doc 1 #'public-var) "Test1.")))
 
 (deftest namespaces-test
-  (let [ns (-> *ns* ns-name str)]
-    (testing "Namespace sort order"
-      (is (= (-> (namespaces ns nil) first ns-name str)
-             ns)
-          "Current namespace should be first.")
-      (is (-> (namespaces nil nil) first ns-name str
-              (.startsWith "clojure."))
-          "Absent a current namespace, clojure.* should be first."))
+  (testing "Namespace sort order"
+    (let [ns (find-ns 'orchard.apropos-test)]
+      (is (= ns (-> (find-symbols {:ns ns}) first :name symbol namespace symbol find-ns))
+          "Current namespace should be first."))
+    (is (-> (find-symbols nil) first :name symbol namespace
+            (.startsWith "clojure."))
+        "Absent a current namespace, clojure.* should be first."))
 
-    (testing "Searched namespace"
-      (is (= (namespaces ns ns)
-             (namespaces nil ns)
-             (list (find-ns (symbol ns))))
-          "Should return a list containing only the searched ns."))
-
-    (testing "Removal of namespaces with `filter-regexps`"
-      (is (not-any? #(re-find #".*orchard" (str (ns-name %)))
-                    (namespaces nil nil [".*orchard"]))))))
+  (testing "Removal of namespaces with `exclude-regexps`"
+    (is (not-any? #(re-find #".*orchard" (str (namespace (symbol (:name %)))))
+                  (find-symbols {:var-query
+                                 {:ns-query
+                                  {:exclude-regexps
+                                   [#"orchard"]}}})))))
 
 (defn- apropos-first
   ([v]
    (apropos-first v nil))
   ([v search-ns]
-   (->> (find-symbols1 nil (str/escape v {\* "\\*"}) search-ns false false false nil)
+   (->> (find-symbols
+         (cond->
+          {:var-query {:search (re-pattern (str/escape v {\* "\\*"}))}}
+           search-ns
+           (assoc-in [:var-query :ns-query :exactly] [search-ns])))
         (filter #(= (:name %) (if search-ns (format "%s/%s" search-ns v) v)))
         first)))
 
 (deftest search-test
   (testing "Search results"
-    (is (empty? (find-symbols1 nil "xxxxxxxx" nil false false false nil))
+    (is (empty? (find-symbols {:var-query {:search #"xxxxxxxx"}}))
         "Failing searches should return empty.")
-    (is (= 1 (count (find-symbols1 nil "find-symbols1" nil false false false nil)))
+    (is (= 1 (count (find-symbols {:var-query {:search #"some-random-function"}})))
         "Search for specific fn should return it."))
 
   (testing "Types are correct"
     (is (= :special-form (:type (apropos-first "def"))))
-    (are [var type] (= type (:type (apropos-first var "clojure.core")))
+    (are [var type] (= type (:type (apropos-first var (the-ns 'clojure.core))))
       "when" :macro
       "reduce" :function
       "print-method" :function
@@ -79,9 +75,12 @@
 
   (testing "Symbol vs docstring search"
     ;; Search for the same fn by name and docstring
-    (let [x (first (find-symbols1 nil "find-symbols" nil false false false nil))
-          y (first (find-symbols1 nil "The search may optionally include private"
-                                  nil true false false nil))]
+    (let [x (first (find-symbols
+                    {:var-query {:search #"find-symbols$"}}))
+          y (first (find-symbols
+                    {:var-query {:search #"Causes the full doc to be returned instead"
+                                 :search-property :doc}
+                     :full-doc? true}))]
       (is (= (dissoc x :doc)
              (dissoc y :doc))
           "Other than docstring, returned attributes should be the same.")
@@ -94,15 +93,15 @@
 
   (testing "Includes special forms when `search-ns` is nil"
     (is (not-empty (filter #(= "if" (:name %))
-                           (find-symbols1 nil "if" nil
-                                          false false false nil)))))
+                           (find-symbols {:search #"if"})))))
 
   (testing "Includes special forms when `search-ns` is \"clojure.core\""
     (is (not-empty (filter #(= "if" (:name %))
-                           (find-symbols1 nil "if" "clojure.core"
-                                          false false false nil)))))
+                           (find-symbols {:search #"if"
+                                          :ns-query {:exactly [(the-ns 'clojure.core)]}})))))
 
   (testing "Excludes special forms when `search-ns` is some other ns"
     (is (empty? (filter #(= "if" (:name %))
-                        (find-symbols1 nil "if" "clojure.set"
-                                       false false false nil))))))
+                        (find-symbols {:var-query
+                                       {:search #"if"
+                                        :ns-query {:exactly [(the-ns 'clojure.set)]}}}))))))
