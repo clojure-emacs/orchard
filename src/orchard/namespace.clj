@@ -127,3 +127,8 @@
               (first paths)
               (recur (rest paths)))))))
     (catch Throwable _ nil)))
+
+(defn has-tests?
+  "Return a truthy value if the namespace has any vars with `:test` metadata."
+  [ns]
+  (seq (filter (comp :test meta val) (ns-interns ns))))

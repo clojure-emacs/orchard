@@ -27,3 +27,6 @@
       (with-redefs [misc/os-windows? (constantly true)
                     n/project-root   (str/replace orig-project-root "orchard" "Orchard")]
         (is (seq (n/project-namespaces)))))))
+
+(deftest has-tests-errors
+  (is (n/has-tests? (find-ns 'orchard.namespace-test))))
