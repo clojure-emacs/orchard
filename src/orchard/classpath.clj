@@ -15,6 +15,7 @@
    (classpath (cl/class-loader)))
   ([classloader]
    (let [sep (re-pattern File/pathSeparator)
+         ;; TODO: Check if that's really needed - after all we have a Boot-aware classloader
          boot-classpath (u/boot-fake-classpath)
          path (if boot-classpath
                 (map #(File. %) (str/split boot-classpath sep))
