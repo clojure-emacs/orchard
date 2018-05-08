@@ -20,9 +20,9 @@
          path (if boot-classpath
                 (map #(File. %) (str/split boot-classpath sep))
                 ;; See https://dev.clojure.org/jira/browse/CLASSPATH-8
-                (or (seq (cp/classpath classloader)
-                         ;; Java 9+
-                         (cp/system-classpath))))]
+                (or (seq (cp/classpath classloader))
+                    ;; Java 9+
+                    (cp/system-classpath)))]
      path)))
 
 (defn classpath-directories
