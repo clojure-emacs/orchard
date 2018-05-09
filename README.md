@@ -43,7 +43,7 @@ generated [here](http://clojure-emacs.github.io/orchard/index.html).
 
 ## Usage
 
-**orchard requires Clojure 1.7+ and Java 7+.**
+**orchard requires Clojure 1.8+ and Java 8+.**
 
 Just add `orchard` as a dependency and start hacking.
 
