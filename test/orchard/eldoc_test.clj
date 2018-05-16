@@ -25,18 +25,18 @@
          '([.instanceMember instance args*]
            [.instanceMember Classname args*]
            [Classname/staticMethod args*]
-           [Classname/staticField]))))
+           [Classname/staticField])))
+
+  ;; sanity checks and special cases
+  (is (eldoc/extract-arglists (info/info 'clojure.core 'map)))
+  (is (eldoc/extract-arglists (info/info 'clojure.core '.toString)))
+  (is (eldoc/extract-arglists (info/info 'clojure.core '.)))
+  (is (not (eldoc/extract-arglists (info/info 'clojure.core (gensym "non-existing"))))))
 
 (deftest format-arglists-test
   (is (= (eldoc/format-arglists (eldoc/extract-arglists test-eldoc-info)) '(["x"] ["x" "y"])))
   (is (= (eldoc/format-arglists (eldoc/extract-arglists test-eldoc-info-candidates))
          '([] ["x"] ["x" "y" "z"]))))
-
-(deftest test-extract-arglists
-  (is (eldoc/extract-arglists (info/info 'clojure.core 'map)))
-  (is (eldoc/extract-arglists (info/info 'clojure.core '.toString)))
-  (is (eldoc/extract-arglists (info/info 'clojure.core '.)))
-  (is (not (eldoc/extract-arglists (info/info 'clojure.core (gensym "non-existing"))))))
 
 ;;;; eldoc datomic query
 (def testing-datomic-query '[:find ?x
