@@ -16,7 +16,7 @@
   [ns sym]
   (let [var-key (str ns "/" sym)]
     (->> (get see-also-data var-key)
-               (filter (comp resolve u/as-sym)))))
+         (filter (comp resolve u/as-sym)))))
 
 (defn info
   [ns sym]
