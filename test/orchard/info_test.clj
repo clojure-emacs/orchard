@@ -68,22 +68,23 @@
           url (:javadoc reply)]
       (is (= url "http://some/other/url")))))
 
+;; TODO: Assess the value of this test
 (deftest javadoc-url-test
   (if (= misc/java-api-version 7)
     (testing "java 1.7"
-      (is (= "http://docs.oracle.com/javase/7/docs/api/java/lang/StringBuilder.html#charAt(int)"
+      (is (= "java/lang/StringBuilder.html#charAt(int)"
              (-> (info/info-java 'java.lang.StringBuilder 'charAt)
                  (get :javadoc))))))
 
   (if (= misc/java-api-version 8)
     (testing "java 1.8"
-      (is (= "http://docs.oracle.com/javase/8/docs/api/java/lang/StringBuilder.html#charAt-int-"
+      (is (= "java/lang/StringBuilder.html#charAt-int-"
              (-> (info/info-java 'java.lang.StringBuilder 'charAt)
                  (get :javadoc))))))
 
   (if (= misc/java-api-version 9)
     (testing "java 9"
-      (is (= "http://docs.oracle.com/javase/9/docs/api/java/lang/StringBuilder.html#charAt-int-"
+      (is (= "java/lang/StringBuilder.html#charAt-int-"
              (-> (info/info-java 'java.lang.StringBuilder 'charAt)
                  (get :javadoc)))))))
 
