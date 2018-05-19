@@ -44,6 +44,7 @@
                              :where
                              [?x :person/name ?name]])
 
+;; TODO: Convert those to unit tests
 #_(deftest eldoc-datomic-query-test
     (testing "eldoc of inline datomic query"
       (let [response (session/message {:op "eldoc-datomic-query"
