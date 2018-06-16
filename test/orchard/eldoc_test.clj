@@ -32,7 +32,22 @@
     (is (:eldoc (eldoc/eldoc (info/info 'clojure.core 'map))))
     (is (:eldoc (eldoc/eldoc (info/info 'clojure.core '.toString))))
     (is (:eldoc (eldoc/eldoc (info/info 'clojure.core '.))))
-    (is (not (:eldoc (eldoc/eldoc (info/info 'clojure.core (gensym "non-existing"))))))))
+    (is (not (:eldoc (eldoc/eldoc (info/info 'clojure.core (gensym "non-existing")))))))
+
+  (testing "Clojure result structure"
+    (let [result (eldoc/eldoc (info/info 'clojure.core 'map))]
+      (is (:ns result))
+      (is (:name result))
+      (is (:type result))
+      (is (:eldoc result))
+      (is (:docstring result))))
+
+  (testing "Java result structure"
+    (let [result (eldoc/eldoc (info/info-java 'java.lang.String 'toLowerCase))]
+      (is (:class result))
+      (is (:member result))
+      (is (:type result))
+      (is (:eldoc result)))))
 
 ;;;; eldoc datomic query
 (def testing-datomic-query '[:find ?x
