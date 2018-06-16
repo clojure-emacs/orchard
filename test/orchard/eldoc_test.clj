@@ -17,26 +17,22 @@
                  Y {:arglists ([x] [x y z])}
                  Z {:arglists ([])}}})
 
-(deftest test-extract-arglists
-  (is (= (eldoc/extract-arglists test-eldoc-info) '([x] [x y])))
-  (is (= (eldoc/extract-arglists test-eldoc-info-candidates)
-         '([] [x] [x y z])))
-  (is (= (eldoc/extract-arglists test-eldoc-info-special-form)
-         '([.instanceMember instance args*]
-           [.instanceMember Classname args*]
-           [Classname/staticMethod args*]
-           [Classname/staticField])))
+(deftest test-eldoc
+  (testing "arglist extraction"
+    (is (= (:eldoc (eldoc/eldoc test-eldoc-info)) '(["x"] ["x" "y"])))
+    (is (= (:eldoc (eldoc/eldoc test-eldoc-info-candidates))
+           '([] ["x"] ["x" "y" "z"])))
+    (is (= (:eldoc (eldoc/eldoc test-eldoc-info-special-form))
+           '([".instanceMember" "instance" "args*"]
+             [".instanceMember" "Classname" "args*"]
+             ["Classname/staticMethod" "args*"]
+             ["Classname/staticField"])))
 
-  ;; sanity checks and special cases
-  (is (eldoc/extract-arglists (info/info 'clojure.core 'map)))
-  (is (eldoc/extract-arglists (info/info 'clojure.core '.toString)))
-  (is (eldoc/extract-arglists (info/info 'clojure.core '.)))
-  (is (not (eldoc/extract-arglists (info/info 'clojure.core (gensym "non-existing"))))))
-
-(deftest format-arglists-test
-  (is (= (eldoc/format-arglists (eldoc/extract-arglists test-eldoc-info)) '(["x"] ["x" "y"])))
-  (is (= (eldoc/format-arglists (eldoc/extract-arglists test-eldoc-info-candidates))
-         '([] ["x"] ["x" "y" "z"]))))
+    ;; sanity checks and special cases
+    (is (:eldoc (eldoc/eldoc (info/info 'clojure.core 'map))))
+    (is (:eldoc (eldoc/eldoc (info/info 'clojure.core '.toString))))
+    (is (:eldoc (eldoc/eldoc (info/info 'clojure.core '.))))
+    (is (not (:eldoc (eldoc/eldoc (info/info 'clojure.core (gensym "non-existing"))))))))
 
 ;;;; eldoc datomic query
 (def testing-datomic-query '[:find ?x

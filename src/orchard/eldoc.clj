@@ -12,7 +12,7 @@
             [orchard.meta :as m]
             [orchard.spec :as spec]))
 
-(defn extract-arglists
+(defn- extract-arglists
   [info]
   (cond
     (:special-form info) (->> (:forms info)
@@ -26,30 +26,41 @@
                             (sort-by count))
     :else (:arglists info)))
 
-(defn format-arglists [raw-arglists]
+(defn- format-arglists [raw-arglists]
   (map #(mapv str %) raw-arglists))
 
-(defn extract-ns-or-class
+(defn- extract-ns-or-class
   [{:keys [ns class candidates] :as info}]
   (cond
     ns {:ns (str ns)}
     class {:class [(str class)]}
     candidates {:class (map key candidates)}))
 
-(defn extract-name-or-member
+(defn- extract-name-or-member
   [{:keys [name member candidates]}]
   (cond
     name {:name (str name)}
     member {:member (str member)}
     candidates {:member (->> candidates vals (map :member) first str)}))
 
-(defn extract-eldoc
+(defn- extract-eldoc
   [info]
   (if-let [arglists (seq (-> info extract-arglists format-arglists))]
     {:eldoc arglists :type "function"}
     {:type "variable"}))
 
 (defn eldoc
+  "Generate an eldoc from `info`.
+
+  The result is a map featuring:
+
+  * :ns or :class - depending on whether we're dealing with Clojure or Java symbol
+  * :name or :member - depending on whether we're dealing with Clojure or Java symbol
+  * :eldoc - a list of type signatures suitable to be displayed by Emacs's eldoc
+  * :type - the type of the symbol (e.g. function, variable, special-form)
+  * :docstring
+
+  See `orchard.info/info` for the structure of the `info`."
   [info]
   (merge (extract-ns-or-class info)
          (extract-name-or-member info)
@@ -57,6 +68,7 @@
          {:docstring (:doc info)}))
 
 (defn datomic-query
+  "Generate an eldoc string for a datomic query."
   [ns symbol]
   (let [ns (read-string ns)
         sym (read-string symbol)
