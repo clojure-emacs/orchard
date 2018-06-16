@@ -44,40 +44,23 @@
                              :where
                              [?x :person/name ?name]])
 
-;; TODO: Convert those to unit tests
-#_(deftest eldoc-datomic-query-test
-    (testing "eldoc of inline datomic query"
-      (let [response (session/message {:op "eldoc-datomic-query"
-                                       :symbol "'[:find ?x :in $ % ?person-id]"
-                                       :ns "user"})]
-        (is (= (:inputs response) '(["$" "%" "?person-id"])))))
+(deftest datomic-query-test
+  (testing "eldoc of inline datomic query"
+    (let [response (eldoc/datomic-query "user" "'[:find ?x :in $ % ?person-id]")]
+      (is (= (:inputs response) '(["$" "%" "?person-id"])))))
 
-    (testing "eldoc of inline datomic query as map"
-      (let [response (session/message {:op "eldoc-datomic-query"
-                                       :symbol "'{:find [?x] :in [$ % ?person-id]}"
-                                       :ns "user"})]
-        (is (= (:inputs response) '(["$" "%" "?person-id"])))))
+  (testing "eldoc of inline datomic query as map"
+    (let [response (eldoc/datomic-query "user" "'{:find [?x] :in [$ % ?person-id]}")]
+      (is (= (:inputs response) '(["$" "%" "?person-id"])))))
 
-    (testing "eldoc of datomic query defined as symbol"
-      (let [response (session/message {:op "eldoc-datomic-query"
-                                       :symbol "testing-datomic-query"
-                                       :ns "cider.nrepl.middleware.info-test"})]
-        (is (= (:inputs response) '(["$" "?name"])))))
+  (testing "eldoc of datomic query defined as symbol"
+    (let [response (eldoc/datomic-query "orchard.eldoc-test" "testing-datomic-query")]
+      (is (= (:inputs response) '(["$" "?name"])))))
 
-    (testing "eldoc of inline datomic query without :in"
-      (let [response (session/message {:op "eldoc-datomic-query"
-                                       :symbol "'[:find ?x]"
-                                       :ns "user"})]
-        (is (= (:inputs response) '(["$"])))))
+  (testing "eldoc of inline datomic query without :in"
+    (let [response (eldoc/datomic-query "user" "'[:find ?x]")]
+      (is (= (:inputs response) '(["$"])))))
 
-    (testing "eldoc of inline datomic query as map without :in"
-      (let [response (session/message {:op "eldoc-datomic-query"
-                                       :symbol "'{:find ?x}"
-                                       :ns "user"})]
-        (is (= (:inputs response) '(["$"])))))
-
-    (testing "eldoc of empty datomic query"
-      (let [response (session/message {:op "eldoc-datomic-query"
-                                       :symbol ""
-                                       :ns "user"})]
-        (is (= (:status response) #{"no-eldoc" "done"})))))
+  (testing "eldoc of inline datomic query as map without :in"
+    (let [response (eldoc/datomic-query "user" "'{:find ?x}")]
+      (is (= (:inputs response) '(["$"]))))))
