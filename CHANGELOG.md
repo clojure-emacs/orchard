@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+### 0.3.0 (2018-06-16)
+
 ### New features
 
 * Extracted info and eldoc functionality from `cider-nrepl` into `orchard.info` and `orchard.eldoc`.
