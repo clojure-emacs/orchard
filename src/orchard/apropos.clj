@@ -34,9 +34,9 @@
      vars)))
 
 (defn find-symbols
-  "Takes a map and returns a list of maps containg map, doc and type.
+  "Takes a map and returns a list of maps containing name, doc and type.
   `:var-query` See `vars`.
-  `:full-doc?` Causes the full doc to be returned instead of the abbreivated form.
+  `:full-doc?` Causes the full doc to be returned instead of the abbreviated form.
   `:ns` If provided, the results will be sorted to show this namespace first."
   [{:keys [ns full-doc? var-query]}]
   (let [var-doc*    (if full-doc? var-doc (partial var-doc 1))]
