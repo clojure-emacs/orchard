@@ -60,7 +60,7 @@
   [path]
   (when-let [res (io/resource path)]
     (let [access   (ModifierFilter. ModifierFilter/ALL_ACCESS)
-          context  (doto (Context.) (Messager/preRegister "cider-nrepl-javadoc"))
+          context  (doto (Context.) (Messager/preRegister "orchard-javadoc"))
           options  (doto (Options/instance context) (.put "ignore.symbol.file" "y"))
           compiler (JavadocTool/make0 context)
           enter    (JavadocEnter/instance0 context)
