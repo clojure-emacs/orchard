@@ -245,13 +245,13 @@
 (defn render-indexed-values
   ([inspector obj] (render-indexed-values inspector obj 0))
   ([inspector obj idx-starts-from]
-   (loop [ins inspector, [c & more] obj, idx idx-starts-from]
-     (if c
+   (loop [ins inspector, obj (seq obj), idx idx-starts-from]
+     (if obj
        (recur (-> ins
                   (render "  " (str idx) ". ")
-                  (render-value c)
+                  (render-value (first obj))
                   (render '(:newline)))
-              more (inc idx))
+              (next obj) (inc idx))
        ins))))
 
 (defn render-collection-paged

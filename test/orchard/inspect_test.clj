@@ -14,6 +14,8 @@
 
 (def push-result ["(\"Class\" \": \" (:value \"clojure.lang.PersistentArrayMap\" 0) (:newline) \"Contents: \" (:newline) \"  \" (:value \":b\" 1) \" = \" (:value \"1\" 2) (:newline) (:newline) \"  Path: :a\")"])
 
+(def inspect-result-with-nil ["(\"Class\" \": \" (:value \"clojure.lang.PersistentVector\" 0) (:newline) \"Contents: \" (:newline) \"  \" \"0\" \". \" (:value \"1\" 1) (:newline) \"  \" \"1\" \". \" (:value \"2\" 2) (:newline) \"  \" \"2\" \". \" (:value \"\" 3) (:newline) \"  \" \"3\" \". \" (:value \"3\" 4) (:newline))"])
+
 (def long-sequence (range 70))
 (def long-vector (vec (range 70)))
 (def long-map (zipmap (range 70) (range 70)))
@@ -230,6 +232,11 @@
       "{ :a { ( 0 1 2 3 4 ... ) 1, ... } }" {:a {(range 10) 1, 2 3, 4 5, 6 7, 8 9}}
       "( 1 2 3 )" (lazy-seq '(1 2 3))
       "#<MyTestType test1>" (MyTestType. "test1"))))
+
+(deftest inspect-coll-test
+  (testing "inspect :coll prints contents of the coll"
+    (is (= inspect-result-with-nil
+           (render (inspect/start (inspect/fresh) [1 2 nil 3]))))))
 
 (deftest inspect-path
   (testing "inspector keeps track of the path in the inspected structure"
