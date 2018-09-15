@@ -2,6 +2,7 @@
 [![Dependencies Status](https://versions.deps.co/clojure-emacs/orchard/status.svg)](https://versions.deps.co/clojure-emacs/orchard)
 [![Coverage](https://codecov.io/gh/clojure-emacs/orchard/branch/master/graph/badge.svg)](https://codecov.io/gh/clojure-emacs/orchard/)
 [![Clojars Project](https://img.shields.io/clojars/v/cider/orchard.svg)](https://clojars.org/cider/orchard)
+[![cljdoc badge](https://cljdoc.xyz/badge/cider/orcard)](https://cljdoc.xyz/d/cider/orchard/CURRENT)
 
 # orchard
 
@@ -38,8 +39,8 @@ and altered in each and every tool.
 
 ## API Documentation
 
-Documentation for the master branch as well as tagged releases will be
-generated [here](http://clojure-emacs.github.io/orchard/index.html).
+Documentation for the master branch as well as tagged releases are available
+[here](https://cljdoc.xyz/d/cider/orchard).
 
 ## Usage
 
