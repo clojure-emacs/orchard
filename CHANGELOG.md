@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+## 0.3.1 (2018-09-15)
+
 ### Bugs fixed
 
 * [#28](https://github.com/clojure-emacs/orchard/pull/28): Fix inspector dropping items after nil value.

@@ -48,7 +48,7 @@ generated [here](http://clojure-emacs.github.io/orchard/index.html).
 Just add `orchard` as a dependency and start hacking.
 
 ```clojure
-[cider/orchard "0.3.0"]
+[cider/orchard "0.3.1"]
 ```
 
 Right now `orchard` provides functionality like:
