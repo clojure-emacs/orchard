@@ -7,7 +7,8 @@
             [orchard.classpath :as cp]
             [clojure.string :as str]
             [orchard.misc :as misc])
-  (:import java.util.jar.JarFile))
+  (:import java.io.File
+           java.util.jar.JarFile))
 
 ;;; Namespace Loading
 
@@ -40,7 +41,7 @@
                          (str/lower-case (str %))
                          (str/lower-case project-root))
                        #(.startsWith (str %) project-root))]
-    (->> (filter (memfn isDirectory) (cp/classpath (class-loader)))
+    (->> (filter (memfn ^File isDirectory) (cp/classpath (class-loader)))
          (filter project-pred)
          (mapcat ns-find/find-namespaces-in-dir))))
 
@@ -106,11 +107,11 @@
     (map #(str "jar:file:" path-to-jar "!/" %) (ns-find/sources-in-jar jar))))
 
 (defn- all-clj-files-on-cp []
-  (let [dirs-on-cp (filter #(.isDirectory %) (cp/classpath))
-        jars-on-cp (map #(JarFile. %) (filter jar-file? (cp/classpath)))]
+  (let [dirs-on-cp (filter #(.isDirectory ^File %) (cp/classpath))
+        jars-on-cp (map #(JarFile. ^File %) (filter jar-file? (cp/classpath)))]
     (concat (->> dirs-on-cp
                  (mapcat ns-find/find-sources-in-dir)
-                 (map #(.getAbsolutePath %)))
+                 (map #(.getAbsolutePath ^File %)))
             (mapcat get-clojure-sources-in-jar jars-on-cp))))
 
 (defn ns-path
