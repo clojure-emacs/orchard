@@ -18,7 +18,7 @@
          ;; TODO: Check if that's really needed - after all we have a Boot-aware classloader
          boot-classpath (u/boot-fake-classpath)
          path (if boot-classpath
-                (map #(File. %) (str/split boot-classpath sep))
+                (map #(File. ^String %) (str/split boot-classpath sep))
                 ;; See https://dev.clojure.org/jira/browse/CLASSPATH-8
                 (or (seq (cp/classpath classloader))
                     ;; Java 9+
