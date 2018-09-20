@@ -93,7 +93,7 @@
 (defn down
   "Drill down to an indexed object referred to by the previously
    rendered value."
-  [inspector idx]
+  [inspector ^Integer idx]
   {:pre [(integer? idx)]}
   (let [{:keys [index path current-page page-size]} inspector
         new (get index idx)
