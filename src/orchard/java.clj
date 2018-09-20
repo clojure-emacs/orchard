@@ -6,7 +6,8 @@
             [clojure.reflect :as r]
             [clojure.string :as str]
             [dynapath.util :as dp])
-  (:import (clojure.lang IPersistentMap)
+  (:import (java.io File)
+           (clojure.lang IPersistentMap)
            (clojure.reflect Constructor Field JavaReflector Method)))
 
 ;;; ## Java Class/Member Info
@@ -49,7 +50,7 @@
 (defn jdk-resource-url
   "Returns url to file at PATH-SEGMENTS relative to `jdk-root`."
   [& path-segments]
-  (let [f (apply io/file jdk-root path-segments)]
+  (let [^File f (apply io/file jdk-root path-segments)]
     (when (.canRead f)
       (io/as-url f))))
 
