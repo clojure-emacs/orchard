@@ -74,7 +74,7 @@
   "Resolve a relative javadoc path to a URL and return as a map. Prefer javadoc
   resources on the classpath; then use online javadoc content for core API
   classes. If no source is available, return the relative path as is."
-  [path]
+  [^String path]
   {:javadoc
    (or (resource-full-path path)
        ;; [bug#308] `*remote-javadocs*` is outdated WRT Java
