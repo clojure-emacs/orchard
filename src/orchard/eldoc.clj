@@ -80,7 +80,7 @@
                  (or (:in query) "$")
                  ;; query as vector
                  (let [partitioned (partition-by keyword? query)
-                       index (.indexOf partitioned '(:in))]
+                       index (.indexOf ^clojure.lang.LazySeq partitioned '(:in))]
                    (if (= index -1)
                      "$"
                      (nth partitioned (+ 1 index)))))]
