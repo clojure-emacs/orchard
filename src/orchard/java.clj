@@ -143,6 +143,18 @@
         (resolve 'src/source-info))
     (constantly nil)))
 
+(defn- package
+  "An alternative to .getPackage, which works for classes defined with deftype and defrecord.
+  See https://dev.clojure.org/jira/browse/CLJ-1550 for details."
+  [^Class kls]
+  (if-let [package (some-> kls .getPackage .getName)]
+    package
+    ;; that workaround is needed only on Java 8
+    (let [kls (.getName kls)
+         idx (.lastIndexOf kls ".")]
+     (when (pos? idx)
+       (subs kls 0 idx)))))
+
 (defn class-info*
   "For the class symbol, return Java class and member info. Members are indexed
   first by name, and then by argument types to list all overloads."
@@ -154,9 +166,7 @@
                        (source-info class)
                        {:name       (-> c .getSimpleName symbol)
                         :class      (-> c .getName symbol)
-                        ;; Classes defined by deftype and defrecord don't have a package
-                        ;; this is probably a Clojure bug
-                        :package    (some-> c .getPackage .getName symbol)
+                        :package    (-> c package symbol)
                         :super      (-> c .getSuperclass typesym)
                         :interfaces (map typesym (.getInterfaces c))
                         :javadoc    (javadoc-url class)}))))

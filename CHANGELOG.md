@@ -2,6 +2,10 @@
 
 ## master (unreleased)
 
+### Bugs fixed
+
+* Figure out the package of classes defined with `deftype` and `defrecord` on Java 8.
+
 ## 0.3.1 (2018-09-15)
 
 ### Bugs fixed
