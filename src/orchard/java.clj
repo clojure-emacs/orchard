@@ -151,9 +151,9 @@
     package
     ;; that workaround is needed only on Java 8
     (let [kls (.getName kls)
-         idx (.lastIndexOf kls ".")]
-     (when (pos? idx)
-       (subs kls 0 idx)))))
+          idx (.lastIndexOf kls ".")]
+      (when (pos? idx)
+        (subs kls 0 idx)))))
 
 (defn class-info*
   "For the class symbol, return Java class and member info. Members are indexed
