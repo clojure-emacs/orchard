@@ -49,7 +49,7 @@ Documentation for the master branch as well as tagged releases are available
 Just add `orchard` as a dependency and start hacking.
 
 ```clojure
-[cider/orchard "0.3.1"]
+[cider/orchard "0.3.2"]
 ```
 
 Right now `orchard` provides functionality like:
