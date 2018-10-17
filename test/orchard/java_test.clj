@@ -66,6 +66,12 @@
         (is (every? map? (vals (:members c1))))
         (is (apply (every-pred :name :modifiers)
                    (mapcat vals (vals (:members c1))))))
+      (testing "doesn't throw on classes without dots in classname"
+        (let [reified (binding [*ns* (create-ns 'foo)]
+                        (clojure.core/eval
+                         '(clojure.core/reify Object)))
+              sym (symbol (.getName (class reified)))]
+          (is (class-info sym))))
       (testing "that doesn't exist"
         (is (nil? c3))))))
 
