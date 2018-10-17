@@ -10,7 +10,7 @@
 `:include-regexps` A list of regexps which the namespaces must match.
 `:exclude-regexps` A list of regexps which the namespaces must not match.
 
-Returns a list of namespaces as `find-ns` would return them on the host.</pre></div><div class="src-link"><a href="https://github.com/clojure-emacs/orchard/blob/master/src/orchard/query.clj#L6">view source</a></div></div><div class="public anchor" id="var-vars"><h3>vars</h3><div class="usage"><code>(vars {:keys [ns-query private? test? include-meta-key exclude-meta-key search search-property manipulate-vars], :as var-query})</code></div><div class="doc"><pre class="plaintext">Takes a map containing these keys:
+Returns a list of namespaces as `find-ns` would return them on the host.</pre></div><div class="src-link"><a href="https://github.com/clojure-emacs/orchard/blob/master/src/orchard/query.clj#L7">view source</a></div></div><div class="public anchor" id="var-vars"><h3>vars</h3><div class="usage"><code>(vars {:keys [ns-query private? test? include-meta-key exclude-meta-key search search-property manipulate-vars], :as var-query})</code></div><div class="doc"><pre class="plaintext">Takes a map containing these keys:
 `:ns-query` A ns-query as `namespaces` takes, used to filter namespaces which contain vars.
 `:private?` Include private vars in the results.
 `:test?` Filter to vars which are also tests.
@@ -20,4 +20,4 @@ Returns a list of namespaces as `find-ns` would return them on the host.</pre></
 `:search-property` Either :doc or :name, defaults to `:name`.
 `:manipulate-vars` A callback run with the list of namespaces return by namespaces and the vars found within. Can be used to manipulate the list of vars before they are filtered.
 
-Returns a list of vars, as the type that `var` would return on the host.</pre></div><div class="src-link"><a href="https://github.com/clojure-emacs/orchard/blob/master/src/orchard/query.clj#L42">view source</a></div></div></div></body></html>
+Returns a list of vars, as the type that `var` would return on the host.</pre></div><div class="src-link"><a href="https://github.com/clojure-emacs/orchard/blob/master/src/orchard/query.clj#L43">view source</a></div></div></div></body></html>
