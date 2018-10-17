@@ -1,9 +1,9 @@
 (ns orchard.java-test
-  (:require [orchard.java :refer :all]
-            [orchard.misc :refer [java-api-version]]
-            [clojure.string :as str]
-            [clojure.test :refer :all]
-            [clojure.java.io :as io]))
+  (:require
+   [clojure.java.io :as io]
+   [clojure.test :refer :all]
+   [orchard.java :refer :all]
+   [orchard.misc :refer [java-api-version]]))
 
 (deftest source-info-test
   (let [resolve-src (comp (fnil io/resource "-none-") :file source-info)]

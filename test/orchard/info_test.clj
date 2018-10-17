@@ -1,8 +1,9 @@
 (ns orchard.info-test
-  (:require [clojure.test :refer :all]
-            [clojure.repl :as repl]
-            [orchard.info :as info]
-            [orchard.misc :as misc]))
+  (:require
+   [clojure.test :refer :all]
+   [clojure.repl :as repl]
+   [orchard.info :as info]
+   [orchard.misc :as misc]))
 
 (deftest see-also-test
   (is (not-empty (info/see-also 'clojure.core 'map))))

@@ -1,9 +1,10 @@
 (ns orchard.apropos-test
-  (:require [orchard.apropos :refer :all]
-            [orchard.meta :refer [var-name var-doc]]
-            [clojure.test :refer :all]
-            [clojure.repl :as repl]
-            [clojure.string :as str]))
+  (:require
+   [clojure.repl :as repl]
+   [clojure.string :as str]
+   [clojure.test :refer :all]
+   [orchard.apropos :refer :all]
+   [orchard.meta :refer [var-name var-doc]]))
 
 (def ^{:doc "Test1. Test2. Test3."} public-var [1 2 3])
 

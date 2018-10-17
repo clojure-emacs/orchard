@@ -1,8 +1,9 @@
 (ns orchard.meta-test
-  (:require [orchard.meta :as m]
-            [clojure.java.classpath]
-            [clojure.repl :as repl]
-            [clojure.test :refer :all]))
+  (:require
+   [orchard.meta :as m]
+   [clojure.java.classpath]
+   [clojure.repl :as repl]
+   [clojure.test :refer :all]))
 
 (deftest merge-meta-test
   (testing "Always safe and preserves object"

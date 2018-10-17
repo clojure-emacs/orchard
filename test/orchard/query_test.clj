@@ -1,7 +1,8 @@
 (ns orchard.query-test
-  (:require [clojure.set :as set]
-            [clojure.test :refer :all]
-            [orchard.query :refer :all]))
+  (:require
+   [clojure.set :as set]
+   [clojure.test :refer :all]
+   [orchard.query :refer :all]))
 
 (def ^:private a-private)
 (def ^:abc a-metad)

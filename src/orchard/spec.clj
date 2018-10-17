@@ -1,7 +1,8 @@
 (ns orchard.spec
-  (:require [clojure.walk :as walk]
-            [clojure.pprint :as pp]
-            [clojure.string :as str]))
+  (:require
+   [clojure.pprint :as pp]
+   [clojure.string :as str]
+   [clojure.walk :as walk]))
 
 (defmacro spec [fname & args]
   `(when-let [f# (or (resolve (symbol "clojure.spec.alpha" ~fname))

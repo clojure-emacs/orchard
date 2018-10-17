@@ -1,16 +1,7 @@
 (ns orchard.eldoc
   "Some helper functions to support eldoc-like functionality
   in editors."
-  {:author "Bozhidar Batsov"}
-  (:require [clojure.edn :as edn]
-            [clojure.string :as str]
-            [clojure.java.io :as io]
-            [clojure.java.javadoc :as javadoc]
-            [orchard.classloader :refer [class-loader]]
-            [orchard.java :as java]
-            [orchard.misc :as u]
-            [orchard.meta :as m]
-            [orchard.spec :as spec]))
+  {:author "Bozhidar Batsov"})
 
 (defn- extract-arglists
   [info]

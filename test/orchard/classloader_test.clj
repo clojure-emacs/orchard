@@ -1,7 +1,8 @@
 (ns orchard.classloader-test
-  (:require [orchard.classloader :as cl]
-            [orchard.java :as java]
-            [clojure.test :refer :all]))
+  (:require
+   [clojure.test :refer :all]
+   [orchard.classloader :as cl]
+   [orchard.java :as java]))
 
 (deftest boot-resource-path-test
   (let [tmp-dir-name (System/getProperty "java.io.tmpdir")]

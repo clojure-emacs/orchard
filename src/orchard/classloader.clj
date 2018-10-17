@@ -1,7 +1,8 @@
 (ns orchard.classloader
-  (:require [orchard.java :as java]
-            [orchard.misc :refer [boot-fake-classpath boot-project?]]
-            [clojure.string :as str]))
+  (:require
+   [clojure.string :as str]
+   [orchard.java :as java]
+   [orchard.misc :refer [boot-fake-classpath boot-project?]]))
 
 (defn boot-class-loader
   "Creates a class-loader that knows original source files paths in Boot project."

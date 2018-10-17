@@ -1,5 +1,6 @@
 (ns orchard.misc
-  (:require [clojure.string :as str]))
+  (:require
+   [clojure.string :as str]))
 
 (def ^:const windows-prefix
   "Windows")

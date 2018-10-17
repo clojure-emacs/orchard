@@ -1,7 +1,8 @@
 (ns orchard.query
   "Query for namespaces and vars"
-  (:require [orchard.meta :as m]
-            [orchard.namespace :as ns]))
+  (:require
+   [orchard.meta :as m]
+   [orchard.namespace :as ns]))
 
 (defn namespaces
   "Takes a map containing these keys:

@@ -1,9 +1,11 @@
 (ns orchard.apropos
   "Search symbols and docs matching a regular expression"
   {:author "Jeff Valk"}
-  (:require [orchard.meta :refer [var-name var-doc] :as m]
-            [orchard.query :as query])
-  (:import [clojure.lang MultiFn]))
+  (:require
+   [orchard.meta :refer [var-name var-doc] :as m]
+   [orchard.query :as query])
+  (:import
+   [clojure.lang MultiFn]))
 
 ;;; ## Overview
 ;;

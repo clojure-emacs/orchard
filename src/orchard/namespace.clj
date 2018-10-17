@@ -1,14 +1,16 @@
 (ns orchard.namespace
   "Utilities for resolving and loading namespaces"
-  (:require [clojure.java.io :as io]
-            [clojure.tools.namespace.file :as ns-file]
-            [clojure.tools.namespace.find :as ns-find]
-            [orchard.classloader :refer [class-loader]]
-            [orchard.classpath :as cp]
-            [clojure.string :as str]
-            [orchard.misc :as misc])
-  (:import java.io.File
-           java.util.jar.JarFile))
+  (:require
+   [clojure.java.io :as io]
+   [clojure.string :as str]
+   [clojure.tools.namespace.file :as ns-file]
+   [clojure.tools.namespace.find :as ns-find]
+   [orchard.classloader :refer [class-loader]]
+   [orchard.classpath :as cp]
+   [orchard.misc :as misc])
+  (:import
+   java.io.File
+   java.util.jar.JarFile))
 
 ;;; Namespace Loading
 

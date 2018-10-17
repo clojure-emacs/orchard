@@ -8,9 +8,11 @@
   was split into two libraries and the code ended up here.
 
   Pretty wild, right?"
-  (:require [clojure.string :as s])
-  (:import (java.lang.reflect Field)
-           clojure.lang.Seqable))
+  (:require
+   [clojure.string :as s])
+  (:import
+   (java.lang.reflect Field)
+   clojure.lang.Seqable))
 
 ;;
 ;; Navigating Inspector State

@@ -1,14 +1,16 @@
 (ns orchard.java
   "Info for Java classes and members"
   {:author "Jeff Valk"}
-  (:require [orchard.misc :as util]
-            [clojure.java.io :as io]
-            [clojure.reflect :as r]
-            [clojure.string :as str]
-            [dynapath.util :as dp])
-  (:import (java.io File)
-           (clojure.lang IPersistentMap)
-           (clojure.reflect Constructor Field JavaReflector Method)))
+  (:require
+   [clojure.java.io :as io]
+   [clojure.reflect :as r]
+   [clojure.string :as str]
+   [dynapath.util :as dp]
+   [orchard.misc :as util])
+  (:import
+   (clojure.lang IPersistentMap)
+   (clojure.reflect Constructor Field JavaReflector Method)
+   (java.io File)))
 
 ;;; ## Java Class/Member Info
 ;;

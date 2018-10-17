@@ -1,6 +1,7 @@
 (ns orchard.spec-test
-  (:require [orchard.spec :as spec]
-            [clojure.test :refer :all]))
+  (:require
+   [clojure.test :refer :all]
+   [orchard.spec :as spec]))
 
 (deftest normalize-spec-form-test
   (testing "All fn* subforms should be normalized"

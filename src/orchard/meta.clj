@@ -1,14 +1,15 @@
 (ns orchard.meta
   "Utility functions for extracting and manipulating metadata."
-  (:require [orchard.misc :as u]
-            [orchard.namespace :as ns]
-            [orchard.spec :as spec]
-            [clojure.java.io :as io]
-            [clojure.pprint :as pprint]
-            [clojure.repl :as repl]
-            [clojure.string :as str]
-            [clojure.walk :as walk])
-  (:import [clojure.lang LineNumberingPushbackReader]))
+  (:require
+   [clojure.java.io :as io]
+   [clojure.pprint :as pprint]
+   [clojure.repl :as repl]
+   [clojure.string :as str]
+   [clojure.walk :as walk]
+   [orchard.namespace :as ns]
+   [orchard.spec :as spec])
+  (:import
+   [clojure.lang LineNumberingPushbackReader]))
 
 ;;; ## Extractors
 

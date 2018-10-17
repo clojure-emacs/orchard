@@ -1,20 +1,22 @@
 (ns orchard.java.parser
   "Source and docstring info for Java classes and members"
   {:author "Jeff Valk"}
-  (:require [clojure.java.io :as io]
-            [clojure.string :as str])
-  (:import (com.sun.javadoc ClassDoc ConstructorDoc Doc FieldDoc MethodDoc
-                            Parameter Tag Type)
-           (com.sun.source.tree ClassTree)
-           (com.sun.tools.javac.util Abort Context List Options)
-           (com.sun.tools.javadoc DocEnv JavadocEnter JavadocTool Messager
-                                  ModifierFilter RootDocImpl)
-           (java.io StringReader)
-           (java.net URI)
-           (java.util Locale)
-           (javax.swing.text.html HTML$Tag HTMLEditorKit$ParserCallback)
-           (javax.swing.text.html.parser ParserDelegator)
-           (javax.tools JavaFileObject$Kind SimpleJavaFileObject)))
+  (:require
+   [clojure.java.io :as io]
+   [clojure.string :as str])
+  (:import
+   (com.sun.javadoc ClassDoc ConstructorDoc Doc FieldDoc MethodDoc
+                    Parameter Tag Type)
+   (com.sun.source.tree ClassTree)
+   (com.sun.tools.javac.util Abort Context List Options)
+   (com.sun.tools.javadoc DocEnv JavadocEnter JavadocTool Messager
+                          ModifierFilter RootDocImpl)
+   (java.io StringReader)
+   (java.net URI)
+   (java.util Locale)
+   (javax.swing.text.html HTML$Tag HTMLEditorKit$ParserCallback)
+   (javax.swing.text.html.parser ParserDelegator)
+   (javax.tools JavaFileObject$Kind SimpleJavaFileObject)))
 
 ;;; ## Java Source Analysis
 ;;

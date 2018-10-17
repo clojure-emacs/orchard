@@ -1,6 +1,7 @@
 (ns orchard.inspect-test
-  (:require [orchard.inspect :as inspect]
-            [clojure.test :refer :all]))
+  (:require
+   [clojure.test :refer :all]
+   [orchard.inspect :as inspect]))
 
 (def nil-result ["(\"nil\" (:newline))"])
 

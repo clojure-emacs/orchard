@@ -1,13 +1,12 @@
 (ns orchard.info
-  (:require [clojure.edn :as edn]
-            [clojure.string :as str]
-            [clojure.java.io :as io]
-            [clojure.java.javadoc :as javadoc]
-            [orchard.classloader :refer [class-loader]]
-            [orchard.java :as java]
-            [orchard.misc :as u]
-            [orchard.meta :as m]
-            [orchard.spec :as spec]))
+  (:require
+   [clojure.edn :as edn]
+   [clojure.java.io :as io]
+   [clojure.java.javadoc :as javadoc]
+   [orchard.classloader :refer [class-loader]]
+   [orchard.java :as java]
+   [orchard.meta :as m]
+   [orchard.misc :as u]))
 
 (def see-also-data
   (edn/read-string (slurp (io/resource "see-also.edn"))))

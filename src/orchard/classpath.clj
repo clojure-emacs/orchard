@@ -1,11 +1,13 @@
 (ns orchard.classpath
   "A simple wrapper around `clojure.java.classpath` that is Boot-aware."
-  (:require [clojure.java.classpath :as cp]
-            [clojure.string :as str]
-            [orchard.classloader :as cl]
-            [orchard.misc :as u])
-  (:import java.io.File
-           java.util.jar.JarFile))
+  (:require
+   [clojure.java.classpath :as cp]
+   [clojure.string :as str]
+   [orchard.classloader :as cl]
+   [orchard.misc :as u])
+  (:import
+   java.io.File
+   java.util.jar.JarFile))
 
 (defn classpath
   "Return a sequence of File objects of elements on the classpath.

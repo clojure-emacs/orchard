@@ -1,14 +1,16 @@
 (ns orchard.classpath-test
-  (:require [clojure.java.io :as io]
-            [clojure.set :as set]
-            [clojure.string :as str]
-            [clojure.test :refer :all]
-            [orchard.classpath :as sut])
-  (:import java.io.File
-           java.nio.file.attribute.FileAttribute
-           java.nio.file.Files
-           java.util.jar.JarOutputStream
-           java.util.zip.ZipEntry))
+  (:require
+   [clojure.java.io :as io]
+   [clojure.set :as set]
+   [clojure.string :as str]
+   [clojure.test :refer :all]
+   [orchard.classpath :as sut])
+  (:import
+   java.io.File
+   java.nio.file.attribute.FileAttribute
+   java.nio.file.Files
+   java.util.jar.JarOutputStream
+   java.util.zip.ZipEntry))
 
 (deftest classpath-boot-test
   (let [fake-path (map io/file [(System/getProperty "java.io.tmpdir")])]

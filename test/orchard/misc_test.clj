@@ -1,7 +1,8 @@
 (ns orchard.misc-test
-  (:require [clojure.string :as str]
-            [clojure.test :refer :all]
-            [orchard.misc :as misc]))
+  (:require
+   [clojure.string :as str]
+   [clojure.test :refer :all]
+   [orchard.misc :as misc]))
 
 (deftest boot-fake-classpath-test
   (let [fake-paths [(System/getProperty "java.io.tmpdir")]

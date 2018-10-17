@@ -1,8 +1,9 @@
 (ns orchard.namespace-test
-  (:require [clojure.test :refer :all]
-            [orchard.namespace :as n]
-            [orchard.misc :as misc]
-            [clojure.string :as str]))
+  (:require
+   [clojure.test :refer :all]
+   [clojure.string :as str]
+   [orchard.namespace :as n]
+   [orchard.misc :as misc]))
 
 ;; Temporarily exclude this test under Java 9
 ;; See http://bit.ly/2DtfMMl for details

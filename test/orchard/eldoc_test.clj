@@ -1,7 +1,8 @@
 (ns orchard.eldoc-test
-  (:require [clojure.test :refer :all]
-            [orchard.eldoc :as eldoc]
-            [orchard.info :as info]))
+  (:require
+   [clojure.test :refer :all]
+   [orchard.eldoc :as eldoc]
+   [orchard.info :as info]))
 
 ;; test data
 (def test-eldoc-info {:arglists '([x] [x y])})
