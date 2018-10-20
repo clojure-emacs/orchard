@@ -168,7 +168,7 @@
                        (source-info class)
                        {:name       (-> c .getSimpleName symbol)
                         :class      (-> c .getName symbol)
-                        :package    (-> c package symbol)
+                        :package    (some-> c package symbol)
                         :super      (-> c .getSuperclass typesym)
                         :interfaces (map typesym (.getInterfaces c))
                         :javadoc    (javadoc-url class)}))))
