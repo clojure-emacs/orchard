@@ -2,6 +2,12 @@
 
 ## master (unreleased)
 
+## 0.3.3 (2018-10-20)
+
+### Bugs fixed
+
+* [#33](https://github.com/clojure-emacs/orchard/pull/33): Address a NPE in `class-info` when dealing with classes created via `reify`.
+
 ## 0.3.2 (2018-10-14)
 
 ### Bugs fixed
