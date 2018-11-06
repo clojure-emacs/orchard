@@ -139,16 +139,20 @@
 (defn- atom? [val]
   (some #(% val) [number? string? symbol? keyword?]))
 
-(defn safe-pr-seq [value fmt]
-  (->> (map inspect-value value)
-       (s/join " ")
-       (format fmt)))
+(defn safe-pr-seq
+  ([value fmt]
+   (safe-pr-seq value " " fmt))
+  ([value sep fmt]
+   (->> (map inspect-value value)
+        (s/join sep)
+        (format fmt))))
 
 (defn- short? [coll]
   (<= (count coll) 5))
 
 (defn value-types [value]
   (cond
+    (nil? value)                                   nil
     (atom? value)                                  :atom
     (and (instance? Seqable value) (empty? value)) :seq-empty
     (and (map? value) (short? value))              :map
@@ -164,6 +168,8 @@
     (instance? List value)                         :list-long
     (and (instance? Map value) (short? value))     :map
     (instance? Map value)                          :map-long
+    (and (.isArray (class value)) (short? value))  :array
+    (.isArray (class value))                       :array-long
     :else (or (:inspector-tag (meta value))
               (type value))))
 
@@ -210,6 +216,13 @@
 (defmethod inspect-value :set-long [value]
   (safe-pr-seq (take 5 value) "#{ %s ... }"))
 
+(defmethod inspect-value :array [value]
+  (let [ct (.getName (or (.getComponentType (class value)) Object))]
+    (safe-pr-seq value ", " (str ct "[] { %s }"))))
+
+(defmethod inspect-value :array-long [value]
+  (let [ct (.getName (or (.getComponentType (class value)) Object))]
+    (safe-pr-seq (take 5 value) ", " (str ct "[] { %s ... }"))))
 (defmethod inspect-value java.lang.Class [value]
   (pr-str value))
 
