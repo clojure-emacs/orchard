@@ -23,6 +23,7 @@
 (def long-vector (vec (range 70)))
 (def long-map (zipmap (range 70) (range 70)))
 (def long-nested-coll (vec (map #(range (* % 10) (+ (* % 10) 80)) (range 200))))
+(def truncated-string (str "\"" (apply str (repeat 147 "a")) "..."))
 
 (defn inspect
   [value]
@@ -224,6 +225,7 @@
     (are [result form] (= result (inspect/inspect-value form))
       "1" 1
       "\"2\"" "2"
+      truncated-string (apply str (repeat 300 \a))
       ":foo" :foo
       ":abc/def" :abc/def
       "( :a :b :c )" '(:a :b :c)
