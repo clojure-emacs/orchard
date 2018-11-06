@@ -140,8 +140,7 @@
 
 (defn safe-pr-seq [value fmt]
   (->> (map inspect-value value)
-       (interpose " ")
-       s/join
+       (s/join " ")
        (format fmt)))
 
 (defn value-types [value]
@@ -172,8 +171,7 @@
   (->> value
        (map (fn [[k v]]
               (str (inspect-value k) " " (inspect-value v))))
-       (interpose ", ")
-       s/join
+       (s/join ", ")
        (format "{ %s }")))
 
 (defmethod inspect-value :map-long [value]
