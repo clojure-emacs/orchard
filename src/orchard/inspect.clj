@@ -12,6 +12,7 @@
    [clojure.string :as s])
   (:import
    (java.lang.reflect Field)
+   (java.util List Map)
    clojure.lang.Seqable))
 
 ;;
@@ -143,19 +144,26 @@
        (s/join " ")
        (format fmt)))
 
+(defn- short? [coll]
+  (<= (count coll) 5))
+
 (defn value-types [value]
   (cond
-    (atom? value) :atom
+    (atom? value)                                  :atom
     (and (instance? Seqable value) (empty? value)) :seq-empty
-    (and (map? value) (< (count value) 5))         :map
+    (and (map? value) (short? value))              :map
     (map? value)                                   :map-long
-    (and (vector? value) (< (count value) 5))      :vector
+    (and (vector? value) (short? value))           :vector
     (vector? value)                                :vector-long
     (and (seq? value) (not (counted? value)))      :lazy-seq
-    (and (seq? value) (< (count value) 5))         :list
+    (and (seq? value) (short? value))              :list
     (seq? value)                                   :list-long
-    (and (set? value) (< (count value) 5))         :set
+    (and (set? value) (short? value))              :set
     (set? value)                                   :set-long
+    (and (instance? List value) (short? value))    :list
+    (instance? List value)                         :list-long
+    (and (instance? Map value) (short? value))     :map
+    (instance? Map value)                          :map-long
     :else (or (:inspector-tag (meta value))
               (type value))))
 
@@ -281,7 +289,7 @@
             (render '(:newline)))
         ins)
 
-      (if (map? obj)
+      (if (or (map? obj) (instance? Map obj))
         (render-map-values ins chunk-to-display)
         (render-indexed-values ins chunk-to-display start-idx))
 
@@ -319,6 +327,8 @@
     (instance? Class obj) :class
     (instance? clojure.lang.Namespace obj) :namespace
     (instance? clojure.lang.ARef obj) :aref
+    (instance? List obj) :coll
+    (instance? Map obj) :coll
     (.isArray (class obj)) :array
     :default (or (:inspector-tag (meta obj))
                  (type obj))))

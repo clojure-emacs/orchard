@@ -17,6 +17,8 @@
 
 (def inspect-result-with-nil ["(\"Class\" \": \" (:value \"clojure.lang.PersistentVector\" 0) (:newline) \"Contents: \" (:newline) \"  \" \"0\" \". \" (:value \"1\" 1) (:newline) \"  \" \"1\" \". \" (:value \"2\" 2) (:newline) \"  \" \"2\" \". \" (:value \"\" 3) (:newline) \"  \" \"3\" \". \" (:value \"3\" 4) (:newline))"])
 
+(def java-hashmap-inspect-result ["(\"Class\" \": \" (:value \"java.util.HashMap\" 0) (:newline) \"Contents: \" (:newline) \"  \" (:value \":b\" 1) \" = \" (:value \"2\" 2) (:newline) \"  \" (:value \":c\" 3) \" = \" (:value \"3\" 4) (:newline) \"  \" (:value \":a\" 5) \" = \" (:value \"1\" 6) (:newline))"])
+
 (def long-sequence (range 70))
 (def long-vector (vec (range 70)))
 (def long-map (zipmap (range 70) (range 70)))
@@ -230,14 +232,23 @@
       "#{ :a }" #{:a}
       "( 1 1 1 1 1 ... )" (repeat 1)
       "[ ( 1 1 1 1 1 ... ) ]" [(repeat 1)]
-      "{ :a { ( 0 1 2 3 4 ... ) 1, ... } }" {:a {(range 10) 1, 2 3, 4 5, 6 7, 8 9}}
+      "{ :a { ( 0 1 2 3 4 ... ) 1, ... } }" {:a {(range 10) 1, 2 3, 4 5, 6 7, 8 9, 10 11}}
       "( 1 2 3 )" (lazy-seq '(1 2 3))
+      "( 1 1 1 1 1 ... )" (java.util.ArrayList. (repeat 100 1))
+      "( 1 2 3 )" (java.util.ArrayList. [1 2 3])
+      "{ :a 1, :b 2 }" (java.util.HashMap. {:a 1 :b 2})
       "#<MyTestType test1>" (MyTestType. "test1"))))
 
 (deftest inspect-coll-test
   (testing "inspect :coll prints contents of the coll"
     (is (= inspect-result-with-nil
            (render (inspect/start (inspect/fresh) [1 2 nil 3]))))))
+
+(deftest inspect-java-hashmap-test
+  (testing "inspecting java.util.Map descendendants prints a key-value coll"
+    (is (= java-hashmap-inspect-result
+           (render (inspect/start (inspect/fresh)
+                                  (java.util.HashMap. {:a 1, :b 2, :c 3})))))))
 
 (deftest inspect-path
   (testing "inspector keeps track of the path in the inspected structure"
