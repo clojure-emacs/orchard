@@ -237,6 +237,8 @@
       "( 1 1 1 1 1 ... )" (java.util.ArrayList. (repeat 100 1))
       "( 1 2 3 )" (java.util.ArrayList. [1 2 3])
       "{ :a 1, :b 2 }" (java.util.HashMap. {:a 1 :b 2})
+      "long[] { 1, 2, 3, 4 }" (long-array [1 2 3 4])
+      "java.lang.Long[] { 0, 1, 2, 3, 4 ... }" (into-array Long (range 10))
       "#<MyTestType test1>" (MyTestType. "test1"))))
 
 (deftest inspect-coll-test
