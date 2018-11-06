@@ -150,6 +150,15 @@
 (defn- short? [coll]
   (<= (count coll) 5))
 
+(def ^:private truncate-max-length 150)
+
+(defn- truncate-string [s]
+  (when s
+    (let [len (count s)]
+      (if (> len truncate-max-length)
+        (str (subs s 0 (- truncate-max-length 2)) "...")
+        s))))
+
 (defn value-types [value]
   (cond
     (nil? value)                                   nil
@@ -176,7 +185,7 @@
 (defmulti inspect-value #'value-types)
 
 (defmethod inspect-value :atom [value]
-  (pr-str value))
+  (truncate-string (pr-str value)))
 
 (defmethod inspect-value :seq-empty [value]
   (pr-str value))
@@ -227,7 +236,7 @@
   (pr-str value))
 
 (defmethod inspect-value :default [value]
-  (str value))
+  (truncate-string (str value)))
 
 (defn render-onto [inspector coll]
   (update-in inspector [:rendered] concat coll))
