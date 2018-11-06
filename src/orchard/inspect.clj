@@ -479,5 +479,7 @@
   (print x))
 
 (defn inspect-print [x]
-  (doseq [component (:rendered (inspect-render (fresh) x))]
-    (inspect-print-component component)))
+  (print
+   (with-out-str
+     (doseq [component (:rendered (inspect-render (assoc (fresh) :display-fields true) x))]
+       (inspect-print-component component)))))
