@@ -1,7 +1,7 @@
 (ns orchard.misc-test
   (:require
    [clojure.string :as str]
-   [clojure.test :refer :all]
+   [clojure.test :as test :refer [deftest is testing]]
    [orchard.misc :as misc]))
 
 (deftest as-sym-test
@@ -31,3 +31,24 @@
          '{(0) 2, (0 1 2) 4, (0 1 2 3 4) 6}))
   (is (= (misc/update-keys str {:a :b :c :d :e :f})
          {":a" :b, ":c" :d, ":e" :f})))
+
+(deftest macros-suffix-add-remove
+  (testing "add-ns-macros"
+    (is (nil? (misc/add-ns-macros nil)))
+    (is (= 'mount.tools.macro$macros (misc/add-ns-macros 'mount.tools.macro))))
+
+  (testing "remove-macros"
+    (is (nil? (misc/remove-macros nil)) "it should return nil if input is nil")
+    (is (= 'mount.tools.macro (misc/remove-macros 'mount.tools.macro)) "it should not change the input if no $macros")
+    (is (= 'cljs.core.async/go (misc/remove-macros 'cljs.core.async$macros/go)) "it should remove $macros from a namespaced var")
+    (is (= 'mount.tools.macro (misc/remove-macros 'mount.tools.macro$macros)) "it should remove $macros from a namespace")))
+
+(deftest name-sym
+  (is (nil? (misc/name-sym nil)))
+  (is (= 'unqualified (misc/name-sym 'unqualified)))
+  (is (= 'sym (misc/name-sym 'qualified/sym))))
+
+(deftest namespace-sym
+  (is (nil? (misc/namespace-sym nil)))
+  (is (= 'unqualified (misc/namespace-sym 'unqualified)))
+  (is (= 'qualified (misc/namespace-sym 'qualified/sym))))

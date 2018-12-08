@@ -4,7 +4,8 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :scm {:name "git" :url "https://github.com/clojure-emacs/orchard"}
-  :dependencies [[org.tcrawley/dynapath "1.0.0"]]
+  :dependencies [[org.tcrawley/dynapath "1.0.0"]
+                 [org.clojure/clojurescript "1.10.520"]]
   :exclusions [org.clojure/clojure] ; see versions matrix below
 
   :aliases {"bump-version" ["change" "version" "leiningen.release/bump-version"]}
@@ -37,6 +38,16 @@
                                      [org.clojure/clojure "1.11.0-master-SNAPSHOT" :classifier "sources"]]}
 
              :sysutils {:plugins [[lein-sysutils "0.2.0"]]}
+
+             :test {:resource-paths ["test-resources"]}
+
+             ;; DEV tools
+             :dev {:dependencies [[pjstadig/humane-test-output "0.9.0"]]
+                   :resource-paths ["test-resources"]
+                   :plugins [[com.jakemccrary/lein-test-refresh "0.23.0"]]
+                   :injections [(require 'pjstadig.humane-test-output)
+                                (pjstadig.humane-test-output/activate!)]
+                   :test-refresh {:changes-only true}}
 
              ;; CI tools
              :cloverage {:plugins [[lein-cloverage "1.0.11-SNAPSHOT"]]}
