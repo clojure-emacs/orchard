@@ -1,4 +1,4 @@
-.PHONY: test docs eastwood cljfmt cloverage release deploy clean
+.PHONY: test test-watch docs eastwood cljfmt cloverage release deploy clean
 
 VERSION ?= 1.10
 
@@ -9,14 +9,19 @@ JAVA_VERSION := $(shell lein with-profile +sysutils \
                         sysutils :java-version-simple | cut -d " " -f 2)
 TEST_SELECTOR := :java$(JAVA_VERSION)
 
+TEST_PROFILES := +test
+
 test:
-	lein with-profile +$(VERSION) test $(TEST_SELECTOR)
+	lein with-profile +$(VERSION),$(TEST_PROFILES) test $(TEST_SELECTOR)
+
+test-watch:
+	lein with-profile +$(VERSION),$(TEST_PROFILES) test-refresh $(TEST_SELECTOR)
 
 # Eastwood can't handle orchard.java.legacy-parser at the moment, because
 # tools.jar isn't in the classpath when Eastwood runs.
 
 eastwood:
-	lein with-profile +$(VERSION),+eastwood eastwood \
+	lein with-profile +$(VERSION),+eastwood,$(TEST_PROFILES) eastwood \
 	     "{:exclude-namespaces [orchard.java.legacy-parser]}"
 
 cljfmt:
@@ -28,7 +33,7 @@ cljfmt:
 # exact. See issue cider-nrepl/#457 for background.
 
 cloverage:
-	lein with-profile +$(VERSION),+cloverage cloverage --codecov \
+	lein with-profile +$(VERSION),+cloverage cloverage,$(TEST_PROFILES) --codecov \
 	     -e "orchard.java.legacy-parser"
 
 # When releasing, the BUMP variable controls which field in the

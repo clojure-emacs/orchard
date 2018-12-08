@@ -3,11 +3,13 @@
   (:require
    [clojure.java.io :as io]
    [clojure.pprint :as pprint]
-   [clojure.repl :as repl]
+   [clojure.repl]
+   [cljs.repl]
    [clojure.string :as str]
    [clojure.walk :as walk]
    [orchard.namespace :as ns]
-   [orchard.spec :as spec])
+   [orchard.spec :as spec]
+   [orchard.cljs.meta :as cljs-meta])
   (:import
    [clojure.lang LineNumberingPushbackReader]))
 
@@ -17,11 +19,11 @@
   "Format the spec description to display each predicate on a new line."
   [description]
   (if (seq? description)
-    (->> description
-         (map #(with-out-str (pprint/pprint %)))
-         str/join
-         str/trim-newline
-         (format "(%s)"))
+    (str "(" (->> description
+                  (map #(with-out-str (pprint/pprint %)))
+                  str/join
+                  str/trim-newline)
+         ")")
     (->>  description
           pprint/pprint
           with-out-str
@@ -82,6 +84,7 @@
 
 (defn resolve-var
   [ns sym]
+  {:pre [(symbol? ns) (symbol? sym)]}
   (if-let [ns (find-ns ns)]
     (try (ns-resolve ns sym)
          ;; Impl might try to resolve it as a class, which may fail
@@ -93,7 +96,8 @@
 
 (defn resolve-aliases
   [ns]
-  (if-let [ns (find-ns ns)]
+  {:pre [(symbol? ns)]}
+  (when-let [ns (find-ns ns)]
     (ns-aliases ns)))
 
 ;; Even if things like catch or finally aren't clojure special
@@ -121,7 +125,8 @@
   (let [orig-sym sym
         sym (get special-sub-symbs sym sym)
         compiler-special? (special-symbol? orig-sym)]
-    (when-let [m (and compiler-special? (#'repl/special-doc sym))]
+    (when-let [m (and compiler-special? (or (#'clojure.repl/special-doc sym)
+                                            (#'cljs.repl/special-doc sym)))]
       (-> m
           (assoc :name orig-sym)
           maybe-add-url))))
@@ -130,6 +135,7 @@
   [:ns :name :doc :file :arglists :forms :macro :special-form
    :protocol :line :column :static :added :deprecated :resource])
 
+;; TODO split up responsability of finding meta and normalizing the meta map
 (defn var-meta
   "Return a map of metadata for var v.
   If whitelist is missing use var-meta-whitelist."
@@ -139,12 +145,15 @@
      (let [meta-map (-> (meta v)
                         maybe-protocol
                         (select-keys (or whitelist var-meta-whitelist))
-                        map-seq maybe-add-file maybe-add-url)]
+                        map-seq
+                        maybe-add-file
+                        maybe-add-url
+                        (update :ns ns-name))]
        (maybe-add-spec v meta-map)))))
 
 (def special-forms
   "Special forms that can be apropo'ed."
-  (concat (keys (var-get #'clojure.repl/special-doc-map))
+  (concat (keys (var-get #'clojure.repl/special-doc-map)) ;; TODO use cljs.repl here?
           '[& catch finally]))
 
 (defn meta+
@@ -231,7 +240,8 @@
   (when ns
     (merge
      (meta ns)
-     {:ns ns
+     {:ns (ns-name ns)
+      :name (ns-name ns)
       :file (-> (ns-publics ns)
                 first
                 second

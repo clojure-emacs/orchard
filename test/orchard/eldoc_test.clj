@@ -30,13 +30,13 @@
              ["Classname/staticField"])))
 
     ;; sanity checks and special cases
-    (is (:eldoc (eldoc/eldoc (info/info 'clojure.core 'map))))
-    (is (:eldoc (eldoc/eldoc (info/info 'clojure.core '.toString))))
-    (is (:eldoc (eldoc/eldoc (info/info 'clojure.core '.))))
-    (is (not (:eldoc (eldoc/eldoc (info/info 'clojure.core (gensym "non-existing")))))))
+    (is (:eldoc (eldoc/eldoc (info/info '{:ns clojure.core :sym map}))))
+    (is (:eldoc (eldoc/eldoc (info/info '{:ns clojure.core :sym .toString}))))
+    (is (:eldoc (eldoc/eldoc (info/info '{:ns clojure.core :sym .}))))
+    (is (not (:eldoc (eldoc/eldoc (info/info {:ns 'clojure.core :sym (gensym "non-existing")}))))))
 
   (testing "Clojure result structure"
-    (let [result (eldoc/eldoc (info/info 'clojure.core 'map))]
+    (let [result (eldoc/eldoc (info/info '{:ns clojure.core :sym map}))]
       (is (:ns result))
       (is (:name result))
       (is (:type result))

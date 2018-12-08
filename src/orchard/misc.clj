@@ -3,11 +3,8 @@
    [clojure.java.io :as io]
    [clojure.string :as str]))
 
-(def ^:const windows-prefix
-  "Windows")
-
 (defn os-windows? []
-  (.startsWith (System/getProperty "os.name") windows-prefix))
+  (.startsWith (System/getProperty "os.name") "Windows"))
 
 (defn directory?
   "Whether the argument is a directory"
@@ -35,6 +32,24 @@
     (string? x) (if-let [[_ ns sym] (re-matches #"(.+)/(.+)" x)]
                   (symbol ns sym)
                   (symbol x))))
+
+(defn namespace-sym
+  "Return the namespace of a fully qualified symbol if possible.
+
+  It leaves the symbol untouched if not."
+  [sym]
+  (if-let [ns (and sym (namespace sym))]
+    (as-sym ns)
+    sym))
+
+(defn name-sym
+  "Return the name of a fully qualified symbol if possible.
+
+  It leaves the symbol untouched if not."
+  [sym]
+  (if-let [n (and sym (name sym))]
+    (as-sym n)
+    sym))
 
 (defn update-vals
   "Update the values of map `m` via the function `f`."
@@ -105,3 +120,25 @@
 
 ;; handles vectors
 (prefer-method transform-value clojure.lang.Sequential clojure.lang.Associative)
+
+;; TODO move back to analysis.cljs
+(defn add-ns-macros
+  "Append $macros to the input symbol"
+  [sym]
+  (some-> sym
+          (str "$macros")
+          symbol))
+
+;; TODO move back to analysis.cljs
+(defn remove-macros
+  "Remove $macros from the input symbol"
+  [sym]
+  (some-> sym
+          str
+          (str/replace #"\$macros" "")
+          symbol))
+
+(defn ns-obj?
+  "Return true if n is a namespace object"
+  [ns]
+  (instance? clojure.lang.Namespace ns))
