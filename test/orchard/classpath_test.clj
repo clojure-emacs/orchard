@@ -4,6 +4,7 @@
    [clojure.set :as set]
    [clojure.string :as str]
    [clojure.test :refer :all]
+   [clojure.java.classpath :as cp]
    [orchard.classpath :as sut])
   (:import
    java.io.File
@@ -24,9 +25,22 @@
           (System/clearProperty "fake.class.path"))))))
 
 (deftest classpath-test
-  (is (set/subset? (set (-> (System/getProperty "java.class.path")
-                            (str/split (re-pattern File/pathSeparator))))
-                   (set (map str (sut/classpath))))))
+  (testing "Builds correct classpaths"
+    (is (set/subset?
+         (set (map #(.getAbsolutePath (File. %))
+                   (-> (System/getProperty "java.class.path")
+                       (str/split (re-pattern File/pathSeparator)))))
+         (set (map str (sut/classpath))))))
+  (testing "turning relative paths to absolute paths on java9+"
+    (let [real-cp (System/getProperty "java.class.path")
+          test-file (File. "src")
+          expected-file (File. (.getAbsolutePath test-file))]
+      (try
+        (System/setProperty "java.class.path" (.getPath test-file))
+        (with-redefs [cp/classpath (fn [_] nil)]
+          (is (= expected-file (first (sut/classpath)))))
+        (finally
+          (System/setProperty "java.class.path" real-cp))))))
 
 (defn make-temp-dir
   []
