@@ -9,6 +9,13 @@
    java.io.File
    java.util.jar.JarFile))
 
+(defn- ensure-absolute-paths
+  "Returns a `File` guaranteeing an absolute path for `file`."
+  [^File file]
+  (if (.isAbsolute file)
+    file
+    (File. (.getAbsolutePath file))))
+
 (defn classpath
   "Return a sequence of File objects of elements on the classpath.
 
@@ -24,7 +31,7 @@
                 ;; See https://dev.clojure.org/jira/browse/CLASSPATH-8
                 (or (seq (cp/classpath classloader))
                     ;; Java 9+
-                    (cp/system-classpath)))]
+                    (map ensure-absolute-paths (cp/system-classpath))))]
      path)))
 
 (defn classpath-directories
