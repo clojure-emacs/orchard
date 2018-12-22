@@ -2,8 +2,11 @@
 
 ## master (unreleased)
 
+### Changes
+
 * [#35](https://github.com/clojure-emacs/orchard/pull/35): [Inspector] Render Java's lists, maps, and arrays as collections.
-* [#35](https://github.com/clojure-emacs/orchard/pull/35): [Inspector] Truncate long inline values
+* [#35](https://github.com/clojure-emacs/orchard/pull/35): [Inspector] Truncate long inline values.
+* Ensure all classpath entries have absolute paths.
 
 ## 0.3.3 (2018-10-20)
 
