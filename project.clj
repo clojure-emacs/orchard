@@ -31,12 +31,13 @@
 
   :profiles {
              ;; Clojure versions matrix
-             :provided {:dependencies [[org.clojure/clojure "1.9.0"]]}
+             :provided {:dependencies [[org.clojure/clojure "1.10.0"]]}
              :1.8 {:dependencies [[org.clojure/clojure "1.8.0"]]}
              :1.9 {:dependencies [[org.clojure/clojure "1.9.0"]]}
+             :1.10 {:dependencies [[org.clojure/clojure "1.10.0"]]}
              :master {:repositories [["snapshots"
                                       "https://oss.sonatype.org/content/repositories/snapshots"]]
-                      :dependencies [[org.clojure/clojure "1.10.0-master-SNAPSHOT"]]}
+                      :dependencies [[org.clojure/clojure "1.11.0-master-SNAPSHOT"]]}
 
              :sysutils {:plugins [[lein-sysutils "0.2.0"]]}
 
