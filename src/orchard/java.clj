@@ -10,7 +10,8 @@
   (:import
    (clojure.lang IPersistentMap)
    (clojure.reflect Constructor Field JavaReflector Method)
-   (java.io File)))
+   (java.io File)
+   (java.net URI)))
 
 ;;; ## Java Class/Member Info
 ;;
@@ -26,9 +27,9 @@
 ;; this simply entails having the corresponding source artifacts in the
 ;; project's dev dependencies. The core Java API classes are the exception to
 ;; this, since these are external to lein/maven dependency management. For
-;; these, we look at the JDK itself and add the source classpath entry manually.
-;; Parsing these also requires having `tools.jar` on the classpath, which we'll
-;; have to add as well.
+;; these, we search the JDK directory and add the source classpath entry
+;; manually, if available. Prior to JDK9, parsing source files also requires
+;; having `tools.jar` on the classpath, which we'll have to add as well.
 
 ;; This is used only to add JDK resources to the classpath. Issues of class
 ;; dependency are not in play.
@@ -44,26 +45,35 @@
     (when (dp/add-classpath-url classloader url)
       url)))
 
-(def jdk-root
-  "The JDK root directory (parent of the `java.home` JRE directory)"
-  (-> (io/file (System/getProperty "java.home"))
-      (.getParentFile)))
-
-(defn jdk-resource-url
-  "Returns url to file at PATH-SEGMENTS relative to `jdk-root`."
-  [& path-segments]
-  (let [^File f (apply io/file jdk-root path-segments)]
-    (when (.canRead f)
-      (io/as-url f))))
+(defn jdk-find
+  "Search common JDK path configurations for a specified file name and return a
+  URL if found. This accommodates `java.home` being set to either the JDK root
+  (JDK9+) or a JRE directory within this (JDK 8), and searches both the home and
+  `lib` directories."
+  [f]
+  (let [home (io/file (System/getProperty "java.home"))
+        parent (.getParentFile home)
+        paths [(io/file home f)
+               (io/file home "lib" f)
+               (io/file parent f)
+               (io/file parent "lib" f)]]
+    (->> paths (filter #(.canRead %)) first io/as-url)))
 
 (def jdk-sources
-  "The JDK sources path. If available, this is added to the classpath. By
-  convention, this is the file `src.zip` in the root of the JDK directory."
-  (some-> (jdk-resource-url "src.zip") add-classpath!))
+  "The JDK sources path. If found on the existing classpath, this is the
+  corresponding classpath entry. Otherwise, the JDK directory is searched for
+  the file `src.zip`, and if found this added to the classpath."
+  (let [base-uri (fn [path]
+                   (when-let [uri (io/resource path)]
+                     (URI. (str/replace (str uri) path ""))))]
+    (or (base-uri "java.base/java/lang/Object.java") ; JDK9+
+        (base-uri "java/lang/Object.java")           ; JDK8-
+        (some-> (jdk-find "src.zip") add-classpath!))))
 
 (def jdk-tools
-  "The JDK `tools.jar` path. If available, this is added to the classpath."
-  (some-> (jdk-resource-url "lib" "tools.jar") add-classpath!))
+  "The `tools.jar` path, for JDK8 and earlier. If available, this is added
+  to the classpath."
+  (some-> (jdk-find "tools.jar") add-classpath!))
 
 ;;; ## Javadoc URLs
 ;;

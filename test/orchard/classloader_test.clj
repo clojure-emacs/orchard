@@ -15,7 +15,7 @@
           (finally
             (System/clearProperty "fake.class.path")))))
     (testing "include sources when avaliable"
-      (when-let [src-url (java/jdk-resource-url "src.zip")]
+      (when-let [src-url (java/jdk-find "src.zip")]
         (try
           (System/setProperty "fake.class.path" tmp-dir-name)
           (is (some #{src-url} (.getURLs (cl/class-loader))))

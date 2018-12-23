@@ -17,10 +17,8 @@
                             (str "file:" path dir-separator))]
                   (new java.net.URL url)))
               paths)
-        jdk-sources (->> [#_"see '## Classpath' notes at `orchard.java`"
-                          ["src.zip"]
-                          ["lib" "tools.jar"]]
-                         (map (partial apply java/jdk-resource-url))
+        jdk-sources (->> ["src.zip" "tools.jar"]
+                         (map java/jdk-find)
                          (remove nil?))]
     (new java.net.URLClassLoader (into-array java.net.URL (concat urls jdk-sources)))))
 
