@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+## 0.3.4 (2018-12-29)
+
 ### Changes
 
 * [#35](https://github.com/clojure-emacs/orchard/pull/35): [Inspector] Render Java's lists, maps, and arrays as collections.
