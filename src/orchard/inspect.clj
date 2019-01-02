@@ -129,6 +129,19 @@
                          :page-size new-page-size
                          :current-page 0)))
 
+(defn eval-and-inspect
+  "Evaluate the given expression where `v` is bound to the currently inspected
+  value. Open the evaluation result in the inspector."
+  [inspector expr]
+  (let [{:keys [index path current-page page-size value]} inspector
+        eval-fn `(fn [~'v] ~(read-string expr))
+        result ((eval eval-fn) value)]
+    (-> (update inspector :stack conj value)
+        (update :pages-stack conj current-page)
+        (assoc :current-page 0)
+        (update :path conj '<unknown>)
+        (inspect-render result))))
+
 (declare inspector-value-string)
 
 ;;
