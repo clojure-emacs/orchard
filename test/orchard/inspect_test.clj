@@ -17,6 +17,8 @@
 
 (def inspect-result-with-nil ["(\"Class\" \": \" (:value \"clojure.lang.PersistentVector\" 0) (:newline) \"Contents: \" (:newline) \"  \" \"0\" \". \" (:value \"1\" 1) (:newline) \"  \" \"1\" \". \" (:value \"2\" 2) (:newline) \"  \" \"2\" \". \" (:value \"\" 3) (:newline) \"  \" \"3\" \". \" (:value \"3\" 4) (:newline))"])
 
+(def eval-and-inspect-result ["(\"Class\" \": \" (:value \"java.lang.String\" 0) (:newline) \"Value: \" \"\\\"1001\\\"\")"])
+
 (def java-hashmap-inspect-result ["(\"Class\" \": \" (:value \"java.util.HashMap\" 0) (:newline) \"Contents: \" (:newline) \"  \" (:value \":b\" 1) \" = \" (:value \"2\" 2) (:newline) \"  \" (:value \":c\" 3) \" = \" (:value \"3\" 4) (:newline) \"  \" (:value \":a\" 5) \" = \" (:value \"1\" 6) (:newline))"])
 
 (def long-sequence (range 70))
@@ -177,6 +179,16 @@
                     inspect/next-page)]
         (is (= 2 (:current-page ins)))
         (is (= 4 (:current-page (inspect/up ins))))))))
+
+(deftest eval-and-inspect-test
+  (testing "evaluate expr in the context of currently inspected value"
+    (is (= eval-and-inspect-result
+           (-> eval-result
+               inspect
+               (inspect/down 2)
+               (inspect/down 2)
+               (inspect/eval-and-inspect "(str (+ v 1000))")
+               render)))))
 
 (deftest path-test
   (testing "inspector tracks the path in the data structure"
