@@ -190,6 +190,15 @@
                (inspect/eval-and-inspect "(str (+ v 1000))")
                render)))))
 
+(deftest def-value-test
+  (testing "define var with the currently inspected value"
+    (-> eval-result
+        inspect
+        (inspect/down 2)
+        (inspect/down 2)
+        (inspect/def-current-value *ns* "--test-val--"))
+    (is (= 1 @(resolve '--test-val--)))))
+
 (deftest path-test
   (testing "inspector tracks the path in the data structure"
     (is (.endsWith (first (-> long-map

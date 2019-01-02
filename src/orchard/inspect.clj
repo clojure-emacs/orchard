@@ -142,6 +142,13 @@
         (update :path conj '<unknown>)
         (inspect-render result))))
 
+(defn def-current-value
+  "Define the currently inspected value as a var with the given name in the
+  provided namespace."
+  [inspector namespace var-name]
+  (intern namespace (symbol var-name) (:value inspector))
+  (inspect-render inspector))
+
 (declare inspector-value-string)
 
 ;;
