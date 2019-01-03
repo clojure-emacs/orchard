@@ -206,7 +206,7 @@
         (is (= 'java.lang.String (:class (resolve-symbol ns 'String)))))
       (testing "of unambiguous instance members"
         (is (= 'java.lang.SecurityManager
-               (:class (resolve-symbol ns 'checkSystemClipboardAccess)))))
+               (:class (resolve-symbol ns 'checkPackageDefinition)))))
       (testing "of candidate instance members"
         (is (every? #(= 'toString (:member %))
                     (vals (:candidates (resolve-symbol ns 'toString))))))
