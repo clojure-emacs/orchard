@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+### New features
+
 * [#38](https://github.com/clojure-emacs/orchard/pull/38): [Inspector] Add eval
   and def features to inspector.
 
