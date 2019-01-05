@@ -5,38 +5,62 @@
    [orchard.java :refer :all]
    [orchard.misc :refer [java-api-version]]))
 
+(def jdk-parser? (or (>= java-api-version 9) jdk-tools))
+(def jdk-sources? (and jdk-sources (< java-api-version 9))) ; TODO modular JDK (9+) not yet supported
+
 (deftest source-info-test
   (let [resolve-src (comp (fnil io/resource "-none-") :file source-info)]
-    (when (and jdk-sources jdk-tools)
+    (when jdk-parser?
       (testing "Source file resolution"
-        (testing "from JDK"
-          (is (resolve-src 'java.lang.String))
-          (is (resolve-src 'java.util.regex.Matcher)))
+        (testing "for Clojure classes"
+          (is (resolve-src 'clojure.lang.Obj))
+          (is (resolve-src 'clojure.lang.Fn)))
+        (when jdk-sources?
+          (testing "for JDK classes"
+            (is (resolve-src 'java.lang.String))
+            (is (resolve-src 'java.util.regex.Matcher))))
         (testing "for non-existent classes"
           (is (not (resolve-src 'not.actually.AClass)))))
+
       (testing "Parse tree kinds"
-        ;; classes, nested, interfaces, enums
-        (is (-> (source-info 'java.util.Collection) :line)) ; interface
-        (is (-> (source-info 'java.util.AbstractCollection) :line)) ; abstract class
-        (is (-> (source-info 'java.lang.Thread$UncaughtExceptionHandler) :line)) ; nested interface
-        (is (-> (source-info 'java.net.Authenticator$RequestorType) :line)) ; enum
-        (when jdk-sources
-          (is (-> (source-info 'java.sql.ClientInfoStatus) :line)))) ; top-level enum
+        (testing "for Clojure classes"
+          (is (-> (source-info 'clojure.lang.ISeq) :line)) ; interface
+          (is (-> (source-info 'clojure.lang.AFn) :line)) ; abstract class
+          (is (-> (source-info 'clojure.lang.APersistentMap$ValSeq) :line)) ; nested class
+          ;; These fail on JDK9+; they're not returned in the root AST
+          ;; XXX (is (-> (source-info 'clojure.lang.Numbers$Ops) :line)) ; nested default interface
+          ;; XXX (is (-> (source-info 'clojure.lang.Range$BoundsCheck) :line)) ; nested private interface
+          (is (-> (source-info 'clojure.lang.Numbers$Category) :line))) ; nested enum
+        (when jdk-sources?
+          (testing "for JDK classes"
+            (is (-> (source-info 'java.util.Collection) :line)) ; interface
+            (is (-> (source-info 'java.util.AbstractCollection) :line)) ; abstract class
+            (is (-> (source-info 'java.lang.Thread$UncaughtExceptionHandler) :line)) ; nested interface
+            (is (-> (source-info 'java.net.Authenticator$RequestorType) :line)) ; nested enum
+            (is (-> (source-info 'java.sql.ClientInfoStatus) :line))))) ; top-level enum
+
       (testing "Source parsing"
-        (is (-> (source-info 'java.util.AbstractCollection) :doc))
-        (is (-> (get-in (source-info 'java.util.AbstractCollection)
-                        [:members 'size])
-                first val :line))))))
+        (testing "for Clojure classes"
+          (is (-> (source-info 'clojure.lang.ExceptionInfo) :doc))
+          (is (-> (get-in (source-info 'clojure.lang.BigInt)
+                          [:members 'multiply])
+                  first val :line)))
+        (when jdk-sources?
+          (testing "for JDK classes"
+            (is (-> (source-info 'java.util.AbstractCollection) :doc))
+            (is (-> (get-in (source-info 'java.util.AbstractCollection)
+                            [:members 'size])
+                    first val :line))))))))
 
 (deftest map-structure-test
-  (when jdk-tools
+  (when jdk-parser?
     (testing "Parsed map structure = reflected map structure"
       (let [cols #{:file :line :column :doc :argnames :argtypes :path}
             keys= #(= (set (keys (apply dissoc %1 cols)))
                       (set (keys %2)))
-            c1 (class-info* 'java.lang.String)
+            c1 (class-info* 'clojure.lang.Compiler)
             c2 (with-redefs [source-info (constantly nil)]
-                 (class-info* 'java.lang.String))]
+                 (class-info* 'clojure.lang.Compiler))]
         ;; Class info
         (is (keys= c1 c2))
         ;; Members
@@ -50,11 +74,11 @@
                  (every? true?)))))))
 
 (deftest class-info-test
-  (let [c1 (class-info 'java.lang.Thread)
-        c2 (class-info 'java.lang.Thread$State)
+  (let [c1 (class-info 'clojure.lang.Agent)
+        c2 (class-info 'clojure.lang.Range$BoundsCheck)
         c3 (class-info 'not.actually.AClass)]
     (testing "Class"
-      (when (and jdk-sources jdk-tools)
+      (when jdk-parser?
         (testing "source file"
           (is (string? (:file c1)))
           (is (io/resource (:file c1))))
@@ -76,7 +100,7 @@
         (is (nil? c3))))))
 
 (deftest member-info-test
-  (let [m1 (member-info 'java.util.AbstractCollection 'size)
+  (let [m1 (member-info 'clojure.lang.PersistentHashMap 'assoc)
         m2 (member-info 'java.util.AbstractCollection 'non-existent-member)
         m3 (member-info 'not.actually.AClass 'nada)
         m4 (member-info 'java.awt.Point 'x)
@@ -84,7 +108,7 @@
         m6 (member-info 'java.util.AbstractMap 'finalize)
         m7 (member-info 'java.util.HashMap 'finalize)]
     (testing "Member"
-      (when (and jdk-sources jdk-tools)
+      (when jdk-parser?
         (testing "source file"
           (is (string? (:file m1)))
           (is (io/resource (:file m1))))

@@ -1,24 +1,27 @@
-(ns orchard.java.parser
+(ns orchard.java.legacy-parser
   "Source and docstring info for Java classes and members"
   {:author "Jeff Valk"}
-  (:refer-clojure :exclude [resolve])
   (:require
    [clojure.java.io :as io]
    [clojure.string :as str])
   (:import
+   (com.sun.javadoc ClassDoc ConstructorDoc Doc FieldDoc MethodDoc
+                    Parameter Tag Type)
+   (com.sun.source.tree ClassTree)
+   (com.sun.tools.javac.util Abort Context List Options)
+   (com.sun.tools.javadoc DocEnv JavadocEnter JavadocTool Messager
+                          ModifierFilter RootDocImpl)
+   (java.io StringReader)
    (java.net URI)
-   (java.io StringReader StringWriter)
-   (javax.lang.model.element Element ElementKind ExecutableElement
-                             TypeElement VariableElement)
+   (java.util Locale)
    (javax.swing.text.html HTML$Tag HTMLEditorKit$ParserCallback)
    (javax.swing.text.html.parser ParserDelegator)
-   (javax.tools DocumentationTool JavaFileObject$Kind
-                SimpleJavaFileObject ToolProvider)
-   (javax.tools JavaFileObject$Kind SimpleJavaFileObject)
-   (jdk.javadoc.doclet Doclet DocletEnvironment)))
+   (javax.tools JavaFileObject$Kind SimpleJavaFileObject)))
 
 ;;; ## JDK Compatibility
-;; This namespace requires JDK9+.
+;; This namespace is compatible with JDK8 and below. It requires that
+;; `tools.jar` be on the classpath. A newer parser compatible with JDK9+ exists
+;; as a separate namespace.
 
 ;;; ## Java Source Analysis
 ;;
@@ -32,35 +35,56 @@
 ;; Unlike the standard Java compiler which it extends, the Javadoc compiler
 ;; preserves docstrings (obviously), as well as source position and argument
 ;; names in its parse tree -- pieces we're after to augment reflection info.
+;; The net effect is as advertised, but the API has some rough edges:
 ;;
-;; A few notes:
+;; 1. The default `JavadocTool` entry point needlessly expects that all sources
+;; will be `.java` file paths. To examine sources inside `.jar` files too, we
+;; need to roll our own, which is mostly a matter of environment setup.
 ;;
-;; 1. The compiler API `call` method is side-effect oriented; it returns only a
-;;    boolean indicating success. To use the result parse tree, we store this in
-;;    an atom.
+;; 2. This setup requires manipulating a `DocEnv` instance; however prior to
+;; JDK8, a required field in this class is declared with default (package) level
+;; access, and no accessor methods. In JDK8, this field's visibility has been
+;; [promoted][1] precisely for this sort of tool usage; however to support
+;; pre-JDK8 use, we have to reflect into the field in question to set it.
 ;;
-;; 2. The `result` atom must be scoped at the namespace level because a Doclet
-;;    is specified by passing a class name rather than an instance; hence, we
-;;    can't close over a local varaible in reify: `result` must be in scope when
-;;    the methods of a *new* instance of the Doclet class are called.
+;; 3. By default, whenever the compiler touches an internal Java API, it emits
+;; warnings that can't be suppressed. To work around this behavior, we link
+;; against the symbol file `lib/ct.sym` instead of `rt.jar` by setting the
+;; option `ignore.symbol.file`. [This][2] is how `javac` compiles `rt.jar`
+;; itself.
+;;
+;; [1]: http://hg.openjdk.java.net/jdk8/tl/langtools/rev/b0909f992710
+;; [2]: http://stackoverflow.com/questions/4065401/using-internal-sun-classes-with-javac
 
-(def result (atom nil))
+(defn set-field!
+  [obj field val]
+  (let [f (.getDeclaredField (class obj) field)]
+    (.setAccessible f true)
+    (.set f obj val)))
 
 (defn parse-java
-  "Load and parse the resource path, returning a `DocletEnvironment` object."
+  "Load and parse the resource path, returning a `RootDoc` object."
   [path]
   (when-let [res (io/resource path)]
-    (let [compiler (ToolProvider/getSystemDocumentationTool)
+    (let [access   (ModifierFilter. ModifierFilter/ALL_ACCESS)
+          context  (doto (Context.) (Messager/preRegister "orchard-javadoc"))
+          options  (doto (Options/instance context) (.put "ignore.symbol.file" "y"))
+          compiler (JavadocTool/make0 context)
+          enter    (JavadocEnter/instance0 context)
+          docenv   (doto (DocEnv/instance context)
+                     (.setEncoding "utf-8")
+                     (.setSilent true)
+                     (set-field! "showAccess" access))
           source   (proxy [SimpleJavaFileObject]
                        [(URI. path) JavaFileObject$Kind/SOURCE]
                      (getCharContent [_] (slurp res)))
-          doclet   (class (reify Doclet
-                            (init [this _ _] (reset! result nil))
-                            (run [this root] (reset! result root) true)))
-          out      (StringWriter.) ; discard compiler messages
-          opts     nil]
-      (.call (.getTask compiler out nil nil doclet opts [source]))
-      @result)))
+          tree     (.parse compiler source)
+          classes  (->> (.defs tree)
+                        (filter #(= (-> % .getKind .asInterface) ClassTree))
+                        (into-array)
+                        (List/from))]
+      (.main enter (List/of tree))
+      (RootDocImpl. docenv classes (List/nil) (List/nil)))))
 
 ;;; ## Docstring Parsing
 ;; Unlike source metadata (line, position, etc) that's available directly from
@@ -157,14 +181,18 @@
         (str/replace #"\n{3,}" "\n\n") ; normalize whitespace
         (str/replace #" +```" "```"))))
 
+;; Note that @link and @linkplain are also of 'kind' @see.
 (defn docstring
-  "Get parsed docstring text of `Element` e using source information in env"
-  [e ^DocletEnvironment env]
-  ;;
-  ;; NOTE This returns tags (e.g. @link) literally. To parse and resolve these,
-  ;; we probably need to use: `(-> env .getDocTrees (.getDocCommentTree e))`.
-  ;; That's an enhancement for another day.
-  {:doc (some-> env .getElementUtils (.getDocComment e) parse-html)})
+  "Given a Java parse tree `Doc` instance, return its parsed docstring text."
+  [^Doc doc]
+  (->> (.inlineTags doc)
+       (map (fn [^Tag t]
+              (case (.kind t)
+                "@see"     (format " `%s` " (.text t)) ; TODO use .referencedClassName ...?
+                "@code"    (format " `%s` " (-> t .inlineTags ^Tag first .text))
+                "@literal" (format " `%s` " (-> t .inlineTags ^Tag first .text))
+                (parse-html (.text t)))))
+       (apply str)))
 
 ;;; ## Java Parse Tree Traversal
 ;;
@@ -175,86 +203,61 @@
 (defn typesym
   "Using parse tree info, return the type's name equivalently to the `typesym`
   function in `orchard.java`."
-  ([n ^DocletEnvironment env]
-   (let [t (str/replace (str n) #"<.*>" "") ; drop generics
-         util (.getElementUtils env)]
-     (if-let [c (.getTypeElement util t)]
-       (let [pkg (str (.getPackageOf util c) ".")
-             cls (-> (str/replace-first t pkg "")
-                     (str/replace "." "$"))]
-         (symbol (str pkg cls))) ; classes
-       (symbol t)))))            ; primitives
-
-(defn position
-  "Get line and column of `Element` e using parsed source information in env"
-  [e ^DocletEnvironment env]
-  (let [trees (.getDocTrees env)]
-    (when-let [path (.getPath trees e)]
-      (let [file (.getCompilationUnit path)
-            lines (.getLineMap file)
-            pos (.getStartPosition (.getSourcePositions trees)
-                                   file (.getLeaf path))]
-        {:line (.getLineNumber lines pos)
-         :column (.getColumnNumber lines pos)}))))
+  [^Type t]
+  (symbol
+   (str (when-let [c (.asClassDoc t)] ; when not a primitive
+          (str (-> c .containingPackage .name) "."))
+        (-> t .typeName (str/replace "." "$"))
+        (.dimension t))))
 
 (defprotocol Parsed
-  (parse-info* [o env]))
-
-(defn parse-info
-  [o env]
-  (merge (parse-info* o env)
-         (docstring o env)
-         (position o env)))
+  (parse-info [o]))
 
 (extend-protocol Parsed
-  ExecutableElement ; => method, constructor
-  (parse-info* [m env]
-    {:name (if (= (.getKind m) ElementKind/CONSTRUCTOR)
-             (-> m .getEnclosingElement (typesym env)) ; class name
-             (-> m .getSimpleName str symbol))         ; method name
-     :type (-> m .getReturnType (typesym env))
-     :argtypes (mapv #(-> ^VariableElement % .asType (typesym env)) (.getParameters m))
-     :argnames (mapv #(-> ^VariableElement % .getSimpleName str symbol) (.getParameters m))})
+  ConstructorDoc
+  (parse-info [c]
+    {:name (-> c .qualifiedName symbol)
+     :argtypes (mapv #(-> ^Parameter % .type typesym) (.parameters c))
+     :argnames (mapv #(-> ^Parameter % .name symbol) (.parameters c))})
 
-  VariableElement ; => field, enum constant
-  (parse-info* [f env]
-    {:name (-> f .getSimpleName str symbol)
-     :type (-> f .asType (typesym env))})
+  MethodDoc
+  (parse-info [m]
+    {:argtypes (mapv #(-> ^Parameter % .type typesym) (.parameters m))
+     :argnames (mapv #(-> ^Parameter % .name symbol) (.parameters m))
+     :type (str (.returnType m))})
 
-  TypeElement ; => class, interface, enum
-  (parse-info* [c env]
-    {:class   (typesym c env)
-     :members (->> (.getEnclosedElements c)
-                   (filter #(#{ElementKind/CONSTRUCTOR
-                               ElementKind/METHOD
-                               ElementKind/FIELD
-                               ElementKind/ENUM_CONSTANT}
-                             (.getKind ^Element %)))
-                   (map #(parse-info % env))
+  FieldDoc
+  (parse-info [f]
+    {:type (str (.type f))})
+
+  ClassDoc
+  (parse-info [c]
+    {:class   (typesym c)
+     :doc     (docstring c)
+     :line    (-> c .position .line)
+     :column  (-> c .position .column)
+     :members (->> (concat (.constructors c) (.methods c) (.fields c))
+                   ;; Merge type-specific attributes with common ones.
+                   (map (fn [^Doc m]
+                          (merge {:name   (-> m .name symbol)
+                                  :line   (-> m .position .line)
+                                  :column (-> m .position .column)
+                                  :doc    (docstring m)}
+                                 (parse-info m))))
                    ;; Index by name, argtypes. Args for fields are nil.
                    (group-by :name)
                    (reduce (fn [ret [n ms]]
                              (assoc ret n (zipmap (map :argtypes ms) ms)))
                            {}))}))
 
-(defn- resolve
-  "Workaround for CLJ-1403, fixed in Clojure 1.10. Once 1.9 support is
-  discontinued, this function may simply be removed."
-  [sym]
-  (try (clojure.core/resolve sym)
-       (catch Exception _)))
-
 (defn source-path
   "Return the relative `.java` source path for the top-level class."
   [klass]
-  (when-let [^Class cls (resolve klass)]
-    (let [path (-> (.getName cls)
-                   (str/replace #"\$.*" "")
-                   (str/replace "." "/")
-                   (str ".java"))]
-      (if-let [module (-> cls .getModule .getName)]
-        (str module "/" path)
-        path))))
+  (-> (str klass)
+      (str/replace #"^class " "")
+      (str/replace #"\$.*" "")
+      (str/replace "." "/")
+      (str ".java")))
 
 (defn source-info
   "If the source for the Java class is available on the classpath, parse it
@@ -263,21 +266,12 @@
   same structure as that of `orchard.java/reflect-info`."
   [klass]
   {:pre [(symbol? klass)]}
-  ;; FIXME Source parsing is currently disabled for modular sources. It's not
-  ;; clear whether all modular sources cause problems, or only the JDK sources.
-  ;; In practice, though, JDK sources are what users will encounter the most.
-  (when-not (some-> klass ^Class resolve .getModule .getName)
-    (try
-      (when-let [path (source-path klass)]
-        (when-let [root (parse-java path)]
-          (assoc (->> (.getIncludedElements ^DocletEnvironment root)
-                      (filter #(#{ElementKind/CLASS
-                                  ElementKind/INTERFACE
-                                  ElementKind/ENUM}
-                                (.getKind ^Element %)))
-                      (map #(parse-info % root))
-                      (filter #(= klass (:class %)))
-                      (first))
-                 :file path
-                 :path (.getPath (io/resource path)))))
-      (catch Error _))))
+  (try
+    (let [path (source-path klass)]
+      (when-let [root (parse-java path)]
+        (assoc (->> (map parse-info (.classes root))
+                    (filter #(= klass (:class %)))
+                    (first))
+               :file path
+               :path (. (io/resource path) getPath))))
+    (catch Abort _)))

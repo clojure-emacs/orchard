@@ -18,7 +18,7 @@
 ;; Getting class and member info (i.e. type hierarchy, method names,
 ;; argument/return types, etc) is straightforward using reflection; this
 ;; provides the basis of Java metadata support. When the source is available
-;; (and `tools.jar` is too), we supplement reflection with source analysis to
+;; (and a Java parser is too), we supplement reflection with source analysis to
 ;; get file, line, and column info, as well as docstrings and argument names.
 
 ;;; ## Classpath
@@ -99,6 +99,25 @@
             (str "(" (str/join ",%20" argtypes) ")")
             (str "-" (str/join "-" (map #(str/replace % #"\[\]" ":A") argtypes)) "-"))))))
 
+;;; ## Source Analysis
+;;
+;; Java parser support is available for JDK9+ and JDK8 and below via separate
+;; namespaces, `java.parser` and `java.legacy-parser`. The former uses only
+;; external JDK APIs and supports modular (Jigsaw) sources. The latter uses
+;; internal APIs out of necessity. Once this project discontinues support for
+;; JDK8, the legacy parser may be removed.
+
+(def source-info
+  "When a Java parser is available, return class info from its parsed source;
+  otherwise return nil."
+  (if (>= util/java-api-version 9)
+    (do (require '[orchard.java.parser :as src])
+        (resolve 'src/source-info))
+    (if jdk-tools
+      (do (require '[orchard.java.legacy-parser :as src])
+          (resolve 'src/source-info))
+      (constantly nil))))
+
 ;;; ## Class Metadata Assembly
 ;;
 ;; We construct metadata at the class level, first using `reflect-info` to
@@ -146,14 +165,6 @@
                    (reduce (fn [ret [n ms]]
                              (assoc ret n (zipmap (map :argtypes ms) ms)))
                            {}))}))
-
-(def source-info
-  "When `tools.jar` is available, return class info from its parsed source;
-  otherwise return nil."
-  (if jdk-tools
-    (do (require '[orchard.java.parser :as src])
-        (resolve 'src/source-info))
-    (constantly nil)))
 
 (defn- package
   "An alternative to .getPackage, which works for classes defined with deftype and defrecord.
