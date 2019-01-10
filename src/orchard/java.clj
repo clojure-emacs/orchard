@@ -162,7 +162,8 @@
   first by name, and then by argument types to list all overloads."
   [class]
   (when-let [^Class c (try (Class/forName (str class))
-                           (catch Exception _))]
+                           (catch Exception _)
+                           (catch LinkageError _))]
     (let [r (JavaReflector. (.getClassLoader c))] ; for dynamically loaded classes
       (util/deep-merge (reflect-info (r/reflect c :reflector r))
                        (source-info class)
