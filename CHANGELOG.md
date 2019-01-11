@@ -7,6 +7,10 @@
 * [#38](https://github.com/clojure-emacs/orchard/pull/38): [Inspector] Add eval
   and def features to inspector.
 
+### Bugs fixed
+
+* [#39](https://github.com/clojure-emacs/orchard/pull/39): Catch `LinkageError` when calling `Class/forName`.
+
 ## 0.3.4 (2018-12-29)
 
 ### Changes
