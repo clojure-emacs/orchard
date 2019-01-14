@@ -66,7 +66,7 @@ functionality that's provided.
 
 ## License
 
-Copyright © 2018 Bozhidar Batsov & contributors
+Copyright © 2018-2019 Bozhidar Batsov & contributors
 
 Distributed under the Eclipse Public License either version 1.0 or (at
 your option) any later version.
