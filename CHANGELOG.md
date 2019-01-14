@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+## 0.4.0 (2019-01-14)
+
 ### New features
 
 * [#38](https://github.com/clojure-emacs/orchard/pull/38): [Inspector] Add eval
