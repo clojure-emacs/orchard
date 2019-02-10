@@ -140,24 +140,39 @@
      (some->> (cljs-meta/scoped-macro-meta env sym 'cljs.core)
               (cljs-meta/normalize-macro-meta)))))
 
-(defn info
-  [params]
-  {:pre [(contains? #{:cljs :clj nil} (:dialect params))]}
-  (let [params (normalize-params params)
-        dialect (:dialect params)]
-    (cond-> params
-      ;; TODO split up responsability of finding meta and normalizing the meta map
-      (= dialect :clj) clj-meta
-      (= dialect :cljs) cljs-meta)))
-
 (def see-also-data
   (edn/read-string (slurp (io/resource "see-also.edn"))))
 
-(defn see-also
-  [ns sym]
-  (let [var-key (str ns "/" sym)]
-    (->> (get see-also-data var-key)
-         (filter (comp resolve u/as-sym)))))
+(defn see-also*
+  [{:keys [dialect unqualified-sym] :as m}]
+  (when-not (= :cljs dialect)
+    (some->> unqualified-sym
+             (str)
+             (symbol "clojure.core")
+             (str)
+             (get see-also-data)
+             (mapv symbol)
+             (filter resolve))))
+
+(def ^{:doc "Augment the map with see-also information. We have to use the
+resolved (real) namespace and name here"}
+  see-also (memoize see-also*))
+
+(defn info
+  [params]
+  {:pre [(contains? #{:cljs :clj nil} (:dialect params))]}
+  (let [params   (normalize-params params)
+        dialect  (:dialect params)]
+
+    ;; TODO split up responsability of finding meta and normalizing the meta map
+    (some->
+     (cond
+       (= dialect :clj)  (clj-meta params)
+       (= dialect :cljs) (cljs-meta params))
+
+     ;; do not merge see-also if the info was not found
+     (merge (when-let [m (see-also params)]
+              {:see-also m})))))
 
 (defn info-java
   [class member]
