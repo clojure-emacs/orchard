@@ -452,3 +452,16 @@
            (-> '{:ns orchard.info}
                (info/normalize-params)
                (select-keys [:ns :unqualified-sym]))))))
+
+(deftest boot-file-resolution-test
+  ;; this checks the files on the classpath, soo you need the test-resources
+  ;; and specifically test-resources/orchard/test_ns.cljc
+  ;;
+  ;; Note that :file in :meta is left untouched
+  (with-redefs [orchard.misc/boot-project? (constantly true)]
+    (is (= '{:ns orchard.test-ns
+             :name x
+             :file "orchard/test_ns.cljc"}
+           (-> (merge *cljs-params* '{:ns orchard.test-ns :sym x})
+               (info/info)
+               (select-keys [:ns :name :file]))))))

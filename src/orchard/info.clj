@@ -172,7 +172,12 @@ resolved (real) namespace and name here"}
 
      ;; do not merge see-also if the info was not found
      (merge (when-let [m (see-also params)]
-              {:see-also m})))))
+              {:see-also m}))
+
+     (update :file (fn [file-path]
+                     (if (u/boot-project?)
+                       (cp/classpath-file-relative-path file-path)
+                       file-path))))))
 
 (defn info-java
   [class member]

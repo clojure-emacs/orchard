@@ -7,6 +7,7 @@
   (:import
    (java.io File)
    (java.net URI URL)
+   (java.nio.file Paths)
    (java.util.jar JarFile JarEntry)))
 
 ;;; Classloaders
@@ -84,3 +85,23 @@
       (->> (file-seq f)
            (filter #(not (.isDirectory ^File %)))
            (map #(.getPath (.relativize (.toURI url) (.toURI ^File %))))))))
+
+;;; Boot's hack - previously part of cider-nrepl
+
+(defn classpath-file-relative-path
+  "Boot stores files in a temporary directory & ClojureScript stores
+  the :file metadata location absolutely instead of relatively to the
+  classpath. This means when doing jump to source in Boot &
+  ClojureScript, you end up at the temp file.  This code attempts to
+  find the classpath-relative location of the file, so that it can be
+  opened correctly."
+  [s]
+  (let [path (Paths/get s (into-array String []))
+        path-count (.getNameCount path)]
+    (or (first
+         (sequence
+          (comp (map #(.subpath path % path-count))
+                (map str)
+                (filter io/resource))
+          (range path-count)))
+        s)))
