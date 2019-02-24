@@ -3,11 +3,10 @@
   (:require
    [clojure.java.io :as io]
    [clojure.pprint :as pprint]
-   [clojure.repl]
-   [cljs.repl]
    [clojure.string :as str]
    [clojure.walk :as walk]
    [orchard.namespace :as ns]
+   [orchard.misc :as u]
    [orchard.spec :as spec]
    [orchard.cljs.meta :as cljs-meta])
   (:import
@@ -105,6 +104,13 @@
 ;; They just map to a special symbol.
 (def special-sub-symbs '{& fn*, catch try, finally try})
 
+(defn repl-special-meta
+  [sym]
+  (or (when-let [f (u/require-and-resolve 'clojure.repl/special-doc)]
+        (f sym))
+      (when-let [f (u/require-and-resolve 'cljs.repl/special-doc)]
+        (f sym))))
+
 ;; What I find very confusing in Clojure documentation is the use of "special form" which is not a concept,
 ;; just an annotation on vars (always macros) that are special forms in other lisps.
 ;;
@@ -125,8 +131,7 @@
   (let [orig-sym sym
         sym (get special-sub-symbs sym sym)
         compiler-special? (special-symbol? orig-sym)]
-    (when-let [m (and compiler-special? (or (#'clojure.repl/special-doc sym)
-                                            (#'cljs.repl/special-doc sym)))]
+    (when-let [m (and compiler-special? (repl-special-meta sym))]
       (-> m
           (assoc :name orig-sym)
           maybe-add-url))))
@@ -153,7 +158,8 @@
 
 (def special-forms
   "Special forms that can be apropo'ed."
-  (concat (keys (var-get #'clojure.repl/special-doc-map)) ;; TODO use cljs.repl here?
+  (concat (keys (or (u/require-and-resolve 'clojure.repl/special-doc-map)
+                    (u/require-and-resolve 'cljs.repl/special-doc-map)))
           '[& catch finally]))
 
 (defn meta+

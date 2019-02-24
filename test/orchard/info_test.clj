@@ -5,7 +5,7 @@
    [orchard.info :as info]
    [orchard.misc :as misc]
    [orchard.cljs.test-env :as test-env]
-   [clojure.repl :as repl]
+   [orchard.meta :as meta]
    [orchard.test-ns]))
 
 (def ^:dynamic *cljs-params*)
@@ -36,12 +36,14 @@
                             (map :name it)
                             (set it)))]
       (testing "- :cljs"
-        (let [special-syms (into '#{in-ns load load-file} (keys @#'cljs.repl/special-doc-map))]
+        (let [special-doc-map (misc/require-and-resolve 'cljs.repl/special-doc-map)
+              special-syms (into '#{in-ns load load-file} (keys special-doc-map))]
           (is (= special-syms (->> (into special-syms ns-syms)
                                    (map #(merge *cljs-params* {:ns target-ns :sym %}))
                                    (info-specials))))))
       (testing "- :clj"
-        (let [special-syms (into '#{letfn let loop fn} (keys @#'clojure.repl/special-doc-map))]
+        (let [special-doc-map (misc/require-and-resolve 'clojure.repl/special-doc-map)
+              special-syms (into '#{letfn let loop fn} (keys special-doc-map))]
           (is (= special-syms (->> (into special-syms ns-syms)
                                    (map #(hash-map :ns target-ns :sym %))
                                    (info-specials)))))))))

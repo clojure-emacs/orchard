@@ -156,3 +156,17 @@
   "Return true if n is a namespace object"
   [ns]
   (instance? clojure.lang.Namespace ns))
+
+;; Drop this in favor of clojure.core/requiring-resolve at some point?
+
+(defn require-and-resolve
+  "Try to require the namespace and get a var for the symbol, return the
+  var if successful, nil if not."
+  {:added "0.6.0"}
+  [sym]
+  (when-let [ns (some-> sym namespace symbol)]
+    (when-not (find-ns ns)
+      (try
+        (require ns)
+        (catch Exception _ nil)))
+    (some-> sym find-var var-get)))
