@@ -2,8 +2,7 @@
       :author "Gary Trakhman"
       :added "0.6.0"}
  orchard.cljs.analysis
-  (:require [orchard.misc :as u]
-            #?(:clj [cljs.repl]))
+  (:require [orchard.misc :as u])
   (:refer-clojure :exclude [find-ns find-var all-ns ns-aliases]))
 
 (def NSES :cljs.analyzer/namespaces)
