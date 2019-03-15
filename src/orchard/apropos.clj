@@ -23,11 +23,10 @@
   [ns vars]
   (let [clojure-ns? #(.startsWith (str (ns-name %)) "clojure.")]
     (sort-by
-     (fn [x]
-       (println x)
-       ((comp :ns meta) x))
+     (comp :ns meta)
      (fn [x y]
        (cond
+         (and (nil? x) (nil? y)) 0
          (nil? x) 1
          (nil? y) -1
          (= x ns) -1
