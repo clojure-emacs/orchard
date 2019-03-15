@@ -22,7 +22,7 @@
   (let [orig-project-root n/project-root]
     (testing "Project nses is case sensitive on non Windows oses"
       (with-redefs [misc/os-windows? (constantly false)
-                    n/project-root   (str/replace orig-project-root "orchard" "Orchard")]
+                    n/project-root   (str/upper-case orig-project-root)]
         (println "Windows?" (misc/os-windows?))
         (println "Original" orig-project-root)
         (println "Project Root" n/project-root)
