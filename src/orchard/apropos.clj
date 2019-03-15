@@ -26,7 +26,6 @@
      (comp :ns meta)
      (fn [x y]
        (cond
-         (and (nil? x) (nil? y)) 0
          (nil? x) 1
          (nil? y) -1
          (= x ns) -1

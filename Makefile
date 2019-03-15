@@ -49,7 +49,7 @@ cljfmt:
 
 cloverage:
 	lein with-profile +$(VERSION),+cloverage cloverage --codecov \
-	     -e "orchard.java.parser"
+	     -e "orchard.java.parser" -t "orchard.apropos-test/namespaces-test"
 
 # When releasing, the BUMP variable controls which field in the
 # version string will be incremented in the *next* snapshot
