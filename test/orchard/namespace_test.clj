@@ -20,9 +20,12 @@
 
 (deftest project-nses-ignore-case-on-windows-test
   (let [orig-project-root n/project-root]
-    #_(testing "Project nses is case sensitive on non Windows oses"
+    (testing "Project nses is case sensitive on non Windows oses"
       (with-redefs [misc/os-windows? (constantly false)
                     n/project-root   (str/replace orig-project-root "orchard" "Orchard")]
+        (println "Windows?" (misc/os-windows?))
+        (println "Original" orig-project-root)
+        (println "Project Root" n/project-root)
         (is (not (seq (n/project-namespaces))))))
     (testing "Project nses ignore cases on Windows oses"
       (with-redefs [misc/os-windows? (constantly true)
