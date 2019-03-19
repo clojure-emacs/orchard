@@ -18,15 +18,23 @@
   (is (not-any? #(re-find #".*orchard" %)
                 (n/loaded-namespaces [".*orchard"]))))
 
+(defn- change-case
+  "Utility fn to change the case of a string, to help with case sensitivity
+  tests that follows"
+  [string]
+  (let [upper (str/upper-case string)
+        lower (str/lower-case string)]
+    (if (= string lower) upper lower)))
+
 (deftest project-nses-ignore-case-on-windows-test
   (let [orig-project-root n/project-root]
     (testing "Project nses is case sensitive on non Windows oses"
       (with-redefs [misc/os-windows? (constantly false)
-                    n/project-root   (str/upper-case orig-project-root)]
-         (is (not (seq (n/project-namespaces))))))
+                    n/project-root   (change-case orig-project-root)]
+        (is (not (seq (n/project-namespaces))))))
     (testing "Project nses ignore cases on Windows oses"
       (with-redefs [misc/os-windows? (constantly true)
-                    n/project-root   (str/replace orig-project-root "orchard" "Orchard")]
+                    n/project-root   (change-case orig-project-root)]
         (is (seq (n/project-namespaces)))))))
 
 (deftest has-tests-errors
