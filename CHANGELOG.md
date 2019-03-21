@@ -2,6 +2,10 @@
 
 ## master (unreleased)
 
+### New features
+
+* [#42](https://github.com/clojure-emacs/orchard/pull/42): Add namespace alias support for `spec-list` and `spec-form`.
+
 ## 0.4.0 (2019-01-14)
 
 ### New features
