@@ -11,7 +11,7 @@
   (:require
    [clojure.string :as s])
   (:import
-   (java.lang.reflect Field)
+   (java.lang.reflect Field Modifier)
    (java.util List Map)
    clojure.lang.Seqable))
 
@@ -413,21 +413,35 @@
       (render "Value: " (pr-str obj))))
 
 (defmethod inspect :default [inspector obj]
-  (let [^"[Ljava.lang.reflect.Field;" fields (.getDeclaredFields (class obj))
-        names (map #(.getName ^Field %) fields)
-        get (fn [^Field f]
+  (let [all-fields (.getDeclaredFields (class obj))
+
+        {static true, non-static false}
+        (group-by #(Modifier/isStatic (.getModifiers ^Field %)) all-fields)]
+    (letfn [(field-name [^Field f]
+              (.getName f))
+
+            (field-val [^Field f]
               (try (.setAccessible f true)
                    (catch java.lang.SecurityException e))
               (try (.get f obj)
                    (catch java.lang.IllegalAccessException e
                      "Access denied.")))
-        vals (map get fields)]
-    (-> inspector
-        (render-labeled-value "Type" (class obj))
-        (render-labeled-value "Value" (pr-str obj))
-        (render-ln "---")
-        (render-ln "Fields: ")
-        (render-map-values (zipmap names vals)))))
+
+            (render-fields [inspector section-name fields]
+              (if (seq fields)
+                (-> inspector
+                    (render-ln section-name)
+                    (render-map-values (->> fields
+                                            (map (fn [f] [(field-name f) (field-val f)]))
+                                            (into (sorted-map))))
+                    (render-ln))
+                inspector))]
+      (-> inspector
+          (render-labeled-value "Type" (class obj))
+          (render-labeled-value "Value" (pr-str obj))
+          (render-ln "---")
+          (render-fields "Fields:" non-static)
+          (render-fields "Static fields:" static)))))
 
 (defn- render-class-section [inspector obj section]
   (let [method (symbol (str ".get" (name section)))
