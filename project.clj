@@ -57,7 +57,8 @@
              :cljfmt {:plugins [[lein-cljfmt "0.5.7"]]
                       :cljfmt {:indents {as-> [[:inner 0]]
                                          with-debug-bindings [[:inner 0]]
-                                         merge-meta [[:inner 0]]}}}
+                                         merge-meta [[:inner 0]]
+                                         letfn [[:block 1] [:inner 2]]}}}
 
              :eastwood {:plugins [[jonase/eastwood "0.3.4"]]
                         :eastwood {:config-files ["eastwood.clj"]}}})
