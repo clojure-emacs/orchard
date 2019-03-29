@@ -21,7 +21,7 @@
 
 (def java-hashmap-inspect-result ["(\"Class\" \": \" (:value \"java.util.HashMap\" 0) (:newline) \"Contents: \" (:newline) \"  \" (:value \":b\" 1) \" = \" (:value \"2\" 2) (:newline) \"  \" (:value \":c\" 3) \" = \" (:value \"3\" 4) (:newline) \"  \" (:value \":a\" 5) \" = \" (:value \"1\" 6) (:newline))"])
 
-(def tagged-literal-inspect-result ["(\"Type\" \": \" (:value \"clojure.lang.TaggedLiteral\" 0) (:newline) \"Value\" \": \" (:value \"\\\"#foo ()\\\"\" 1) (:newline) \"---\" (:newline) \"Fields:\" (:newline) \"  \" (:value \"\\\"form\\\"\" 2) \" = \" (:value \"()\" 3) (:newline) \"  \" (:value \"\\\"tag\\\"\" 4) \" = \" (:value \"foo\" 5) (:newline) (:newline) \"Static fields:\" (:newline) \"  \" (:value \"\\\"FORM_KW\\\"\" 6) \" = \" (:value \":form\" 7) (:newline) \"  \" (:value \"\\\"TAG_KW\\\"\" 8) \" = \" (:value \":tag\" 9) (:newline) (:newline))"])
+(def tagged-literal-inspect-result ["(\"Class\" \": \" (:value \"clojure.lang.TaggedLiteral\" 0) (:newline) \"Value\" \": \" (:value \"\\\"#foo ()\\\"\" 1) (:newline) \"---\" (:newline) \"Fields:\" (:newline) \"  \" (:value \"\\\"form\\\"\" 2) \" = \" (:value \"()\" 3) (:newline) \"  \" (:value \"\\\"tag\\\"\" 4) \" = \" (:value \"foo\" 5) (:newline) (:newline) \"Static fields:\" (:newline) \"  \" (:value \"\\\"FORM_KW\\\"\" 6) \" = \" (:value \":form\" 7) (:newline) \"  \" (:value \"\\\"TAG_KW\\\"\" 8) \" = \" (:value \":tag\" 9) (:newline) (:newline))"])
 
 (def long-sequence (range 70))
 (def long-vector (vec (range 70)))
