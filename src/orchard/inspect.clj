@@ -441,7 +441,7 @@
                     (render-ln))
                 inspector))]
       (-> inspector
-          (render-labeled-value "Type" (class obj))
+          (render-labeled-value "Class" (class obj))
           (render-labeled-value "Value" (pr-str obj))
           (render-ln "---")
           (render-fields "Fields:" non-static)
@@ -472,12 +472,12 @@
 
 (defmethod inspect :class [inspector ^Class obj]
   (reduce (partial render-section obj)
-          (render-labeled-value inspector "Type" (class obj))
+          (render-labeled-value inspector "Class" (class obj))
           [:Interfaces :Constructors :Fields :Methods]))
 
 (defmethod inspect :aref [inspector ^clojure.lang.ARef obj]
   (-> inspector
-      (render-labeled-value "Type" (class obj))
+      (render-labeled-value "Class" (class obj))
       (render-ln "Contains:")
       (render-ln)
       (inspect (deref obj))))
