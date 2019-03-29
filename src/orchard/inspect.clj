@@ -413,7 +413,11 @@
       (render "Value: " (pr-str obj))))
 
 (defmethod inspect :default [inspector obj]
-  (let [all-fields (.getDeclaredFields (class obj))
+  (let [class-chain (loop [c (class obj), res ()]
+                      (if c
+                        (recur (.getSuperclass c) (cons c res))
+                        res))
+        all-fields (mapcat #(.getDeclaredFields ^Class %) class-chain)
 
         {static true, non-static false}
         (group-by #(Modifier/isStatic (.getModifiers ^Field %)) all-fields)]
