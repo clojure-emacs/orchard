@@ -181,14 +181,15 @@
 ;; duplicated reflection and source parsing becomes a wasteful performance hit.
 ;;
 ;; To support mixed Clojure/Java projects where `.java` files are being updated
-;; and recompiled, we cache classes for which the Java source is in a jar/zip or
-;; is not present, but don't cache when the `.java` file is on the classpath.
+;; and recompiled, we cache such classes with last-modified property, so that we
+;; know when to purge those classes from cache.
 
 (def cache (atom {}))
-(defn cache?
-  "Whether to cache the class info; this will be true if the source file is
-  effectively immutable, and false otherwise. Specifically, this returns true if
-  no source file is available, or if the source file is in a jar/zip archive."
+
+(defn- immutable-source-file?
+  "Return true if the source file is effectively immutable. Specifically, this
+  returns true if no source file is available, or if the source file is in a
+  jar/zip archive."
   [info]
   (let [path (:file info)
         src  (when path (io/resource path))]
@@ -200,11 +201,22 @@
   Members are indexed first by name, and then by argument types to list all
   overloads."
   [class]
-  (or (@cache class)
-      (let [info (class-info* class)]
-        (when (cache? info)
-          (swap! cache assoc class info))
-        info)))
+  (let [cached (@cache class)
+        info (if cached
+               (:info cached)
+               (class-info* class))
+        last-modified (if (immutable-source-file? info)
+                        0
+                        (.lastModified ^File (io/file (:path info))))
+        stale (not= last-modified (:last-modified cached))
+        ;; If last-modified in cache mismatches last-modified of the file,
+        ;; regenerate class-info.
+        info (if (and cached stale)
+               (class-info* class)
+               info)]
+    (when (or (not cached) stale)
+      (swap! cache assoc class {:info info, :last-modified last-modified}))
+    info))
 
 ;;; ## Class/Member Info
 ;;
