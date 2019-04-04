@@ -104,12 +104,17 @@
 ;; They just map to a special symbol.
 (def special-sub-symbs '{& fn*, catch try, finally try})
 
-(defn repl-special-meta
+(defn repl-special-meta*
+  "Return the REPL specials info."
   [sym]
   (or (when-let [f (u/require-and-resolve 'clojure.repl/special-doc)]
         (f sym))
       (when-let [f (u/require-and-resolve 'cljs.repl/special-doc)]
         (f sym))))
+
+(def repl-special-meta
+  "Return the REPL specials info. Memoized."
+  (memoize repl-special-meta*))
 
 ;; What I find very confusing in Clojure documentation is the use of "special form" which is not a concept,
 ;; just an annotation on vars (always macros) that are special forms in other lisps.
