@@ -161,12 +161,6 @@
                         (update :ns ns-name))]
        (maybe-add-spec v meta-map)))))
 
-(def special-forms
-  "Special forms that can be apropo'ed."
-  (concat (keys (or (u/require-and-resolve 'clojure.repl/special-doc-map)
-                    (u/require-and-resolve 'cljs.repl/special-doc-map)))
-          '[& catch finally]))
-
 (defn meta+
   "Return special form or var's meta."
   [v]

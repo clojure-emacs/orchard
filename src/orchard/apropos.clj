@@ -3,7 +3,8 @@
   {:author "Jeff Valk"}
   (:require
    [orchard.meta :refer [var-name var-doc] :as m]
-   [orchard.query :as query])
+   [orchard.query :as query]
+   [orchard.misc :as u])
   (:import
    [clojure.lang MultiFn]))
 
@@ -47,7 +48,10 @@
                  :manipulate-vars
                  (fn [nss vars]
                    (if (first (filter #(= (find-ns 'clojure.core) %) nss))
-                     (concat m/special-forms vars)
+                     (concat (keys (or (u/require-and-resolve 'clojure.repl/special-doc-map)
+                                       (u/require-and-resolve 'cljs.repl/special-doc-map)))
+                             '[& catch finally]
+                             vars)
                      vars))))
          (apropos-sort ns)
          (map (fn [v]
