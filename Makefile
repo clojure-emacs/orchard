@@ -32,12 +32,12 @@ docs: autodoc.sh
 	    AUTODOC_CMD="lein with-profile +$(VERSION),+codox codox" ./autodoc.sh ; \
 	fi
 
-# Eastwood can't handle orchard.java.parser at the moment, because
+# Eastwood can't handle orchard.java.legacy-parser at the moment, because
 # tools.jar isn't in the classpath when Eastwood runs.
 
 eastwood:
 	lein with-profile +$(VERSION),+eastwood eastwood \
-	     "{:exclude-namespaces [orchard.java.parser]}"
+	     "{:exclude-namespaces [orchard.java.legacy-parser]}"
 
 cljfmt:
 	lein with-profile +$(VERSION),+cljfmt cljfmt check
@@ -49,7 +49,7 @@ cljfmt:
 
 cloverage:
 	lein with-profile +$(VERSION),+cloverage cloverage --codecov \
-	     -e "orchard.java.parser"
+	     -e "orchard.java.legacy-parser"
 
 # When releasing, the BUMP variable controls which field in the
 # version string will be incremented in the *next* snapshot
