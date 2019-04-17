@@ -5,7 +5,7 @@
    [clojure.java.io :as io]
    [clojure.reflect :as r]
    [clojure.string :as str]
-   [dynapath.util :as dp]
+   [orchard.classpath :as cp]
    [orchard.misc :as util])
   (:import
    (clojure.lang IPersistentMap)
@@ -31,20 +31,6 @@
 ;; manually, if available. Prior to JDK9, parsing source files also requires
 ;; having `tools.jar` on the classpath, which we'll have to add as well.
 
-;; This is used only to add JDK resources to the classpath. Issues of class
-;; dependency are not in play.
-(defn add-classpath!
-  "Similar to the deprecated `clojure.core/add-classpath`, adds the URL to the
-  classpath and returns it if successful, or nil otherwise."
-  [url]
-  (let [classloader (->> (.. Thread currentThread getContextClassLoader)
-                         (iterate #(.getParent ^ClassLoader %))
-                         (take-while identity)
-                         (filter dp/addable-classpath?)
-                         (last))]
-    (when (dp/add-classpath-url classloader url)
-      url)))
-
 (defn jdk-find
   "Search common JDK path configurations for a specified file name and return a
   URL if found. This accommodates `java.home` being set to either the JDK root
@@ -59,21 +45,23 @@
                (io/file parent "lib" f)]]
     (->> paths (filter #(.canRead %)) first io/as-url)))
 
+
+
 (def jdk-sources
   "The JDK sources path. If found on the existing classpath, this is the
   corresponding classpath entry. Otherwise, the JDK directory is searched for
   the file `src.zip`, and if found this added to the classpath."
-  (let [base-uri (fn [path]
-                   (when-let [uri (io/resource path)]
-                     (URI. (str/replace (str uri) path ""))))]
-    (or (base-uri "java.base/java/lang/Object.java") ; JDK9+
-        (base-uri "java/lang/Object.java")           ; JDK8-
-        (some-> (jdk-find "src.zip") add-classpath!))))
+  (let [base-url (fn [path]
+                   (some-> (io/resource path)
+                           (.. openConnection getJarFileURL)))]
+    (or (base-url "java.base/java/lang/Object.java") ; JDK9+
+        (base-url "java/lang/Object.java")           ; JDK8-
+        (some-> (jdk-find "src.zip") cp/add-classpath!))))
 
 (def jdk-tools
   "The `tools.jar` path, for JDK8 and earlier. If available, this is added
   to the classpath."
-  (some-> (jdk-find "tools.jar") add-classpath!))
+  (some-> (jdk-find "tools.jar") cp/add-classpath!))
 
 ;;; ## Javadoc URLs
 ;;

@@ -1,7 +1,6 @@
 (ns orchard.meta-test
   (:require
    [orchard.meta :as m]
-   [clojure.java.classpath]
    [clojure.repl :as repl]
    [clojure.test :refer :all]))
 
@@ -76,10 +75,10 @@
 (deftest var-meta-test
   ;; Test files can't be found on the class path.
   (is (:file (m/var-meta #'m/var-meta)))
-  (is (re-find #"java\.classpath"
+  (is (re-find #"string\.clj"
                (:file (#'m/maybe-add-file
-                       {:ns (find-ns 'clojure.java.classpath)}))))
+                       {:ns (find-ns 'clojure.string)}))))
   (is (not (re-find #"/form-init[^/]*$"
                     (:file (m/var-meta
-                            (eval '(do (in-ns 'clojure.java.classpath)
+                            (eval '(do (in-ns 'clojure.string)
                                        (def pok 10)))))))))

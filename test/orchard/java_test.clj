@@ -2,11 +2,28 @@
   (:require
    [clojure.java.io :as io]
    [clojure.test :refer :all]
+   [dynapath.util :as dp]
    [orchard.java :refer :all]
    [orchard.misc :refer [java-api-version]]))
 
 (def jdk-parser? (or (>= java-api-version 9) jdk-tools))
 (def jdk-sources? (and jdk-sources (< java-api-version 9))) ; TODO modular JDK (9+) not yet supported
+
+(deftest resources-test
+  ;; If the JDK resources we wish to load dynamically are present on the file
+  ;; system, test that we've resolved them and added them to the classpath.
+  (testing "Resource loading correctness"
+    (let [jdk-sources-path (jdk-find "src.zip")
+          jdk-tools-path (jdk-find "tools.jar")
+          classpath-urls (-> (.getContextClassLoader (Thread/currentThread))
+                             (dp/all-classpath-urls)
+                             (set))]
+      (testing "of defined vars"
+        (is (= jdk-sources jdk-sources-path))
+        (is (= jdk-tools jdk-tools-path)))
+      (testing "of dynamically added classpath entries"
+        (is (= jdk-sources (classpath-urls jdk-sources)))
+        (is (= jdk-tools (classpath-urls jdk-tools)))))))
 
 (deftest source-info-test
   (let [resolve-src (comp (fnil io/resource "-none-") :file source-info)]

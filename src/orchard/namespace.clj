@@ -5,7 +5,6 @@
    [clojure.string :as str]
    [clojure.tools.namespace.file :as ns-file]
    [clojure.tools.namespace.find :as ns-find]
-   [orchard.classloader :refer [class-loader]]
    [orchard.classpath :as cp]
    [orchard.misc :as misc])
   (:import
@@ -26,7 +25,9 @@
 ;; These methods search project sources on the classpath. Non-classpath source
 ;; files, documentation code, etc within the project directory are ignored.
 (def jar-namespaces
-  (->> (cp/classpath-jarfiles)
+  (->> (cp/classpath)
+       (filter misc/jar-file?)
+       (map #(JarFile. (io/as-file %)))
        (mapcat ns-find/find-namespaces-in-jarfile)
        (into #{})))
 
@@ -43,7 +44,9 @@
                          (str/lower-case (str %))
                          (str/lower-case project-root))
                        #(.startsWith (str %) project-root))]
-    (->> (filter (memfn ^File isDirectory) (cp/classpath (class-loader)))
+    (->> (cp/classpath)
+         (map io/as-file)
+         (filter #(.isDirectory %))
          (filter project-pred)
          (mapcat ns-find/find-namespaces-in-dir))))
 
@@ -96,12 +99,6 @@
        sort))
 
 ;;; Finding a namespace's file.
-(defn- jar-file?
-  "Returns true if file is a normal file with a .jar or .JAR extension."
-  [f]
-  (let [file (io/file f)]
-    (and (.isFile file)
-         (.endsWith (.. file getName toLowerCase) ".jar"))))
 
 (defn- get-clojure-sources-in-jar
   [^JarFile jar]
@@ -109,8 +106,9 @@
     (map #(str "jar:file:" path-to-jar "!/" %) (ns-find/sources-in-jar jar))))
 
 (defn- all-clj-files-on-cp []
-  (let [dirs-on-cp (filter #(.isDirectory ^File %) (cp/classpath))
-        jars-on-cp (map #(JarFile. ^File %) (filter jar-file? (cp/classpath)))]
+  (let [files-on-cp (map io/as-file (cp/classpath))
+        dirs-on-cp (filter #(.isDirectory ^File %) files-on-cp)
+        jars-on-cp (map #(JarFile. ^File %) (filter misc/jar-file? files-on-cp))]
     (concat (->> dirs-on-cp
                  (mapcat ns-find/find-sources-in-dir)
                  (map #(.getAbsolutePath ^File %)))

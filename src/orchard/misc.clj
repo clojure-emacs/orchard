@@ -1,5 +1,6 @@
 (ns orchard.misc
   (:require
+   [clojure.java.io :as io]
    [clojure.string :as str]))
 
 (def ^:const windows-prefix
@@ -8,19 +9,17 @@
 (defn os-windows? []
   (.startsWith (System/getProperty "os.name") windows-prefix))
 
-(defn boot-fake-classpath
-  "Retrieve Boot's fake classpath.
-  When using Boot, fake.class.path contains the original directories with source
-  files, which makes it way more useful than the real classpath.
-  See https://github.com/boot-clj/boot/issues/249 for details."
-  []
-  (System/getProperty "fake.class.path"))
+(defn jar-file?
+  "Returns true if the argument is a file with a .jar or .JAR extension"
+  [f]
+  (let [file (io/file f)]
+    (and (.isFile file)
+         (.endsWith (.. file getName toLowerCase) ".jar"))))
 
-(defn boot-project?
-  "Check whether we're dealing with a Boot project.
-  We figure this by checking for the presence of Boot's fake classpath."
-  []
-  (not (nil? (boot-fake-classpath))))
+(defn directory?
+  "Returns true if the argument is a directory"
+  [f]
+  (.isDirectory (io/file f)))
 
 (defn as-sym
   [x]

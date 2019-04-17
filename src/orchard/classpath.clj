@@ -1,53 +1,70 @@
 (ns orchard.classpath
-  "A simple wrapper around `clojure.java.classpath` that is Boot-aware."
+  "Classpath access and modification"
   (:require
-   [clojure.java.classpath :as cp]
-   [clojure.string :as str]
-   [orchard.classloader :as cl]
-   [orchard.misc :as u])
+   [clojure.java.io :as io]
+   [dynapath.util :as dp])
   (:import
-   java.io.File
-   java.util.jar.JarFile))
+   (clojure.lang Compiler DynamicClassLoader)
+   (java.net URL)))
 
-(defn- ensure-absolute-paths
-  "Returns a `File` guaranteeing an absolute path for `file`."
-  [^File file]
-  (if (.isAbsolute file)
-    file
-    (File. (.getAbsolutePath file))))
+;;; Classloaders
+
+(defn context-classloader
+  "Returns the current classloader for the current thread"
+  []
+  (.getContextClassLoader (Thread/currentThread)))
+
+(defn classloaders
+  "Returns the thread's classloader hierarchy"
+  ([^ClassLoader loader]
+   (->> loader
+        (iterate #(.getParent ^ClassLoader %))
+        (take-while identity)))
+  ([]
+   (classloaders (context-classloader))))
+
+(defn modifiable-classloader
+  "Returns the highest classloader in the hierarchy that satisfies
+  `dynapath.util/addable-classpath?`, or nil if none do"
+  []
+  (last (filter dp/addable-classpath? 
+                (classloaders))))
+
+(defn add-classloader!
+  "Sets the context classloader for this thread to a
+  `clojure.lang.DynamicClassLoader` using the compiler's classloader
+   if available"
+  []
+  (let [thread (Thread/currentThread)
+        loader (or @Compiler/LOADER
+                   (DynamicClassLoader. (context-classloader)))]
+    (.setContextClassLoader thread loader)
+    loader))
+
+;;; Classpaths
+
+(defn system-classpath
+  "Returns the URLs defined by the 'java.class.path' system property"
+  []
+  (map (comp io/as-url io/as-file)
+       (.split (System/getProperty "java.class.path")
+               (System/getProperty "path.separator")))) 
 
 (defn classpath
-  "Return a sequence of File objects of elements on the classpath.
-
-  It takes into account the classpath trickery performed by Boot."
+  "Returns the URLs on the classpath"
+  ([^ClassLoader loader]
+   (->> (classloaders loader)
+        (mapcat dp/classpath-urls)
+        (concat (system-classpath))
+        (distinct)))
   ([]
-   (classpath (cl/class-loader)))
-  ([classloader]
-   (let [sep (re-pattern File/pathSeparator)
-         ;; TODO: Check if that's really needed - after all we have a Boot-aware classloader
-         boot-classpath (u/boot-fake-classpath)
-         path (if boot-classpath
-                (map #(File. ^String %) (str/split boot-classpath sep))
-                ;; See https://dev.clojure.org/jira/browse/CLASSPATH-8
-                (or (seq (cp/classpath classloader))
-                    ;; Java 9+
-                    (map ensure-absolute-paths (cp/system-classpath))))]
-     path)))
+   (classpath (context-classloader))))
 
-(defn classpath-directories
-  "Returns a sequence of File objects for the directories on classpath.
-
-  Uses `classpath` instead of `clojure.java.classpath/classpath`."
-  ([]
-   (classpath-directories (classpath)))
-  ([path]
-   (filter #(.isDirectory ^File %) path)))
-
-(defn classpath-jarfiles
-  "Returns a sequence of JarFile objects for the JAR files on classpath.
-
-  Uses `classpath` instead of `clojure.java.classpath/classpath`."
-  ([]
-   (classpath-jarfiles (classpath)))
-  ([path]
-   (map #(JarFile. ^File %) (filter cp/jar-file? path))))
+(defn add-classpath!
+  "Adds the URL to the classpath and returns it if successful, or nil otherwise,
+  ensuring that a modifiable classloader is available"
+  [^URL url]
+  (let [loader (or (modifiable-classloader)
+                   (add-classloader!))]
+    (when (dp/add-classpath-url loader url)
+      url)))

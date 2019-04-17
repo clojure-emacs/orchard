@@ -5,9 +5,7 @@
    [orchard.namespace :as n]
    [orchard.misc :as misc]))
 
-;; Temporarily exclude this test under Java 9
-;; See http://bit.ly/2DtfMMl for details
-(deftest ^:java9-excluded project-namespaces-test
+(deftest project-namespaces-test
   (is (contains? (into #{} (n/project-namespaces))
                  'orchard.namespace)))
 

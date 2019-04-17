@@ -3,7 +3,7 @@
    [clojure.edn :as edn]
    [clojure.java.io :as io]
    [clojure.java.javadoc :as javadoc]
-   [orchard.classloader :refer [class-loader]]
+   [orchard.classpath :as cp]
    [orchard.java :as java]
    [orchard.meta :as m]
    [orchard.misc :as u]))
@@ -36,7 +36,7 @@
   (java/member-info class member))
 
 (defn- resource-full-path [relative-path]
-  (io/resource relative-path (class-loader)))
+  (io/resource relative-path (cp/context-classloader)))
 
 (defn resource-path
   "If it's a resource, return a tuple of the relative path and the full resource path."

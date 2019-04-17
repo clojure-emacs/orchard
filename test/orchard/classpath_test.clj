@@ -4,64 +4,67 @@
    [clojure.set :as set]
    [clojure.string :as str]
    [clojure.test :refer :all]
-   [clojure.java.classpath :as cp]
-   [orchard.classpath :as sut])
+   [orchard.classpath :as cp]
+   [orchard.misc :as u])
   (:import
-   java.io.File
-   java.nio.file.attribute.FileAttribute
-   java.nio.file.Files
-   java.util.jar.JarOutputStream
-   java.util.zip.ZipEntry))
+   (java.io File)
+   (java.net URL)))
 
-(deftest classpath-boot-test
-  (let [fake-path (map io/file [(System/getProperty "java.io.tmpdir")])]
-    (testing "when fake.class.path is not set"
-      (is (not= fake-path (sut/classpath))))
-    (testing "when fake.class.path is set"
-      (try
-        (System/setProperty "fake.class.path" (str/join File/pathSeparator fake-path))
-        (is (= fake-path (sut/classpath)))
-        (finally
-          (System/clearProperty "fake.class.path"))))))
+;; Simple normalization for string compare. Classpath URLs have trailing
+;; slashes; classpath entries specified at JVM launch may or may not.
+(defn- trim-trailing-slash [x]
+  (let [s (if (instance? URL x)
+            (.getPath x)
+            x)]
+    (str/replace s #"/$" "")))
 
 (deftest classpath-test
-  (testing "Builds correct classpaths"
-    (is (set/subset?
-         (set (map #(.getAbsolutePath (File. %))
-                   (-> (System/getProperty "java.class.path")
-                       (str/split (re-pattern File/pathSeparator)))))
-         (set (map str (sut/classpath))))))
-  (testing "turning relative paths to absolute paths on java9+"
-    (let [real-cp (System/getProperty "java.class.path")
-          test-file (File. "src")
-          expected-file (File. (.getAbsolutePath test-file))]
-      (try
-        (System/setProperty "java.class.path" (.getPath test-file))
-        (with-redefs [cp/classpath (fn [_] nil)]
-          (is (= expected-file (first (sut/classpath)))))
-        (finally
-          (System/setProperty "java.class.path" real-cp))))))
+  (testing "Classpath"
+    (testing "URLs are absolute file paths"
+      (is (every? #(.isAbsolute (File. (.getPath %)))
+                  (cp/classpath))))
+    (testing "directory paths have a trailing slash"
+      (is (->> (cp/classpath)
+               (filter u/directory?)
+               (every? #(.endsWith (.getPath %) "/")))))
+    (testing "contains expected entries"
+      (let [project-root (System/getProperty "user.dir")]
+        (is (some #(= (str (io/file project-root "src")) %)
+                  (map trim-trailing-slash (cp/classpath))))
+        (is (some #(= (str (io/file project-root "test")) %)
+                  (map trim-trailing-slash (cp/classpath))))
+        (is (some #(re-find #".*/clojure-.*\.jar" (.getPath %))
+                  (cp/classpath)))
+        (is (some #(re-find #".*/clojure-.*-sources\.jar" (.getPath %))
+                  (cp/classpath))))))
+  (testing "System classpath"
+    (testing "is set correctly"
+      (is (= (set (map trim-trailing-slash (cp/system-classpath)))
+             (set (map trim-trailing-slash
+                       (.split (System/getProperty "java.class.path")
+                               (System/getProperty "path.separator")))))))
+    (testing "is visible on full classpath"
+      (is (set/subset?
+           (set (cp/system-classpath))
+           (set (cp/classpath)))))))
 
-(defn make-temp-dir
-  []
-  (-> (str (gensym))
-      (Files/createTempDirectory (into-array FileAttribute []))
-      .toFile))
-
-(defn make-temp-jar
-  []
-  (let [file (File/createTempFile (str (gensym)) ".jar")]
-    (with-open [out (JarOutputStream. (io/output-stream file))]
-      (.putNextEntry out (ZipEntry. (str (gensym)))))
-    file))
-
-(defn make-test-classpath
-  []
-  (shuffle (concat (repeatedly 2 make-temp-dir)
-                   (repeatedly 3 make-temp-jar))))
-
-(deftest classpath-directories-test
-  (is (= 2 (count (sut/classpath-directories (make-test-classpath))))))
-
-(deftest classpath-jarfiles-test
-  (is (= 3 (count (sut/classpath-jarfiles (make-test-classpath))))))
+(deftest classloader-test
+  (testing "Classloader hierarchy contains current classloader"
+    (is (contains? (set (cp/classloaders)) (cp/context-classloader))))
+  (testing "Classpath modification"
+    (let [orig-classloaders (cp/classloaders)
+          orig-classpath (cp/classpath)
+          url (-> (System/getProperty "java.io.tmpdir")
+                  (io/file "test.txt")
+                  (io/as-url))]
+      (cp/add-classpath! url)
+      (testing "adds the URL"
+        (is (contains? (set (cp/classpath)) url)))
+      (testing "preserves prior classpath URLs"
+        (is (set/subset?
+             (set orig-classpath)
+             (set (cp/classpath)))))
+      (testing "preserves the classloader hierarchy"
+        (is (set/subset?
+             (set orig-classloaders)
+             (set (cp/classloaders))))))))

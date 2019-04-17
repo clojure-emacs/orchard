@@ -111,23 +111,3 @@
   (is (relative "clojure/core.clj"))
   (is (nil? (relative "notclojure/core.clj")))
   (is (nil? (info/resource-path "jar:file:fake.jar!/fake/file.clj"))))
-
-;; TODO: What's the value of this test?
-(deftest boot-resource-path-test
-  (let [tmp-dir-name (System/getProperty "java.io.tmpdir")
-        tmp-file-name "boot-test.txt"
-        tmp-file-path (str tmp-dir-name (System/getProperty "file.separator") tmp-file-name)]
-    (spit tmp-file-path "test")
-    (testing "when fake.class.path is not set"
-      (is (not (= (class (file tmp-file-name))
-                  java.net.URL)))
-      (is (= (file tmp-file-name) tmp-file-name)))
-    (testing "when fake.class.path is set"
-      (try
-        (System/setProperty "fake.class.path" tmp-dir-name)
-        (is (= (class (file tmp-file-name))
-               java.net.URL))
-        (is (= (.getPath (file tmp-file-name))
-               tmp-file-path))
-        (finally
-          (System/clearProperty "fake.class.path"))))))
