@@ -75,8 +75,7 @@
                      (.setEncoding "utf-8")
                      (.setSilent true)
                      (set-field! "showAccess" access))
-          source   (proxy [SimpleJavaFileObject]
-                       [(URI. path) JavaFileObject$Kind/SOURCE]
+          source   (proxy [SimpleJavaFileObject] [(URI. path) JavaFileObject$Kind/SOURCE]
                      (getCharContent [_] (slurp res)))
           tree     (.parse compiler source)
           classes  (->> (.defs tree)

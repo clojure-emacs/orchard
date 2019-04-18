@@ -51,8 +51,7 @@
   [path]
   (when-let [res (io/resource path)]
     (let [compiler (ToolProvider/getSystemDocumentationTool)
-          source   (proxy [SimpleJavaFileObject]
-                       [(URI. path) JavaFileObject$Kind/SOURCE]
+          source   (proxy [SimpleJavaFileObject] [(URI. path) JavaFileObject$Kind/SOURCE]
                      (getCharContent [_] (slurp res)))
           doclet   (class (reify Doclet
                             (init [this _ _] (reset! result nil))
