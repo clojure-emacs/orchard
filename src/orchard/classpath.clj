@@ -27,7 +27,7 @@
   "Returns the highest classloader in the hierarchy that satisfies
   `dynapath.util/addable-classpath?`, or nil if none do"
   []
-  (last (filter dp/addable-classpath? 
+  (last (filter dp/addable-classpath?
                 (classloaders))))
 
 (defn add-classloader!
@@ -48,7 +48,7 @@
   []
   (map (comp io/as-url io/as-file)
        (.split (System/getProperty "java.class.path")
-               (System/getProperty "path.separator")))) 
+               (System/getProperty "path.separator"))))
 
 (defn classpath
   "Returns the URLs on the classpath"
