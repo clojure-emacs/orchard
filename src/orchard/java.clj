@@ -45,8 +45,6 @@
                (io/file parent "lib" f)]]
     (->> paths (filter #(.canRead %)) first io/as-url)))
 
-
-
 (def jdk-sources
   "The JDK sources path. If found on the existing classpath, this is the
   corresponding classpath entry. Otherwise, the JDK directory is searched for
