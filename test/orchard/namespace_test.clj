@@ -19,12 +19,14 @@
                 (n/loaded-namespaces [".*orchard"]))))
 
 (defn- change-case
-  "Utility fn to change the case of a string, to help with case sensitivity
+  "Utility fn to change the case of a URL path, to help with case sensitivity
   tests that follows"
-  [string]
-  (let [upper (str/upper-case string)
+  [url]
+  (let [string (str url)
+        upper (str/upper-case string)
         lower (str/lower-case string)]
-    (if (= string lower) upper lower)))
+    (io/as-url
+     (if (= string lower) upper lower))))
 
 (deftest project-nses-ignore-case-on-windows-test
   (let [orig-project-root n/project-root]
