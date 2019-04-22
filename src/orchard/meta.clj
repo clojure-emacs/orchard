@@ -59,13 +59,13 @@
     info))
 
 (defn- maybe-add-file
-  "If `meta-map` has no :file, assoc the :namespace file into it."
+  "If `meta-map` has no :file, assoc the canonical namespace source file."
   [{:keys [file ns] :as meta-map}]
   ;; If we don't know its file, use the ns file.
   (if (and ns (or (not file)
                   (re-find #"/form-init[^/]*$" file)))
     (-> (dissoc meta-map :line)
-        (assoc :file (ns/ns-path ns)))
+        (assoc :file (some-> (ns/canonical-source ns) .getPath)))
     meta-map))
 
 (defn- maybe-protocol

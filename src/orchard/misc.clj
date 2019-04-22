@@ -9,17 +9,24 @@
 (defn os-windows? []
   (.startsWith (System/getProperty "os.name") windows-prefix))
 
-(defn jar-file?
-  "Returns true if the argument is a file with a .jar or .JAR extension"
-  [f]
-  (let [file (io/file f)]
-    (and (.isFile file)
-         (.endsWith (.. file getName toLowerCase) ".jar"))))
-
 (defn directory?
-  "Returns true if the argument is a directory"
+  "Whether the argument is a directory"
   [f]
-  (.isDirectory (io/file f)))
+  (.isDirectory (io/as-file f)))
+
+(defn file-ext?
+  "Whether the argument's path ends in one of the specified case-insensitive
+  file extensions"
+  [f & exts]
+  (let [file (io/as-file f)]
+    (some (fn [ext]
+            (.endsWith (.. file getName toLowerCase) ext))
+          exts)))
+
+(defn clj-file?  [f] (file-ext? f ".clj" ".cljc"))
+(defn java-file? [f] (file-ext? f ".java"))
+(defn jar-file?  [f] (file-ext? f ".jar"))
+(defn archive?   [f] (file-ext? f ".jar" ".zip"))
 
 (defn as-sym
   [x]

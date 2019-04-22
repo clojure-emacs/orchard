@@ -48,6 +48,14 @@
            (set (cp/system-classpath))
            (set (cp/classpath)))))))
 
+(deftest classpath-resources-test
+  (testing "Iterating classpath resources"
+    (testing "returns non-empty lists"
+      (is (every? seq (map cp/classpath-seq (cp/classpath)))))
+    (testing "returns relative paths"
+      (is (every? #(not (.isAbsolute (File. %)))
+                  (mapcat cp/classpath-seq (cp/classpath)))))))
+
 (deftest classloader-test
   (testing "Classloader hierarchy contains current classloader"
     (is (contains? (set (cp/classloaders)) (cp/context-classloader))))

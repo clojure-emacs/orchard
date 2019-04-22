@@ -1,15 +1,37 @@
 (ns orchard.namespace
   "Utilities for resolving and loading namespaces"
   (:require
+   [clojure.edn :as edn]
    [clojure.java.io :as io]
    [clojure.string :as str]
-   [clojure.tools.namespace.file :as ns-file]
-   [clojure.tools.namespace.find :as ns-find]
    [orchard.classpath :as cp]
-   [orchard.misc :as misc])
+   [orchard.misc :as u])
   (:import
-   java.io.File
-   java.util.jar.JarFile))
+   (clojure.lang Namespace)
+   (java.io File PushbackReader)))
+
+;;; Namespace/source resolution
+
+(defn read-namespace
+  "Returns the namespace name from the first top-level `ns` form in the file"
+  [url]
+  (try
+    (with-open [r (PushbackReader. (io/reader url))]
+      (->> (repeatedly #(edn/read r))
+           (filter #(and (list? %) (= (first %) 'ns))) ; ns form
+           (map second)                                ; ns name
+           (first)))
+    (catch Exception _)))
+
+(defn canonical-source
+  "Returns the URL of the source file for the namespace object or symbol,
+  according to the canonical naming convention, if present on the classpath"
+  [ns]
+  (let [path (-> (str ns)
+                 (str/replace "-" "_")
+                 (str/replace "." "/"))]
+    (or (io/resource (str path ".clj"))
+        (io/resource (str path ".cljc")))))
 
 ;;; Namespace Loading
 
@@ -20,35 +42,16 @@
   (try (doto (symbol ns) require)
        (catch Exception _)))
 
-;;; Project Namespaces
-;;
-;; These methods search project sources on the classpath. Non-classpath source
-;; files, documentation code, etc within the project directory are ignored.
-(def jar-namespaces
-  (->> (cp/classpath)
-       (filter misc/jar-file?)
-       (map #(JarFile. (io/as-file %)))
-       (mapcat ns-find/find-namespaces-in-jarfile)
-       (into #{})))
+;;; Filters
 
 (def project-root
-  (str (System/getProperty "user.dir")
-       (System/getProperty "file.separator")))
+  (io/as-url (io/file (System/getProperty "user.dir"))))
 
-(defn project-namespaces
-  "Find all namespaces defined in source paths within the current project."
-  []
-  (let [project-pred (if (misc/os-windows?)
-                       ;; On Windows we want to do case-insensitive path comparison
-                       #(.startsWith
-                         (str/lower-case (str %))
-                         (str/lower-case project-root))
-                       #(.startsWith (str %) project-root))]
-    (->> (cp/classpath)
-         (map io/as-file)
-         (filter #(.isDirectory %))
-         (filter project-pred)
-         (mapcat ns-find/find-namespaces-in-dir))))
+(defn in-project?
+  "Whether the URL is in the current project's directory"
+  [url]
+  (let [path (if (u/os-windows?) (comp str/lower-case str) str)]
+    (.startsWith (path url) (path project-root))))
 
 (defn inlined-dependency?
   "Returns true if the namespace matches one of our, or eastwood's,
@@ -72,16 +75,34 @@
          (map #(re-find % ns-name))
          (some (complement nil?)))))
 
-(defn loaded-namespaces
-  "Return all loaded namespaces, except those coming from inlined dependencies.
-  `filter-regexps` is used to filter out namespaces matching regexps."
-  [& [filter-regexps]]
-  (->> (all-ns)
-       (remove inlined-dependency?)
-       (remove #(internal-namespace? % filter-regexps))
-       (map ns-name)
-       (map name)
-       (sort)))
+(defn has-tests?
+  "Returns a truthy value if the namespace has any vars with `:test` metadata"
+  [ns]
+  (seq (filter (comp :test meta val) (ns-interns ns))))
+
+;;; Project Namespaces
+;;
+;; These methods search sources on the classpath. Non-classpath source
+;; files, documentation code, etc within the project directory are ignored.
+
+(defn classpath-namespaces
+  "Returns all namespaces defined in sources on the classpath or the specified
+  classpath URLs"
+  ([classpath-urls]
+   (->> (mapcat cp/classpath-seq classpath-urls)
+        (filter u/clj-file?)
+        (map (comp read-namespace io/resource))
+        (filter identity)
+        (sort)))
+  ([]
+   (classpath-namespaces (cp/classpath))))
+
+(defn project-namespaces
+  "Returns all namespaces defined in sources within the current project."
+  []
+  (->> (cp/classpath)
+       (filter (every-pred u/directory? in-project?))
+       (classpath-namespaces)))
 
 (defn loaded-project-namespaces
   "Return all loaded namespaces defined in the current project."
@@ -98,38 +119,13 @@
        (filter identity)
        sort))
 
-;;; Finding a namespace's file.
-
-(defn- get-clojure-sources-in-jar
-  [^JarFile jar]
-  (let [path-to-jar (.getName jar)]
-    (map #(str "jar:file:" path-to-jar "!/" %) (ns-find/sources-in-jar jar))))
-
-(defn- all-clj-files-on-cp []
-  (let [files-on-cp (map io/as-file (cp/classpath))
-        dirs-on-cp (filter #(.isDirectory ^File %) files-on-cp)
-        jars-on-cp (map #(JarFile. ^File %) (filter misc/jar-file? files-on-cp))]
-    (concat (->> dirs-on-cp
-                 (mapcat ns-find/find-sources-in-dir)
-                 (map #(.getAbsolutePath ^File %)))
-            (mapcat get-clojure-sources-in-jar jars-on-cp))))
-
-(defn ns-path
-  "Return the path to a file containing namespace `ns`.
-  `ns` can be a Namespace object or the name of a namespace."
-  [ns]
-  (try
-    (let [ns (if (instance? clojure.lang.Namespace ns)
-               (ns-name ns) (symbol ns))]
-      (loop [paths (all-clj-files-on-cp)]
-        (when (seq paths)
-          (let [file-ns (second (ns-file/read-file-ns-decl (first paths)))]
-            (if (= file-ns ns)
-              (first paths)
-              (recur (rest paths)))))))
-    (catch Throwable _ nil)))
-
-(defn has-tests?
-  "Return a truthy value if the namespace has any vars with `:test` metadata."
-  [ns]
-  (seq (filter (comp :test meta val) (ns-interns ns))))
+(defn loaded-namespaces
+  "Returns all loaded namespaces, except those coming from inlined dependencies.
+  `filter-regexps` is used to filter out namespaces matching regexps."
+  [& [filter-regexps]]
+  (->> (all-ns)
+       (remove inlined-dependency?)
+       (remove #(internal-namespace? % filter-regexps))
+       (map ns-name)
+       (map name)
+       (sort)))

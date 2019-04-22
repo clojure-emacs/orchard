@@ -2,10 +2,13 @@
   "Classpath access and modification"
   (:require
    [clojure.java.io :as io]
-   [dynapath.util :as dp])
+   [dynapath.util :as dp]
+   [orchard.misc :as u])
   (:import
    (clojure.lang Compiler DynamicClassLoader)
-   (java.net URL)))
+   (java.io File)
+   (java.net URI URL)
+   (java.util.jar JarFile JarEntry)))
 
 ;;; Classloaders
 
@@ -68,3 +71,18 @@
                    (add-classloader!))]
     (when (dp/add-classpath-url loader url)
       url)))
+
+;;; Classpath resources
+
+(defn classpath-seq
+  "Returns a sequence of all descendant non-directory files or archive entries
+  as relative paths"
+  [^URL url]
+  (let [f (io/as-file url)]
+    (if (u/archive? url)
+      (->> (enumeration-seq (.entries (JarFile. f)))
+           (filter #(not (.isDirectory ^JarEntry %)))
+           (map #(.getName ^JarEntry %)))
+      (->> (file-seq f)
+           (filter #(not (.isDirectory ^File %)))
+           (map #(.getPath (.relativize (.toURI url) (.toURI ^File %))))))))
