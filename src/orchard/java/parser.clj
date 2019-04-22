@@ -279,4 +279,7 @@
                       (first))
                  :file path
                  :path (.getPath (io/resource path)))))
-      (catch Error _))))
+      ;; FIXME This caught Error, not Throwable, prior to the bug referenced at
+      ;; https://github.com/clojure-emacs/orchard/issues/49#issuecomment-485524416
+      ;; Consider changing this back once modular source parsing is supported.
+      (catch Throwable _))))
