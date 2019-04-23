@@ -78,9 +78,12 @@
    (or (resource-full-path path)
        ;; [bug#308] `*remote-javadocs*` is outdated WRT Java
        ;; 8, so we try our own thing first.
-       (when (re-find #"^(java|javax|org.omg|org.w3c.dom|org.xml.sax)/" path)
-         (format "http://docs.oracle.com/javase/%d/docs/api/%s"
-                 u/java-api-version path))
+       (when (re-find #"^(java|javax|jdk|org.omg|org.w3c.dom|org.xml.sax)/" path)
+         (apply str ["https://docs.oracle.com"
+                     (if (>= u/java-api-version 11) "/en/java/javase/" "/javase/")
+                     u/java-api-version
+                     "/docs/api/"
+                     path]))
        ;; If that didn't work, _then_ we fallback on `*remote-javadocs*`.
        (some (let [classname (.replaceAll path "/" ".")]
                (fn [[prefix url]]
