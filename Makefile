@@ -12,26 +12,6 @@ TEST_SELECTOR := :java$(JAVA_VERSION)
 test:
 	lein with-profile +$(VERSION) test $(TEST_SELECTOR)
 
-# Documentation management via autodoc (https://github.com/plexus/autodoc)
-# Pin a specific commit in that repo to prevent accidental changes in
-# that upstream project breaking our CI. Periodically update the URL
-# below as needed.
-
-autodoc.sh:
-	curl -L https://raw.githubusercontent.com/plexus/autodoc/a540761f/autodoc.sh -o $@
-	chmod +x $@
-
-docs: autodoc.sh
-	@if [ "$(TRAVIS)" = "true" ] && [ "$(TRAVIS_PULL_REQUEST)" = "false" ]; then \
-	    git remote set-url --push origin \
-	        https://$(GH_USER):$(GH_PASSWORD)@github.com/$(TRAVIS_REPO_SLUG).git; \
-	    AUTODOC_SUBDIR="$(TRAVIS_BRANCH)" \
-	    AUTODOC_CMD="lein with-profile +$(VERSION),+codox codox" ./autodoc.sh ; \
-	else \
-	    AUTODOC_SUBDIR=`git rev-parse --abbrev-ref HEAD` \
-	    AUTODOC_CMD="lein with-profile +$(VERSION),+codox codox" ./autodoc.sh ; \
-	fi
-
 # Eastwood can't handle orchard.java.legacy-parser at the moment, because
 # tools.jar isn't in the classpath when Eastwood runs.
 
