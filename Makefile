@@ -49,4 +49,3 @@ deploy:
 
 clean:
 	lein clean
-	rm -rf gh-pages autodoc.sh
