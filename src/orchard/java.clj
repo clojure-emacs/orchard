@@ -71,19 +71,25 @@
 ;; generics, e.g. `java/util/Arrays.html#asList(T...)`.) Since the member is
 ;; just a URL fragment, the javadoc link will simply navigate to the parent
 ;; class in these cases.
+
+;; As of Java 11, Javadoc URLs begin with the module name.
+(declare module-name)
+
 (defn javadoc-url
   "Return the relative `.html` javadoc path and member fragment."
   ([class]
-   (-> (str/replace (str class) "." "/")
-       (str/replace "$" ".")
-       (str ".html")))
+   (let [maybe-module (when (>= util/java-api-version 11)
+                        (some-> (module-name class) (str "/")))]
+     (str maybe-module
+          (-> (str/replace (str class) "." "/")
+              (str/replace "$" "."))
+          ".html")))
   ([class member argtypes]
    (str (javadoc-url class) "#" member
         (when argtypes
-          (if (< util/java-api-version 8)
-            ;; Pre JDK 1.8 vs Post JDK 1.8 Javadoc URL style
-            (str "(" (str/join ",%20" argtypes) ")")
-            (str "-" (str/join "-" (map #(str/replace % #"\[\]" ":A") argtypes)) "-"))))))
+          (if (<= util/java-api-version 9) ; argtypes were munged before Java 10
+            (str "-" (str/join "-" (map #(str/replace % #"\[\]" ":A") argtypes)) "-")
+            (str "(" (str/join "," argtypes) ")"))))))
 
 ;;; ## Source Analysis
 ;;
@@ -103,6 +109,14 @@
       (do (require '[orchard.java.legacy-parser :as src])
           (resolve 'src/source-info))
       (constantly nil))))
+
+(def module-name
+  "On JDK9+, return module name from the class if present; otherwise return nil"
+  ;; NOTE This function exists in the parser namespace for conditional
+  ;; loading on JDK9+; it does not require parsing.
+  (if (>= util/java-api-version 9)
+    (resolve 'src/module-name)
+    (constantly nil)))
 
 ;;; ## Class Metadata Assembly
 ;;

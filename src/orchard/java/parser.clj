@@ -243,6 +243,11 @@
   (try (clojure.core/resolve sym)
        (catch Exception _)))
 
+(defn module-name
+  "Return the module name, or nil if modular"
+  [klass]
+  (some-> klass ^Class resolve .getModule .getName))
+
 (defn source-path
   "Return the relative `.java` source path for the top-level class."
   [klass]
@@ -262,24 +267,25 @@
   same structure as that of `orchard.java/reflect-info`."
   [klass]
   {:pre [(symbol? klass)]}
-  ;; FIXME Source parsing is currently disabled for modular sources. It's not
-  ;; clear whether all modular sources cause problems, or only the JDK sources.
-  ;; In practice, though, JDK sources are what users will encounter the most.
-  (when-not (some-> klass ^Class resolve .getModule .getName)
-    (try
-      (when-let [path (source-path klass)]
-        (when-let [root (parse-java path)]
-          (assoc (->> (.getIncludedElements ^DocletEnvironment root)
-                      (filter #(#{ElementKind/CLASS
-                                  ElementKind/INTERFACE
-                                  ElementKind/ENUM}
-                                (.getKind ^Element %)))
-                      (map #(parse-info % root))
-                      (filter #(= klass (:class %)))
-                      (first))
-                 :file path
-                 :path (.getPath (io/resource path)))))
-      ;; FIXME This caught Error, not Throwable, prior to the bug referenced at
-      ;; https://github.com/clojure-emacs/orchard/issues/49#issuecomment-485524416
-      ;; Consider changing this back once modular source parsing is supported.
-      (catch Throwable _))))
+  (let [module (module-name klass)]
+    ;; FIXME Source parsing is currently disabled for modular sources. It's not
+    ;; clear whether all modular sources cause problems, or only the JDK sources.
+    ;; In practice, though, JDK sources are what users will encounter the most.
+    (when-not module
+      (try
+        (when-let [path (source-path klass)]
+          (when-let [root (parse-java path)]
+            (assoc (->> (.getIncludedElements ^DocletEnvironment root)
+                        (filter #(#{ElementKind/CLASS
+                                    ElementKind/INTERFACE
+                                    ElementKind/ENUM}
+                                  (.getKind ^Element %)))
+                        (map #(parse-info % root))
+                        (filter #(= klass (:class %)))
+                        (first))
+                   :file path
+                   :path (.getPath (io/resource path)))))
+        ;; FIXME This caught Error, not Throwable, prior to the bug referenced at
+        ;; https://github.com/clojure-emacs/orchard/issues/49#issuecomment-485524416
+        ;; Consider changing this back once modular source parsing is supported.
+        (catch Throwable _)))))

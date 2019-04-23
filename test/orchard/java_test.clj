@@ -4,10 +4,10 @@
    [clojure.test :refer :all]
    [dynapath.util :as dp]
    [orchard.java :refer :all]
-   [orchard.misc :refer [java-api-version]]))
+   [orchard.misc :as u]))
 
-(def jdk-parser? (or (>= java-api-version 9) jdk-tools))
-(def jdk-sources? (and jdk-sources (< java-api-version 9))) ; TODO modular JDK (9+) not yet supported
+(def jdk-parser? (or (>= u/java-api-version 9) jdk-tools))
+(def jdk-sources? (and jdk-sources (< u/java-api-version 9))) ; TODO modular JDK (9+) not yet supported
 
 (deftest resources-test
   ;; If the JDK resources we wish to load dynamically are present on the file
@@ -162,43 +162,22 @@
 
 (deftest javadoc-urls-test
   (testing "Javadoc URL"
-    (testing "for a class"
-      (is (= (:javadoc (class-info 'java.lang.String))
-             "java/lang/String.html")))
+    (testing "for Java < 11" ; JDK8 - JDK11
+      (with-redefs [u/java-api-version 8
+                    cache (atom {})]
+        (testing "of a class"
+          (is (= (:javadoc (class-info 'java.lang.String))
+                 "java/lang/String.html")))
 
-    (testing "for a nested class"
-      (is (= (:javadoc (class-info 'java.util.AbstractMap$SimpleEntry))
-             "java/util/AbstractMap.SimpleEntry.html")))
+        (testing "of a nested class"
+          (is (= (:javadoc (class-info 'java.util.AbstractMap$SimpleEntry))
+                 "java/util/AbstractMap.SimpleEntry.html")))
 
-    (testing "for an interface"
-      (is (= (:javadoc (class-info 'java.io.Closeable))
-             "java/io/Closeable.html")))
+        (testing "of an interface"
+          (is (= (:javadoc (class-info 'java.io.Closeable))
+                 "java/io/Closeable.html")))
 
-    (let [java-version java-api-version]
-      (if (< java-version 8)
-        ;;Testing for pre-JDK 1.8 URLs
-        (testing "for a member"
-          (testing "with no args"
-            (is (= (:javadoc (member-info 'java.util.Random 'nextLong))
-                   "java/util/Random.html#nextLong()")))
-          (testing "with primitive args"
-            (is (= (:javadoc (member-info 'java.util.Random 'setSeed))
-                   "java/util/Random.html#setSeed(long)")))
-          (testing "with object args"
-            (is (= (:javadoc (member-info 'java.lang.String 'contains))
-                   "java/lang/String.html#contains(java.lang.CharSequence)")))
-          (testing "with array args"
-            (is (= (:javadoc (member-info 'java.lang.Thread 'enumerate))
-                   "java/lang/Thread.html#enumerate(java.lang.Thread[])")))
-          (testing "with multiple args"
-            (is (= (:javadoc (member-info 'java.util.ArrayList 'subList))
-                   "java/util/ArrayList.html#subList(int,%20int)")))
-          (testing "with generic type erasure"
-            (is (= (:javadoc (member-info 'java.util.Hashtable 'putAll))
-                   "java/util/Hashtable.html#putAll(java.util.Map)"))))
-
-        ;;Testing for post-JDK 1.8 URLs
-        (testing "for a member"
+        (testing "of a class member"
           (testing "with no args"
             (is (= (:javadoc (member-info 'java.util.Random 'nextLong))
                    "java/util/Random.html#nextLong--")))
@@ -216,7 +195,44 @@
                    "java/util/ArrayList.html#subList-int-int-")))
           (testing "with generic type erasure"
             (is (= (:javadoc (member-info 'java.util.Hashtable 'putAll))
-                   "java/util/Hashtable.html#putAll-java.util.Map-"))))))))
+                   "java/util/Hashtable.html#putAll-java.util.Map-"))))))
+
+    ;; Java 11+ URLs require module information, which is only available on Java 9+.
+    (when (>= u/java-api-version 9)
+      (testing "for Java 11+"
+        (with-redefs [u/java-api-version 11
+                      cache (atom {})]
+          (testing "of a class"
+            (is (= (:javadoc (class-info 'java.lang.String))
+                   "java.base/java/lang/String.html")))
+
+          (testing "of a nested class"
+            (is (= (:javadoc (class-info 'java.util.AbstractMap$SimpleEntry))
+                   "java.base/java/util/AbstractMap.SimpleEntry.html")))
+
+          (testing "of an interface"
+            (is (= (:javadoc (class-info 'java.io.Closeable))
+                   "java.base/java/io/Closeable.html")))
+
+          (testing "of a class member"
+            (testing "with no args"
+              (is (= (:javadoc (member-info 'java.util.Random 'nextLong))
+                     "java.base/java/util/Random.html#nextLong()")))
+            (testing "with primitive args"
+              (is (= (:javadoc (member-info 'java.util.Random 'setSeed))
+                     "java.base/java/util/Random.html#setSeed(long)")))
+            (testing "with object args"
+              (is (= (:javadoc (member-info 'java.lang.String 'contains))
+                     "java.base/java/lang/String.html#contains(java.lang.CharSequence)")))
+            (testing "with array args"
+              (is (= (:javadoc (member-info 'java.lang.Thread 'enumerate))
+                     "java.base/java/lang/Thread.html#enumerate(java.lang.Thread[])")))
+            (testing "with multiple args"
+              (is (= (:javadoc (member-info 'java.util.ArrayList 'subList))
+                     "java.base/java/util/ArrayList.html#subList(int,int)")))
+            (testing "with generic type erasure"
+              (is (= (:javadoc (member-info 'java.util.Hashtable 'putAll))
+                     "java.base/java/util/Hashtable.html#putAll(java.util.Map)")))))))))
 
 (deftest class-resolution-test
   (let [ns (ns-name *ns*)]
