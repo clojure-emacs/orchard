@@ -1,6 +1,6 @@
 .PHONY: test docs eastwood cljfmt cloverage release deploy clean
 
-VERSION ?= 1.9
+VERSION ?= 1.10
 
 # Some tests need to be filtered based on JVM version.  This selector
 # will be mapped to a function in project.clj, and that function
