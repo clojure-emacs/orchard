@@ -9,8 +9,8 @@
   "Convert `thing` to a function value."
   [thing]
   (cond
-    (var? thing) (deref thing)
-    (symbol? thing) (deref (find-var thing))
+    (var? thing) (var-get thing)
+    (symbol? thing) (var-get (find-var thing))
     (fn? thing) thing))
 
 (defn fn-deps
@@ -48,6 +48,6 @@
   [var]
   (let [var (as-var var)
         all-vars (q/vars {:ns-query {:project? true} :private? true})
-        all-vals (map deref all-vars)
+        all-vals (map var-get all-vars)
         deps-map (zipmap all-vars (map fn-deps all-vals))]
     (map first (filter (fn [[k v]] (contains? v var)) deps-map))))
