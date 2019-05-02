@@ -39,7 +39,7 @@
   (cond
     (var? thing) thing
     (symbol? thing) (find-var thing)
-    (fn? thing) (find-var (f->sym thing))))
+    (fn? thing) (find-var (fn->sym thing))))
 
 (defn fn-refs
   "Find all functions that refer `var`.
