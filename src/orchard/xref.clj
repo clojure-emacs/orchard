@@ -1,19 +1,22 @@
 (ns orchard.xref
   "Utilities for finding function dependencies and
-  usages."
+  references."
   {:added "0.5.0"}
   (:require
    [orchard.query :as q]))
 
-(defn- as-val [thing]
+(defn- as-val
+  "Convert `thing` to a function value."
+  [thing]
   (cond
     (var? thing) (deref thing)
     (symbol? thing) (deref (find-var thing))
     (fn? thing) thing))
 
-(defn fdeps
+(defn fn-deps
   "Returns a set with all the functions invoked by `val`.
-  `val` must be a function value, a var or a symbol."
+  `val` can be a function value, a var or a symbol."
+  {:added "0.5"}
   [val]
   (let [val (as-val val)]
     (set (some->> val class .getDeclaredFields
@@ -25,12 +28,26 @@
                                    (.get f val))
                               nil)))))))
 
-(defn xref
+(defn- fn->sym
+  "Convert a function value `f` to symbol."
+  [f]
+  (symbol (Compiler/demunge (.getName (type f)))))
+
+(defn- as-var
+  "Convert `thing` to a var."
+  [thing]
+  (cond
+    (var? thing) thing
+    (symbol? thing) (find-var thing)
+    (fn? thing) (find-var (f->sym thing))))
+
+(defn fn-refs
   "Find all functions that refer `var`.
-  It can be either a var or a symbol that can resolved to a var."
+  `var` can be a function value, a var or a symbol."
+  {:added "0.5"}
   [var]
-  (let [var (if (var? var) var (find-var var))
+  (let [var (as-var var)
         all-vars (q/vars {:ns-query {:project? true} :private? true})
         all-vals (map deref all-vars)
-        deps-map (zipmap all-vars (map fdeps all-vals))]
+        deps-map (zipmap all-vars (map fn-deps all-vals))]
     (map first (filter (fn [[k v]] (contains? v var)) deps-map))))
