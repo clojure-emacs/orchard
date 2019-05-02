@@ -8,6 +8,15 @@
 * [#46](https://github.com/clojure-emacs/orchard/pull/46): [Inspector] Separate static from non-static fields when rendering raw objects.
 * [#46](https://github.com/clojure-emacs/orchard/pull/46): [Inspector] Show fields inherited from superclasses when rendering raw objects.
 * [#47](https://github.com/clojure-emacs/orchard/pull/46): [Java] Cache class-info for editable Java classes.
+* [#51](https://github.com/clojure-emacs/orchard/issues/51): Add basic xref functionality in `orchard.xref`.
+
+### Changes
+
+* Update JavaDoc URL paths for Java 10+. Remove support for Java 7 JavaDoc URL paths.
+* Remove dependency on `clojure.tools.namespace` (replaced by `orchard.namespace`).
+* Remove dependency on `java.classpath` (replaced by `orchard.classpath`).
+* Add java parser for JDK9+; rename legacy JDK8 parser.
+* Make search for JDK directory resources compatible with JDK9+.
 
 ## 0.4.0 (2019-01-14)
 
