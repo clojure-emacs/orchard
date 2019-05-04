@@ -6,7 +6,7 @@
 # orchard
 
 A Clojure library designed to provide common functionality for Clojure
-development tools (e.g. CIDER).
+development tools (e.g. Clojure editor plugins and IDEs).
 
 ## History
 
@@ -35,6 +35,42 @@ clients can make of use of the general functionality contained in
 Much of the tooling code required to build Clojure editors and smart REPLs
 is tool-agnostic and *should* be reused between tools, instead of copied
 and altered in each and every tool.
+
+## Design
+
+Orchard is meant to be used to build programmer tooling relying on inspecting the state of a running REPL.
+REPL-powered tooling has been a core Lisp idea for many years and there are many Clojure libraries
+in that space (e.g. `compliment`, `tools.trace`, `sayid`, etc).
+
+One thing to keep in mind is that Orchard relies (mostly) on runtime information, not the source code itself.
+In simple terms - only code that's loaded (evaluated) will be taken under consideration. That's pretty different
+from the static analysis approach taken by tools for most programming languages where it's not possible to
+easily inspect the state of running program.
+
+Some other design goals are listed bellow.
+
+### No runtime dependencies
+
+Orchard is meant to run alongside your application and we can't have a
+dev tools library interfere with your app right? Dependency collisions are nasty problems which are best solved
+by making sure there can't be any shared libraries to cause the conflict.
+
+Currently Orchard has one runtime dependency (`dynapath`), but we hope to eliminate it at some point.
+
+### API Optimized for Editors
+
+Code editors can't know what symbols resolve to without consulting a REPL that's why they would typically
+send a combination of a symbol name and some ns (e.g. the current namespace), so they can't be resolved to
+some var on which an operation would be invoked.
+
+That's why the majority of the functions in Orchard take a combination of a ns and a symbol instead of a var.
+Probably down the road we'll provide var-friendly versions of most functions as well.
+
+### REPL Agnostic
+
+No matter whether you're using nREPL, a socket REPL, unrepl or prepl, Orchard has your back. nREPL clients might
+opt to wrap some of the Orchard functionality in middleware for convenience (as `cider-nrepl` does), but they
+can just eval away if they please.
 
 ## API Documentation
 
