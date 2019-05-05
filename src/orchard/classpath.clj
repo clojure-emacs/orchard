@@ -5,7 +5,6 @@
    [dynapath.util :as dp]
    [orchard.misc :as u])
   (:import
-   (clojure.lang Compiler DynamicClassLoader)
    (java.io File)
    (java.net URI URL)
    (java.util.jar JarFile JarEntry)))
@@ -18,7 +17,7 @@
   (.getContextClassLoader (Thread/currentThread)))
 
 (defn classloaders
-  "Returns the thread's classloader hierarchy"
+  "Returns the classloader hierarchy"
   ([^ClassLoader loader]
    (->> loader
         (iterate #(.getParent ^ClassLoader %))
@@ -29,18 +28,16 @@
 (defn modifiable-classloader
   "Returns the highest classloader in the hierarchy that satisfies
   `dynapath.util/addable-classpath?`, or nil if none do"
-  []
-  (last (filter dp/addable-classpath?
-                (classloaders))))
+  ([^ClassLoader loader]
+   (last (filter dp/addable-classpath?
+                 (classloaders loader))))
+  ([]
+   (modifiable-classloader (context-classloader))))
 
-(defn add-classloader!
-  "Sets the context classloader for this thread to a
-  `clojure.lang.DynamicClassLoader` using the compiler's classloader
-   if available"
-  []
-  (let [thread (Thread/currentThread)
-        loader (or @Compiler/LOADER
-                   (DynamicClassLoader. (context-classloader)))]
+(defn set-classloader!
+  "Sets the current classloader for the current thread"
+  [^ClassLoader loader]
+  (let [thread (Thread/currentThread)]
     (.setContextClassLoader thread loader)
     loader))
 
@@ -68,7 +65,8 @@
   ensuring that a modifiable classloader is available"
   [^URL url]
   (let [loader (or (modifiable-classloader)
-                   (add-classloader!))]
+                   (set-classloader!
+                    (modifiable-classloader @Compiler/LOADER)))]
     (when (dp/add-classpath-url loader url)
       url)))
 
