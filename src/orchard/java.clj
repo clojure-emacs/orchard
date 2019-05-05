@@ -57,9 +57,13 @@
         (some-> (jdk-find "src.zip") cp/add-classpath!))))
 
 (def jdk-tools
-  "The `tools.jar` path, for JDK8 and earlier. If available, this is added
-  to the classpath."
-  (some-> (jdk-find "tools.jar") cp/add-classpath!))
+  "The `tools.jar` path, for JDK8 and earlier. If found on the existing
+  classpath, this is the corresponding classpath entry. Otherwise, if available,
+  this is added to the classpath."
+  (when (<= util/java-api-version 8)
+    (or (some-> (io/resource "com/sun/javadoc/Doc.class")
+                (.. openConnection getJarFileURL))
+        (some-> (jdk-find "tools.jar") cp/add-classpath!))))
 
 ;;; ## Javadoc URLs
 ;;
