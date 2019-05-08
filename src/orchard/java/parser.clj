@@ -15,7 +15,7 @@
    (javax.tools DocumentationTool JavaFileObject$Kind
                 SimpleJavaFileObject ToolProvider)
    (javax.tools JavaFileObject$Kind SimpleJavaFileObject)
-   (jdk.javadoc.doclet Doclet DocletEnvironment)))
+   (jdk.javadoc.doclet Doclet DocletEnvironment StandardDoclet)))
 
 ;;; ## JDK Compatibility
 ;; This namespace requires JDK9+.
@@ -43,22 +43,49 @@
 ;;    is specified by passing a class name rather than an instance; hence, we
 ;;    can't close over a local varaible in reify: `result` must be in scope when
 ;;    the methods of a *new* instance of the Doclet class are called.
+;;
+;; 3. To compile an individual source that is defined as part of a module, the
+;;    compiler must be told to "patch" the module, and the source
+;;    `JavaFileobject`'s location must match the argument to the
+;;    "--patch-module" option.
+;;
+;;    It's not clear how to make the "--patch-module" option work with a source
+;;    loaded from memory or a jar file; its syntax seems file system oriented.
+;;    Moreover, if the `StandardJavaFileManager` resolves a file, the
+;;    "--patch-module" option is matched, but if the exact same file is passed
+;;    as a proxy-ed `Simplejavafileobject` with an identical URI, the
+;;    compiler's internal `Enter` class doesn't see this as matcing the
+;;    "--patch-module" option. To accommodate this, the jar file entry is
+;;    written to a temp file and passed to the compiler from disk. Design-wise,
+;;    this is admittedly imperfect, but the performance cost is low and it works.
 
 (def result (atom nil))
 
 (defn parse-java
   "Load and parse the resource path, returning a `DocletEnvironment` object."
-  [path]
+  [path module]
   (when-let [res (io/resource path)]
-    (let [compiler (ToolProvider/getSystemDocumentationTool)
-          source   (proxy [SimpleJavaFileObject] [(URI. path) JavaFileObject$Kind/SOURCE]
-                     (getCharContent [_] (slurp res)))
+    (let [tmpdir   (System/getProperty "java.io.tmpdir")
+          tmpfile  (io/file tmpdir (.getName (io/file path)))
+          compiler (ToolProvider/getSystemDocumentationTool)
+          sources  (-> (.getStandardFileManager compiler nil nil nil)
+                       (.getJavaFileObjectsFromFiles [tmpfile]))
           doclet   (class (reify Doclet
                             (init [this _ _] (reset! result nil))
-                            (run [this root] (reset! result root) true)))
+                            (run [this root] (reset! result root) true)
+                            (getSupportedOptions [this]
+                              (.getSupportedOptions (StandardDoclet.)))))
           out      (StringWriter.) ; discard compiler messages
-          opts     nil]
-      (.call (.getTask compiler out nil nil doclet opts [source]))
+          opts     (apply conj ["--show-members" "private"
+                                "--show-types" "private"
+                                "--show-packages" "all"
+                                "--show-module-contents" "all"
+                                "-quiet"]
+                          (when module
+                            ["--patch-module" (str module "=" tmpdir)]))]
+      (spit tmpfile (slurp res))
+      (.call (.getTask compiler out nil nil doclet opts sources))
+      (.delete tmpfile)
       @result)))
 
 ;;; ## Docstring Parsing
@@ -267,25 +294,17 @@
   same structure as that of `orchard.java/reflect-info`."
   [klass]
   {:pre [(symbol? klass)]}
-  (let [module (module-name klass)]
-    ;; FIXME Source parsing is currently disabled for modular sources. It's not
-    ;; clear whether all modular sources cause problems, or only the JDK sources.
-    ;; In practice, though, JDK sources are what users will encounter the most.
-    (when-not module
-      (try
-        (when-let [path (source-path klass)]
-          (when-let [root (parse-java path)]
-            (assoc (->> (.getIncludedElements ^DocletEnvironment root)
-                        (filter #(#{ElementKind/CLASS
-                                    ElementKind/INTERFACE
-                                    ElementKind/ENUM}
-                                  (.getKind ^Element %)))
-                        (map #(parse-info % root))
-                        (filter #(= klass (:class %)))
-                        (first))
-                   :file path
-                   :path (.getPath (io/resource path)))))
-        ;; FIXME This caught Error, not Throwable, prior to the bug referenced at
-        ;; https://github.com/clojure-emacs/orchard/issues/49#issuecomment-485524416
-        ;; Consider changing this back once modular source parsing is supported.
-        (catch Throwable _)))))
+  (try
+    (when-let [path (source-path klass)]
+      (when-let [root (parse-java path (module-name klass))]
+        (assoc (->> (.getIncludedElements ^DocletEnvironment root)
+                    (filter #(#{ElementKind/CLASS
+                                ElementKind/INTERFACE
+                                ElementKind/ENUM}
+                              (.getKind ^Element %)))
+                    (map #(parse-info % root))
+                    (filter #(= klass (:class %)))
+                    (first))
+               :file path
+               :path (.getPath (io/resource path)))))
+    (catch Throwable _)))

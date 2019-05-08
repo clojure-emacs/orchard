@@ -7,7 +7,6 @@
    [orchard.misc :as u]))
 
 (def jdk-parser? (or (>= u/java-api-version 9) jdk-tools))
-(def jdk-sources? (and jdk-sources (< u/java-api-version 9))) ; TODO modular JDK (9+) not yet supported
 
 (deftest resources-test
   ;; If the JDK resources we wish to load dynamically are present on the file
@@ -32,7 +31,7 @@
         (testing "for Clojure classes"
           (is (resolve-src 'clojure.lang.Obj))
           (is (resolve-src 'clojure.lang.Fn)))
-        (when jdk-sources?
+        (when jdk-sources
           (testing "for JDK classes"
             (is (resolve-src 'java.lang.String))
             (is (resolve-src 'java.util.regex.Matcher))))
@@ -44,11 +43,10 @@
           (is (-> (source-info 'clojure.lang.ISeq) :line)) ; interface
           (is (-> (source-info 'clojure.lang.AFn) :line)) ; abstract class
           (is (-> (source-info 'clojure.lang.APersistentMap$ValSeq) :line)) ; nested class
-          ;; These fail on JDK9+; they're not returned in the root AST
-          ;; XXX (is (-> (source-info 'clojure.lang.Numbers$Ops) :line)) ; nested default interface
-          ;; XXX (is (-> (source-info 'clojure.lang.Range$BoundsCheck) :line)) ; nested private interface
+          (is (-> (source-info 'clojure.lang.Numbers$Ops) :line)) ; nested default interface
+          (is (-> (source-info 'clojure.lang.Range$BoundsCheck) :line)) ; nested private interface
           (is (-> (source-info 'clojure.lang.Numbers$Category) :line))) ; nested enum
-        (when jdk-sources?
+        (when jdk-sources
           (testing "for JDK classes"
             (is (-> (source-info 'java.util.Collection) :line)) ; interface
             (is (-> (source-info 'java.util.AbstractCollection) :line)) ; abstract class
@@ -62,7 +60,7 @@
           (is (-> (get-in (source-info 'clojure.lang.BigInt)
                           [:members 'multiply])
                   first val :line)))
-        (when jdk-sources?
+        (when jdk-sources
           (testing "for JDK classes"
             (is (-> (source-info 'java.util.AbstractCollection) :doc))
             (is (-> (get-in (source-info 'java.util.AbstractCollection)
