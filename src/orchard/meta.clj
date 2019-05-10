@@ -266,7 +266,7 @@
      form)))
 
 (defn macroexpand-all
-  "Like clojure.walk/macroexpand-all, but preserves and macroexpands
+  "Like `clojure.walk/macroexpand-all`, but preserves and macroexpands
   metadata. Also store the original form (unexpanded and stripped of
   metadata) in the metadata of the expanded form under original-key."
   [form & [original-key]]
