@@ -18,12 +18,63 @@
 
 (use-fixtures :once wrap-info-params)
 
-;; TODO use test-ns instead
-;; (is (info/info 'orchard.info-test 'TestType))
-;; (is (info/info 'orchard.info-test 'TestRecord))
-
 (deftest info-non-existing-test
-  (is (nil? (info/info {:ns 'clojure.core :sym (gensym "non-existing")}))))
+  (is (nil? (info/info* {:ns 'clojure.core :sym (gensym "non-existing")}))))
+
+(deftest info-deftype-test
+  (testing "deftype"
+    (testing "- :cljs"
+      (let [i (info/info 'orchard.test-ns 'TestType *cljs-params*)]
+        (is (= '{:ns orchard.test-ns
+                 :name TestType
+                 :type true
+                 :record false
+                 :tag function
+                 :arglists nil}
+               (select-keys i [:ns :name :record :type :tag :arglists])))
+        (is (str/includes? (:file i) "test_ns")))))
+
+  (testing "- :clj"
+    (let [i (info/info 'orchard.test-ns 'TestType)]
+      (is (= '{:name TestType
+               :class orchard.test_ns.TestType
+               :package orchard.test_ns
+               :super java.lang.Object
+               :interfaces (clojure.lang.IType)
+               :javadoc "orchard/test_ns/TestType.html"
+               :file nil}
+             (select-keys i [:ns :name :class :package :super :interfaces :arglists :javadoc :file]))))))
+
+(deftest info-defrecord-test
+  (testing "defrecord"
+    (testing "- :cljs"
+      (let [i (info/info 'orchard.test-ns 'TestRecord *cljs-params*)]
+        (is (= '{:ns orchard.test-ns
+                 :name TestRecord
+                 :type true
+                 :record true
+                 :tag function
+                 :arglists nil}
+               (select-keys i [:ns :name :record :type :tag :arglists])))
+        (is (str/includes? (:file i) "test_ns"))))
+
+    (testing "- :clj"
+      (let [i (info/info 'orchard.test-ns 'TestRecord)]
+        (is (= '{:name TestRecord
+                 :class orchard.test_ns.TestRecord
+                 :package orchard.test_ns
+                 :super java.lang.Object
+                 :interfaces (clojure.lang.IRecord
+                              clojure.lang.IHashEq
+                              clojure.lang.IObj
+                              clojure.lang.ILookup
+                              clojure.lang.IKeywordLookup
+                              clojure.lang.IPersistentMap
+                              java.util.Map
+                              java.io.Serializable)
+                 :javadoc "orchard/test_ns/TestRecord.html"
+                 :file nil}
+               (select-keys i [:ns :name :class :package :super :interfaces :arglists :javadoc :file])))))))
 
 (deftest info-special-form-test
   (testing "special forms are marked as such and nothing else is (for all syms in ns)"
