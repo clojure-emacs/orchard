@@ -158,11 +158,16 @@
 resolved (real) namespace and name here"}
   see-also (memoize see-also*))
 
-(defn info
+(defn info*
+  "Provide the info map for the input ns and sym.
+
+  The default dialect is :clj but it can be specified as part of params.
+
+  Note that the :cljs dialect requires the compiler state to be passed
+  in as :env key in params."
   [params]
-  {:pre [(contains? #{:cljs :clj nil} (:dialect params))]}
-  (let [params   (normalize-params params)
-        dialect  (:dialect params)]
+  (let [params  (normalize-params params)
+        dialect (:dialect params)]
 
     ;; TODO split up responsability of finding meta and normalizing the meta map
     (some->
@@ -178,6 +183,18 @@ resolved (real) namespace and name here"}
                      (if (u/boot-project?)
                        (cp/classpath-file-relative-path file-path)
                        file-path))))))
+
+(defn info
+  "Provide the info map for the input ns and sym.
+
+  The default dialect is :clj but it can be specified as part of params.
+
+  Note that the :cljs dialect requires the compiler state to be passed
+  in as :env key in params."
+  ([ns sym]
+   (info* {:ns ns :sym sym}))
+  ([ns sym params]
+   (info* (assoc params :ns ns :sym sym))))
 
 (defn info-java
   [class member]
