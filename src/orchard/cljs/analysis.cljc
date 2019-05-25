@@ -5,11 +5,9 @@
   (:require [orchard.misc :as u])
   (:refer-clojure :exclude [find-ns find-var all-ns ns-aliases]))
 
-(def NSES :cljs.analyzer/namespaces)
-
 (defn all-ns
   [env]
-  (->> (NSES env)
+  (->> (:cljs.analyzer/namespaces env)
        ;; recent CLJS versions include data about macro namespaces in the
        ;; compiler env, but we should not include them in completions or pass
        ;; them to format-ns unless they're actually required (which is handled
@@ -121,8 +119,8 @@
                  (filter macro?)
                  (into {})))
      :cljs (->> (merge
-                 (get-in env [NSES ns :macros])
-                 (get-in env [NSES ns :defs]))
+                 (get-in env [:cljs.analyzer/namespaces ns :macros])
+                 (get-in env [:cljs.analyzer/namespaces ns :defs]))
                 (remove (fn [[k v]] (:private v)))
                 (into {}))))
 
@@ -148,8 +146,8 @@
   [env ns]
   {:pre [(symbol? ns)]}
   (merge
-   (get-in env [NSES ns :macros])
-   (get-in env [NSES ns :defs])))
+   (get-in env [:cljs.analyzer/namespaces ns :macros])
+   (get-in env [:cljs.analyzer/namespaces ns :defs])))
 
 (defn sanitize-ns
   "Add :ns from :name if missing."
