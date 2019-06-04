@@ -115,6 +115,31 @@
           (is (= expected (select-keys i [:ns :name :arglists])))
           (is (str/includes? (:file i) "test_ns_dep")))))))
 
+(deftest info-resolve-var-before-alias-test
+  (testing "resolve a fully qualified var before an alias - test for bug #53"
+    (let [expected '{:ns clojure.string
+                     :name replace
+                     :arglists ([s match replacement])}]
+      (testing "- :cljs"
+        (let [i (info/info 'orchard.test-ns 'clojure.string/replace *cljs-params*)]
+          (is (= expected (select-keys i [:ns :name :arglists])))))
+
+      (testing "- :clj"
+        (let [i (info/info 'orchard.test-ns 'clojure.string/replace)]
+          (is (= expected (select-keys i [:ns :name :arglists])))))))
+
+  (testing "resolve an unqualified alias instead of the var - test for bug #53"
+    (let [expected '{:ns clojure.string
+                     :name replace
+                     :arglists ([s match replacement])}]
+      (testing "- :cljs"
+        (let [i (info/info 'orchard.test-ns 'replace *cljs-params*)]
+          (is (= expected (select-keys i [:ns :name :arglists])))))
+
+      (testing "- :clj"
+        (let [i (info/info 'orchard.test-ns 'replace)]
+          (is (= expected (select-keys i [:ns :name :arglists]))))))))
+
 (deftest info-fully-qualified-var-test
   (testing "Fully-qualified var"
     (let [params '{:ns orchard.test-ns
