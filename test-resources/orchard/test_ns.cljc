@@ -1,6 +1,6 @@
 (ns ^{:doc "A test namespace"} orchard.test-ns
   (:refer-clojure :exclude [unchecked-byte while])
-  (:require [clojure.string]
+  (:require [clojure.string :refer [replace]]
             [orchard.test-ns-dep :as test-dep :refer [foo-in-dep]])
   #?(:cljs (:require-macros [orchard.test-macros :as test-macros :refer [my-add]])
      :clj  (:require [orchard.test-macros :as test-macros :refer [my-add]]))

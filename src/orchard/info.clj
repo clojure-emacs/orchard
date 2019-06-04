@@ -79,10 +79,10 @@
     (or
      ;; it's a special (special-symbol?)
      (m/special-sym-meta sym)
-     ;; it's an unqualified sym for an aliased var
-     (some-> ns (m/resolve-var unqualified-sym) (m/var-meta))
      ;; it's a var
      (some-> ns (m/resolve-var sym) (m/var-meta))
+     ;; it's an unqualified sym for an aliased var
+     (some-> ns (m/resolve-var unqualified-sym) (m/var-meta))
      ;; sym is an alias for another ns
      (some-> ns (m/resolve-aliases) (get sym) (m/ns-meta))
      ;; We use :unqualified-sym *exclusively* here because because our :ns is
