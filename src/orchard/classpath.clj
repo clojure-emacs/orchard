@@ -2,6 +2,7 @@
   "Classpath access and modification"
   (:require
    [clojure.java.io :as io]
+   [clojure.string :as str]
    [dynapath.util :as dp]
    [orchard.misc :as u])
   (:import
@@ -87,6 +88,28 @@
            (map #(.getPath (.relativize (.toURI url) (.toURI ^File %))))))))
 
 ;;; Boot's hack - previously part of cider-nrepl
+
+(defn boot-classloader
+  "Creates a class-loader that knows original source files paths in Boot project."
+  []
+  (let [class-path (System/getProperty "fake.class.path")
+        dir-separator (System/getProperty "file.separator")
+        paths (str/split class-path (re-pattern (System/getProperty "path.separator")))
+        urls (map
+              (fn [path]
+                (let [url (if (re-find #".jar$" path)
+                            (str "file:" path)
+                            (str "file:" path dir-separator))]
+                  (new java.net.URL url)))
+              paths)]
+    ;; TODO: Figure out how to add the JDK sources here
+    (new java.net.URLClassLoader (into-array java.net.URL urls))))
+
+(defn boot-aware-classloader
+  []
+  (if (u/boot-project?)
+    (boot-classloader)
+    (context-classloader)))
 
 (defn classpath-file-relative-path
   "Boot stores files in a temporary directory & ClojureScript stores

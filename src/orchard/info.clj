@@ -201,7 +201,7 @@ resolved (real) namespace and name here"}
   (java/member-info class member))
 
 (defn- resource-full-path [relative-path]
-  (io/resource relative-path (cp/context-classloader)))
+  (io/resource relative-path (cp/boot-aware-classloader)))
 
 (defn resource-path
   "If it's a resource, return a tuple of the relative path and the full resource path."
