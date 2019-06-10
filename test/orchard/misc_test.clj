@@ -32,6 +32,10 @@
   (is (= (misc/update-keys str {:a :b :c :d :e :f})
          {":a" :b, ":c" :d, ":e" :f})))
 
+(deftest parse-java-version-test
+  (is (= (misc/parse-java-version "1.8.0") 8))
+  (is (= (misc/parse-java-version "11") 11)))
+
 (deftest macros-suffix-add-remove
   (testing "add-ns-macros"
     (is (nil? (misc/add-ns-macros nil)))

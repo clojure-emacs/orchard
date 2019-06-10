@@ -88,16 +88,19 @@
               (last xs)))]
     (apply f (filter identity xs))))
 
-(def java-api-version
+(defn parse-java-version
+  "Parse a Java version string according to JEP 223 and return the appropriate version."
+  [java-ver]
   (try
-    (let [java-ver (System/getProperty "java.version")
-          [major minor _] (str/split java-ver #"\.")
-          major (Integer/parseInt major)
-          minor (Integer/parseInt minor)]
+    (let [[major minor _] (str/split java-ver #"\.")
+          major (Integer/parseInt major)]
       (if (> major 1)
         major
-        (or minor 7)))
+        (Integer/parseInt (or minor "7"))))
     (catch Exception _ 7)))
+
+(def java-api-version
+  (parse-java-version (System/getProperty "java.version")))
 
 (defmulti transform-value "Transform a value for output" type)
 
