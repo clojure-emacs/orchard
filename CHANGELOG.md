@@ -18,6 +18,10 @@
 * Add java parser for JDK9+; rename legacy JDK8 parser.
 * Make search for JDK directory resources compatible with JDK9+.
 
+### Bugs fixed
+
+* [#57](https://github.com/clojure-emacs/orchard/pull/57): Fix parsing of Java versions for Java 11+.
+
 ## 0.4.0 (2019-01-14)
 
 ### New features
