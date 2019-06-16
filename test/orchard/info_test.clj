@@ -491,8 +491,7 @@
   (is (= (class (file "orchard/test_ns.cljc"))
          java.net.URL))
   (is (relative "clojure/core.clj"))
-  (is (nil? (relative "notclojure/core.clj")))
-  (is (nil? (info/resource-path "jar:file:fake.jar!/fake/file.clj"))))
+  (is (nil? (relative "notclojure/core.clj"))))
 
 (deftest qualify-sym-test
   (is (= '+ (info/qualify-sym nil '+)))

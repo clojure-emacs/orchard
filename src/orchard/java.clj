@@ -3,10 +3,12 @@
   {:author "Jeff Valk"}
   (:require
    [clojure.java.io :as io]
+   [clojure.java.javadoc :as javadoc]
    [clojure.reflect :as r]
    [clojure.string :as str]
    [orchard.classpath :as cp]
-   [orchard.misc :as util])
+   [orchard.misc :as util]
+   [orchard.resource :as resource])
   (:import
    (clojure.lang IPersistentMap)
    (clojure.reflect Constructor Field JavaReflector Method)
@@ -343,6 +345,28 @@
           (first ms)
           {:candidates (zipmap (map :class ms) ms)})))))
 
+(defn resolve-javadoc-path
+  "Resolve a relative javadoc path to a URL and return as a map. Prefer javadoc
+  resources on the classpath; then use online javadoc content for core API
+  classes. If no source is available, return the relative path as is."
+  [^String path]
+  (or (resource/resource-full-path path)
+      ;; [bug#308] `*remote-javadocs*` is outdated WRT Java
+      ;; 8, so we try our own thing first.
+      (when (re-find #"^(java|javax|jdk|org.omg|org.w3c.dom|org.xml.sax)/" path)
+        (apply str ["https://docs.oracle.com"
+                    (if (>= util/java-api-version 11) "/en/java/javase/" "/javase/")
+                    util/java-api-version
+                    "/docs/api/"
+                    path]))
+      ;; If that didn't work, _then_ we fallback on `*remote-javadocs*`.
+      (some (let [classname (.replaceAll path "/" ".")]
+              (fn [[prefix url]]
+                (when (.startsWith classname prefix)
+                  (str url path))))
+            @javadoc/*remote-javadocs*)
+      path))
+
 ;;; ## Initialization
 ;;
 ;; On startup, cache info for the most commonly referenced classes.
@@ -350,3 +374,8 @@
   (doseq [class (->> (ns-imports 'clojure.core)
                      (map #(-> % ^Class val .getName symbol)))]
     (class-info class)))
+
+;; TODO: Seems those were hardcoded here accidentally - we should
+;; probably provide a simple API to register remote JavaDocs.
+(javadoc/add-remote-javadoc "com.amazonaws." "http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/")
+(javadoc/add-remote-javadoc "org.apache.kafka." "https://kafka.apache.org/090/javadoc/index.html?")
