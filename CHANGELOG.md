@@ -20,6 +20,7 @@
 
 ### Bugs fixed
 
+* [#59](https://github.com/clojure-emacs/orchard/pull/59): Correct inlined-dep prefix for removing namespaces
 * [#57](https://github.com/clojure-emacs/orchard/pull/57): Fix parsing of Java versions for Java 11+.
 
 ## 0.4.0 (2019-01-14)
