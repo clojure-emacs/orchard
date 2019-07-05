@@ -167,22 +167,21 @@ resolved (real) namespace and name here"}
   in as :env key in params."
   [params]
   (let [params  (normalize-params params)
-        dialect (:dialect params)]
+        dialect (:dialect params)
+        meta    (cond
+                  (= dialect :clj)  (clj-meta params)
+                  (= dialect :cljs) (cljs-meta params))]
 
     ;; TODO split up responsability of finding meta and normalizing the meta map
     (some->
-     (cond
-       (= dialect :clj)  (clj-meta params)
-       (= dialect :cljs) (cljs-meta params))
+     meta
 
-     ;; do not merge see-also if the info was not found
      (merge (when-let [m (see-also params)]
               {:see-also m}))
 
-     (update :file (fn [file-path]
-                     (if (u/boot-project?)
-                       (cp/classpath-file-relative-path file-path)
-                       file-path))))))
+     (merge (when-let [file-path (:file meta)]
+              {:file (cond-> file-path
+                       (u/boot-project?) cp/classpath-file-relative-path)})))))
 
 (defn info
   "Provide the info map for the input ns and sym.

@@ -41,8 +41,7 @@
                :package orchard.test_ns
                :super java.lang.Object
                :interfaces (clojure.lang.IType)
-               :javadoc "orchard/test_ns/TestType.html"
-               :file nil}
+               :javadoc "orchard/test_ns/TestType.html"}
              (select-keys i [:ns :name :class :package :super :interfaces :arglists :javadoc :file]))))))
 
 (deftest info-defrecord-test
@@ -72,8 +71,7 @@
                               clojure.lang.IPersistentMap
                               java.util.Map
                               java.io.Serializable)
-                 :javadoc "orchard/test_ns/TestRecord.html"
-                 :file nil}
+                 :javadoc "orchard/test_ns/TestRecord.html"}
                (select-keys i [:ns :name :class :package :super :interfaces :arglists :javadoc :file])))))))
 
 (deftest info-special-form-test
@@ -367,6 +365,25 @@
                (->> params
                     (map #(info/info* %))
                     (map #(select-keys % [:ns :name :arglists :macro :file])))))))))
+
+(deftest info-no-file-info-test
+  (testing "File info key does not exist should not resolve classpath - issue #61"
+    (let [params '{:sym finally}
+          expected '{:forms [(try expr* catch-clause* finally-clause?)],
+                     :doc "catch-clause => (catch classname name expr*)\n  finally-clause => (finally expr*)\n\n  Catches and handles Java exceptions.",
+                     :name finally,
+                     :special-form true,
+                     :url "https://clojure.org/special_forms#finally"}]
+      (testing "- boot project"
+        (with-redefs [orchard.misc/boot-project? (constantly true)]
+          (let [i (info/info* params)]
+            (is (= expected (select-keys i [:ns :name :doc :forms :special-form :url])))
+            (is (nil? (:file i))))))
+
+      (testing "- no boot project"
+        (let [i (info/info* params)]
+          (is (= expected (select-keys i [:ns :name :doc :forms :special-form :url])))
+          (is (nil? (:file i))))))))
 
 ;;;;;;;;;;;;;;;;;;
 ;; Clojure Only ;;
