@@ -11,10 +11,13 @@ TEST_SELECTOR := :java$(JAVA_VERSION)
 
 TEST_PROFILES := +test
 
-test:
+test-resources/clojuredocs/export.edn:
+	curl -o $@ https://clojuredocs-edn.netlify.com/export.edn
+
+test: test-resources/clojuredocs/export.edn
 	lein with-profile +$(VERSION),$(TEST_PROFILES) test $(TEST_SELECTOR)
 
-test-watch:
+test-watch: test-resources/clojuredocs/export.edn
 	lein with-profile +$(VERSION),$(TEST_PROFILES) test-refresh $(TEST_SELECTOR)
 
 # Eastwood can't handle orchard.java.legacy-parser at the moment, because
