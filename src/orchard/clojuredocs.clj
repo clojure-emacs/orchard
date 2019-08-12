@@ -12,7 +12,7 @@
 
 (def cache (atom {}))
 (def default-edn-file-url
-  "https://clojuredocs-edn.netlify.com/export.edn")
+  "https://clojuredocs-edn.netlify.com/export.compact.edn")
 (def cache-file-name
   (str/join os/file-separator [(os/cache-dir)
                                "orchard"
@@ -27,16 +27,12 @@
       mkdirs)
   (->> url slurp (spit cache-file-name)))
 
-(defn- map-from-key [f coll]
-  (reduce #(assoc %1 (f %2) %2) {} coll))
-
 (defn- load-cache-file! [cache-file]
-  (let [docs (-> cache-file slurp edn/read-string)]
-    (->> (:vars docs)
-         (group-by #(:ns %))
-         (reduce-kv #(assoc %1 %2 (map-from-key :name %3)) {})
-         (reset! cache))
-    true))
+  (->> cache-file
+       slurp
+       edn/read-string
+       (reset! cache))
+  true)
 
 (defn load-cache!
   "Load exported documents file from ClojureDocs, and store it as a cache.
@@ -82,4 +78,4 @@
    (find-doc ns-name var-name default-edn-file-url))
   ([ns-name var-name export-edn-url]
    (load-cache! export-edn-url)
-   (get-in @cache [ns-name var-name])))
+   (get @cache (keyword ns-name var-name))))
