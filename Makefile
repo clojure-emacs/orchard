@@ -12,7 +12,7 @@ TEST_SELECTOR := :java$(JAVA_VERSION)
 TEST_PROFILES := +test
 
 test-resources/clojuredocs/export.edn:
-	curl -o $@ https://clojuredocs-edn.netlify.com/export.edn
+	curl -o $@ https://clojuredocs-edn.netlify.com/export.compact.edn
 
 test: test-resources/clojuredocs/export.edn
 	lein with-profile +$(VERSION),$(TEST_PROFILES) test $(TEST_SELECTOR)

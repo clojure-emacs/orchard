@@ -86,4 +86,4 @@
       (is (not (empty? @docs/cache)))))
 
   (testing "find non-existing document"
-    (is (nil? (docs/find-doc test-edn-file "non-existing-ns" "non-existing-var")))))
+    (is (nil? (docs/find-doc "non-existing-ns" "non-existing-var" test-edn-file)))))
