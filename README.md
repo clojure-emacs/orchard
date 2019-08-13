@@ -60,7 +60,7 @@ Currently Orchard has one runtime dependency (`dynapath`), but we hope to elimin
 ### API Optimized for Editors
 
 Code editors can't know what symbols resolve to without consulting a REPL that's why they would typically
-send a combination of a symbol name and some ns (e.g. the current namespace), so they can't be resolved to
+send a combination of a symbol name and some ns (e.g. the current namespace), so they can be resolved to
 some var on which an operation would be invoked.
 
 That's why the majority of the functions in Orchard take a combination of a ns and a symbol instead of a var.
