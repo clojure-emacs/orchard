@@ -17,7 +17,7 @@
 
 * Update JavaDoc URL paths for Java 10+. Remove support for Java 7 JavaDoc URL paths.
 * Remove dependency on `clojure.tools.namespace` (replaced by `orchard.namespace`).
-* Remove dependency on `java.classpath` (replaced by `orchard.classpath`).
+* Remove dependency on `java.classpath` (replaced by `orchard.java.classpath`).
 * Add java parser for JDK9+; rename legacy JDK8 parser.
 * Make search for JDK directory resources compatible with JDK9+.
 * Move `transform-value` to `cider-nrepl`.

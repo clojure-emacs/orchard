@@ -1,10 +1,10 @@
-(ns orchard.classpath-test
+(ns orchard.java.classpath-test
   (:require
    [clojure.java.io :as io]
    [clojure.set :as set]
    [clojure.string :as str]
    [clojure.test :refer :all]
-   [orchard.classpath :as cp]
+   [orchard.java.classpath :as cp]
    [orchard.misc :as u])
   (:import
    (java.io File)

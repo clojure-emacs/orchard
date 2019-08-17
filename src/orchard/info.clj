@@ -4,7 +4,7 @@
   (:require
    [clojure.edn :as edn]
    [clojure.java.io :as io]
-   [orchard.classpath :as cp]
+   [orchard.java.classpath :as cp]
    [orchard.cljs.analysis :as cljs-ana]
    [orchard.cljs.meta :as cljs-meta]
    [orchard.java :as java]

@@ -3,7 +3,7 @@
    [clojure.java.io :as io]
    [clojure.string :as str]
    [clojure.test :refer :all]
-   [orchard.classpath :as cp]
+   [orchard.java.classpath :as cp]
    [orchard.misc :as misc]
    [orchard.namespace :as n]))
 

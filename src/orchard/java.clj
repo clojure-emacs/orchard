@@ -6,7 +6,7 @@
    [clojure.java.javadoc :as javadoc]
    [clojure.reflect :as r]
    [clojure.string :as str]
-   [orchard.classpath :as cp]
+   [orchard.java.classpath :as cp]
    [orchard.misc :as util]
    [orchard.resource :as resource])
   (:import

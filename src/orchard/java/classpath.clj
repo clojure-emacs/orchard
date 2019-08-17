@@ -1,4 +1,4 @@
-(ns orchard.classpath
+(ns orchard.java.classpath
   "Classpath access and modification"
   (:require
    [clojure.java.io :as io]

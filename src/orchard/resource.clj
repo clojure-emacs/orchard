@@ -3,7 +3,7 @@
   {:added "0.5.0"}
   (:require
    [clojure.java.io :as io]
-   [orchard.classpath :as cp]))
+   [orchard.java.classpath :as cp]))
 
 (defn- trim-leading-separator
   "Trim the java.io.File/separator at the beginning of s."

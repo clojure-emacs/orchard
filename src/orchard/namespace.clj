@@ -4,7 +4,7 @@
    [clojure.edn :as edn]
    [clojure.java.io :as io]
    [clojure.string :as str]
-   [orchard.classpath :as cp]
+   [orchard.java.classpath :as cp]
    [orchard.misc :as u])
   (:import
    (clojure.lang Namespace)
