@@ -176,7 +176,7 @@
   (cond-> {}
     (map? var) (merge var)
     (misc/ns-obj? var) (merge {:ns (ns-name var)
-                            :name (ns-name var)})
+                               :name (ns-name var)})
     true sanitize-ns
     #?@(:cljs [true (-> (update :ns misc/remove-macros)
                         (update :name misc/remove-macros))])))
