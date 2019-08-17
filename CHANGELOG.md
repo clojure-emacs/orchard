@@ -9,7 +9,7 @@
 * [#46](https://github.com/clojure-emacs/orchard/pull/46): [Inspector] Show fields inherited from superclasses when rendering raw objects.
 * [#47](https://github.com/clojure-emacs/orchard/pull/46): [Java] Cache class-info for editable Java classes.
 * [#51](https://github.com/clojure-emacs/orchard/issues/51): Add basic xref functionality in `orchard.xref`.
-* [#64](https://github.com/clojure-emacs/orchard/issues/64): Port `cache-dir` from [soc/directories-jvm](https://github.com/soc/directories-jvm) to `orchard.os`.
+* [#64](https://github.com/clojure-emacs/orchard/issues/64): Port `cache-dir` from [soc/directories-jvm](https://github.com/soc/directories-jvm) to `orchard.util.os`.
 * [#64](https://github.com/clojure-emacs/orchard/issues/64): Add finding docs functionality from ClojureDocs in `orchard.clojuredocs`.
 * Extract `cider-nrepl`'s resource lookup functionality into `orchard.java.resource`.
 

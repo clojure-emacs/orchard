@@ -1,4 +1,4 @@
-(ns orchard.os
+(ns orchard.util.os
   "Operating system specific utilities.
   This is a port of BaseDirectories.java in soc/directories-jvm.
   https://github.com/soc/directories-jvm"

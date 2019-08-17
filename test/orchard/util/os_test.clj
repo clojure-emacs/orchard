@@ -1,8 +1,8 @@
-(ns orchard.os-test
+(ns orchard.util.os-test
   (:require
    [clojure.string :as str]
    [clojure.test :as test :refer [deftest is testing]]
-   [orchard.os :as os]))
+   [orchard.util.os :as os]))
 
 (deftest cache-dir-test
   (testing "BSD"

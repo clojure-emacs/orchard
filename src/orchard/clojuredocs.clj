@@ -6,7 +6,7 @@
    [clojure.edn :as edn]
    [clojure.java.io :as io]
    [clojure.string :as str]
-   [orchard.os :as os])
+   [orchard.util.os :as os])
   (:import
    (java.time Instant)))
 
