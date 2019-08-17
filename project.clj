@@ -37,8 +37,6 @@
                       :dependencies [[org.clojure/clojure "1.11.0-master-SNAPSHOT"]
                                      [org.clojure/clojure "1.11.0-master-SNAPSHOT" :classifier "sources"]]}
 
-             :sysutils {:plugins [[lein-sysutils "0.2.0"]]}
-
              :test {:resource-paths ["test-resources"]}
 
              ;; DEV tools

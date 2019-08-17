@@ -2,23 +2,16 @@
 
 VERSION ?= 1.10
 
-# Some tests need to be filtered based on JVM version.  This selector
-# will be mapped to a function in project.clj, and that function
-# determines which `deftest` to run based on their metadata.
-JAVA_VERSION := $(shell lein with-profile +sysutils \
-                        sysutils :java-version-simple | cut -d " " -f 2)
-TEST_SELECTOR := :java$(JAVA_VERSION)
-
 TEST_PROFILES := +test
 
 test-resources/clojuredocs/export.edn:
 	curl -o $@ https://clojuredocs-edn.netlify.com/export.compact.edn
 
 test: test-resources/clojuredocs/export.edn
-	lein with-profile +$(VERSION),$(TEST_PROFILES) test $(TEST_SELECTOR)
+	lein with-profile +$(VERSION),$(TEST_PROFILES) test
 
 test-watch: test-resources/clojuredocs/export.edn
-	lein with-profile +$(VERSION),$(TEST_PROFILES) test-refresh $(TEST_SELECTOR)
+	lein with-profile +$(VERSION),$(TEST_PROFILES) test-refresh
 
 # Eastwood can't handle orchard.java.legacy-parser at the moment, because
 # tools.jar isn't in the classpath when Eastwood runs.
