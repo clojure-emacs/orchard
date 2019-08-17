@@ -1,4 +1,4 @@
-(ns orchard.resource
+(ns orchard.java.resource
   "Resolve JVM resource-related information."
   {:added "0.5.0"}
   (:require

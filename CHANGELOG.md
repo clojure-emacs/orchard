@@ -11,7 +11,7 @@
 * [#51](https://github.com/clojure-emacs/orchard/issues/51): Add basic xref functionality in `orchard.xref`.
 * [#64](https://github.com/clojure-emacs/orchard/issues/64): Port `cache-dir` from [soc/directories-jvm](https://github.com/soc/directories-jvm) to `orchard.os`.
 * [#64](https://github.com/clojure-emacs/orchard/issues/64): Add finding docs functionality from ClojureDocs in `orchard.clojuredocs`.
-* Extract `cider-nrepl`'s resource lookup functionality into `orchard.resource`.
+* Extract `cider-nrepl`'s resource lookup functionality into `orchard.java.resource`.
 
 ### Changes
 

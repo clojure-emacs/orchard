@@ -10,7 +10,7 @@
    [orchard.java :as java]
    [orchard.meta :as m]
    [orchard.misc :as u]
-   [orchard.resource :as resource]))
+   [orchard.java.resource :as resource]))
 
 (defn normalize-ns-meta
   "Normalize cljs namespace metadata to look like a clj."

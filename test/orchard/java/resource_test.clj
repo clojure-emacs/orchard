@@ -1,8 +1,8 @@
-(ns orchard.resource-test
+(ns orchard.java.resource-test
   (:require
    [clojure.string :as str]
    [clojure.test :refer [deftest is testing]]
-   [orchard.resource :as resource]))
+   [orchard.java.resource :as resource]))
 
 (deftest resource-path-tuple-test
   (is (nil? (resource/resource-path-tuple "jar:file:fake.jar!/fake/file.clj"))))

@@ -8,7 +8,7 @@
    [clojure.string :as str]
    [orchard.java.classpath :as cp]
    [orchard.misc :as util]
-   [orchard.resource :as resource])
+   [orchard.java.resource :as resource])
   (:import
    (clojure.lang IPersistentMap)
    (clojure.reflect Constructor Field JavaReflector Method)
