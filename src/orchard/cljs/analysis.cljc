@@ -2,7 +2,7 @@
       :author "Gary Trakhman"
       :added "0.6.0"}
  orchard.cljs.analysis
-  (:require [orchard.misc :as u])
+  (:require [orchard.misc :as misc])
   (:refer-clojure :exclude [find-ns find-var all-ns ns-aliases]))
 
 (defn all-ns
@@ -154,8 +154,8 @@
   [m]
   (-> m
       (assoc :ns (or (:ns m) (:name m)))
-      (update :ns u/namespace-sym)
-      (update :name u/name-sym)))
+      (update :ns misc/namespace-sym)
+      (update :name misc/name-sym)))
 
 (defn var-meta
   "Return meta for the var, we wrap it in order to support both JVM and
@@ -164,10 +164,10 @@
   (cond-> {}
     (map? var) (merge var)
     (var? var) (-> (merge (meta var))
-                   (update :ns #(cond-> % (u/ns-obj? %) ns-name)))
+                   (update :ns #(cond-> % (misc/ns-obj? %) ns-name)))
     true sanitize-ns
-    #?@(:cljs [true (-> (update :ns u/remove-macros)
-                        (update :name u/remove-macros))])))
+    #?@(:cljs [true (-> (update :ns misc/remove-macros)
+                        (update :name misc/remove-macros))])))
 
 (defn ns-meta
   "Return meta for the var, we wrap it in order to support both JVM and
@@ -175,26 +175,26 @@
   [var]
   (cond-> {}
     (map? var) (merge var)
-    (u/ns-obj? var) (merge {:ns (ns-name var)
+    (misc/ns-obj? var) (merge {:ns (ns-name var)
                             :name (ns-name var)})
     true sanitize-ns
-    #?@(:cljs [true (-> (update :ns u/remove-macros)
-                        (update :name u/remove-macros))])))
+    #?@(:cljs [true (-> (update :ns misc/remove-macros)
+                        (update :name misc/remove-macros))])))
 
 (defn find-symbol-meta
   "Given a namespace-qualified var name, gets the analyzer metadata for that
   var."
   [env sym]
-  (let [ns (find-ns env (u/namespace-sym sym))]
+  (let [ns (find-ns env (misc/namespace-sym sym))]
     (some-> (:defs ns)
-            (get (u/name-sym sym))
+            (get (misc/name-sym sym))
             var-meta)))
 
 (defn special-meta
   "Given a special symbol, gets the analyzer metadata."
   [_ sym]
-  (when-let [meta #?(:clj (or (get (u/require-and-resolve 'cljs.repl/special-doc-map) sym)
-                              (get (u/require-and-resolve 'cljs.repl/repl-special-doc-map) sym))
+  (when-let [meta #?(:clj (or (get (misc/require-and-resolve 'cljs.repl/special-doc-map) sym)
+                              (get (misc/require-and-resolve 'cljs.repl/repl-special-doc-map) sym))
                      :cljs (or (get special/special-doc-map sym)
                                (get special/repl-special-doc-map sym)))]
     (merge {:name sym

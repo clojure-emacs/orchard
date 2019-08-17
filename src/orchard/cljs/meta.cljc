@@ -3,7 +3,7 @@
       :added "0.6.0"}
  orchard.cljs.meta
   (:require [orchard.cljs.analysis :as a #?@(:cljs [:include-macros true])]
-            [orchard.misc :as u #?@(:cljs [:include-macros true])]))
+            [orchard.misc :as misc #?@(:cljs [:include-macros true])]))
 
 (defn normalize-ns-meta
   "Normalize cljs namespace metadata to look like a clj."
@@ -27,7 +27,7 @@
                                   a/var-meta
                                   :file)
                      :cljs (some-> env
-                                   (a/ns-interns-from-env (u/add-ns-macros ns))
+                                   (a/ns-interns-from-env (misc/add-ns-macros ns))
                                    first
                                    val
                                    :file))
@@ -56,16 +56,16 @@
 (defn scoped-var-meta
   [env sym & [context-ns]]
   (or (a/find-symbol-meta env sym)
-      (let [scope (u/namespace-sym sym)
+      (let [scope (misc/namespace-sym sym)
             aliased-ns (a/ns-alias env scope context-ns)
-            sym (symbol (str (or aliased-ns context-ns) "/" (u/name-sym sym)))]
+            sym (symbol (str (or aliased-ns context-ns) "/" (misc/name-sym sym)))]
         (a/find-symbol-meta env sym))))
 
 (defn macro-namespace
   "Compute the namespace of a macro symbol."
   [env sym & [context-ns]]
   {:pre [(symbol? sym)]}
-  (let [ns-from-sym (u/as-sym (namespace sym))]
+  (let [ns-from-sym (misc/as-sym (namespace sym))]
     (or (a/macro-ns-alias env ns-from-sym context-ns)
         ns-from-sym
         context-ns)))
@@ -77,7 +77,7 @@
     (when (and ns (find-ns ns))
       (some-> env
               (a/public-macros #?(:clj ns
-                                  :cljs (u/add-ns-macros ns)))
+                                  :cljs (misc/add-ns-macros ns)))
               (get sym)
               a/var-meta))))
 
@@ -92,7 +92,7 @@
          :cljs (let [referred-ns (symbol (namespace referred))
                      referred-sym (symbol (name referred))]
                  (-> env
-                     (a/ns-interns-from-env (u/add-ns-macros referred-ns))
+                     (a/ns-interns-from-env (misc/add-ns-macros referred-ns))
                      (get referred-sym)
                      a/var-meta))))))
 
@@ -101,7 +101,7 @@
   (let [ns (macro-namespace env sym context-ns)]
     (some-> env
             (a/macro-ns-alias sym ns)
-            #?(:cljs u/add-ns-macros)
+            #?(:cljs misc/add-ns-macros)
             find-ns)))
 
 (defn special-sym-meta

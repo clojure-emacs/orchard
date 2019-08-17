@@ -6,7 +6,7 @@
    [clojure.string :as str]
    [clojure.walk :as walk]
    [orchard.namespace :as ns]
-   [orchard.misc :as u]
+   [orchard.misc :as misc]
    [orchard.spec :as spec]
    [orchard.cljs.meta :as cljs-meta])
   (:import
@@ -107,9 +107,9 @@
 (defn repl-special-meta*
   "Return the REPL specials info."
   [sym]
-  (or (when-let [f (u/require-and-resolve 'clojure.repl/special-doc)]
+  (or (when-let [f (misc/require-and-resolve 'clojure.repl/special-doc)]
         (f sym))
-      (when-let [f (u/require-and-resolve 'cljs.repl/special-doc)]
+      (when-let [f (misc/require-and-resolve 'cljs.repl/special-doc)]
         (f sym))))
 
 (def repl-special-meta

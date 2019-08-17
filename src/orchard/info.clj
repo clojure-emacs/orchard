@@ -9,7 +9,7 @@
    [orchard.cljs.meta :as cljs-meta]
    [orchard.java :as java]
    [orchard.meta :as m]
-   [orchard.misc :as u]
+   [orchard.misc :as misc]
    [orchard.java.resource :as resource]))
 
 (defn normalize-ns-meta
@@ -58,8 +58,8 @@
       ;;   (name 'mount.core) ;;=> "mount.core
       (qualified-symbol? sym)
       (assoc :qualified-sym sym
-             :unqualified-sym (u/name-sym sym)
-             :computed-ns (u/namespace-sym sym))
+             :unqualified-sym (misc/name-sym sym)
+             :computed-ns (misc/namespace-sym sym))
 
       (and sym (not (qualified-symbol? sym)))
       (assoc :unqualified-sym (-> sym name symbol))
@@ -181,7 +181,7 @@ resolved (real) namespace and name here"}
 
      (merge (when-let [file-path (:file meta)]
               {:file (cond-> file-path
-                       (u/boot-project?) cp/classpath-file-relative-path)})))))
+                       (misc/boot-project?) cp/classpath-file-relative-path)})))))
 
 (defn info
   "Provide the info map for the input ns and sym.

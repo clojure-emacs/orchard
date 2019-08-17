@@ -5,7 +5,7 @@
    [clojure.string :as str]
    [clojure.test :refer :all]
    [orchard.java.classpath :as cp]
-   [orchard.misc :as u])
+   [orchard.misc :as misc])
   (:import
    (java.io File)
    (java.net URL)))
@@ -25,7 +25,7 @@
                   (cp/classpath))))
     (testing "directory paths have a trailing slash"
       (is (->> (cp/classpath)
-               (filter u/directory?)
+               (filter misc/directory?)
                (every? #(.endsWith (.getPath %) "/")))))
     (testing "contains expected entries"
       (let [project-root (System/getProperty "user.dir")]

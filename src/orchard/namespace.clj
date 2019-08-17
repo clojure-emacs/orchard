@@ -5,7 +5,7 @@
    [clojure.java.io :as io]
    [clojure.string :as str]
    [orchard.java.classpath :as cp]
-   [orchard.misc :as u])
+   [orchard.misc :as misc])
   (:import
    (clojure.lang Namespace)
    (java.io File PushbackReader)))
@@ -50,7 +50,7 @@
 (defn in-project?
   "Whether the URL is in the current project's directory"
   [url]
-  (let [path (if (u/os-windows?) (comp str/lower-case str) str)]
+  (let [path (if (misc/os-windows?) (comp str/lower-case str) str)]
     (.startsWith (path url) (path project-root))))
 
 (defn inlined-dependency?
@@ -90,7 +90,7 @@
   classpath URLs"
   ([classpath-urls]
    (->> (mapcat cp/classpath-seq classpath-urls)
-        (filter u/clj-file?)
+        (filter misc/clj-file?)
         (map (comp read-namespace io/resource))
         (filter identity)
         (sort)))
@@ -101,7 +101,7 @@
   "Returns all namespaces defined in sources within the current project."
   []
   (->> (cp/classpath)
-       (filter (every-pred u/directory? in-project?))
+       (filter (every-pred misc/directory? in-project?))
        (classpath-namespaces)))
 
 (defn loaded-project-namespaces

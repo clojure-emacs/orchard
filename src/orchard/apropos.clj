@@ -4,7 +4,7 @@
   (:require
    [orchard.meta :refer [var-name var-doc] :as m]
    [orchard.query :as query]
-   [orchard.misc :as u])
+   [orchard.misc :as misc])
   (:import
    [clojure.lang MultiFn]))
 
@@ -48,8 +48,8 @@
                  :manipulate-vars
                  (fn [nss vars]
                    (if (first (filter #(= (find-ns 'clojure.core) %) nss))
-                     (concat (keys (or (u/require-and-resolve 'clojure.repl/special-doc-map)
-                                       (u/require-and-resolve 'cljs.repl/special-doc-map)))
+                     (concat (keys (or (misc/require-and-resolve 'clojure.repl/special-doc-map)
+                                       (misc/require-and-resolve 'cljs.repl/special-doc-map)))
                              '[& catch finally]
                              vars)
                      vars))))

@@ -4,7 +4,7 @@
    [clojure.java.io :as io]
    [clojure.string :as str]
    [dynapath.util :as dp]
-   [orchard.misc :as u])
+   [orchard.misc :as misc])
   (:import
    (java.io File)
    (java.net URI URL)
@@ -79,7 +79,7 @@
   as relative paths"
   [^URL url]
   (let [f (io/as-file url)]
-    (if (u/archive? url)
+    (if (misc/archive? url)
       (->> (enumeration-seq (.entries (JarFile. f)))
            (filter #(not (.isDirectory ^JarEntry %)))
            (map #(.getName ^JarEntry %)))
@@ -107,7 +107,7 @@
 
 (defn boot-aware-classloader
   []
-  (if (u/boot-project?)
+  (if (misc/boot-project?)
     (boot-classloader)
     (context-classloader)))
 

@@ -4,9 +4,9 @@
    [clojure.test :refer :all]
    [dynapath.util :as dp]
    [orchard.java :refer :all]
-   [orchard.misc :as u]))
+   [orchard.misc :as misc]))
 
-(def jdk-parser? (or (>= u/java-api-version 9) jdk-tools))
+(def jdk-parser? (or (>= misc/java-api-version 9) jdk-tools))
 
 (deftest resources-test
   ;; If the JDK resources we wish to load dynamically are present on the file
@@ -161,7 +161,7 @@
 (deftest javadoc-urls-test
   (testing "Javadoc URL"
     (testing "for Java < 11" ; JDK8 - JDK11
-      (with-redefs [u/java-api-version 8
+      (with-redefs [misc/java-api-version 8
                     cache (atom {})]
         (testing "of a class"
           (is (= (:javadoc (class-info 'java.lang.String))
@@ -196,9 +196,9 @@
                    "java/util/Hashtable.html#putAll-java.util.Map-"))))))
 
     ;; Java 11+ URLs require module information, which is only available on Java 9+.
-    (when (>= u/java-api-version 9)
+    (when (>= misc/java-api-version 9)
       (testing "for Java 11+"
-        (with-redefs [u/java-api-version 11
+        (with-redefs [misc/java-api-version 11
                       cache (atom {})]
           (testing "of a class"
             (is (= (:javadoc (class-info 'java.lang.String))

@@ -7,7 +7,7 @@
    [clojure.reflect :as r]
    [clojure.string :as str]
    [orchard.java.classpath :as cp]
-   [orchard.misc :as util]
+   [orchard.misc :as misc]
    [orchard.java.resource :as resource])
   (:import
    (clojure.lang IPersistentMap)
@@ -62,7 +62,7 @@
   "The `tools.jar` path, for JDK8 and earlier. If found on the existing
   classpath, this is the corresponding classpath entry. Otherwise, if available,
   this is added to the classpath."
-  (when (<= util/java-api-version 8)
+  (when (<= misc/java-api-version 8)
     (or (some-> (io/resource "com/sun/javadoc/Doc.class")
                 (.. openConnection getJarFileURL))
         (some-> (jdk-find "tools.jar") cp/add-classpath!))))
@@ -74,7 +74,7 @@
 ;; N.b. Where a method's bytecode signature differs from its declared signature
 ;; (other than collection generics), the javadoc method URL can't be inferred as
 ;; done below. (Specifically, this applies to varargs and non-collection
-;; generics, e.g. `java/util/Arrays.html#asList(T...)`.) Since the member is
+;; generics, e.g. `java/misc/Arrays.html#asList(T...)`.) Since the member is
 ;; just a URL fragment, the javadoc link will simply navigate to the parent
 ;; class in these cases.
 
@@ -84,7 +84,7 @@
 (defn javadoc-url
   "Return the relative `.html` javadoc path and member fragment."
   ([class]
-   (let [maybe-module (when (>= util/java-api-version 11)
+   (let [maybe-module (when (>= misc/java-api-version 11)
                         (some-> (module-name class) (str "/")))]
      (str maybe-module
           (-> (str/replace (str class) "." "/")
@@ -93,7 +93,7 @@
   ([class member argtypes]
    (str (javadoc-url class) "#" member
         (when argtypes
-          (if (<= util/java-api-version 9) ; argtypes were munged before Java 10
+          (if (<= misc/java-api-version 9) ; argtypes were munged before Java 10
             (str "-" (str/join "-" (map #(str/replace % #"\[\]" ":A") argtypes)) "-")
             (str "(" (str/join "," argtypes) ")"))))))
 
@@ -108,7 +108,7 @@
 (def source-info
   "When a Java parser is available, return class info from its parsed source;
   otherwise return nil."
-  (if (>= util/java-api-version 9)
+  (if (>= misc/java-api-version 9)
     (do (require '[orchard.java.parser :as src])
         (resolve 'src/source-info))
     (if jdk-tools
@@ -120,7 +120,7 @@
   "On JDK9+, return module name from the class if present; otherwise return nil"
   ;; NOTE This function exists in the parser namespace for conditional
   ;; loading on JDK9+; it does not require parsing.
-  (if (>= util/java-api-version 9)
+  (if (>= misc/java-api-version 9)
     (resolve 'src/module-name)
     (constantly nil)))
 
@@ -192,7 +192,7 @@
                            (catch Exception _)
                            (catch LinkageError _))]
     (let [r (JavaReflector. (.getClassLoader c))] ; for dynamically loaded classes
-      (util/deep-merge (reflect-info (r/reflect c :reflector r))
+      (misc/deep-merge (reflect-info (r/reflect c :reflector r))
                        (source-info class)
                        {:name       (-> c .getSimpleName symbol)
                         :class      (-> c .getName symbol)
@@ -355,8 +355,8 @@
       ;; 8, so we try our own thing first.
       (when (re-find #"^(java|javax|jdk|org.omg|org.w3c.dom|org.xml.sax)/" path)
         (apply str ["https://docs.oracle.com"
-                    (if (>= util/java-api-version 11) "/en/java/javase/" "/javase/")
-                    util/java-api-version
+                    (if (>= misc/java-api-version 11) "/en/java/javase/" "/javase/")
+                    misc/java-api-version
                     "/docs/api/"
                     path]))
       ;; If that didn't work, _then_ we fallback on `*remote-javadocs*`.
