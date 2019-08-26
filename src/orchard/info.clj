@@ -26,7 +26,7 @@
 
   Return nil if :sym is nil, attempting to generate a valid symbol even
   in case some :ns is missing."
-  {:added "0.6.0"}
+  {:added "0.5.0"}
   [ns sym]
   (when sym (symbol (some-> ns str) (str sym))))
 
@@ -35,7 +35,7 @@
 
   This is only available from Clojure 1.9 so we backport it until we
   drop support for Clojure 1.8."
-  {:added "0.6.0"}
+  {:added "0.5.0"}
   [x]
   (boolean (and (symbol? x) (namespace x) true)))
 
@@ -49,7 +49,7 @@
   and :unqualified-sym key.
 
   If :dialect is nil, we assoc :clj, our default."
-  {:added "0.6.0"}
+  {:added "0.5.0"}
   [params]
   (let [{:keys [sym ns context-ns]} params]
     (cond-> (update params :dialect #(or % :clj))
@@ -72,7 +72,7 @@
       (assoc :qualified-sym (qualify-sym (or ns context-ns) sym)))))
 
 (defn clj-meta
-  {:added "0.6.0"}
+  {:added "0.5.0"}
   [{:keys [dialect ns sym computed-ns unqualified-sym]}]
   {:pre [(= dialect :clj)]}
   (let [ns (or ns computed-ns)]
@@ -97,7 +97,7 @@
      (some-> ns (java/resolve-symbol sym)))))
 
 (defn cljs-meta
-  {:added "0.6.0"}
+  {:added "0.5.0"}
   [{:keys [dialect ns sym env context-ns unqualified-sym]}]
   {:pre [(= dialect :cljs)]}
   (let [context-ns (or context-ns ns)]

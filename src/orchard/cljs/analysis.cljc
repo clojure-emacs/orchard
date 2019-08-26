@@ -1,6 +1,6 @@
 (ns ^{:doc "ClojureScript analysis functions."
       :author "Gary Trakhman"
-      :added "0.6.0"}
+      :added "0.5.0"}
  orchard.cljs.analysis
   (:require [orchard.misc :as misc])
   (:refer-clojure :exclude [find-ns find-var all-ns ns-aliases]))
