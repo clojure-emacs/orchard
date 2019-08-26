@@ -172,7 +172,7 @@ resolved (real) namespace and name here"}
                   (= dialect :clj)  (clj-meta params)
                   (= dialect :cljs) (cljs-meta params))]
 
-    ;; TODO split up responsability of finding meta and normalizing the meta map
+    ;; TODO: Split the responsibility of finding meta and normalizing the meta map.
     (some->
      meta
 
