@@ -1,9 +1,10 @@
-(ns ^{:doc "ClojureScript metadata functions."
-      :author "Gary Trakhman"
-      :added "0.5.0"}
- orchard.cljs.meta
-  (:require [orchard.cljs.analysis :as a #?@(:cljs [:include-macros true])]
-            [orchard.misc :as misc #?@(:cljs [:include-macros true])]))
+(ns orchard.cljs.meta
+  "ClojureScript metadata functions."
+  {:author "Gary Trakhman"
+   :added "0.5.0"}
+  (:require
+   [orchard.cljs.analysis :as a #?@(:cljs [:include-macros true])]
+   [orchard.misc :as misc #?@(:cljs [:include-macros true])]))
 
 (defn normalize-ns-meta
   "Normalize cljs namespace metadata to look like a clj."
