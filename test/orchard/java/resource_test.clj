@@ -1,6 +1,5 @@
 (ns orchard.java.resource-test
   (:require
-   [clojure.string :as str]
    [clojure.test :refer [deftest is testing]]
    [orchard.java.resource :as resource]))
 
@@ -9,7 +8,6 @@
 
 (deftest project-resources-test
   (testing "get the correct resources for the orchard project"
-    (let [resources (->> (resource/project-resources)
-                         (remove #(str/ends-with? (.getAbsolutePath (:root %)) "test-resources")))]
-      (is (= "see-also.edn" (-> resources first :relpath)))
+    (let [resources (resource/project-resources)]
+      (is (= "clojuredocs/export.edn" (-> resources first :relpath)))
       (is (= java.net.URL (-> resources first :url class))))))

@@ -5,6 +5,7 @@
    [clojure.pprint :as pprint]
    [clojure.string :as str]
    [clojure.walk :as walk]
+   [orchard.clojuredocs :as cljdocs]
    [orchard.namespace :as ns]
    [orchard.misc :as misc]
    [orchard.spec :as spec]
@@ -69,6 +70,13 @@
         (assoc :file (some-> (ns/canonical-source ns) .getPath)))
     meta-map))
 
+(defn- maybe-add-see-also
+  "If the var `v` has a see-also has associated with it, assoc that into meta-map."
+  [v meta-map]
+  (if-let [see-also (:see-alsos (cljdocs/get-doc (var-name v)))]
+    (merge meta-map {:see-also see-also})
+    meta-map))
+
 (defn- maybe-protocol
   [info]
   (if-let [prot-meta (meta (:protocol info))]
@@ -82,6 +90,8 @@
     nil))
 
 (defn resolve-var
+  "Resolve `ns` and `sym` to a var.
+  The function is a simple wrapper around `clojure.core/ns-resolve`."
   [ns sym]
   {:pre [(symbol? ns) (symbol? sym)]}
   (if-let [ns (find-ns ns)]
@@ -94,6 +104,8 @@
            nil))))
 
 (defn resolve-aliases
+  "Retrieve the ns aliases for `ns`.
+  The function is a simple wrapper around `clojure.core/ns-alias`."
   [ns]
   {:pre [(symbol? ns)]}
   (when-let [ns (find-ns ns)]
@@ -159,7 +171,8 @@
                         maybe-add-file
                         maybe-add-url
                         (update :ns ns-name))]
-       (maybe-add-spec v meta-map)))))
+       (maybe-add-spec v meta-map)
+       (maybe-add-see-also v meta-map)))))
 
 (defn meta+
   "Return special form or var's meta."

@@ -140,24 +140,6 @@
      (some->> (cljs-meta/scoped-macro-meta env sym 'cljs.core)
               (cljs-meta/normalize-macro-meta)))))
 
-(def see-also-data
-  (edn/read-string (slurp (io/resource "see-also.edn"))))
-
-(defn see-also*
-  [{:keys [dialect unqualified-sym] :as m}]
-  (when-not (= :cljs dialect)
-    (some->> unqualified-sym
-             (str)
-             (symbol "clojure.core")
-             (str)
-             (get see-also-data)
-             (mapv symbol)
-             (filter resolve))))
-
-(def ^{:doc "Augment the map with see-also information. We have to use the
-resolved (real) namespace and name here"}
-  see-also (memoize see-also*))
-
 (defn info*
   "Provide the info map for the input ns and sym.
 
@@ -175,9 +157,6 @@ resolved (real) namespace and name here"}
     ;; TODO: Split the responsibility of finding meta and normalizing the meta map.
     (some->
      meta
-
-     (merge (when-let [m (see-also params)]
-              {:see-also m}))
 
      (merge (when-let [file-path (:file meta)]
               {:file (cond-> file-path

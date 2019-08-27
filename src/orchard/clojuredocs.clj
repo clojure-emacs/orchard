@@ -66,16 +66,25 @@
   (.delete (io/file cache-file-name))
   (reset! cache {}))
 
+(defn get-doc
+  "Get data for `var-name`.
+  If `export-edn-url` is omitted, `default-edn-file-url` is used."
+  {:added "0.5.0"}
+  ([var-name]
+   (get-doc var-name default-edn-file-url))
+  ([var-name export-edn-url]
+   (load-cache! export-edn-url)
+   (get @cache (keyword var-name))))
+
 (defn find-doc
-  "Find a document matching to ns-name and var-name from cached documents.
+  "Find a document matching `ns` and `sym` from cached documents.
   Cache will be updated when there are no cached documents or cached documents are old.
 
   If `export-edn-url` is omitted, `default-edn-file-url` is used.
 
   Return nil if there is no matching document."
   {:added "0.5.0"}
-  ([ns-name var-name]
-   (find-doc ns-name var-name default-edn-file-url))
-  ([ns-name var-name export-edn-url]
-   (load-cache! export-edn-url)
-   (get @cache (keyword ns-name var-name))))
+  ([ns sym]
+   (find-doc ns sym default-edn-file-url))
+  ([ns sym export-edn-url]
+   (get-doc (keyword ns sym) export-edn-url)))

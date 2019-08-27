@@ -390,28 +390,20 @@
 ;;;;;;;;;;;;;;;;;;
 
 (deftest see-also-test
-  (let [expected '(clojure.core/map-indexed
-                   clojure.core/pmap
-                   clojure.core/amap
-                   clojure.core/mapcat
-                   clojure.core/keep
-                   clojure.core/juxt
-                   clojure.core/mapv
-                   clojure.core/reduce
-                   clojure.core/run!)]
-
-    (testing "unit test of info/see-also"
-      (is (= expected (-> '{:ns orchard.test-ns :sym map}
-                          info/normalize-params
-                          info/see-also))))
+  (let [expected [:clojure.core/map-indexed
+                  :clojure.core/pmap
+                  :clojure.core/amap
+                  :clojure.core/mapcat
+                  :clojure.core/keep
+                  :clojure.core/juxt
+                  :clojure.core/mapv
+                  :clojure.core/reduce
+                  :clojure.core/run!]]
 
     (testing "info/see-also through info/info* in a required namespace"
       (is (= expected (-> '{:ns orchard.test-ns :sym map}
                           info/info*
-                          :see-also)))))
-
-  (testing "info/see-also does not support ClojureScript"
-    (is (nil? (:see-also (info/info* '{:ns cljs.core :sym map :dialect :cljs :env {}}))))))
+                          :see-also))))))
 
 (deftest info-jvm-test
   (is (info/info* {:ns 'orchard.info :sym 'java.lang.Class}))
