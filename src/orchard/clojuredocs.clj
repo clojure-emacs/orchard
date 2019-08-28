@@ -98,10 +98,12 @@
   "Resolve `sym` in the context of `ns` and look up the documentation
   for the resulting var."
   {:added "0.5.0"}
-  [ns sym]
-  (if (special-symbol? sym)
-    (find-doc "clojure.core" (str sym))
-    (-> (ns-resolve ns sym) var-name get-doc)))
+  ([ns sym]
+   (resolve-and-find-doc ns sym default-edn-file-url))
+  ([ns sym export-edn-url]
+   (if (special-symbol? sym)
+     (find-doc "clojure.core" (str sym) export-edn-url)
+     (-> (ns-resolve ns sym) var-name get-doc))))
 
 (defn- kw-to-sym [kw]
   (symbol (subs (str kw) 1)))
