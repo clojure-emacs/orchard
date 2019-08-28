@@ -157,7 +157,7 @@
   [:ns :name :doc :file :arglists :forms :macro :special-form
    :protocol :line :column :static :added :deprecated :resource])
 
-;; TODO split up responsability of finding meta and normalizing the meta map
+;; TODO: Split the responsibility of finding meta and normalizing the meta map.
 (defn var-meta
   "Return a map of metadata for var v.
   If whitelist is missing use var-meta-whitelist."
