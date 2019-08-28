@@ -89,11 +89,26 @@
   ([ns sym export-edn-url]
    (get-doc (keyword ns sym) export-edn-url)))
 
+(defn- var-name
+  "Convert `v`'s name to a string we can use with `get-doc`."
+  [v]
+  (subs (str v) 2))
+
+(defn resolve-and-find-doc
+  "Resolve `sym` in the context of `ns` and look up the documentation
+  for the resulting var."
+  {:added "0.5.0"}
+  [ns sym]
+  (if (special-symbol? sym)
+    (find-doc "clojure.core" (str sym))
+    (-> (ns-resolve ns sym) var-name get-doc)))
+
 (defn- kw-to-sym [kw]
   (symbol (subs (str kw) 1)))
 
 (defn see-also
   "Get the see-alsos for `var-name` if any."
+  {:added "0.5.0"}
   [var-name]
   (if-let [see-alsos (:see-alsos (get-doc var-name))]
     (map kw-to-sym see-alsos)))
