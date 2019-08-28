@@ -35,7 +35,7 @@
   true)
 
 (defn load-cache!
-  "Load exported documents file from ClojureDocs, and store it as a cache.
+  "Load exported docs file from ClojureDocs, and store it as a cache.
   A EDN format file is expected to the `export-edn-url` argument.
 
   If `export-edn-url` is omitted, `default-edn-file-url` is used.
@@ -60,7 +60,7 @@
        (load-cache-file! cache-file)))))
 
 (defn clean-cache!
-  "Clean a cached file and documents"
+  "Clean the cached ClojureDocs export file and the in memory cache."
   {:added "0.5.0"}
   []
   (.delete (io/file cache-file-name))
@@ -77,12 +77,12 @@
    (get @cache (keyword var-name))))
 
 (defn find-doc
-  "Find a document matching `ns` and `sym` from cached documents.
-  Cache will be updated when there are no cached documents or cached documents are old.
+  "Find documentation matching `ns` and `sym` from the cached documentation.
+  Cache will be updated when there is no cached documentation or when the cached documentation is old.
 
   If `export-edn-url` is omitted, `default-edn-file-url` is used.
 
-  Return nil if there is no matching document."
+  Return nil if there is no matching documentation."
   {:added "0.5.0"}
   ([ns sym]
    (find-doc ns sym default-edn-file-url))

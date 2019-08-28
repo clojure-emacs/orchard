@@ -44,7 +44,7 @@
       (is (< old-timestamp (.lastModified cache-file)))
       (is (not (contains? @docs/cache :dummy))))
 
-    (testing "Sufficiently new cache-file and no cached documents"
+    (testing "Sufficiently new cache-file and no cached documentation"
       (create-dummy-cache-file new-timestamp)
       (reset! docs/cache {})
 
@@ -54,7 +54,7 @@
       (is (= new-timestamp (.lastModified cache-file)))
       (is (not (empty? @docs/cache))))
 
-    (testing "Sufficiently new cache file and already cached documents"
+    (testing "Sufficiently new cache file and already cached documentation"
       (create-dummy-cache-file new-timestamp)
       (reset! docs/cache {:dummy "not-empty-dummy-data"})
 
@@ -75,7 +75,7 @@
     (is (empty? @docs/cache))))
 
 (deftest find-doc-test
-  (testing "find existing document"
+  (testing "find existing documentation"
     (is (empty? @docs/cache))
     (is (not (.exists (io/file docs/cache-file-name))))
     (let [result (docs/find-doc "clojure.core" "first" test-edn-file)]
@@ -85,5 +85,5 @@
       (is (.exists (io/file docs/cache-file-name)))
       (is (not (empty? @docs/cache)))))
 
-  (testing "find non-existing document"
+  (testing "find non-existing documentation"
     (is (nil? (docs/find-doc "non-existing-ns" "non-existing-var" test-edn-file)))))
