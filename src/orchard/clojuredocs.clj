@@ -88,3 +88,12 @@
    (find-doc ns sym default-edn-file-url))
   ([ns sym export-edn-url]
    (get-doc (keyword ns sym) export-edn-url)))
+
+(defn- kw-to-sym [kw]
+  (symbol (subs (str kw) 1)))
+
+(defn see-also
+  "Get the see-alsos for `var-name` if any."
+  [var-name]
+  (if-let [see-alsos (:see-alsos (get-doc var-name))]
+    (map kw-to-sym see-alsos)))

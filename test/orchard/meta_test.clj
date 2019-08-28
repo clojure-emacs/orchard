@@ -62,6 +62,9 @@
     (is (= 'catch (:name (m/special-sym-meta 'catch))))
     (is (= 'finally (:name (m/special-sym-meta 'finally)))))
 
+  (testing ":see-also metadata is attached"
+    (is (not-empty (:see-also (m/special-sym-meta 'if)))))
+
   (testing "Name is correct for `clojure.core/import*`"
     ;; Only compiler special to be namespaced
     (is (= 'clojure.core/import* (:name (m/special-sym-meta 'clojure.core/import*)))))
