@@ -1,4 +1,4 @@
-(defproject cider/orchard "0.5.0-beta13"
+(defproject cider/orchard "0.5.0-beta14"
   :description "A fertile ground for Clojure tooling"
   :url "https://github.com/clojure-emacs/orchard"
   :license {:name "Eclipse Public License"
