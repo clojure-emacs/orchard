@@ -74,7 +74,7 @@
   "If the var `v` has a see-also has associated with it, assoc that into meta-map."
   [v meta-map]
   (if-let [see-also (:see-alsos (cljdocs/get-doc (var-name v)))]
-    (merge meta-map {:see-also see-also})
+    (merge meta-map {:see-also (map symbol see-also)})
     meta-map))
 
 (defn- maybe-protocol

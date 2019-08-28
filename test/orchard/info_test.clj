@@ -390,15 +390,15 @@
 ;;;;;;;;;;;;;;;;;;
 
 (deftest see-also-test
-  (let [expected [:clojure.core/map-indexed
-                  :clojure.core/pmap
-                  :clojure.core/amap
-                  :clojure.core/mapcat
-                  :clojure.core/keep
-                  :clojure.core/juxt
-                  :clojure.core/mapv
-                  :clojure.core/reduce
-                  :clojure.core/run!]]
+  (let [expected '(clojure.core/map-indexed
+                   clojure.core/pmap
+                   clojure.core/amap
+                   clojure.core/mapcat
+                   clojure.core/keep
+                   clojure.core/juxt
+                   clojure.core/mapv
+                   clojure.core/reduce
+                   clojure.core/run!)]
 
     (testing "info/see-also through info/info* in a required namespace"
       (is (= expected (-> '{:ns orchard.test-ns :sym map}

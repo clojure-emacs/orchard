@@ -17,7 +17,7 @@
                           (set (map the-ns subset))
                           (set (namespaces ns-query)))
     {:has-tests? true} #{'orchard.namespace-test}
-    {:project? true} #{'orchard.core 'orchard.meta 'orchard.namespace-test}
+    {:project? true} #{'orchard.meta 'orchard.namespace-test}
     {:project? true
      :has-tests? true} #{'orchard.namespace-test 'orchard.query-test}
     {:include-regexps [#"query"]} #{'orchard.query 'orchard.query-test}
