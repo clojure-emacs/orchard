@@ -84,7 +84,7 @@ Documentation for the master branch as well as tagged releases are available
 Just add `orchard` as a dependency and start hacking.
 
 ```clojure
-[cider/orchard "0.4.0"]
+[cider/orchard "0.5.0"]
 ```
 
 Right now `orchard` provides functionality like:
@@ -95,8 +95,10 @@ Right now `orchard` provides functionality like:
 * Java class handling utilities
 * Utilities for dealing with metadata
 * Namespace utilities
+* Fetching ClojureDocs documentation
+* Finding function dependencies (other functions invoked by a function) and usages
 
-Consult the API documentation to get a better idea about the
+Consult the [API documentation](https://cljdoc.org/d/cider/orchard/CURRENT) to get a better idea about the
 functionality that's provided.
 
 ## License
