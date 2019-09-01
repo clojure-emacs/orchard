@@ -78,6 +78,11 @@
 (deftest var-meta-test
   ;; Test files can't be found on the class path.
   (is (:file (m/var-meta #'m/var-meta)))
+  (testing "Includes spec information"
+    (is (or (contains? (m/var-meta (resolve 'let)) :spec)
+            (nil? (resolve 'clojure.spec.alpha/spec)))))
+  (testing "Includes see-also information from clojure docs"
+    (is (contains? (m/var-meta (resolve 'clojure.set/union)) :see-also)))
   (is (re-find #"string\.clj"
                (:file (#'m/maybe-add-file
                        {:ns (find-ns 'clojure.string)}))))

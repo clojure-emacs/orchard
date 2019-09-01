@@ -172,8 +172,9 @@
                         maybe-add-file
                         maybe-add-url
                         (update :ns ns-name))]
-       (maybe-add-spec v meta-map)
-       (maybe-add-see-also v meta-map)))))
+       (->> meta-map
+            (maybe-add-spec v)
+            (maybe-add-see-also v))))))
 
 (defn meta+
   "Return special form or var's meta."
