@@ -2,6 +2,12 @@
 
 ## master (unreleased)
 
+## 0.5.1 (2019-09-11)
+
+### Bugs fixed
+
+* [#69](https://github.com/clojure-emacs/orchard/pull/69): Include specs in `var-meta`.
+
 ## 0.5.0 (2019-08-29)
 
 ### New features
