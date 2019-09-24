@@ -73,7 +73,10 @@
 (defn- maybe-add-see-also
   "If the var `v` has a see-also has associated with it, assoc that into meta-map."
   [v meta-map]
-  (if-let [see-also (cljdocs/see-also (var-name v))]
+  (if-let [see-also (try
+                      (cljdocs/see-also (var-name v))
+                      ;; Skip merging see-also if exception is thrown.
+                      (catch Exception _ nil))]
     (merge meta-map {:see-also see-also})
     meta-map))
 
@@ -151,7 +154,10 @@
     (when-let [m (and compiler-special? (repl-special-meta sym))]
       (-> m
           (assoc :name orig-sym)
-          (assoc :see-also (cljdocs/see-also (format "clojure.core/%s" sym)))
+          (assoc :see-also (try
+                             (cljdocs/see-also (format "clojure.core/%s" sym))
+                             ;; Skip attaching see-also if exception is thrown.
+                             (catch Exception _ nil)))
           maybe-add-url))))
 
 (def var-meta-whitelist
