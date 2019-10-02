@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+## 0.5.2 (2019-10-02)
+
 ### Bugs fixed
 
 * [#72](https://github.com/clojure-emacs/orchard/pull/72): Check for internet connectivity before downloading ClojureDocs exported file.
