@@ -44,7 +44,8 @@
 
 (defn test-remote-url [^String url]
   (if-not (.startsWith url "http")
-    [false (IllegalArgumentException. "URL must start wih 'http'.")]
+    ;; Skip checks for non remote url
+    [true]
     (let [url (URL. url)
           conn ^HttpsURLConnection (.openConnection url)]
       (.setConnectTimeout conn connect-timeout)
