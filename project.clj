@@ -25,8 +25,7 @@
 
   :profiles {
              ;; Clojure versions matrix
-             :provided {:dependencies [[org.clojure/clojure "1.10.0"]
-                                       [org.clojure/clojure "1.10.0" :classifier "sources"]]}
+             :provided [:1.10]
              :1.8 {:dependencies [[org.clojure/clojure "1.8.0"]
                                   [org.clojure/clojure "1.8.0" :classifier "sources"]]}
              :1.9 {:dependencies [[org.clojure/clojure "1.9.0"]
