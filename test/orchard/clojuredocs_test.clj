@@ -4,7 +4,7 @@
    [clojure.test :as test :refer [deftest is testing use-fixtures]]
    [orchard.clojuredocs :as docs])
   (:import
-   (java.io IOException)
+   (java.io FileNotFoundException IOException)
    (java.time Instant)))
 
 (def ^:private test-edn-file
@@ -55,11 +55,11 @@
         (is (not (.exists cache-file)))
         (is (empty? @docs/cache))))))
 
-(deftest load-cache!-invalid-url-test
+(deftest load-cache!-non-existing-url-test
   (let [cache-file (io/file docs/cache-file-name)]
     (is (not (.exists cache-file)))
     (is (empty? @docs/cache))
-    (is (thrown? IllegalArgumentException (docs/load-cache! "file:/not/existing/file.edn")))
+    (is (thrown? FileNotFoundException (docs/load-cache! "file:/not/existing/file.edn")))
     (is (not (.exists cache-file)))
     (is (empty? @docs/cache))))
 
