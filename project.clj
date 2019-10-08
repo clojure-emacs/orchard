@@ -30,8 +30,8 @@
                                   [org.clojure/clojure "1.8.0" :classifier "sources"]]}
              :1.9 {:dependencies [[org.clojure/clojure "1.9.0"]
                                   [org.clojure/clojure "1.9.0" :classifier "sources"]]}
-             :1.10 {:dependencies [[org.clojure/clojure "1.10.0"]
-                                   [org.clojure/clojure "1.10.0" :classifier "sources"]]}
+             :1.10 {:dependencies [[org.clojure/clojure "1.10.1"]
+                                   [org.clojure/clojure "1.10.1" :classifier "sources"]]}
              :master {:repositories [["snapshots"
                                       "https://oss.sonatype.org/content/repositories/snapshots"]]
                       :dependencies [[org.clojure/clojure "1.11.0-master-SNAPSHOT"]
