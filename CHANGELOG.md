@@ -2,6 +2,12 @@
 
 ## master (unreleased)
 
+## 0.5.3 (2019-10-08)
+
+### Bugs fixed
+
+* [#74](https://github.com/clojure-emacs/orchard/pull/74): Don't check for internet connectivity for local ClojureDocs cache URLs.
+
 ## 0.5.2 (2019-10-02)
 
 ### Bugs fixed
