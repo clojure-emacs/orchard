@@ -110,3 +110,14 @@
     (docs/clean-cache!)
     (testing "Including see-also is skipped"
       (is (not (contains? (m/var-meta (resolve 'clojure.set/union)) :see-also))))))
+
+(deftest ns-meta-test
+  (testing "Includes a non-nil :file"
+    (is (some-> 'orchard.test-ns-dep
+                (find-ns)
+                (m/ns-meta)
+                :file))
+    (is (some-> 'orchard.test-no-defs ;; issue #75
+                (find-ns)
+                (m/ns-meta)
+                :file))))
