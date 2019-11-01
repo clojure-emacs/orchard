@@ -1,7 +1,8 @@
 (ns ^{:doc "A test namespace"} orchard.test-ns
   (:refer-clojure :exclude [unchecked-byte while])
   (:require [clojure.string :refer [replace]]
-            [orchard.test-ns-dep :as test-dep :refer [foo-in-dep]])
+            [orchard.test-ns-dep :as test-dep :refer [foo-in-dep]]
+            [orchard.test-no-defs :as no-defs])
   #?(:cljs (:require-macros [orchard.test-macros :as test-macros :refer [my-add]])
      :clj  (:require [orchard.test-macros :as test-macros :refer [my-add]]))
   #?(:cljs (:import [goog.ui IdGenerator])))

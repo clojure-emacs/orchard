@@ -385,6 +385,18 @@
           (is (= expected (select-keys i [:ns :name :doc :forms :special-form :url])))
           (is (nil? (:file i))))))))
 
+(deftest file-resolution-no-defs-issue-75-test
+  (testing "File resolves, issue #75"
+    (let [params '{:ns orchard.test-ns
+                   :sym orchard.test-no-defs}
+          f "orchard/test_no_defs.cljc"]
+      
+      (testing "- :cljs"
+        (is (= f (:file (info/info* (merge *cljs-params* params))))))
+
+      (testing "- :clj"
+        (is (= f (:file (info/info* params))))))))
+
 ;;;;;;;;;;;;;;;;;;
 ;; Clojure Only ;;
 ;;;;;;;;;;;;;;;;;;
