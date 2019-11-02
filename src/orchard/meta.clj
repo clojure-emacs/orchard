@@ -268,11 +268,15 @@
      (meta ns)
      {:ns (ns-name ns)
       :name (ns-name ns)
-      :file (-> (ns-publics ns)
-                first
-                second
-                var-meta
-                :file)
+      :file (or 
+             (-> (ns-publics ns)
+                 first
+                 second
+                 var-meta
+                 :file)
+             (->
+              (ns/canonical-source ns)
+              .getPath))
       :line 1})))
 
 ;;; ## Manipulation
