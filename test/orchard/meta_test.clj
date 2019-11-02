@@ -111,13 +111,22 @@
     (testing "Including see-also is skipped"
       (is (not (contains? (m/var-meta (resolve 'clojure.set/union)) :see-also))))))
 
+(deftest ns-file-test
+  (testing "Resolves the file path"
+    (let [nss '[orchard.test-ns-dep orchard.test-no-defs]
+          endings ["test_ns_dep.cljc" "test_no_defs.cljc"]]
+      (is (every? true? (map #(.endsWith (m/ns-file %1) %2) nss endings))))))
+
 (deftest ns-meta-test
-  (testing "Includes a non-nil :file"
-    (is (some-> 'orchard.test-ns-dep
-                (find-ns)
-                (m/ns-meta)
-                :file))
-    (is (some-> 'orchard.test-no-defs ;; issue #75
-                (find-ns)
-                (m/ns-meta)
-                :file))))
+  (let [ns 'orchard.test-ns-dep
+        ns-meta (m/ns-meta ns)]
+    (testing "Includes correct `:ns`"
+      (is (= ns (:ns ns-meta))))
+    (testing "Includes correct `:name`"
+      (is (= ns (:name ns-meta))))
+    (testing "Includes correct `:file`"
+      (is (= (m/ns-file ns) (:file ns-meta))))
+    (testing "Includes `:line 1`"
+      (is (= 1 (:line ns-meta))))
+    (testing "Does not include anything else"
+      (is (= 4 (count (keys ns-meta)))))))

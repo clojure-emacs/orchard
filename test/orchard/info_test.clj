@@ -391,7 +391,6 @@
                    :sym orchard.test-no-defs}
           cljs-merged-params (merge *cljs-params* params)
           f "orchard/test_no_defs.cljc"]
-      
       (testing "- :cljs"
         (is (.endsWith (:file (info/info* cljs-merged-params)) f)))
 
