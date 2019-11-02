@@ -4,16 +4,30 @@
    :added "0.5.0"}
   (:require
    [orchard.cljs.analysis :as a #?@(:cljs [:include-macros true])]
-   [orchard.misc :as misc #?@(:cljs [:include-macros true])]))
+   [orchard.misc :as misc #?@(:cljs [:include-macros true])]
+   [orchard.namespace :as ns]))
+
+(defn normalize-ns-file
+  "Helps `normalize-ns-meta` to extract the file from the meta data"
+  [meta]
+  (or (some-> meta
+              :defs
+              first
+              second
+              :file)
+      (some-> meta
+              :name
+              ns/canonical-source
+              .getPath)))
 
 (defn normalize-ns-meta
   "Normalize cljs namespace metadata to look like a clj."
   [meta]
   (merge (select-keys meta [:doc :author])
-         (when-let [n (:name meta)]
-           {:ns n})
-         {:file (-> meta :defs first second :file)
-          :line 1}))
+         {:file (normalize-ns-file meta)
+          :line 1
+          :name (:name meta)
+          :ns (:name meta)}))
 
 (defn normalize-macro-ns
   "Normalize cljs namespace macro metadata to look like clj."

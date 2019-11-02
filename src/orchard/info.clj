@@ -12,15 +12,6 @@
    [orchard.misc :as misc]
    [orchard.java.resource :as resource]))
 
-(defn normalize-ns-meta
-  "Normalize cljs namespace metadata to look like a clj."
-  [meta]
-  (merge (select-keys meta [:doc :author])
-         {:file (-> meta :defs first second :file)
-          :line 1
-          :name (:name meta)
-          :ns (:name meta)}))
-
 (defn qualify-sym
   "Qualify a symbol, if any in :sym, with :ns.
 
@@ -107,11 +98,11 @@
              (cljs-meta/normalize-var-meta))
      ;; an NS
      (some->> (cljs-ana/find-ns env sym)
-              (normalize-ns-meta))
+              (cljs-meta/normalize-ns-meta))
      ;; ns alias
      (some->> (cljs-ana/ns-alias env sym context-ns)
               (cljs-ana/find-ns env)
-              (normalize-ns-meta))
+              (cljs-meta/normalize-ns-meta))
      ;; macro ns
      (some->> (find-ns unqualified-sym)
               (cljs-meta/normalize-macro-ns env))
