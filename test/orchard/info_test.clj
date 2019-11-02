@@ -179,7 +179,7 @@
   (testing "Resolution from current namespace - issue #28 from cljs-tooling"
     (let [i (info/info* (merge *cljs-params* '{:ns orchard.test-ns :sym issue-28}))]
       (is (= '{:arglists ([])
-               :line 14
+               :line 15
                :column 1
                :ns orchard.test-ns
                :name issue-28}
@@ -389,13 +389,14 @@
   (testing "File resolves, issue #75"
     (let [params '{:ns orchard.test-ns
                    :sym orchard.test-no-defs}
+          cljs-merged-params (merge *cljs-params* params)
           f "orchard/test_no_defs.cljc"]
       
       (testing "- :cljs"
-        (is (= f (:file (info/info* (merge *cljs-params* params))))))
+        (is (.endsWith (:file (info/info* cljs-merged-params)) f)))
 
       (testing "- :clj"
-        (is (= f (:file (info/info* params))))))))
+        (is (.endsWith (:file (info/info* params)) f))))))
 
 ;;;;;;;;;;;;;;;;;;
 ;; Clojure Only ;;

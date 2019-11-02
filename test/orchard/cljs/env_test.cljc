@@ -10,6 +10,7 @@
       (is (empty? (set/difference (set (keys (a/all-ns env)))
                                   '#{orchard.test-ns
                                      orchard.test-ns-dep
+                                     orchard.test-no-defs
                                      orchard.test-macros
                                      cljs.core
                                      cljs.user
