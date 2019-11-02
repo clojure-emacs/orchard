@@ -1,5 +1,7 @@
 (ns orchard.namespace
-  "Utilities for resolving and loading namespaces"
+  "Utilities for resolving and loading namespaces."
+  {:author "Jeff Valk"
+   :added "0.5.0"}
   (:require
    [clojure.edn :as edn]
    [clojure.java.io :as io]
@@ -13,7 +15,7 @@
 ;;; Namespace/source resolution
 
 (defn read-namespace
-  "Returns the namespace name from the first top-level `ns` form in the file"
+  "Returns the namespace name from the first top-level `ns` form in the file."
   [url]
   (try
     (with-open [r (PushbackReader. (io/reader url))]
@@ -25,7 +27,7 @@
 
 (defn canonical-source
   "Returns the URL of the source file for the namespace object or symbol,
-  according to the canonical naming convention, if present on the classpath"
+  according to the canonical naming convention, if present on the classpath."
   [ns]
   (let [path (-> (str ns)
                  (str/replace "-" "_")
@@ -48,7 +50,7 @@
   (io/as-url (io/file (System/getProperty "user.dir"))))
 
 (defn in-project?
-  "Whether the URL is in the current project's directory"
+  "Whether the URL is in the current project's directory."
   [url]
   (let [path (if (misc/os-windows?) (comp str/lower-case str) str)]
     (.startsWith (path url) (path project-root))))
@@ -76,7 +78,7 @@
          (some (complement nil?)))))
 
 (defn has-tests?
-  "Returns a truthy value if the namespace has any vars with `:test` metadata"
+  "Returns a truthy value if the namespace has any vars with `:test` metadata."
   [ns]
   (seq (filter (comp :test meta val) (ns-interns ns))))
 
@@ -87,7 +89,7 @@
 
 (defn classpath-namespaces
   "Returns all namespaces defined in sources on the classpath or the specified
-  classpath URLs"
+  classpath URLs."
   ([classpath-urls]
    (->> (mapcat cp/classpath-seq classpath-urls)
         (filter misc/clj-file?)
