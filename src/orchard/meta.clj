@@ -261,6 +261,17 @@
                    :form form
                    :code code)))))))
 
+(defn ns-file
+  "Finds the path to the file defining this `ns`"
+  [ns]
+  (or (some-> (ns-publics ns)
+              first
+              second
+              var-meta
+              :file)
+      (some-> (ns/canonical-source ns)
+              .getPath)))
+
 (defn ns-meta
   [ns]
   (when ns
@@ -268,15 +279,7 @@
      (meta ns)
      {:ns (ns-name ns)
       :name (ns-name ns)
-      :file (or 
-             (-> (ns-publics ns)
-                 first
-                 second
-                 var-meta
-                 :file)
-             (->
-              (ns/canonical-source ns)
-              .getPath))
+      :file (ns-file ns)
       :line 1})))
 
 ;;; ## Manipulation
