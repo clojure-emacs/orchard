@@ -74,7 +74,8 @@
                  clojure.string
                  clojure.test
                  orchard.misc
-                 orchard.namespace]]
+                 orchard.namespace
+                 orchard.cljs.test-canonical-source]]
       (testing "namespace symbols to source files"
         (is (every? identity (map n/canonical-source nses))))
       (testing "source files to namespace symbols"

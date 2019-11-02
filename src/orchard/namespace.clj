@@ -31,7 +31,8 @@
                  (str/replace "-" "_")
                  (str/replace "." "/"))]
     (or (io/resource (str path ".clj"))
-        (io/resource (str path ".cljc")))))
+        (io/resource (str path ".cljc"))
+        (io/resource (str path ".cljs")))))
 
 ;;; Namespace Loading
 
