@@ -2,6 +2,12 @@
 
 ## master (unreleased)
 
+## 0.5.4 (2019-11-05)
+
+### Bugs fixed
+
+* [#75](https://github.com/clojure-emacs/orchard/issues/75): Fix bug with no `:file` for `info` on namespaces without any `def`s.
+
 ## 0.5.3 (2019-10-08)
 
 ### Bugs fixed
