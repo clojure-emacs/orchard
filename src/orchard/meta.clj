@@ -67,7 +67,8 @@
   (if (and ns (or (not file)
                   (re-find #"/form-init[^/]*$" file)))
     (-> (dissoc meta-map :line)
-        (assoc :file (some-> (ns/canonical-source ns) .getPath)))
+        (assoc :file (some-> (ns/canonical-source ns) .getPath
+                             (clojure.string/replace #"^file:/" ""))))
     meta-map))
 
 (defn- maybe-add-see-also
