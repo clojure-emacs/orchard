@@ -204,6 +204,9 @@
 
 (defmulti inspect-value #'value-types)
 
+(defmethod inspect-value nil [value]
+  "nil")
+
 (defmethod inspect-value :atom [value]
   (truncate-string (pr-str value)))
 
