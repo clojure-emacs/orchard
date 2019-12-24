@@ -428,11 +428,19 @@
               (.getName f))
 
             (field-val [^Field f]
-              (try (.setAccessible f true)
-                   (catch java.lang.SecurityException e))
-              (try (.get f obj)
-                   (catch java.lang.IllegalAccessException e
-                     "Access denied.")))
+              (let [e (try (.setAccessible f true)
+                           nil
+                           (catch Exception e
+                             ;; We want to handle specifically SecurityException
+                             ;; and j.l.r.InaccessibleObjectException, but the
+                             ;; latter only comes with Java9+, so let's just
+                             ;; catch everything instead.
+                             e))]
+                (try (.get f obj)
+                     (catch java.lang.IllegalAccessException _
+                       (symbol
+                        (format "<Access denied%s>"
+                                (when e (str " (" (.getName (.getClass e)) ")"))))))))
 
             (render-fields [inspector section-name fields]
               (if (seq fields)
