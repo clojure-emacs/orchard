@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+### Bugs fixed
+
 * [#81](https://github.com/clojure-emacs/orchard/issues/81): [Inspector] Handle InaccessibleObjectException on Java 9+.
 * [#80](https://github.com/clojure-emacs/orchard/issues/80): [Inspector] Render nils in data structures.
 
