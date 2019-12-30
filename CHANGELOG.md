@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+## 0.5.5 (2019-12-30)
+
 ### Bugs fixed
 
 * [#81](https://github.com/clojure-emacs/orchard/issues/81): [Inspector] Handle InaccessibleObjectException on Java 9+.
