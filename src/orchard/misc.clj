@@ -92,7 +92,8 @@
   "Parse a Java version string according to JEP 223 and return the appropriate version."
   [java-ver]
   (try
-    (let [[major minor _] (str/split java-ver #"\.")
+    (let [[no-opt _] (str/split java-ver #"-")
+          [major minor _] (str/split no-opt #"\.")
           major (Integer/parseInt major)]
       (if (> major 1)
         major
