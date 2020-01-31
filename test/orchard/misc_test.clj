@@ -34,7 +34,8 @@
 
 (deftest parse-java-version-test
   (is (= (misc/parse-java-version "1.8.0") 8))
-  (is (= (misc/parse-java-version "11") 11)))
+  (is (= (misc/parse-java-version "11") 11))
+  (is (= (misc/parse-java-version "14-ea") 14)))
 
 (deftest macros-suffix-add-remove
   (testing "add-ns-macros"
