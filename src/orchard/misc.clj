@@ -92,6 +92,8 @@
   "Parse a Java version string according to JEP 223 and return the appropriate version."
   [java-ver]
   (try
+    ;; the no-opt split is because a java version string can end with
+    ;; an optional string consisting of a hyphen followed by other characters
     (let [[no-opt _] (str/split java-ver #"-")
           [major minor _] (str/split no-opt #"\.")
           major (Integer/parseInt major)]
