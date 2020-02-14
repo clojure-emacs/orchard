@@ -2,7 +2,10 @@
 
 ## master (unreleased)
 
+## 0.5.6 (2020-02-14)
+
 ### Bugs fixed
+
 * [#82](https://github.com/clojure-emacs/orchard/pull/82/): Correctly parse Java version strings that contain $OPT segments after the version numbers
 
 ## 0.5.5 (2019-12-30)
