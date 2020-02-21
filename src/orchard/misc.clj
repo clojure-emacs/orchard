@@ -20,16 +20,27 @@
   []
   (not (nil? (boot-fake-classpath))))
 
+(defn url?
+  "Check whether the argument is an url"
+  [u]
+  (instance? java.net.URL u))
+
 (defn directory?
-  "Whether the argument is a directory"
+  "Whether the argument is a directory or an url that points to a directory"
   [f]
-  (.isDirectory (io/as-file f)))
+  (if (url? f)
+    (and (= (.getProtocol ^java.net.URL f) "file")
+         (.isDirectory (io/as-file f)))
+    (.isDirectory (io/as-file f))))
 
 (defn file-ext?
   "Whether the argument's path ends in one of the specified case-insensitive
   file extensions"
   [f & exts]
-  (let [file (io/as-file f)]
+  (when-let [file (if (url? f)
+                    (when  (= (.getProtocol ^java.net.URL f) "file")
+                      (io/as-file f))
+                    (io/as-file f))]
     (some (fn [ext]
             (.endsWith (.. file getName toLowerCase) ext))
           exts)))

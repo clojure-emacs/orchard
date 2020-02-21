@@ -57,3 +57,11 @@
   (is (nil? (misc/namespace-sym nil)))
   (is (= 'unqualified (misc/namespace-sym 'unqualified)))
   (is (= 'qualified (misc/namespace-sym 'qualified/sym))))
+
+(deftest file-ext?
+  (is (misc/file-ext? (java.net.URL. "file:/tmp/foo.jar") ".jar"))
+  (is (not (misc/file-ext? (java.net.URL. "file:/tmp/foo.war") ".jar")))
+  (is (not (misc/file-ext? (java.net.URL. "jar:file:/tmp/foo.jar!/BOOT-INF/lib/test.jar") ".jar"))))
+
+(deftest directory?
+  (is (misc/directory? (.toURL (.toURI (java.io.File. ""))))))
