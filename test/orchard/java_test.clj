@@ -1,6 +1,7 @@
 (ns orchard.java-test
   (:require
    [clojure.java.io :as io]
+   [clojure.java.javadoc :as clojure.javadoc]
    [clojure.test :refer :all]
    [dynapath.util :as dp]
    [orchard.java :refer :all]
@@ -231,6 +232,74 @@
             (testing "with generic type erasure"
               (is (= (:javadoc (member-info 'java.util.Hashtable 'putAll))
                      "java.base/java/util/Hashtable.html#putAll(java.util.Map)")))))))))
+
+(def javadoc-bases
+  "Copied from clojure.java.javadoc. These are the base urls for
+  javadocs from `clojure.java.javadoc/*core-java-api*`"
+  {8 "http://docs.oracle.com/javase/8/docs/api/"
+   9 "http://docs.oracle.com/javase/9/docs/api/"
+   10 "http://docs.oracle.com/javase/10/docs/api/"
+   11 "https://docs.oracle.com/en/java/javase/11/docs/api/java.base/"})
+
+(deftest resolve-javadoc-path-test
+  (let [get-url (comp resolve-javadoc-path (partial apply javadoc-url))]
+    (when (= 8 misc/java-api-version)
+      (testing "Java 8 javadocs resolve to the correct urls"
+        (with-bindings {#'clojure.javadoc/*core-java-api* (javadoc-bases 8)}
+          (with-redefs [misc/java-api-version 8
+                        cache (atom {})]
+            (are [class url] (= url (get-url class))
+              ['java.lang.String]
+              "https://docs.oracle.com/javase/8/docs/api/java/lang/String.html"
+
+              ['java.lang.String 'contains nil]
+              "https://docs.oracle.com/javase/8/docs/api/java/lang/String.html#contains"
+
+              ['java.lang.String 'contains ['java.lang.CharSequence]]
+              "https://docs.oracle.com/javase/8/docs/api/java/lang/String.html#contains-java.lang.CharSequence-")))))
+
+    (when (>= misc/java-api-version 9)
+      (testing "Java 9 javadocs resolve to the correct urls"
+        (with-bindings {#'clojure.javadoc/*core-java-api* (javadoc-bases 9)}
+          (with-redefs [misc/java-api-version 9
+                        cache (atom {})]
+            (testing "java.base modules resolve correctly"
+              (are [class url] (= url (get-url class))
+                ['java.lang.String]
+                "https://docs.oracle.com/javase/9/docs/api/java/lang/String.html"
+
+                ['java.lang.String 'contains nil]
+                "https://docs.oracle.com/javase/9/docs/api/java/lang/String.html#contains"
+
+                ['java.lang.String 'contains ['java.lang.CharSequence]]
+                "https://docs.oracle.com/javase/9/docs/api/java/lang/String.html#contains-java.lang.CharSequence-"))))))
+
+    ;; these tests require resolving module names so should only run on 11
+    (when (= 11 misc/java-api-version)
+      (testing "Java 11 javadocs resolve to the correct urls"
+        (with-redefs [misc/java-api-version 11
+                      cache (atom {})]
+          (testing "java.base modules resolve correctly"
+            (are [class url] (= url (get-url class))
+              ['java.lang.String]
+              "https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/String.html"
+
+              ['java.lang.String 'contains nil]
+              "https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/String.html#contains"
+
+              ['java.lang.String 'contains ['java.lang.CharSequence]]
+              "https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/String.html#contains(java.lang.CharSequence)"))
+
+          (testing "non java.base modules also resolve correctly"
+            (are [class url] (= url (get-url class))
+              ['java.net.http.HttpClient]
+              "https://docs.oracle.com/en/java/javase/11/docs/api/java.net.http/java/net/http/HttpClient.html"
+
+              ['java.net.http.HttpClient 'newHttpClient nil]
+              "https://docs.oracle.com/en/java/javase/11/docs/api/java.net.http/java/net/http/HttpClient.html#newHttpClient"
+
+              ['java.net.http.HttpRequest 'newBuilder ['java.net.URI]]
+              "https://docs.oracle.com/en/java/javase/11/docs/api/java.net.http/java/net/http/HttpRequest.html#newBuilder(java.net.URI)")))))))
 
 (deftest class-resolution-test
   (let [ns (ns-name *ns*)]
