@@ -345,28 +345,48 @@
           (first ms)
           {:candidates (zipmap (map :class ms) ms)})))))
 
+(def backported-javadoc-bases
+  "Copied from clojure.java.javadoc. These are the base urls for
+  javadocs from `clojure.java.javadoc/*core-java-api*`. It is here for
+  two reasons:
+  1. add java 13 to this list
+  2. backport for older Clojures"
+  {8 "https://docs.oracle.com/javase/8/docs/api/"
+   9 "https://docs.oracle.com/javase/9/docs/api/"
+   10 "https://docs.oracle.com/javase/10/docs/api/"
+   11 "https://docs.oracle.com/en/java/javase/11/docs/api/"
+   12 "https://docs.oracle.com/en/java/javase/12/docs/api/"
+   13 "https://docs.oracle.com/en/java/javase/13/docs/api/"})
+
+(def remote-javadocs
+  (sorted-map
+   "com.google.common." "http://google.github.io/guava/releases/23.0/api/docs/"
+   "java." backported-javadoc-bases
+   "javax." backported-javadoc-bases
+   "org.ietf.jgss." backported-javadoc-bases
+   "org.omg." backported-javadoc-bases
+   "org.w3c.dom." backported-javadoc-bases
+   "org.xml.sax." backported-javadoc-bases
+   "org.apache.commons.codec." "http://commons.apache.org/proper/commons-codec/apidocs/"
+   "org.apache.commons.io." "http://commons.apache.org/proper/commons-io/javadocs/api-release/"
+   "org.apache.commons.lang." "http://commons.apache.org/proper/commons-lang/javadocs/api-2.6/"
+   "org.apache.commons.lang3." "http://commons.apache.org/proper/commons-lang/javadocs/api-release/"))
+
 (defn resolve-javadoc-path
   "Resolve a relative javadoc path to a URL and return as a map. Prefer javadoc
   resources on the classpath; then use online javadoc content for core API
   classes. If no source is available, return the relative path as is."
   [^String path]
   (or (resource/resource-full-path path)
-      ;; [bug#308] `*remote-javadocs*` is outdated WRT Java
-      ;; 8, so we try our own thing first.
-      (when (re-find #"^(java|javax|jdk|org.omg|org.w3c.dom|org.xml.sax)/" path)
-        (apply str ["https://docs.oracle.com"
-                    (if (>= misc/java-api-version 11) "/en/java/javase/" "/javase/")
-                    misc/java-api-version
-                    "/docs/api/"
-                    path]))
-      ;; If that didn't work, _then_ we fallback on `*remote-javadocs*`.
       (some (let [classname (.replaceAll path "/" ".")]
-              (fn [[prefix url]]
+              (fn [[prefix url|version->url]]
                 (when (.startsWith classname prefix)
-                  (str (cond-> url
-                         (= 11 misc/java-api-version) (.replaceFirst "/java.base" ""))
+                  (str (if (string? url|version->url)
+                         url|version->url
+                         (get url|version->url misc/java-api-version
+                              "https://docs.oracle.com/javase/8/docs/api/"))
                        path))))
-            @javadoc/*remote-javadocs*)
+            remote-javadocs)
       path))
 
 ;;; ## Initialization
