@@ -363,7 +363,9 @@
       (some (let [classname (.replaceAll path "/" ".")]
               (fn [[prefix url]]
                 (when (.startsWith classname prefix)
-                  (str url path))))
+                  (str (cond-> url
+                         (= 11 misc/java-api-version) (.replaceFirst "/java.base" ""))
+                       path))))
             @javadoc/*remote-javadocs*)
       path))
 
