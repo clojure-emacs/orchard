@@ -358,20 +358,6 @@
    12 "https://docs.oracle.com/en/java/javase/12/docs/api/"
    13 "https://docs.oracle.com/en/java/javase/13/docs/api/"})
 
-(def remote-javadocs
-  (sorted-map
-   "com.google.common." "http://google.github.io/guava/releases/23.0/api/docs/"
-   "java." backported-javadoc-bases
-   "javax." backported-javadoc-bases
-   "org.ietf.jgss." backported-javadoc-bases
-   "org.omg." backported-javadoc-bases
-   "org.w3c.dom." backported-javadoc-bases
-   "org.xml.sax." backported-javadoc-bases
-   "org.apache.commons.codec." "http://commons.apache.org/proper/commons-codec/apidocs/"
-   "org.apache.commons.io." "http://commons.apache.org/proper/commons-io/javadocs/api-release/"
-   "org.apache.commons.lang." "http://commons.apache.org/proper/commons-lang/javadocs/api-2.6/"
-   "org.apache.commons.lang3." "http://commons.apache.org/proper/commons-lang/javadocs/api-release/"))
-
 (defn resolve-javadoc-path
   "Resolve a relative javadoc path to a URL and return as a map. Prefer javadoc
   resources on the classpath; then use online javadoc content for core API
@@ -379,14 +365,15 @@
   [^String path]
   (or (resource/resource-full-path path)
       (some (let [classname (.replaceAll path "/" ".")]
-              (fn [[prefix url|version->url]]
+              (fn [[prefix url]]
                 (when (.startsWith classname prefix)
-                  (str (if (string? url|version->url)
-                         url|version->url
-                         (get url|version->url misc/java-api-version
-                              "https://docs.oracle.com/javase/8/docs/api/"))
-                       path))))
-            remote-javadocs)
+                  (str url path))))
+            (into @javadoc/*remote-javadocs*
+                  ;; clojure 1.8 has no javadoc for anything beyond java
+                  ;; 8. clojure 1.10.1 doesn't have 13. We just backport them
+                  ;; regardless of clojure version
+                  (zipmap ["java." "javax." "org.ietf.jgss." "org.omg." "org.w3c.dom." "org.xml.sax"]
+                          (repeat (backported-javadoc-bases misc/java-api-version)))))
       path))
 
 ;;; ## Initialization
@@ -400,4 +387,4 @@
 ;; TODO: Seems those were hardcoded here accidentally - we should
 ;; probably provide a simple API to register remote JavaDocs.
 (javadoc/add-remote-javadoc "com.amazonaws." "http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/")
-(javadoc/add-remote-javadoc "org.apache.kafka." "https://kafka.apache.org/090/javadoc/index.html?")
+(javadoc/add-remote-javadoc "org.apache.kafka." "https://kafka.apache.org/090/javadoc/")
