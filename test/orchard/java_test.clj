@@ -287,7 +287,14 @@
               "https://docs.oracle.com/en/java/javase/11/docs/api/java.net.http/java/net/http/HttpClient.html#newHttpClient"
 
               ['java.net.http.HttpRequest 'newBuilder ['java.net.URI]]
-              "https://docs.oracle.com/en/java/javase/11/docs/api/java.net.http/java/net/http/HttpRequest.html#newBuilder(java.net.URI)")))))))
+              "https://docs.oracle.com/en/java/javase/11/docs/api/java.net.http/java/net/http/HttpRequest.html#newBuilder(java.net.URI)")))))
+
+    (testing "Allows for added javadocs"
+      (with-redefs [cache (atom {})]
+        (is (= "http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/lambda/AWSLambdaClient.html"
+               (get-url ['com.amazonaws.services.lambda.AWSLambdaClient])))
+        (is (= "https://kafka.apache.org/090/javadoc/org/apache/kafka/clients/consumer/ConsumerConfig.html"
+               (get-url '[org.apache.kafka.clients.consumer.ConsumerConfig])))))))
 
 (deftest class-resolution-test
   (let [ns (ns-name *ns*)]
