@@ -295,11 +295,12 @@
                (get-url ['com.amazonaws.services.lambda.AWSLambdaClient])))
         (is (= "https://kafka.apache.org/090/javadoc/org/apache/kafka/clients/consumer/ConsumerConfig.html"
                (get-url '[org.apache.kafka.clients.consumer.ConsumerConfig])))))
-    (testing "Unrecognized java version doesn't blank out the javadocs"
-      (with-redefs [misc/java-api-version 12345
-                    cache (atom {})]
-        (is (= "https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/String.html"
-               (get-url ['java.lang.String])))))))
+    (when (>= misc/java-api-version 11)
+      (testing "Unrecognized java version doesn't blank out the javadocs"
+        (with-redefs [misc/java-api-version 12345
+                      cache (atom {})]
+          (is (= "https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/String.html"
+                 (get-url ['java.lang.String]))))))))
 
 (deftest class-resolution-test
   (let [ns (ns-name *ns*)]
