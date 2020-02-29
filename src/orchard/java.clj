@@ -345,7 +345,7 @@
           (first ms)
           {:candidates (zipmap (map :class ms) ms)})))))
 
-(def backported-javadoc-bases
+(def javadoc-base-urls
   "Copied from clojure.java.javadoc. These are the base urls for
   javadocs from `clojure.java.javadoc/*core-java-api*`. It is here for
   two reasons:
@@ -373,8 +373,8 @@
                   ;; 8. clojure 1.10.1 doesn't have 13. We just backport them
                   ;; regardless of clojure version
                   (zipmap ["java." "javax." "org.ietf.jgss." "org.omg." "org.w3c.dom." "org.xml.sax"]
-                          (repeat (or (backported-javadoc-bases misc/java-api-version)
-                                      (backported-javadoc-bases 11))))))
+                          (repeat (or (javadoc-base-urls misc/java-api-version)
+                                      (javadoc-base-urls 11))))))
       path))
 
 ;;; ## Initialization

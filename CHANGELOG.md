@@ -5,6 +5,7 @@
 ### Bugs fixed
 
 * [#83](https://github.com/clojure-emacs/orchard/pull/83): Ignore non file URLs when checking for directory or file extensions.
+* [#84](https://github.com/clojure-emacs/orchard/pull/84): Fix javadoc urls
 
 ## 0.5.6 (2020-02-14)
 
