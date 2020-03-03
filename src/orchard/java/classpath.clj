@@ -1,5 +1,9 @@
 (ns orchard.java.classpath
-  "Classpath access and modification"
+  "Classpath access and modification utilities.
+
+  Provides an alternative to the java.classpath contrib library.
+  The library is Boot-aware, meaning it takes into account the
+  classpath manipulation magic, performed by the Boot build tool."
   (:require
    [clojure.java.io :as io]
    [clojure.string :as str]
@@ -14,12 +18,12 @@
 ;;; Classloaders
 
 (defn context-classloader
-  "Returns the current classloader for the current thread"
+  "Returns the current classloader for the current thread."
   []
   (.getContextClassLoader (Thread/currentThread)))
 
 (defn classloaders
-  "Returns the classloader hierarchy"
+  "Returns the classloader hierarchy."
   ([^ClassLoader loader]
    (->> loader
         (iterate #(.getParent ^ClassLoader %))
@@ -29,7 +33,7 @@
 
 (defn modifiable-classloader
   "Returns the highest classloader in the hierarchy that satisfies
-  `dynapath.util/addable-classpath?`, or nil if none do"
+  `dynapath.util/addable-classpath?`, or nil if none do."
   ([^ClassLoader loader]
    (last (filter dp/addable-classpath?
                  (classloaders loader))))
@@ -37,7 +41,7 @@
    (modifiable-classloader (context-classloader))))
 
 (defn set-classloader!
-  "Sets the current classloader for the current thread"
+  "Sets the current classloader for the current thread."
   [^ClassLoader loader]
   (let [thread (Thread/currentThread)]
     (.setContextClassLoader thread loader)
@@ -46,14 +50,14 @@
 ;;; Classpaths
 
 (defn system-classpath
-  "Returns the URLs defined by the 'java.class.path' system property"
+  "Returns the URLs defined by the 'java.class.path' system property."
   []
   (map (comp io/as-url io/as-file)
        (.split (System/getProperty "java.class.path")
                (System/getProperty "path.separator"))))
 
 (defn classpath
-  "Returns the URLs on the classpath"
+  "Returns the URLs on the classpath."
   ([^ClassLoader loader]
    (->> (classloaders loader)
         (mapcat dp/classpath-urls)
@@ -64,7 +68,7 @@
 
 (defn add-classpath!
   "Adds the URL to the classpath and returns it if successful, or nil otherwise,
-  ensuring that a modifiable classloader is available"
+  ensuring that a modifiable classloader is available."
   [^URL url]
   (let [loader (or (modifiable-classloader)
                    (set-classloader!
@@ -76,7 +80,7 @@
 
 (defn classpath-seq
   "Returns a sequence of all descendant non-directory files or archive entries
-  as relative paths"
+  as relative paths."
   [^URL url]
   (let [f (io/as-file url)]
     (if (misc/archive? url)
@@ -87,7 +91,10 @@
            (filter #(not (.isDirectory ^File %)))
            (map #(.getPath (.relativize (.toURI url) (.toURI ^File %))))))))
 
-;;; Boot's hack - previously part of cider-nrepl
+;;; Boot support - previously part of cider-nrepl
+;;
+;; The Boot build tool stores files in a temporary directory, so
+;; we have to do a bit of work to figure out where the real resources are.
 
 (defn boot-classloader
   "Creates a class-loader that knows original source files paths in Boot project."
