@@ -3,6 +3,10 @@
   in editors."
   {:author "Bozhidar Batsov"})
 
+(def ^:private type-abbrevs
+  '{java.lang.Object obj
+    java.lang.String str})
+
 (defn- extract-arglists
   [info]
   (cond
@@ -15,7 +19,8 @@
                             (mapcat :arglists)
                             distinct
                             (sort-by count))
-    :else (:arglists info)))
+    :else (for [arglist (:arglists info)]
+            (mapv #(get type-abbrevs % %) arglist))))
 
 (defn- format-arglists [raw-arglists]
   (map #(mapv str %) raw-arglists))
