@@ -257,13 +257,19 @@
   these for more convenient `jump` navigation."
   [class]
   (let [info (class-info class)
-        ctor (->> (get-in info [:members class])
-                  (vals)
-                  (sort-by :line)
-                  (filter :line)
-                  (first))]
-    (merge (dissoc info :members)
-           (select-keys ctor [:line :column]))))
+        ctors (vals (get-in info [:members class]))
+        first-ctor (->> ctors
+                        (sort-by :line)
+                        (filter :line)
+                        (first))]
+    (-> info
+        (dissoc :members)
+        (assoc :arglists
+               ;; (sort-by count)
+               (map #(if (:argnames %)
+                       (mapv (fn [n t] (symbol (str  t " " n))) (:argnames %) (:argtypes %))
+                       (:argtypes %)) ctors))
+        (merge (select-keys first-ctor [:line :column])))))
 
 (defn member-info
   "For the class and member symbols, return Java member info. If the member is
