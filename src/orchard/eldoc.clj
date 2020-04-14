@@ -60,9 +60,9 @@
 
 (defn datomic-query
   "Generate an eldoc string for a datomic query."
-  [ns symbol]
+  [ns sym]
   (let [ns (read-string ns)
-        sym (read-string symbol)
+        sym (read-string sym)
         query (if (symbol? sym)
                 (deref (ns-resolve ns sym))
                 (eval sym))
