@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+## 0.5.8 (2020-04-14)
+
 ### Bugs fixed
 
 * [#84](https://github.com/clojure-emacs/orchard/pull/84): Fix javadoc urls.

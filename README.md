@@ -84,7 +84,7 @@ Documentation for the master branch as well as tagged releases are available
 Just add `orchard` as a dependency and start hacking.
 
 ```clojure
-[cider/orchard "0.5.7"]
+[cider/orchard "0.5.8"]
 ```
 
 Right now `orchard` provides functionality like:
@@ -103,7 +103,7 @@ functionality that's provided.
 
 ## License
 
-Copyright © 2018-2019 Bozhidar Batsov & contributors
+Copyright © 2018-2020 Bozhidar Batsov & contributors
 
 Distributed under the Eclipse Public License either version 1.0 or (at
 your option) any later version.
