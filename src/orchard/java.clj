@@ -323,27 +323,42 @@
          (filter identity)
          (distinct))))
 
+(defn trim-one-dot
+  [s]
+  (str/replace s #"^\.|\.$" ""))
+
 (defn resolve-symbol
-  "Given a namespace and a class or member symbol, resolve the class/member.
-  Class symbols, constructors, and static calls are resolved to the class
-  unambiguously. Instance members are resolved unambiguously if defined by only
-  one imported class. If multiple imported classes have a member by that name, a
-  map of class names to member info is returned as `:candidates`."
+  "Return the info map for a Java member symbol.
+
+  Constructors and static calls are resolved to the class
+  unambiguously. Instance members are resolved unambiguously if defined
+  by only one imported class. If multiple imported classes have a member
+  by that name, a map of class names to member info is returned as
+  `:candidates`."
   [ns sym]
   {:pre [(every? symbol? [ns sym])]}
-  (let [name (-> (str sym)
-                 (str/replace #"^\.|\.$" "")) ; strip leading/trailing dot
-        sym* (symbol name)
-        [class static-member] (->> (str/split name #"/" 2)
+  (let [sym (-> sym str trim-one-dot)
+        sym* (symbol sym)
+        [class static-member] (->> (str/split sym #"/" 2)
                                    (map #(when % (symbol %))))]
     (if-let [c (resolve-class ns class)]
-      (if static-member
-        (member-info (:class c) static-member)      ; SomeClass/methodCall
-        (type-info (:class c)))                     ; SomeClass
+      (when static-member
+        (member-info (:class c) static-member))     ; SomeClass/methodCall
       (when-let [ms (seq (resolve-member ns sym*))] ; methodCall
         (if (= 1 (count ms))
           (first ms)
           {:candidates (zipmap (map :class ms) ms)})))))
+
+(defn resolve-type
+  "Return type info, for a Java class, interface or record."
+  [ns sym]
+  (let [sym (-> sym str trim-one-dot)
+        sym-split (->> (str/split sym #"/" 2)
+                       (map #(when % (symbol %))))]
+    (some->> (first sym-split)
+             (resolve-class ns)
+             :class
+             type-info)))
 
 (def javadoc-base-urls
   "Copied from clojure.java.javadoc. These are the base urls for

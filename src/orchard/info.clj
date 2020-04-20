@@ -72,9 +72,13 @@
      (m/special-sym-meta sym)
      ;; it's a var
      (some-> ns (m/resolve-var sym) (m/var-meta))
-     ;; it's an unqualified sym for an aliased var
+     ;; it's a Java constructor/static member symbol
+     (some-> ns (java/resolve-symbol sym))
+     ;; it's an unqualified sym maybe referred
      (some-> ns (m/resolve-var unqualified-sym) (m/var-meta))
-     ;; sym is an alias for another ns
+     ;; it's a Java class/record type symbol
+     (some-> ns (java/resolve-type unqualified-sym))
+     ;; it's an alias for another ns
      (some-> ns (m/resolve-aliases) (get sym) (m/ns-meta))
      ;; We use :unqualified-sym *exclusively* here because because our :ns is
      ;; too ambiguous.
@@ -83,9 +87,7 @@
      ;;
      ;;   (info '{:ns clojure.core :sym non-existing}) ;;=> {:author "Rich Hickey" :ns clojure.core ...}
      ;;
-     (some-> (find-ns unqualified-sym) (m/ns-meta))
-     ;; it's a Java class/member symbol...or nil
-     (some-> ns (java/resolve-symbol sym)))))
+     (some-> (find-ns unqualified-sym) (m/ns-meta)))))
 
 (defn cljs-meta
   {:added "0.5"}
