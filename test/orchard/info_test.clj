@@ -19,7 +19,11 @@
 (use-fixtures :once wrap-info-params)
 
 (deftest info-non-existing-test
-  (is (nil? (info/info* {:ns 'clojure.core :sym (gensym "non-existing")}))))
+  (testing "Non existing symbol in clojure.core"
+    (is (nil? (info/info* {:ns 'clojure.core :sym (gensym "non-existing")}))))
+
+  (testing "Non existing symbol in user - issue #86"
+    (is (nil? (info/info* {:ns 'user :sym (gensym "non-existing")})))))
 
 (deftest info-deftype-test
   (testing "deftype"
@@ -424,6 +428,19 @@
 
 (deftest info-java-test
   (is (info/info-java 'clojure.lang.Atom 'swap)))
+
+(deftest info-java-member-precendence-test
+  (testing "Integer/max - issue #86"
+    (let [i (info/info* {:ns 'user :sym 'Integer/max})]
+      (is (= (select-keys i [:class :member :modifiers :throws :argtypes :arglists :returns])
+             '{:throws ()
+               :argtypes [int int]
+               :member max
+               :modifiers #{:public :static}
+               :class java.lang.Integer
+               :arglists ([a b])
+               :returns int}))
+      (is (re-find #"Returns the greater of two" (:doc i))))))
 
 (deftest javadoc-info-unit-test
   (testing "Get an HTTP URL for a Sun/Oracle Javadoc"

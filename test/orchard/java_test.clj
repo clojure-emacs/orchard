@@ -327,8 +327,6 @@
 (deftest symbol-resolution-test
   (let [ns (ns-name *ns*)]
     (testing "Symbol resolution"
-      (testing "of classes/constructors"
-        (is (= 'java.lang.String (:class (resolve-symbol ns 'String)))))
       (testing "of unambiguous instance members"
         (is (= 'java.lang.SecurityManager
                (:class (resolve-symbol ns 'checkPackageDefinition)))))
@@ -372,3 +370,10 @@
         (is (nil? (resolve-symbol ns 'missingMethod)))
         (is (nil? (resolve-symbol ns '.missingDottedMethod)))
         (is (nil? (resolve-symbol ns '.random.bunch/of$junk)))))))
+
+(deftest type-resolution-test
+  (testing "Type resolution"
+    (testing "of Java classes/constructors in any namespace"
+      (is (= 'java.lang.String (:class (resolve-type (ns-name *ns*) 'String)))))
+    (testing "of deftype in clojure.core"
+      (is (= 'clojure.core.Eduction (:class (resolve-type 'clojure.core 'Eduction)))))))
