@@ -1,7 +1,7 @@
 (ns orchard.clojuredocs
   "Find docs from ClojureDocs and retrieve the result as a map."
   {:author "Masashi Iizuka"
-   :added "0.5.0"}
+   :added "0.5"}
   (:require
    [clojure.edn :as edn]
    [clojure.java.io :as io]
@@ -69,7 +69,7 @@
 
   If cached file is not existing and `export-edn-url` is not accessible, `IOException` is thrown.
   If export-edn-url is not a URL for remote host, `IllegalArgumentException` is thrown."
-  {:added "0.5.0"}
+  {:added "0.5"}
   ([]
    (load-cache! default-edn-file-url))
   ([export-edn-url]
@@ -103,7 +103,7 @@
 
 (defn clean-cache!
   "Clean the cached ClojureDocs export file and the in memory cache."
-  {:added "0.5.0"}
+  {:added "0.5"}
   []
   (.delete (io/file cache-file-name))
   (reset! cache {}))
@@ -111,7 +111,7 @@
 (defn get-doc
   "Get data for `var-name`.
   If `export-edn-url` is omitted, `default-edn-file-url` is used."
-  {:added "0.5.0"}
+  {:added "0.5"}
   ([var-name]
    (get-doc var-name default-edn-file-url))
   ([var-name export-edn-url]
@@ -125,7 +125,7 @@
   If `export-edn-url` is omitted, `default-edn-file-url` is used.
 
   Return nil if there is no matching documentation."
-  {:added "0.5.0"}
+  {:added "0.5"}
   ([ns sym]
    (find-doc ns sym default-edn-file-url))
   ([ns sym export-edn-url]
@@ -145,7 +145,7 @@
 (defn resolve-and-find-doc
   "Resolve `sym` in the context of `ns` and look up the documentation
   for the resulting var."
-  {:added "0.5.0"}
+  {:added "0.5"}
   ([ns sym]
    (resolve-and-find-doc ns sym default-edn-file-url))
   ([ns sym export-edn-url]
@@ -158,7 +158,7 @@
 
 (defn see-also
   "Get the see-alsos for `var-name` if any."
-  {:added "0.5.0"}
+  {:added "0.5"}
   [var-name]
   (if-let [see-alsos (:see-alsos (get-doc var-name))]
     (map kw-to-sym see-alsos)))

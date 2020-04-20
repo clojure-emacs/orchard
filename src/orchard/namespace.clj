@@ -1,7 +1,7 @@
 (ns orchard.namespace
   "Utilities for resolving and loading namespaces."
   {:author "Jeff Valk"
-   :added "0.5.0"}
+   :added "0.5"}
   (:require
    [clojure.edn :as edn]
    [clojure.java.io :as io]

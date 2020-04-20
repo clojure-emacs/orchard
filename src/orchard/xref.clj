@@ -1,7 +1,7 @@
 (ns orchard.xref
   "Utilities for finding function dependencies and
   references."
-  {:added "0.5.0"}
+  {:added "0.5"}
   (:require
    [orchard.query :as q]))
 

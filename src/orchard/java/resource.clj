@@ -1,6 +1,6 @@
 (ns orchard.java.resource
   "Resolve JVM resource-related information."
-  {:added "0.5.0"}
+  {:added "0.5"}
   (:require
    [clojure.java.io :as io]
    [orchard.java.classpath :as cp]))
@@ -54,7 +54,7 @@
 
 (defn resource-path
   "Return the resource path for the given name."
-  {:added "0.5.0"}
+  {:added "0.5"}
   [name]
   (some-> name (resource-full-path) (.getPath)))
 
@@ -65,7 +65,7 @@
      :relpath \"the path of the resource relative to the classpath\"}
 
   If the project does not contain resources, it returns nil."
-  {:added "0.5.0"}
+  {:added "0.5"}
   []
   (map #(select-keys % [:file :relpath])
        (project-resources)))

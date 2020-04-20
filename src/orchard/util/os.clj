@@ -3,7 +3,7 @@
   This is a port of BaseDirectories.java in soc/directories-jvm.
   https://github.com/soc/directories-jvm"
   {:author "Masashi Iizuka"
-   :added "0.5.0"}
+   :added "0.5"}
   (:require [clojure.java.io :as io]
             [clojure.string :as str])
   (:import (java.io BufferedReader)))
@@ -61,7 +61,7 @@
   macOS  : $HOME/Library/Caches
   Windows: FOLDERID_LocalAppData\\cache
   Others : $XDG_CACHE_HOME or $HOME/.cache"
-  {:added "0.5.0"}
+  {:added "0.5"}
   []
   (case os-type
     ::mac

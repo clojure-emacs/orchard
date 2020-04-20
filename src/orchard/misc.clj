@@ -143,7 +143,7 @@
 (defn require-and-resolve
   "Try to require the namespace and get a var for the symbol, return the
   var if successful, nil if not."
-  {:added "0.5.0"}
+  {:added "0.5"}
   [sym]
   (when-let [ns (some-> sym namespace symbol)]
     (when-not (find-ns ns)

@@ -1,7 +1,7 @@
 (ns orchard.cljs.meta
   "ClojureScript metadata functions."
   {:author "Gary Trakhman"
-   :added "0.5.0"}
+   :added "0.5"}
   (:require
    [orchard.cljs.analysis :as a #?@(:cljs [:include-macros true])]
    [orchard.misc :as misc #?@(:cljs [:include-macros true])]
