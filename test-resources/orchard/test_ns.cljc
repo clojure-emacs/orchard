@@ -1,5 +1,5 @@
 (ns ^{:doc "A test namespace"} orchard.test-ns
-  (:refer-clojure :exclude [unchecked-byte while])
+  (:refer-clojure :exclude [unchecked-byte while replace])
   (:require [clojure.string :refer [replace]]
             [orchard.test-ns-dep :as test-dep :refer [foo-in-dep]]
             [orchard.test-no-defs :as no-defs])
