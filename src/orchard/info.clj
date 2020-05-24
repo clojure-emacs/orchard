@@ -13,16 +13,16 @@
    [orchard.java.resource :as resource]))
 
 (defn qualify-sym
-  "Qualify a symbol, if any in :sym, with :ns.
+  "Qualify a symbol, if any in `sym`, with `ns`.
 
-  Return nil if :sym is nil, attempting to generate a valid symbol even
-  in case some :ns is missing."
+  Return nil if `sym` is nil, attempting to generate a valid symbol even
+  in case some `ns` is missing."
   {:added "0.5"}
   [ns sym]
   (when sym (symbol (some-> ns str) (str sym))))
 
 (defn qualified-symbol?
-  "Return true if x is a symbol with a namespace
+  "Return true if `x` is a symbol with a namespace
 
   This is only available from Clojure 1.9 so we backport it until we
   drop support for Clojure 1.8."
