@@ -40,7 +40,7 @@
              :test {:resource-paths ["test-resources"]}
 
              ;; Development tools
-             :dev {:dependencies [[pjstadig/humane-test-output "0.9.0"]]
+             :dev {:dependencies [[pjstadig/humane-test-output "0.10.0"]]
                    :resource-paths ["test-resources"]
                    :plugins [[com.jakemccrary/lein-test-refresh "0.23.0"]]
                    :injections [(require 'pjstadig.humane-test-output)
