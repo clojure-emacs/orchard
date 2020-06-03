@@ -48,7 +48,7 @@
                    :test-refresh {:changes-only true}}
 
              ;; CI tools
-             :cloverage {:plugins [[lein-cloverage "1.0.11-SNAPSHOT"]]}
+             :cloverage {:plugins [[lein-cloverage "1.1.2"]]}
 
              :cljfmt {:plugins [[lein-cljfmt "0.6.4"]]
                       :cljfmt {:indents {as-> [[:inner 0]]
