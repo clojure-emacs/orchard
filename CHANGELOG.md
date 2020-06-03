@@ -2,6 +2,18 @@
 
 ## master (unreleased)
 
+## 0.5.10 (2020-06-03)
+
+### Bugs fixed
+
+* [#91](https://github.com/clojure-emacs/orchard/issues/91): Fix broken release caused by some bug in Lein 2.9.3.
+
+## 0.5.9 (2020-05-30)
+
+### Bugs fixed
+
+* [#86](https://github.com/clojure-emacs/orchard/issues/86): Fix resolution order in `info`.
+
 ## 0.5.8 (2020-04-14)
 
 ### Bugs fixed
