@@ -23,7 +23,10 @@
     (is (nil? (info/info* {:ns 'clojure.core :sym (gensym "non-existing")}))))
 
   (testing "Non existing symbol in user - issue #86"
-    (is (nil? (info/info* {:ns 'user :sym (gensym "non-existing")})))))
+    (is (nil? (info/info* {:ns 'user :sym (gensym "non-existing")}))))
+
+  (testing "Non existing symbol with namespace - issue #86"
+    (is (nil? (info/info* {:ns 'user :sym 'non-existing-ns/get})))))
 
 (deftest info-deftype-test
   (testing "deftype"
