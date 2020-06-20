@@ -40,7 +40,8 @@
              :test {:resource-paths ["test-resources"]}
 
              ;; Development tools
-             :dev {:dependencies [[pjstadig/humane-test-output "0.10.0"]]
+             :dev {:dependencies [[pjstadig/humane-test-output "0.10.0"]
+                                  [org.clojure/tools.trace "0.7.10"]]
                    :resource-paths ["test-resources"]
                    :plugins [[com.jakemccrary/lein-test-refresh "0.23.0"]]
                    :injections [(require 'pjstadig.humane-test-output)

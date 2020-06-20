@@ -21,15 +21,6 @@
   [ns sym]
   (when sym (symbol (some-> ns str) (str sym))))
 
-(defn qualified-symbol?
-  "Return true if `x` is a symbol with a namespace
-
-  This is only available from Clojure 1.9 so we backport it until we
-  drop support for Clojure 1.8."
-  {:added "0.5"}
-  [x]
-  (boolean (and (symbol? x) (namespace x) true)))
-
 (defn normalize-params
   "Normalize the info params.
 
@@ -47,26 +38,29 @@
       ;; If :sym is qualified, we have to use (name), cause:
       ;;   (namespace 'mount.core) ;;=> nil
       ;;   (name 'mount.core) ;;=> "mount.core
-      (qualified-symbol? sym)
+      (misc/qualified-symbol? sym)
       (assoc :qualified-sym sym
              :unqualified-sym (misc/name-sym sym)
              :computed-ns (misc/namespace-sym sym))
 
-      (and sym (not (qualified-symbol? sym)))
+      (and sym (not (misc/qualified-symbol? sym)))
       (assoc :unqualified-sym (-> sym name symbol))
 
       ;; if :sym is missing we still assoc :unqualified-sym from :ns
       (and (not sym) ns)
       (assoc :unqualified-sym ns)
 
-      (and sym (not (qualified-symbol? sym)) (or ns context-ns))
+      (and sym (not (misc/qualified-symbol? sym)) (or ns context-ns))
       (assoc :qualified-sym (qualify-sym (or ns context-ns) sym)))))
 
 (defn clj-meta
   {:added "0.5"}
-  [{:keys [dialect ns sym computed-ns unqualified-sym]}]
+  [{:keys [dialect ns sym computed-ns unqualified-sym] :as params}]
   {:pre [(= dialect :clj)]}
   (let [ns (or ns computed-ns)]
+    (println "###")
+    (println params)
+    (println "###")
     (or
      ;; it's a special (special-symbol?)
      (m/special-sym-meta sym)
@@ -75,7 +69,7 @@
      ;; it's a Java constructor/static member symbol
      (some-> ns (java/resolve-symbol sym))
      ;; it's an unqualified sym maybe referred
-     (some-> ns (m/resolve-var unqualified-sym) (m/var-meta))
+     ;; (some-> ns (m/resolve-var unqualified-sym) (m/var-meta))
      ;; it's a Java class/record type symbol
      (some-> ns (java/resolve-type unqualified-sym))
      ;; it's an alias for another ns

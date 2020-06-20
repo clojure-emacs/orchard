@@ -304,16 +304,16 @@
 
 (deftest class-resolution-test
   (let [ns (ns-name *ns*)]
-    (testing "Class resolution"
+    (testing "Java default imports class resolution"
       (testing "of resolvable classes"
-        (is (= 'java.lang.String (:class (resolve-class ns 'String))))
-        (is (= 'java.lang.String (:class (resolve-class ns 'java.lang.String)))))
+        (is (= 'java.lang.String (:class (resolve-imported-class ns 'String))))
+        (is (= 'java.lang.String (:class (resolve-imported-class ns 'java.lang.String)))))
       (testing "of non-resolvable 'classes'"
-        (is (nil? (resolve-class ns 'NothingHere)))
-        (is (nil? (resolve-class ns 'not.actually.AClass))))
+        (is (nil? (resolve-imported-class ns 'NothingHere)))
+        (is (nil? (resolve-imported-class ns 'not.actually.AClass))))
       (testing "of things that aren't classes"
-        (is (nil? (resolve-class ns 'assoc)))
-        (is (nil? (resolve-class ns 'clojure.core)))))))
+        (is (nil? (resolve-imported-class ns 'assoc)))
+        (is (nil? (resolve-imported-class ns 'clojure.core)))))))
 
 (deftest member-resolution-test
   (let [ns (ns-name *ns*)]

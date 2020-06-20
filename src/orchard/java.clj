@@ -1,6 +1,7 @@
 (ns orchard.java
   "Info for Java classes and members"
   {:author "Jeff Valk"}
+  (:refer-clojure :exclude [qualified-symbol?])
   (:require
    [clojure.java.io :as io]
    [clojure.java.javadoc :as javadoc]
@@ -8,7 +9,8 @@
    [clojure.string :as str]
    [orchard.java.classpath :as cp]
    [orchard.misc :as misc]
-   [orchard.java.resource :as resource])
+   [orchard.java.resource :as resource]
+   [clojure.tools.trace :as trace])
   (:import
    (clojure.lang IPersistentMap)
    (clojure.reflect Constructor Field JavaReflector Method)
@@ -112,7 +114,7 @@
     (do (require '[orchard.java.parser :as src])
         (resolve 'src/source-info))
     (if jdk-tools
-      (do (require '[orchard.java.legacy-parser :as src])
+      (do #_(require '[orchard.java.legacy-parser :as src])
           (resolve 'src/source-info))
       (constantly nil))))
 
@@ -265,7 +267,7 @@
     (merge (dissoc info :members)
            (select-keys ctor [:line :column]))))
 
-(defn member-info
+(trace/deftrace member-info
   "For the class and member symbols, return Java member info. If the member is
   overloaded, line number and javadoc signature are that of the first overload.
   If the member's definition is in a superclass, info returned will be for the
@@ -301,7 +303,7 @@
 ;; by considering arity, and narrowed further *if* we could consider argument
 ;; types...)
 
-(defn resolve-class
+(defn resolve-imported-class
   "Given namespace and class symbols, search the imported classes and return
   class info. If not found, search all classes on the classpath (requires a
   qualified name)."
@@ -313,7 +315,14 @@
         (class-info (-> ^Class c .getName symbol))
         (class-info sym)))))
 
-(defn resolve-member
+(defn resolve-qualified-class
+  "Try to resolve symbol within Clojure default classes and return info."
+  [qualified-sym]
+  (when-let [c (resolve qualified-sym)]
+    (when (class? c)
+      (class-info (-> ^Class c .getName symbol)))))
+
+(trace/deftrace resolve-member
   "Given namespace and member symbols, search the imported classes and return
   a list of each matching member's info."
   [ns sym]
@@ -323,11 +332,18 @@
          (filter identity)
          (distinct))))
 
-(defn trim-one-dot
+(defn- trim-one-dot
   [s]
   (str/replace s #"^\.|\.$" ""))
 
-(defn resolve-symbol
+(defn- split-out-class-and-member
+  "Split (qualified) sym and return a tuple of symbols [class member]."
+  [qualified-sym]
+  {:pre [misc/qualified-symbol? qualified-sym]}
+  (->> (str/split qualified-sym #"/" 2)
+       (map #(when % (symbol %)))))
+
+(trace/deftrace resolve-symbol
   "Return the info map for a Java member symbol.
 
   Constructors and static calls are resolved to the class
@@ -336,12 +352,11 @@
   by that name, a map of class names to member info is returned as
   `:candidates`."
   [ns sym]
-  {:pre [(every? symbol? [ns sym])]}
+  {:pre [(every? symbol? [ns sym]) (misc/qualified-symbol? sym)]}
   (let [sym (-> sym str trim-one-dot)
         sym* (symbol sym)
-        [class static-member] (->> (str/split sym #"/" 2)
-                                   (map #(when % (symbol %))))]
-    (if-let [c (resolve-class ns class)]
+        [class static-member] (split-out-class-and-member sym)]
+    (if-let [c (resolve-imported-class ns class)]
       (when static-member
         (member-info (:class c) static-member))     ; SomeClass/methodCall
       (when-let [ms (seq (resolve-member ns sym*))] ; methodCall
@@ -349,14 +364,13 @@
           (first ms)
           {:candidates (zipmap (map :class ms) ms)})))))
 
-(defn resolve-type
+(trace/deftrace resolve-type
   "Return type info, for a Java class, interface or record."
   [ns sym]
-  (let [sym (-> sym str trim-one-dot)
-        sym-split (->> (str/split sym #"/" 2)
-                       (map #(when % (symbol %))))]
-    (some->> (first sym-split)
-             (resolve-class ns)
+  {:pre [(every? symbol? [ns sym]) (not (misc/qualified-symbol? sym))]}
+  (let [sym (-> sym str trim-one-dot)]
+    (some->> (first class)
+             (resolve-imported-class ns)
              :class
              type-info)))
 

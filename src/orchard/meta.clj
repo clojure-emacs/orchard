@@ -9,7 +9,8 @@
    [orchard.namespace :as ns]
    [orchard.misc :as misc]
    [orchard.spec :as spec]
-   [orchard.cljs.meta :as cljs-meta])
+   [orchard.cljs.meta :as cljs-meta]
+   [clojure.tools.trace :as trace])
   (:import
    [clojure.lang LineNumberingPushbackReader]))
 
@@ -92,7 +93,7 @@
     x
     nil))
 
-(defn resolve-var
+(trace/deftrace resolve-var
   "Resolve `ns` and `sym` to a var.
   The function is a simple wrapper around `clojure.core/ns-resolve`."
   [ns sym]
@@ -106,7 +107,7 @@
          (catch Exception _
            nil))))
 
-(defn resolve-aliases
+(trace/deftrace resolve-aliases
   "Retrieve the ns aliases for `ns`.
   The function is a simple wrapper around `clojure.core/ns-alias`."
   [ns]
@@ -272,7 +273,7 @@
       (some-> (ns/canonical-source ns)
               .getPath)))
 
-(defn ns-meta
+(trace/deftrace ns-meta
   [ns]
   (when ns
     (merge

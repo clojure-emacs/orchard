@@ -1,4 +1,5 @@
 (ns orchard.misc
+  (:refer-clojure :exclude [qualified-symbol?])
   (:require
    [clojure.java.io :as io]
    [clojure.string :as str]))
@@ -151,3 +152,12 @@
         (require ns)
         (catch Exception _ nil)))
     (some-> sym find-var var-get)))
+
+(defn qualified-symbol?
+  "Return true if `x` is a symbol with a namespace
+
+  This is only available from Clojure 1.9 so we backport it until we
+  drop support for Clojure 1.8."
+  {:added "0.5"}
+  [x]
+  (boolean (and (symbol? x) (namespace x) true)))
