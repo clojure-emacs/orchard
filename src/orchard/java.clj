@@ -253,21 +253,21 @@
 ;; specific query: type information for a class name, and member information for
 ;; a class/member combination.
 
-(defn type-info
+(trace/deftrace type-info
   "For the class or interface symbol, return Java type info. If the type has
   defined contructors, the line and column returned will be for the first of
   these for more convenient `jump` navigation."
   [class]
-  (let [info (class-info class)
-        ctor (->> (get-in info [:members class])
-                  (vals)
-                  (sort-by :line)
-                  (filter :line)
-                  (first))]
-    (merge (dissoc info :members)
-           (select-keys ctor [:line :column]))))
+  (when-let [info (class-info class)]
+    (let [ctor (->> (get-in info [:members class])
+                    (vals)
+                    (sort-by :line)
+                    (filter :line)
+                    (first))]
+      (merge (dissoc info :members)
+             (select-keys ctor [:line :column])))))
 
-(trace/deftrace member-info
+(defn member-info
   "For the class and member symbols, return Java member info. If the member is
   overloaded, line number and javadoc signature are that of the first overload.
   If the member's definition is in a superclass, info returned will be for the
@@ -303,7 +303,7 @@
 ;; by considering arity, and narrowed further *if* we could consider argument
 ;; types...)
 
-(defn resolve-imported-class
+(defn resolve-class
   "Given namespace and class symbols, search the imported classes and return
   class info. If not found, search all classes on the classpath (requires a
   qualified name)."
@@ -315,14 +315,7 @@
         (class-info (-> ^Class c .getName symbol))
         (class-info sym)))))
 
-(defn resolve-qualified-class
-  "Try to resolve symbol within Clojure default classes and return info."
-  [qualified-sym]
-  (when-let [c (resolve qualified-sym)]
-    (when (class? c)
-      (class-info (-> ^Class c .getName symbol)))))
-
-(trace/deftrace resolve-member
+(defn resolve-member
   "Given namespace and member symbols, search the imported classes and return
   a list of each matching member's info."
   [ns sym]
@@ -330,21 +323,53 @@
     (->> (vals (ns-imports ns))
          (map #(member-info (-> ^Class % .getName symbol) sym))
          (filter identity)
-         (distinct))))
+         (distinct)
+         (not-empty))))
 
 (defn- trim-one-dot
+  "Trim leading/trailing (one only) dot."
   [s]
   (str/replace s #"^\.|\.$" ""))
 
-(defn- split-out-class-and-member
+(defn- split-class+member
   "Split (qualified) sym and return a tuple of symbols [class member]."
-  [qualified-sym]
-  {:pre [misc/qualified-symbol? qualified-sym]}
-  (->> (str/split qualified-sym #"/" 2)
+  [sym]
+  (->> (str/split sym #"/" 2)
        (map #(when % (symbol %)))))
 
-(trace/deftrace resolve-symbol
-  "Return the info map for a Java member symbol.
+(trace/deftrace resolve-qualified
+  [ns sym]
+  {:pre [(every? symbol? [ns sym])
+         (misc/qualified-symbol? sym)]}
+  (let [qualified-sym (-> sym str trim-one-dot)
+        [class static-member] (split-class+member qualified-sym)]
+    (if-let [c (resolve-class ns class)]
+      (if static-member
+        (member-info (:class c) static-member) ;; SomeClass/methodCall
+        (type-info (:class c))))))             ;; SomeClass
+
+(defn resolve-type
+  "Return type info, for a Java class, interface or record."
+  [ns sym]
+  {:pre [(every? symbol? [ns sym])
+         (not (misc/qualified-symbol? sym))]}
+  (some->> (resolve-class ns sym)
+           :class
+           type-info))
+
+(defn resolve-unqualified
+  [ns sym]
+  {:pre [(every? symbol? [ns sym])
+         (not (misc/qualified-symbol? sym))]}
+  (let [unqualified-sym (-> sym str trim-one-dot symbol)]
+    (or (resolve-type ns unqualified-sym)                        ;; defrecord/deftype
+        (when-let [ms (seq (resolve-member ns unqualified-sym))] ;; methodCall
+          (if (= 1 (count ms))
+            (first ms)
+            {:candidates (zipmap (map :class ms) ms)})))))
+
+(defn resolve-symbol
+  "Return the info map for a Java member symbol (qualified or unqualified).
 
   Constructors and static calls are resolved to the class
   unambiguously. Instance members are resolved unambiguously if defined
@@ -352,27 +377,10 @@
   by that name, a map of class names to member info is returned as
   `:candidates`."
   [ns sym]
-  {:pre [(every? symbol? [ns sym]) (misc/qualified-symbol? sym)]}
-  (let [sym (-> sym str trim-one-dot)
-        sym* (symbol sym)
-        [class static-member] (split-out-class-and-member sym)]
-    (if-let [c (resolve-imported-class ns class)]
-      (when static-member
-        (member-info (:class c) static-member))     ; SomeClass/methodCall
-      (when-let [ms (seq (resolve-member ns sym*))] ; methodCall
-        (if (= 1 (count ms))
-          (first ms)
-          {:candidates (zipmap (map :class ms) ms)})))))
-
-(trace/deftrace resolve-type
-  "Return type info, for a Java class, interface or record."
-  [ns sym]
-  {:pre [(every? symbol? [ns sym]) (not (misc/qualified-symbol? sym))]}
-  (let [sym (-> sym str trim-one-dot)]
-    (some->> (first class)
-             (resolve-imported-class ns)
-             :class
-             type-info)))
+  {:pre [(every? symbol? [ns sym])]}
+  (if (misc/qualified-symbol? sym)
+    (resolve-qualified ns sym)
+    (resolve-unqualified ns sym)))
 
 (def javadoc-base-urls
   "Copied from clojure.java.javadoc. These are the base urls for

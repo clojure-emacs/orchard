@@ -93,7 +93,7 @@
     x
     nil))
 
-(trace/deftrace resolve-var
+(defn resolve-var
   "Resolve `ns` and `sym` to a var.
   The function is a simple wrapper around `clojure.core/ns-resolve`."
   [ns sym]
@@ -107,13 +107,21 @@
          (catch Exception _
            nil))))
 
-(trace/deftrace resolve-aliases
+(defn resolve-aliases
   "Retrieve the ns aliases for `ns`.
   The function is a simple wrapper around `clojure.core/ns-alias`."
   [ns]
   {:pre [(symbol? ns)]}
   (when-let [ns (find-ns ns)]
     (ns-aliases ns)))
+
+(trace/deftrace resolve-refer
+  "Resolve `ns` and a referred an unqualified `sym` to a var.
+  The function is a simple wrapper around `clojure.core/ns-refers`."
+  [ns sym]
+  {:pre [(every? symbol? [ns sym])]}
+  (when-let [ns (find-ns ns)]
+    (get (ns-refers ns) sym)))
 
 ;; Even if things like catch or finally aren't clojure special
 ;; symbols we want to be able to talk about them.

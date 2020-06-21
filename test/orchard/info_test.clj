@@ -18,29 +18,20 @@
 
 (use-fixtures :once wrap-info-params)
 
-(deftest ^:test-refresh/focus info-non-existing-test
-  #_(testing "nil for non existing symbol in clojure.core"
-      (is (nil? (info/info* {:ns 'clojure.core :sym (gensym "non-existing")}))))
+(deftest info-non-existing-test
+  (testing "nil for random non-existing unqualified symbol in clojure.core"
+    (is (nil? (info/info* {:ns 'clojure.core :sym (gensym "non-existing")}))))
 
-  #_(testing "nil for random non existing symbol in user - issue #86"
-      (is (nil? (info/info* {:ns 'user :sym (gensym "non-existing")}))))
+  (testing "nil for random non-existing qualified symbol in clojure.core"
+    (is (nil? (info/info* {:ns 'user :sym (symbol "clojure.core" (str (gensym "non-existing")))}))))
 
-  #_(testing "Non imported Java static function - issue #86"
-      (let [i (info/info* {:ns 'user :sym 'Integer/max})]
-        (is (= (select-keys i [:class :member :modifiers :throws :argtypes :arglists :returns])
-               '{:throws ()
-                 :argtypes [int int]
-                 :member max
-                 :modifiers #{:public :static}
-                 :class java.lang.Integer
-                 :arglists ([a b])
-                 :returns int}))
-        (is (re-find #"Returns the greater of two" (:doc i)))))
+  (testing "nil for random non-existing symbol in user - issue #86"
+    (is (nil? (info/info* {:ns 'user :sym (gensym "non-existing")}))))
 
-  #_(testing "nil for non imported Java static function - issue #86"
-      (is (nil? (info/info* {:ns 'user :sym 'Integer/shift}))))
+  (testing "nil for non imported Java static function - issue #86"
+    (is (nil? (info/info* {:ns 'user :sym 'Integer/shift}))))
 
-  (testing "nil for non existing symbol with clojure.core name - issue #86"
+  (testing "nil for qualified get symbol (theoretically in clojure.core) in wrong namespace - issue #86"
     (is (nil? (info/info* {:ns 'user :sym 'non-existing-ns/get})))))
 
 (deftest info-deftype-test
@@ -209,7 +200,7 @@
       (is (str/includes? (:file i) "orchard/test_ns")))))
 
 (deftest info-ns-as-sym-test
-  (testing "Only namespace as qualified symbol"
+  (testing "Resolution from :sym (and not :ns) as namespace symbol should work"
     (let [params   '{:sym orchard.test-ns}
           expected '{:ns orchard.test-ns
                      :name orchard.test-ns
@@ -264,7 +255,7 @@
           (is (str/includes? (:file i) "orchard/test_ns_dep")))))))
 
 (deftest info-cljs-core-namespace-test
-  (testing "Namespace itself but cljs.core"
+  (testing "Resolution of cljs.core for Clojurescript works"
     (testing "- :cljs"
       (is (= 'cljs.core (:ns (info/info* (merge *cljs-params* '{:sym cljs.core}))))))
     (testing "- :clj"
@@ -336,7 +327,7 @@
                (map #(info/info* (merge *cljs-params* %)) params)))))))
 
 (deftest info-macros-var-test
-  (testing "Macro"
+  (testing "Macro is resolved directly as var"
     (testing "- :cljs"
       (let [params '[{:sym orchard.test-macros/my-add}
                      {:ns orchard.test-macros
@@ -365,9 +356,10 @@
                     (map #(info/info* %))
                     (map #(select-keys % [:ns :name :arglists :macro :file])))))))))
 
-(deftest info-macros-referred-var-test
-  (testing "Macro - referred"
-    (let [params '[{:sym orchard.test-ns/my-add}
+(deftest ^:test-refresh/focus info-macros-referred-var-test
+  (testing "Macro is resolved as referred symbol in containing namespace"
+    (let [params '[{:ns orchard.test-ns
+                    :sym orchard.test-ns/my-add}
                    {:ns orchard.test-ns
                     :sym my-add}]
           expected '{:name my-add
@@ -440,9 +432,21 @@
                           :see-also))))))
 
 (deftest info-jvm-test
-  (is (info/info* {:ns 'orchard.info :sym 'java.lang.Class}))
-  (is (info/info* {:ns 'orchard.info :sym 'Class/forName}))
-  (is (info/info* {:ns 'orchard.info :sym '.toString})))
+  (testing "some happy path - the bulk of these are in orchard.java-test"
+    (is (info/info* {:ns 'orchard.info :sym 'java.lang.Class}))
+    (is (info/info* {:ns 'orchard.info :sym 'Class/forName}))
+    (is (info/info* {:ns 'orchard.info :sym '.toString})))
+
+  (testing "Integer/max static function should not resolve to clojure.core/max - issue #86"
+    (let [i (info/info* {:ns 'user :sym 'Integer/max})]
+      (is (= (select-keys i [:class :member :modifiers :throws :argtypes :arglists :returns])
+             '{:throws ()
+               :argtypes [int int]
+               :member max
+               :modifiers #{:public :static}
+               :class java.lang.Integer
+               :arglists ([a b])
+               :returns int})))))
 
 (deftest info-java-test
   (is (info/info-java 'clojure.lang.Atom 'swap)))
@@ -519,59 +523,14 @@
   (is (relative "clojure/core.clj"))
   (is (nil? (relative "notclojure/core.clj"))))
 
-(deftest qualify-sym-test
-  (is (= '+ (info/qualify-sym nil '+)))
-  (is (nil? (info/qualify-sym 'cljs.core nil)))
-  (is (nil? (info/qualify-sym  nil nil)))
-  (is (= 'cljs.core/+ (info/qualify-sym 'cljs.core '+))))
-
 (deftest normalize-params-test
-  (testing ":qualified-sym namespace coming from :ns"
-    (is (= 'cljs.core/+ (-> '{:ns cljs.core
-                              :sym +
-                              :context-ns orchard.info}
-                            info/normalize-params
-                            :qualified-sym))))
-
-  (testing ":qualified-sym namespace coming from :context-ns if :ns is missing"
-    (is (= 'orchard.info/+ (-> '{:sym + :context-ns orchard.info}
-                               info/normalize-params
-                               :qualified-sym))))
-
-  (testing "adding :qualified-sym if :sym is qualified"
+  (testing "adding :sym-ns if :sym is qualified"
     (is (= '{:sym orchard.info/+
-             :qualified-sym orchard.info/+}
-           (-> '{:sym orchard.info/+}
-               (info/normalize-params)
-               (select-keys [:sym :qualified-sym])))))
+             :sym-ns orchard.info}
+           (-> '{:sym orchard.info/+} (info/normalize-params) (select-keys [:sym :sym-ns])))))
 
-  (testing "adding :computed-ns if :sym is qualified"
-    (is (= '{:sym orchard.info/+
-             :computed-ns orchard.info}
-           (-> '{:sym orchard.info/+}
-               (info/normalize-params)
-               (select-keys [:sym :computed-ns])))))
-
-  (testing "adding :unqualified-sym if :sym is qualified"
-    (is (= '{:sym orchard.info/+
-             :unqualified-sym +}
-           (-> '{:sym orchard.info/+}
-               (info/normalize-params)
-               (select-keys [:sym :unqualified-sym])))))
-
-  (testing "adding :unqualified-sym if :sym is unqualified"
-    (is (= '{:sym +
-             :unqualified-sym +}
-           (-> '{:sym +}
-               (info/normalize-params)
-               (select-keys [:sym :unqualified-sym])))))
-
-  (testing "in case of :ns only it should always assoc :unqualified-sym"
-    (is (= '{:ns orchard.info
-             :unqualified-sym orchard.info}
-           (-> '{:ns orchard.info}
-               (info/normalize-params)
-               (select-keys [:ns :unqualified-sym]))))))
+  (testing "default to :clj dialect if missing"
+    (is (= :clj (-> '{:sym orchard.info/+} (info/normalize-params) :dialect)))))
 
 (deftest boot-file-resolution-test
   ;; this checks the files on the classpath soo you need the test-resources
