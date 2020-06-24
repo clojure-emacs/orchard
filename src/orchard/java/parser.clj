@@ -296,15 +296,17 @@
   {:pre [(symbol? klass)]}
   (try
     (when-let [path (source-path klass)]
-      (when-let [root (parse-java path (module-name klass))]
-        (assoc (->> (.getIncludedElements ^DocletEnvironment root)
-                    (filter #(#{ElementKind/CLASS
-                                ElementKind/INTERFACE
-                                ElementKind/ENUM}
-                              (.getKind ^Element %)))
-                    (map #(parse-info % root))
-                    (filter #(= klass (:class %)))
-                    (first))
-               :file path
-               :path (.getPath (io/resource path)))))
+      (when-let [^DocletEnvironment root (parse-java path (module-name klass))]
+        (try
+          (assoc (->> (.getIncludedElements root)
+                      (filter #(#{ElementKind/CLASS
+                                  ElementKind/INTERFACE
+                                  ElementKind/ENUM}
+                                (.getKind ^Element %)))
+                      (map #(parse-info % root))
+                      (filter #(= klass (:class %)))
+                      (first))
+                 :file path
+                 :path (.getPath (io/resource path)))
+          (finally (.close (.getJavaFileManager root))))))
     (catch Throwable _)))
