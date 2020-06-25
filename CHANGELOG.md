@@ -2,6 +2,10 @@
 
 ## master (unreleased)
 
+### Bugs Fixed
+
+* [#95](https://github.com/clojure-emacs/orchard/pull/95): Fix large number of open files from java parser.
+
 ## 0.5.10 (2020-06-03)
 
 ### Bugs fixed
