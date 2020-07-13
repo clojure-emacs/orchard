@@ -2,6 +2,10 @@
 
 ## master (unreleased)
 
+### Changes
+
+* [#96](https://github.com/clojure-emacs/orchard/pull/96): Update to bundle ClojureDocs documents.
+
 ## 0.5.11 (2020-07-10)
 
 ### Bugs Fixed
