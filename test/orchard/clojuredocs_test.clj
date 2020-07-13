@@ -30,6 +30,42 @@
 
 (use-fixtures :each clojuredocs-test-fixture)
 
+(deftest load-docs-if-not-loaded!-test
+  (let [cache-file (io/file docs/cache-file-name)]
+    (testing "bundled"
+      (is (not (.exists cache-file)))
+      (is (empty? @docs/cache))
+      (docs/load-docs-if-not-loaded!)
+      (is (not (.exists cache-file)))
+      (is (seq @docs/cache))
+      (docs/clean-cache!))
+
+    (testing "cached"
+      (create-dummy-cache-file now)
+      (is (.exists cache-file))
+      (is (empty? @docs/cache))
+      (docs/load-docs-if-not-loaded!)
+      (is (.exists cache-file))
+      (is (contains? @docs/cache :foo.core/bar))
+      (docs/clean-cache!))
+
+    (testing "already loaded"
+      (reset! docs/cache {::already ::loaded})
+
+      (is (not (.exists cache-file)))
+      (is (= {::already ::loaded} @docs/cache))
+      (docs/load-docs-if-not-loaded!)
+      (is (not (.exists cache-file)))
+      (is (= {::already ::loaded} @docs/cache))
+
+      (create-dummy-cache-file now)
+      (is (.exists cache-file))
+      (is (= {::already ::loaded} @docs/cache))
+      (docs/load-docs-if-not-loaded!)
+      (is (.exists cache-file))
+      (is (= {::already ::loaded} @docs/cache))
+      (docs/clean-cache!))))
+
 (deftest update-cache!-no-cache-file-test
   (let [cache-file (io/file docs/cache-file-name)]
     (testing "accessible to remote export.edn"

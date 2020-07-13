@@ -53,6 +53,18 @@
         (finally
           (.disconnect conn))))))
 
+(defn load-docs-if-not-loaded!
+  "Load exported docs from bundled or cached file when no docs are loaded.
+  The Cached file take priority."
+  {:added "0.5"}
+  []
+  (when (empty? @cache)
+    (let [cache-file (io/file cache-file-name)]
+      (load-cache-file!
+       (if (.exists cache-file)
+         cache-file
+         (io/resource "clojuredocs/export.edn"))))))
+
 (defn update-cache!
   "Load exported docs file from ClojureDocs, and store it as a cache.
   A EDN format file is expected to the `export-edn-url` argument.
