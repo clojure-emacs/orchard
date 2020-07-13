@@ -4,10 +4,8 @@ VERSION ?= 1.10
 
 TEST_PROFILES := +test
 
-test-resources/clojuredocs/export.edn:
-	curl -o $@ https://clojuredocs-edn.netlify.com/export.compact.edn
 
-test: test-resources/clojuredocs/export.edn
+test:
 	lein with-profile +$(VERSION),$(TEST_PROFILES) test
 
 test-watch: test-resources/clojuredocs/export.edn
