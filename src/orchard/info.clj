@@ -10,8 +10,7 @@
    [orchard.java.classpath :as cp]
    [orchard.meta :as m]
    [orchard.misc :as misc]
-   [orchard.java.resource :as resource]
-   [clojure.tools.trace :as trace]))
+   [orchard.java.resource :as resource]))
 
 (defn normalize-params
   "Normalize the info params.
@@ -37,38 +36,37 @@
       true
       (assoc :unqualified-sym (misc/name-sym sym)))))
 
-;; (defn referred-meta
-;;   [{:keys [ns sym-ns qualified-symbol? unqualified-sym]}]
+(defn referred-meta
+  [{:keys [ns sym-ns qualified-symbol? unqualified-sym]}]
 
-;;   (let [refer-meta (some-> ns
-;;                            (m/resolve-refer unqualified-sym)
-;;                            (m/var-meta))]
-;;     (println "----" sym-ns unqualified-sym qualified-symbol? (:ns refer-meta))
-;;     (cond
-;;       (and refer-meta qualified-symbol? (= sym-ns (:ns refer-meta)))
-;;       refer-meta
+  (let [refer-meta (some-> ns
+                           (m/resolve-refer unqualified-sym)
+                           (m/var-meta))]
+    (println "----" sym-ns unqualified-sym qualified-symbol? (:ns refer-meta))
+    (cond
+      (and refer-meta qualified-symbol? (= sym-ns (:ns refer-meta)))
+      refer-meta
 
-;;       (and refer-meta (not qualified-symbol?))
-;;       refer-meta
+      (and refer-meta (not qualified-symbol?))
+      refer-meta
 
-;;       :else nil)))
+      :else nil)))
 
 (defn clj-meta
   {:added "0.5"}
   [{:keys [dialect ns sym sym-ns qualified-symbol? unqualified-sym] :as params}]
   {:pre [(= dialect :clj)]}
   (let [ns (or ns sym-ns)]
-    (println "####" ns sym sym-ns unqualified-sym)
     (or
      ;; it's a special (special-symbol?)
-     (trace/trace "special" (m/special-sym-meta sym))
+     (m/special-sym-meta sym)
 
      ;; it's a referred symbol
      ;;   (!) refer should never resolve qualified symbols - we let m/resolve-var do that
-     (trace/trace "refer" (some-> ns (m/resolve-refer sym) (m/var-meta)))
+     (some-> ns (m/resolve-refer sym) (m/var-meta))
 
      ;; it's an alias for another ns
-     (trace/trace "alias" (some-> ns (m/resolve-aliases) (get unqualified-sym) (m/ns-meta)))
+     (some-> ns (m/resolve-aliases) (get unqualified-sym) (m/ns-meta))
 
      ;; it's a namespace symbol
      ;;   (!) We use :unqualified-sym *exclusively* here because because our :ns is
@@ -76,14 +74,14 @@
      ;;
      ;;       Observe the following incorrect behavior (should return nil, there is a test):
      ;;       (info '{:ns clojure.core :sym non-existing}) ;;=> {:author "Rich Hickey" :ns clojure.core ...}
-     (trace/trace "namespace" (some-> (find-ns unqualified-sym) (m/ns-meta)))
+     (some-> (find-ns unqualified-sym) (m/ns-meta))
 
      ;; it's a var
      ;;   (!) has to come before Java resolution - see Integer/max test
-     (trace/trace "var" (some-> ns (m/resolve-var sym) (m/var-meta)))
+     (some-> ns (m/resolve-var sym) (m/var-meta))
 
      ;; it's a Java class/member symbol
-     (trace/trace "java" (some-> ns (java/resolve-symbol sym))))))
+     (some-> ns (java/resolve-symbol sym)))))
 
 (defn cljs-meta
   {:added "0.5"}

@@ -9,8 +9,7 @@
    [orchard.namespace :as ns]
    [orchard.misc :as misc]
    [orchard.spec :as spec]
-   [orchard.cljs.meta :as cljs-meta]
-   [clojure.tools.trace :as trace])
+   [orchard.cljs.meta :as cljs-meta])
   (:import
    [clojure.lang LineNumberingPushbackReader]))
 
@@ -115,11 +114,12 @@
   (when-let [ns (find-ns ns)]
     (ns-aliases ns)))
 
-(trace/deftrace resolve-refer
+(defn resolve-refer
   "Resolve `ns` and a referred an unqualified `sym` to a var.
   The function is a simple wrapper around `clojure.core/ns-refers`."
   [ns sym]
   {:pre [(every? symbol? [ns sym])]}
+
   (when-let [ns (find-ns ns)]
     (get (ns-refers ns) sym)))
 
@@ -281,7 +281,7 @@
       (some-> (ns/canonical-source ns)
               .getPath)))
 
-(trace/deftrace ns-meta
+(defn ns-meta
   [ns]
   (when ns
     (merge

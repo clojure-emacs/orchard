@@ -9,8 +9,7 @@
    [clojure.string :as str]
    [orchard.java.classpath :as cp]
    [orchard.misc :as misc]
-   [orchard.java.resource :as resource]
-   [clojure.tools.trace :as trace])
+   [orchard.java.resource :as resource])
   (:import
    (clojure.lang IPersistentMap)
    (clojure.reflect Constructor Field JavaReflector Method)
@@ -253,7 +252,7 @@
 ;; specific query: type information for a class name, and member information for
 ;; a class/member combination.
 
-(trace/deftrace type-info
+(defn type-info
   "For the class or interface symbol, return Java type info. If the type has
   defined contructors, the line and column returned will be for the first of
   these for more convenient `jump` navigation."
@@ -337,7 +336,7 @@
   (->> (str/split sym #"/" 2)
        (map #(when % (symbol %)))))
 
-(trace/deftrace resolve-qualified
+(defn resolve-qualified
   [ns sym]
   {:pre [(every? symbol? [ns sym])
          (misc/qualified-symbol? sym)]}

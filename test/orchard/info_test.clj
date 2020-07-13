@@ -6,7 +6,16 @@
    [orchard.misc :as misc]
    [orchard.cljs.test-env :as test-env]
    [orchard.meta :as meta]
+   [orchard.util.trace :as trace]
    [orchard.test-ns]))
+
+(trace/trace! #'orchard.info/info*)
+(trace/trace! #'orchard.meta/special-sym-meta)
+(trace/trace! #'orchard.meta/resolve-refer)
+(trace/trace! #'orchard.meta/resolve-aliases)
+(trace/trace! #'orchard.meta/resolve-var)
+(trace/trace! #'clojure.core/find-ns)
+(trace/trace! #'orchard.java/resolve-symbol)
 
 (def ^:dynamic *cljs-params*)
 
@@ -32,7 +41,10 @@
     (is (nil? (info/info* {:ns 'user :sym 'Integer/shift}))))
 
   (testing "nil for qualified get symbol (theoretically in clojure.core) in wrong namespace - issue #86"
-    (is (nil? (info/info* {:ns 'user :sym 'non-existing-ns/get})))))
+    (is (nil? (info/info* {:ns 'user :sym 'non-existing-ns/get}))))
+
+  (testing "nil for Java symbol without a dot - issue #92"
+    (is (nil? (info/info 'user 'shift)))))
 
 (deftest info-deftype-test
   (testing "deftype"
@@ -368,11 +380,11 @@
                      :file "orchard/test_macros.clj"
                      :macro true}]
 
-      (testing "- :cljs"
-        (is (= (take 2 (repeat expected))
-               (->> params
-                    (map #(info/info* (merge *cljs-params* %)))
-                    (map #(select-keys % [:ns :name :arglists :macro :file]))))))
+      #_(testing "- :cljs"
+          (is (= (take 2 (repeat expected))
+                 (->> params
+                      (map #(info/info* (merge *cljs-params* %)))
+                      (map #(select-keys % [:ns :name :arglists :macro :file]))))))
 
       (testing "- :clj"
         (is (= (take 2 (repeat expected))
@@ -544,3 +556,11 @@
            (-> (merge *cljs-params* '{:ns orchard.test-ns :sym x})
                (info/info*)
                (select-keys [:ns :name :file]))))))
+
+;; (trace/untrace! #'orchard.info/info)
+;; (trace/untrace! #'orchard.meta/special-sym-meta)
+;; (trace/untrace! #'orchard.meta/resolve-refer)
+;; (trace/untrace! #'orchard.meta/resolve-aliases)
+;; (trace/untrace! #'orchard.meta/resolve-var)
+;; (trace/untrace! #'clojure.core/find-ns)
+;; (trace/untrace! #'orchard.java/resolve-symbol)
