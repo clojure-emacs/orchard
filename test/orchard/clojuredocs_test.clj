@@ -123,22 +123,19 @@
   (reset! docs/cache {:dummy "not-empty-dummy-data"})
   (let [cache-file (io/file docs/cache-file-name)]
     (is (.exists cache-file))
-    (is (not (empty? @docs/cache)))
+    (is (seq @docs/cache))
     (docs/clean-cache!)
     (is (not (.exists cache-file)))
     (is (empty? @docs/cache))))
 
 (deftest find-doc-test
   (testing "find existing documentation"
-    (with-redefs [docs/test-remote-url (constantly [true])]
-      (is (empty? @docs/cache))
-      (is (not (.exists (io/file docs/cache-file-name))))
-      (let [result (docs/find-doc "clojure.core" "first" test-edn-file)]
-        (is (map? result))
-        (is (every? #(contains? result %)
-                    [:arglists :doc :examples :name :notes :ns :see-alsos]))
-        (is (.exists (io/file docs/cache-file-name)))
-        (is (not (empty? @docs/cache))))))
+    (is (empty? @docs/cache))
+    (let [result (docs/find-doc "clojure.core" "first")]
+      (is (map? result))
+      (is (every? #(contains? result %)
+                  [:arglists :doc :examples :name :notes :ns :see-alsos]))
+      (is (seq @docs/cache))))
 
   (testing "find non-existing documentation"
-    (is (nil? (docs/find-doc "non-existing-ns" "non-existing-var" test-edn-file)))))
+    (is (nil? (docs/find-doc "non-existing-ns" "non-existing-var")))))
