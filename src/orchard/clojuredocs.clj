@@ -94,26 +94,20 @@
 
 (defn get-doc
   "Get data for `var-name`.
-  If `export-edn-url` is omitted, `default-edn-file-url` is used."
+  Bundled documentation will be used when there is no cached documentation."
   {:added "0.5"}
-  ([var-name]
-   (get-doc var-name default-edn-file-url))
-  ([var-name export-edn-url]
-   (load-cache! export-edn-url)
-   (get @cache (keyword var-name))))
+  [var-name]
+  (load-docs-if-not-loaded!)
+  (get @cache (keyword var-name)))
 
 (defn find-doc
   "Find documentation matching `ns` and `sym` from the cached documentation.
-  Cache will be updated when there is no cached documentation or when the cached documentation is old.
-
-  If `export-edn-url` is omitted, `default-edn-file-url` is used.
+  Bundled documentation will be used when there is no cached documentation.
 
   Return nil if there is no matching documentation."
   {:added "0.5"}
-  ([ns sym]
-   (find-doc ns sym default-edn-file-url))
-  ([ns sym export-edn-url]
-   (get-doc (keyword ns sym) export-edn-url)))
+  [ns sym]
+  (get-doc (keyword ns sym)))
 
 (defn- var-name
   "Convert `v`'s name to a string we can use with `get-doc`."
@@ -130,12 +124,10 @@
   "Resolve `sym` in the context of `ns` and look up the documentation
   for the resulting var."
   {:added "0.5"}
-  ([ns sym]
-   (resolve-and-find-doc ns sym default-edn-file-url))
-  ([ns sym export-edn-url]
-   (if (special-symbol? sym)
-     (find-doc "clojure.core" (str sym) export-edn-url)
-     (some-> (try-ns-resolve ns sym) var-name (get-doc export-edn-url)))))
+  [ns sym]
+  (if (special-symbol? sym)
+    (find-doc "clojure.core" (str sym))
+    (some-> (try-ns-resolve ns sym) var-name get-doc)))
 
 (defn- kw-to-sym [kw]
   (symbol (subs (str kw) 1)))
@@ -144,5 +136,5 @@
   "Get the see-alsos for `var-name` if any."
   {:added "0.5"}
   [var-name]
-  (if-let [see-alsos (:see-alsos (get-doc var-name))]
+  (when-let [see-alsos (:see-alsos (get-doc var-name))]
     (map kw-to-sym see-alsos)))
