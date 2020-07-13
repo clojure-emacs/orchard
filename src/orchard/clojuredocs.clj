@@ -10,7 +10,6 @@
   (:import
    (java.io IOException)
    (java.net URL)
-   (java.time Instant)
    (javax.net.ssl HttpsURLConnection)))
 
 (def cache (atom {}))
@@ -21,9 +20,6 @@
                                "orchard"
                                "clojuredocs"
                                "export.edn"]))
-(def cache-updating-threshold
-  "One week. Unit is millisecond."
-  604800000)
 
 (def connect-timeout
   "Timeout value for checking connection. Unit is millisecond."
@@ -57,49 +53,25 @@
         (finally
           (.disconnect conn))))))
 
-(defn load-cache!
+(defn update-cache!
   "Load exported docs file from ClojureDocs, and store it as a cache.
   A EDN format file is expected to the `export-edn-url` argument.
 
   If `export-edn-url` is omitted, `default-edn-file-url` is used.
 
-  The loaded EDN file will be cached in `cache-file-name`.
-  If the cached file is older than `cache-updating-threshold`,
-  the cached file will be updated automatically.
-
-  If cached file is not existing and `export-edn-url` is not accessible, `IOException` is thrown.
-  If export-edn-url is not a URL for remote host, `IllegalArgumentException` is thrown."
+  If `export-edn-url` is not accessible, `IOException` is thrown.
+  If `export-edn-url` is not a URL for remote host, `IllegalArgumentException` is thrown."
   {:added "0.5"}
   ([]
-   (load-cache! default-edn-file-url))
+   (update-cache! default-edn-file-url))
   ([export-edn-url]
    (let [cache-file (io/file cache-file-name)
-         now-milli (-> (Instant/now) .getEpochSecond (* 1000))
-         exists?  (.exists cache-file)
-         valid? (when exists?
-                  (< (- now-milli (.lastModified cache-file))
-                     cache-updating-threshold))
-         [downloadable? conn-ex] (when (or (not exists?) (not valid?))
-                                   (test-remote-url export-edn-url))]
-
-     ;; exists?       | N | N | Y | Y | Y | Y |
-     ;; valid?        | - | - | N | Y | N | Y |
-     ;; downloadable? | N | Y | N | N | Y | Y |
-     ;; --------------+---+---+---+---+---+---+
-     ;; error         | x |   |   |   |   |   |
-     ;; download      |   | x |   |   | x |   |
-     ;; use existing  |   |   | x | x |   | x |
-     (cond
-       (and (not exists?) (not downloadable?))
+         ;; connection check not to wait too long
+         [downloadable? conn-ex] (test-remote-url export-edn-url)]
+     (if (not downloadable?)
        (throw conn-ex)
-
-       (or (and (not exists?) downloadable?)
-           (and (not valid?) downloadable?))
        (do (write-cache-file! export-edn-url)
-           (load-cache-file! cache-file))
-
-       (empty? @cache)
-       (load-cache-file! cache-file)))))
+           (load-cache-file! cache-file))))))
 
 (defn clean-cache!
   "Clean the cached ClojureDocs export file and the in memory cache."

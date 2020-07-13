@@ -8,16 +8,10 @@
    (java.time Instant)))
 
 (def ^:private test-edn-file
-  (io/resource "clojuredocs/export.edn"))
+  (io/resource "clojuredocs/test_export.edn"))
 
 (def ^:private now
   (-> (Instant/now) .getEpochSecond (* 1000)))
-
-(def ^:private new-timestamp
-  (- now (/ docs/cache-updating-threshold 2)))
-
-(def ^:private old-timestamp
-  (- now docs/cache-updating-threshold))
 
 (defn- create-dummy-cache-file [& [timestamp]]
   (let [cache-file (io/file docs/cache-file-name)]
@@ -36,94 +30,57 @@
 
 (use-fixtures :each clojuredocs-test-fixture)
 
-(deftest load-cache!-no-cache-file-test
+(deftest update-cache!-no-cache-file-test
   (let [cache-file (io/file docs/cache-file-name)]
     (testing "accessible to remote export.edn"
       (with-redefs [docs/test-remote-url (constantly [true])]
         (is (not (.exists cache-file)))
         (is (empty? @docs/cache))
-        (docs/load-cache! test-edn-file)
+        (docs/update-cache! test-edn-file)
         (is (.exists cache-file))
-        (is (not (empty? @docs/cache)))
+        (is (contains? @docs/cache :foo.core/bar))
         (docs/clean-cache!)))
 
     (testing "not accessible to remote export.edn"
       (with-redefs [docs/test-remote-url (constantly [false (IOException. "dummy")])]
         (is (not (.exists cache-file)))
         (is (empty? @docs/cache))
-        (is (thrown? IOException (docs/load-cache! test-edn-file)))
+        (is (thrown? IOException (docs/update-cache! test-edn-file)))
         (is (not (.exists cache-file)))
         (is (empty? @docs/cache))))))
 
-(deftest load-cache!-non-existing-url-test
+(deftest update-cache!-non-existing-url-test
   (let [cache-file (io/file docs/cache-file-name)]
     (is (not (.exists cache-file)))
     (is (empty? @docs/cache))
-    (is (thrown? FileNotFoundException (docs/load-cache! "file:/not/existing/file.edn")))
+    (is (thrown? FileNotFoundException (docs/update-cache! "file:/not/existing/file.edn")))
     (is (not (.exists cache-file)))
     (is (empty? @docs/cache))))
 
-(deftest load-cache!-old-cache-file-test
-  (let [cache-file (io/file docs/cache-file-name)]
-    (testing "accessible to remote export.edn"
-      (with-redefs [docs/test-remote-url (constantly [true])]
-        (create-dummy-cache-file old-timestamp)
-        (reset! docs/cache {:dummy "not-empty-dummy-data"})
-
-        (is (= old-timestamp (.lastModified cache-file)))
-        (is (contains? @docs/cache :dummy))
-        (docs/load-cache! test-edn-file)
-        (is (< old-timestamp (.lastModified cache-file)))
-        (is (not (contains? @docs/cache :dummy)))))
-
-    (testing "not accessible to remote export.edn"
-      (with-redefs [docs/test-remote-url (constantly [false (IOException. "dummy")])]
-        (create-dummy-cache-file old-timestamp)
-        (reset! docs/cache {})
-
-        (is (= old-timestamp (.lastModified cache-file)))
-        (is (empty? @docs/cache))
-        ;; Use existing cache file
-        (docs/load-cache! test-edn-file)
-        (is (= old-timestamp (.lastModified cache-file)))
-        (is (seq @docs/cache))))))
-
-(deftest load-cache!-sufficiently-new-cache-file-test
+(deftest update-cache!-existing-cache-file-test
   (let [cache-file (io/file docs/cache-file-name)]
     (testing "no cached documentation"
       (with-redefs [docs/test-remote-url (constantly [true])]
-        (create-dummy-cache-file new-timestamp)
+        (create-dummy-cache-file now)
         (reset! docs/cache {})
 
-        (is (= new-timestamp (.lastModified cache-file)))
+        (is (= now (.lastModified cache-file)))
         (is (empty? @docs/cache))
-        (docs/load-cache! test-edn-file)
-        (is (= new-timestamp (.lastModified cache-file)))
-        (is (not (empty? @docs/cache)))))
-
-    (testing "already cached documentation"
-      (with-redefs [docs/test-remote-url (constantly [true])]
-        (create-dummy-cache-file new-timestamp)
-        (reset! docs/cache {:dummy "not-empty-dummy-data"})
-
-        (is (= new-timestamp (.lastModified cache-file)))
-        (is (contains? @docs/cache :dummy))
-        (docs/load-cache! test-edn-file) ; Does nothing
-
-        (is (= new-timestamp (.lastModified cache-file)))
-        (is (contains? @docs/cache :dummy))))
+        (docs/update-cache! test-edn-file)
+        ;; should be updated
+        (is (not= now (.lastModified cache-file)))
+        (is (contains? @docs/cache :foo.core/bar))))
 
     (testing "not accessible to remote export.edn"
       (with-redefs [docs/test-remote-url (constantly [false (IOException. "dummy")])]
-        (create-dummy-cache-file new-timestamp)
+        (create-dummy-cache-file now)
         (reset! docs/cache {})
 
-        (is (= new-timestamp (.lastModified cache-file)))
+        (is (= now (.lastModified cache-file)))
         (is (empty? @docs/cache))
-        ;; Use existing cache file
-        (docs/load-cache! test-edn-file)
-        (is (= new-timestamp (.lastModified cache-file)))
-        (is (not (empty? @docs/cache)))))))
+        (is (thrown? IOException (docs/update-cache! test-edn-file)))
+        (is (= now (.lastModified cache-file)))
+        (is (empty? @docs/cache))))))
 
 (deftest clean-cache!-test
   (create-dummy-cache-file)
