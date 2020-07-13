@@ -9,5 +9,5 @@
 (deftest project-resources-test
   (testing "get the correct resources for the orchard project"
     (let [resources (resource/project-resources)]
-      (is (= "clojuredocs/export.edn" (-> resources first :relpath)))
+      (is (= "clojuredocs/test_export.edn" (-> resources first :relpath)))
       (is (= java.net.URL (-> resources first :url class))))))
