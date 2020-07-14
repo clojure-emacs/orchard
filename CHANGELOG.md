@@ -4,7 +4,7 @@
 
 ### Changes
 
-* [#96](https://github.com/clojure-emacs/orchard/pull/96): Update to bundle ClojureDocs documents.
+* [#96](https://github.com/clojure-emacs/orchard/pull/96): Bundle exported ClojureDocs data and make fetching updates explicit (it used to happen automatically).
 
 ## 0.5.11 (2020-07-10)
 
