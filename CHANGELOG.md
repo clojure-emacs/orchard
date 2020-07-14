@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+## 0.6.0 (2020-07-14)
+
 ### Changes
 
 * [#96](https://github.com/clojure-emacs/orchard/pull/96): Bundle exported ClojureDocs data and make fetching updates explicit (it used to happen automatically).
