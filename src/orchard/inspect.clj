@@ -428,14 +428,15 @@
               (.getName f))
 
             (field-val [^Field f]
-              (let [e (try (.setAccessible f true)
-                           nil
-                           (catch Exception e
-                             ;; We want to handle specifically SecurityException
-                             ;; and j.l.r.InaccessibleObjectException, but the
-                             ;; latter only comes with Java9+, so let's just
-                             ;; catch everything instead.
-                             e))]
+              (let [^Exception e
+                    (try (.setAccessible f true)
+                         nil
+                         (catch Exception e
+                           ;; We want to handle specifically SecurityException
+                           ;; and j.l.r.InaccessibleObjectException, but the
+                           ;; latter only comes with Java9+, so let's just
+                           ;; catch everything instead.
+                           e))]
                 (try (.get f obj)
                      (catch java.lang.IllegalAccessException _
                        (symbol

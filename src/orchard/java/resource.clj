@@ -3,11 +3,13 @@
   {:added "0.5"}
   (:require
    [clojure.java.io :as io]
-   [orchard.java.classpath :as cp]))
+   [orchard.java.classpath :as cp])
+  (:import (java.io File)
+           (java.net URL)))
 
 (defn- trim-leading-separator
   "Trim the java.io.File/separator at the beginning of s."
-  [s]
+  [^String s]
   (if (.startsWith s java.io.File/separator)
     (subs s 1)
     s))
@@ -16,11 +18,11 @@
   "Get a list of classpath resources."
   []
   (mapcat
-   (fn [directory]
+   (fn [^File directory]
      (->> directory
           (file-seq)
-          (filter (memfn isFile))
-          (map (fn [file]
+          (filter (memfn ^File isFile))
+          (map (fn [^File file]
                  (let [relpath (-> file
                                    (.getPath)
                                    (.replaceFirst
@@ -31,11 +33,11 @@
                     :file file
                     :relpath relpath
                     :url (io/resource relpath)})))
-          (remove #(.startsWith (:relpath %) "META-INF/"))
+          (remove #(.startsWith ^String (:relpath %) "META-INF/"))
           (remove #(re-matches #".*\.(clj[cs]?|java|class)" (:relpath %)))))
-   (filter (memfn isDirectory) (map io/as-file (cp/classpath (cp/boot-aware-classloader))))))
+   (filter (memfn ^File isDirectory) (map io/as-file (cp/classpath (cp/boot-aware-classloader))))))
 
-(defn resource-full-path [relative-path]
+(defn resource-full-path ^URL [relative-path]
   (io/resource relative-path (cp/boot-aware-classloader)))
 
 (defn resource-path-tuple

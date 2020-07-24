@@ -13,7 +13,7 @@
    (clojure.lang IPersistentMap)
    (clojure.reflect Constructor Field JavaReflector Method)
    (java.io File)
-   (java.net URI)))
+   (java.net JarURLConnection URI)))
 
 ;;; ## Java Class/Member Info
 ;;
@@ -45,7 +45,7 @@
                (io/file home "lib" f)
                (io/file parent f)
                (io/file parent "lib" f)]]
-    (->> paths (filter #(.canRead %)) first io/as-url)))
+    (->> paths (filter #(.canRead ^File %)) first io/as-url)))
 
 (def jdk-sources
   "The JDK sources path. If found on the existing classpath, this is the
@@ -53,7 +53,8 @@
   the file `src.zip`, and if found this added to the classpath."
   (let [base-url (fn [path]
                    (some-> (io/resource path)
-                           (.. openConnection getJarFileURL)))]
+                           ^JarURLConnection (. openConnection)
+                           (. getJarFileURL)))]
     (or (base-url "java.base/java/lang/Object.java") ; JDK9+
         (base-url "java/lang/Object.java")           ; JDK8-
         (some-> (jdk-find "src.zip") cp/add-classpath!))))
@@ -64,7 +65,8 @@
   this is added to the classpath."
   (when (<= misc/java-api-version 8)
     (or (some-> (io/resource "com/sun/javadoc/Doc.class")
-                (.. openConnection getJarFileURL))
+                ^JarURLConnection (.  openConnection)
+                (. getJarFileURL))
         (some-> (jdk-find "tools.jar") cp/add-classpath!))))
 
 ;;; ## Javadoc URLs

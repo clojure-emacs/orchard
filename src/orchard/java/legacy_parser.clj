@@ -6,11 +6,12 @@
    [clojure.string :as str])
   (:import
    (com.sun.javadoc ClassDoc ConstructorDoc Doc FieldDoc MethodDoc
-                    Parameter Tag Type)
+                    Parameter RootDoc Tag Type)
    (com.sun.source.tree ClassTree)
    (com.sun.tools.javac.util Abort Context List Options)
    (com.sun.tools.javadoc DocEnv JavadocEnter JavadocTool Messager
                           ModifierFilter RootDocImpl)
+   (com.sun.tools.javac.tree JCTree)
    (java.io StringReader)
    (java.net URI)
    (java.util Locale)
@@ -64,7 +65,7 @@
 
 (defn parse-java
   "Load and parse the resource path, returning a `RootDoc` object."
-  [path]
+  ^RootDoc [path]
   (when-let [res (io/resource path)]
     (let [access   (ModifierFilter. ModifierFilter/ALL_ACCESS)
           context  (doto (Context.) (Messager/preRegister "orchard-javadoc"))
@@ -79,7 +80,10 @@
                      (getCharContent [_] (slurp res)))
           tree     (.parse compiler source)
           classes  (->> (.defs tree)
-                        (filter #(= (-> % .getKind .asInterface) ClassTree))
+                        (filter #(= (-> ^JCTree %
+                                        .getKind
+                                        .asInterface)
+                                    ClassTree))
                         (into-array)
                         (List/from))]
       (.main enter (List/of tree))
