@@ -10,7 +10,8 @@
    [orchard.misc :as misc])
   (:import
    (clojure.lang Namespace)
-   (java.io File PushbackReader)))
+   (java.io File PushbackReader)
+   (java.net URL)))
 
 ;;; Namespace/source resolution
 
@@ -28,7 +29,7 @@
 (defn canonical-source
   "Returns the URL of the source file for the namespace object or symbol,
   according to the canonical naming convention, if present on the classpath."
-  [ns]
+  ^URL [ns]
   (let [path (-> (str ns)
                  (str/replace "-" "_")
                  (str/replace "." "/"))]
@@ -54,7 +55,7 @@
   "Whether the URL is in the current project's directory."
   [url]
   (let [path (if (misc/os-windows?) (comp str/lower-case str) str)]
-    (.startsWith (path url) (path project-root))))
+    (.startsWith ^String (path url) (path project-root))))
 
 (defn inlined-dependency?
   "Returns true if the namespace matches one of our, or eastwood's,
