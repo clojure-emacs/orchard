@@ -234,14 +234,16 @@
               collect? (atom false)
               pbr      (proxy [LineNumberingPushbackReader] [rdr]
                          (read []
-                           (let [i (proxy-super read)]
+                           (let [^LineNumberingPushbackReader this this ; remove reflection warning on proxy-super call
+                                 i (proxy-super read)]
                              (when @collect?
                                (.append text (char i)))
                              i))
                          (unread [c]
                            (when @collect?
                              (.deleteCharAt text (dec (.length text))))
-                           (proxy-super unread c)))
+                           (let [^LineNumberingPushbackReader this this] ; remove reflection warning on proxy-super call
+                             (proxy-super unread ^int c))))
               ;; Fix bogus column number of 1, which really means 0
               column   (if (= 1 column) 0 column)]
 
