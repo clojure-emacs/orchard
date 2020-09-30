@@ -394,7 +394,7 @@
 (defmethod inspect :array [inspector obj]
   (-> inspector
       (render-labeled-value "Class" (class obj))
-      (render-labeled-value "Count" (alength obj))
+      (render-labeled-value "Count" (java.lang.reflect.Array/getLength obj)) ; avoid reflection warning from Clojure compiler
       (render-labeled-value "Component Type" (.getComponentType (class obj)))
       (render-ln "Contents: ")
       (render-collection-paged obj)))
