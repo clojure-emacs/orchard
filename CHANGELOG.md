@@ -2,6 +2,10 @@
 
 ## master (unreleased)
 
+## 0.6.1 (2020-10-07)
+
+* Remove reflection warnings.
+
 ## 0.6.0 (2020-07-14)
 
 ### Changes
