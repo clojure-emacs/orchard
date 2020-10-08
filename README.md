@@ -2,7 +2,7 @@
 [![Coverage](https://codecov.io/gh/clojure-emacs/orchard/branch/master/graph/badge.svg)](https://codecov.io/gh/clojure-emacs/orchard/)
 [![Clojars Project](https://img.shields.io/clojars/v/cider/orchard.svg)](https://clojars.org/cider/orchard)
 [![cljdoc badge](https://cljdoc.org/badge/cider/orchard)](https://cljdoc.org/d/cider/orchard/CURRENT)
-[![https://clojars.org/cider/orchard](https://versions.deps.co/cider/orchard/downloads.svg)]
+[![downloads badge](https://versions.deps.co/cider/orchard/downloads.svg)](https://clojars.org/cider/orchard)
 
 # Orchard
 
