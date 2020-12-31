@@ -5,7 +5,7 @@ VERSION ?= 1.10
 TEST_PROFILES := +test
 
 resources/clojuredocs/export.edn:
-	curl -o $@ https://clojuredocs-edn.netlify.app/export.compact.min.edn
+curl -o $@ https://github.com/clojure-emacs/clojuredocs-export-edn/raw/master/exports/export.compact.edn
 
 test:
 	lein with-profile +$(VERSION),$(TEST_PROFILES) test

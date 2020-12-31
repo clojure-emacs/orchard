@@ -14,7 +14,7 @@
 
 (def cache (atom {}))
 (def default-edn-file-url
-  "https://clojuredocs-edn.netlify.com/export.compact.edn")
+  "https://github.com/clojure-emacs/clojuredocs-export-edn/raw/master/exports/export.compact.edn")
 (def cache-file-name
   (str/join os/file-separator [(os/cache-dir)
                                "orchard"

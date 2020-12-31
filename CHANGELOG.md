@@ -2,6 +2,10 @@
 
 ## master (unreleased)
 
+### Changes
+
+* Updated the ClojureDocs EDN export URL (see <https://github.com/clojure-emacs/clojuredocs-export-edn/issues/3>).
+
 ## 0.6.1 (2020-10-07)
 
 * Remove reflection warnings.
