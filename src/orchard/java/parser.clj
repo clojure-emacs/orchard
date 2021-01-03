@@ -15,7 +15,7 @@
    (javax.tools DocumentationTool JavaFileObject$Kind
                 SimpleJavaFileObject ToolProvider)
    (javax.tools JavaFileObject$Kind SimpleJavaFileObject)
-   (jdk.javadoc.doclet Doclet DocletEnvironment StandardDoclet)))
+   (jdk.javadoc.doclet Doclet DocletEnvironment)))
 
 ;;; ## JDK Compatibility
 ;; This namespace requires JDK9+.
@@ -73,8 +73,7 @@
           doclet   (class (reify Doclet
                             (init [this _ _] (reset! result nil))
                             (run [this root] (reset! result root) true)
-                            (getSupportedOptions [this]
-                              (.getSupportedOptions (StandardDoclet.)))))
+                            (getSupportedOptions [this] #{})))
           out      (StringWriter.) ; discard compiler messages
           opts     (apply conj ["--show-members" "private"
                                 "--show-types" "private"
