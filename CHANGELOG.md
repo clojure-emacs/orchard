@@ -2,6 +2,10 @@
 
 ## master (unreleased)
 
+### Bugs Fixed
+
+* [#100](https://github.com/clojure-emacs/orchard/issues/100): Fix compatibility with Java 15.
+
 ### Changes
 
 * Updated the ClojureDocs EDN export URL (see <https://github.com/clojure-emacs/clojuredocs-export-edn/issues/3>).
