@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+## 0.6.2 (2021-01-04)
+
 ### Bugs Fixed
 
 * [#100](https://github.com/clojure-emacs/orchard/issues/100): Fix compatibility with Java 15.
