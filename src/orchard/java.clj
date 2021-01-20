@@ -50,14 +50,14 @@
 (def jdk-sources
   "The JDK sources path. If found on the existing classpath, this is the
   corresponding classpath entry. Otherwise, the JDK directory is searched for
-  the file `src.zip`, and if found this added to the classpath."
+  the file `src.zip`."
   (let [base-url (fn [path]
                    (some-> (io/resource path)
                            ^JarURLConnection (. openConnection)
                            (. getJarFileURL)))]
     (or (base-url "java.base/java/lang/Object.java") ; JDK9+
         (base-url "java/lang/Object.java")           ; JDK8-
-        (some-> (jdk-find "src.zip") cp/add-classpath!))))
+        (jdk-find "src.zip"))))
 
 (def jdk-tools
   "The `tools.jar` path, for JDK8 and earlier. If found on the existing
@@ -65,9 +65,17 @@
   this is added to the classpath."
   (when (<= misc/java-api-version 8)
     (or (some-> (io/resource "com/sun/javadoc/Doc.class")
-                ^JarURLConnection (.  openConnection)
+                ^JarURLConnection (. openConnection)
                 (. getJarFileURL))
         (some-> (jdk-find "tools.jar") cp/add-classpath!))))
+
+(defn ensure-jdk-sources
+  "If `jdk-sources` is present, check that this entry is on the context
+  classpath and if not, add it."
+  []
+  (let [classpath (set (cp/classpath))]
+    (when (and jdk-sources (not (classpath jdk-sources)))
+      (cp/add-classpath! jdk-sources))))
 
 ;;; ## Javadoc URLs
 ;;
@@ -107,7 +115,7 @@
 ;; internal APIs out of necessity. Once this project discontinues support for
 ;; JDK8, the legacy parser may be removed.
 
-(def source-info
+(def source-info*
   "When a Java parser is available, return class info from its parsed source;
   otherwise return nil."
   (if (>= misc/java-api-version 9)
@@ -117,6 +125,13 @@
       (do (require '[orchard.java.legacy-parser :as src])
           (resolve 'src/source-info))
       (constantly nil))))
+
+(defn source-info
+  "Ensure that JDK sources are visible on the classpath if present, and return
+  class info from its parsed source if available."
+  [class]
+  (ensure-jdk-sources)
+  (source-info* class))
 
 (def module-name
   "On JDK9+, return module name from the class if present; otherwise return nil"

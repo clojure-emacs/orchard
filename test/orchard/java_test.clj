@@ -8,6 +8,9 @@
 
 (def jdk-parser? (or (>= misc/java-api-version 9) jdk-tools))
 
+(when-not jdk-parser? (println "No JDK parser available!"))
+(when-not jdk-sources (println "No JDK sources available!"))
+
 (deftest resources-test
   ;; If the JDK resources we wish to load dynamically are present on the file
   ;; system, test that we've resolved them and added them to the classpath.
