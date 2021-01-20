@@ -11,3 +11,4 @@ pom.xml.asc
 *.class
 .cljs_nashorn_repl/
 nashorn_code_cache/
+.cljs_node_repl/
