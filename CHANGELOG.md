@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+## 0.6.3 (2021-01-21)
+
 ### Bugs Fixed
 
 * [#103](https://github.com/clojure-emacs/orchard/issues/103): Ensure JDK sources is visible in any invoking classloader context.
