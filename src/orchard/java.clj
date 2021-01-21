@@ -391,14 +391,16 @@
   "Copied from clojure.java.javadoc. These are the base urls for
   javadocs from `clojure.java.javadoc/*core-java-api*`. It is here for
   two reasons:
-  1. add java 13 to this list
-  2. backport for older Clojures"
+  1. Add Java 13+ to this list
+  2. Backport newer data to older Clojure releases"
   {8 "https://docs.oracle.com/javase/8/docs/api/"
    9 "https://docs.oracle.com/javase/9/docs/api/"
    10 "https://docs.oracle.com/javase/10/docs/api/"
    11 "https://docs.oracle.com/en/java/javase/11/docs/api/"
    12 "https://docs.oracle.com/en/java/javase/12/docs/api/"
-   13 "https://docs.oracle.com/en/java/javase/13/docs/api/"})
+   13 "https://docs.oracle.com/en/java/javase/13/docs/api/"
+   14 "https://docs.oracle.com/en/java/javase/14/docs/api/"
+   15 "https://docs.oracle.com/en/java/javase/15/docs/api/"})
 
 (defn resolve-javadoc-path
   "Resolve a relative javadoc path to a URL and return as a map. Prefer javadoc
