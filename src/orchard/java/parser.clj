@@ -18,6 +18,7 @@
    (jdk.javadoc.doclet Doclet DocletEnvironment)))
 
 ;;; ## JDK Compatibility
+;;
 ;; This namespace requires JDK9+.
 
 ;;; ## Java Source Analysis
@@ -88,6 +89,7 @@
       @result)))
 
 ;;; ## Docstring Parsing
+;;
 ;; Unlike source metadata (line, position, etc) that's available directly from
 ;; the compiler parse tree, docstrings are "some assembly required." Javadoc
 ;; comments use both `@tags` and HTML <tags> for semantics and formatting. The
