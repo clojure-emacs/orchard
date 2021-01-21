@@ -1,6 +1,7 @@
 (ns orchard.java-test
   (:require
    [clojure.java.io :as io]
+   [clojure.java.javadoc :as javadoc]
    [clojure.test :refer :all]
    [dynapath.util :as dp]
    [orchard.java :refer :all]
@@ -10,6 +11,9 @@
 
 (when-not jdk-parser? (println "No JDK parser available!"))
 (when-not jdk-sources (println "No JDK sources available!"))
+
+(javadoc/add-remote-javadoc "com.amazonaws." "http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/")
+(javadoc/add-remote-javadoc "org.apache.kafka." "https://kafka.apache.org/090/javadoc/")
 
 (deftest resources-test
   ;; If the JDK resources we wish to load dynamically are present on the file
