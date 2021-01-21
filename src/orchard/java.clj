@@ -426,8 +426,3 @@
   (doseq [class (->> (ns-imports 'clojure.core)
                      (map #(-> % ^Class val .getName symbol)))]
     (class-info class)))
-
-;; TODO: Seems those were hardcoded here accidentally - we should
-;; probably provide a simple API to register remote JavaDocs.
-(javadoc/add-remote-javadoc "com.amazonaws." "http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/")
-(javadoc/add-remote-javadoc "org.apache.kafka." "https://kafka.apache.org/090/javadoc/")
