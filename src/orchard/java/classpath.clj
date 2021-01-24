@@ -72,7 +72,8 @@
   [^URL url]
   (let [loader (or (modifiable-classloader)
                    (set-classloader!
-                    (modifiable-classloader @Compiler/LOADER)))]
+                    (modifiable-classloader (clojure.lang.DynamicClassLoader.
+                                             (clojure.lang.RT/baseLoader)))))]
     (when (dp/add-classpath-url loader url)
       url)))
 
