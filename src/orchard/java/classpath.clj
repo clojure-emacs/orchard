@@ -71,9 +71,9 @@
   ensuring that a modifiable classloader is available."
   [^URL url]
   (let [loader (or (modifiable-classloader)
-                   (set-classloader!
-                    (modifiable-classloader (clojure.lang.DynamicClassLoader.
-                                             (clojure.lang.RT/baseLoader)))))]
+                   (modifiable-classloader
+                    (set-classloader! (clojure.lang.DynamicClassLoader.
+                                       (clojure.lang.RT/baseLoader)))))]
     (when (dp/add-classpath-url loader url)
       url)))
 
