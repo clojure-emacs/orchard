@@ -2,6 +2,12 @@
 
 ## master (unreleased)
 
+## 0.6.4 (2021-01-25)
+
+### Bugs Fixed
+
+* Make dynamic classpath modification robust to compiler loader binding (for some users `@Compiler/LOADER` was not bound for some reason).
+
 ## 0.6.3 (2021-01-21)
 
 ### Bugs Fixed
