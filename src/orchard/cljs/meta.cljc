@@ -87,7 +87,7 @@
 
 (defn scoped-macro-meta
   [env sym & [context-ns]]
-  (let [ns (or context-ns (macro-namespace env sym context-ns))
+  (let [ns (or (macro-namespace env sym context-ns) context-ns)
         sym (symbol (name sym))]
     (when (and ns (find-ns ns))
       (some-> env
