@@ -2,6 +2,11 @@
 
 ## master (unreleased)
 
+### Bugs Fixed
+
+* [#106](https://github.com/clojure-emacs/orchard/issues/106): Handle properly scoped cljs macros in info.
+* Further improve dynamic classpath modification robustness.
+
 ## 0.6.4 (2021-01-25)
 
 ### Bugs Fixed
