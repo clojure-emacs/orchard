@@ -370,6 +370,28 @@
                     (map #(info/info* %))
                     (map #(select-keys % [:ns :name :arglists :macro :file])))))))))
 
+(deftest info-macros-scoped-var-test
+  (testing "Macro - scoped"
+    (let [params '[{:ns orchard.test-ns
+                    :sym test-macros/my-add}]
+          expected '{:name my-add
+                     :ns orchard.test-macros
+                     :arglists ([a b])
+                     :file "orchard/test_macros.clj"
+                     :macro true}]
+
+      (testing "- :cljs"
+        (is (= (take 1 (repeat expected))
+               (->> params
+                    (map #(info/info* (merge *cljs-params* %)))
+                    (map #(select-keys % [:ns :name :arglists :macro :file]))))))
+
+      (testing "- :clj"
+        (is (= (take 1 (repeat expected))
+               (->> params
+                    (map #(info/info* %))
+                    (map #(select-keys % [:ns :name :arglists :macro :file])))))))))
+
 (deftest info-no-file-info-test
   (testing "File info key does not exist should not resolve classpath - issue #61"
     (let [params '{:sym finally}
