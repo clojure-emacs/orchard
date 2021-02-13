@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+## 0.6.5 (2021-02-13)
+
 ### Bugs Fixed
 
 * [#106](https://github.com/clojure-emacs/orchard/issues/106): Handle properly scoped cljs macros in info.
