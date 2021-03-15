@@ -13,7 +13,7 @@
    (clojure.lang IPersistentMap)
    (clojure.reflect Constructor Field JavaReflector Method)
    (java.io File)
-   (java.net JarURLConnection URI)))
+   (java.net JarURLConnection)))
 
 ;;; ## Java Class/Member Info
 ;;

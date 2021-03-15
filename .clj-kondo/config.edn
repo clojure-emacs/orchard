@@ -1,0 +1,2 @@
+{:output {:progress true
+          :exclude-files ["analysis.cljc" "meta.cljc"]}}

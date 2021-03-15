@@ -44,14 +44,14 @@
   "If it's a resource, return a tuple of the relative path and the full
   resource path."
   [path]
-  (or (if-let [full (resource-full-path path)]
+  (or (when-let [full (resource-full-path path)]
         [path full])
-      (if-let [[_ relative] (re-find #".*jar!/(.*)" path)]
-        (if-let [full (resource-full-path relative)]
+      (when-let [[_ relative] (re-find #".*jar!/(.*)" path)]
+        (when-let [full (resource-full-path relative)]
           [relative full]))
       ;; handles load-file on jar resources from a cider buffer
-      (if-let [[_ relative] (re-find #".*jar:(.*)" path)]
-        (if-let [full (resource-full-path relative)]
+      (when-let [[_ relative] (re-find #".*jar:(.*)" path)]
+        (when-let [full (resource-full-path relative)]
           [relative full]))))
 
 (defn resource-path

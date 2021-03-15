@@ -11,7 +11,7 @@
    [orchard.misc :as misc])
   (:import
    (java.io File)
-   (java.net URI URL)
+   (java.net URL)
    (java.nio.file Paths)
    (java.util.jar JarFile JarEntry)))
 

@@ -8,13 +8,12 @@
    (com.sun.javadoc ClassDoc ConstructorDoc Doc FieldDoc MethodDoc
                     Parameter RootDoc Tag Type)
    (com.sun.source.tree ClassTree)
-   (com.sun.tools.javac.util Abort Context List Options)
+   (com.sun.tools.javac.util Abort Context List)
    (com.sun.tools.javadoc DocEnv JavadocEnter JavadocTool Messager
                           ModifierFilter RootDocImpl)
    (com.sun.tools.javac.tree JCTree)
    (java.io StringReader)
    (java.net URI)
-   (java.util Locale)
    (javax.swing.text.html HTML$Tag HTMLEditorKit$ParserCallback)
    (javax.swing.text.html.parser ParserDelegator)
    (javax.tools JavaFileObject$Kind SimpleJavaFileObject)))
@@ -69,7 +68,6 @@
   (when-let [res (io/resource path)]
     (let [access   (ModifierFilter. ModifierFilter/ALL_ACCESS)
           context  (doto (Context.) (Messager/preRegister "orchard-javadoc"))
-          options  (doto (Options/instance context) (.put "ignore.symbol.file" "y"))
           compiler (JavadocTool/make0 context)
           enter    (JavadocEnter/instance0 context)
           docenv   (doto (DocEnv/instance context)

@@ -8,8 +8,7 @@
    [orchard.clojuredocs :as cljdocs]
    [orchard.namespace :as ns]
    [orchard.misc :as misc]
-   [orchard.spec :as spec]
-   [orchard.cljs.meta :as cljs-meta])
+   [orchard.spec :as spec])
   (:import
    [clojure.lang LineNumberingPushbackReader]))
 
@@ -29,7 +28,7 @@
           with-out-str
           str/trim-newline)))
 
-(defn- format-spec
+(defn format-spec
   "Return sequence of [role spec-description] pairs."
   [fnspec]
   (for [role [:args :ret :fn]
@@ -97,7 +96,7 @@
   The function is a simple wrapper around `clojure.core/ns-resolve`."
   [ns sym]
   {:pre [(symbol? ns) (symbol? sym)]}
-  (if-let [ns (find-ns ns)]
+  (when-let [ns (find-ns ns)]
     (try (ns-resolve ns sym)
          ;; Impl might try to resolve it as a class, which may fail
          (catch ClassNotFoundException _
@@ -296,7 +295,7 @@
   [obj & metamaps]
   (try
     (apply vary-meta obj merge metamaps)
-    (catch Exception e obj)))
+    (catch Exception _e obj)))
 
 (defn strip-meta
   "Strip meta from form.
@@ -322,7 +321,7 @@
                               ;; Without this, `macroexpand-all`
                               ;; throws if called on `defrecords`.
                               (try (macroexpand form)
-                                   (catch ClassNotFoundException e form))
+                                   (catch ClassNotFoundException _e form))
                               form))]
     (if md
       ;; Macroexpand the metadata too, because sometimes metadata

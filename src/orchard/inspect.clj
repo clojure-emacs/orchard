@@ -133,7 +133,7 @@
   "Evaluate the given expression where `v` is bound to the currently inspected
   value. Open the evaluation result in the inspector."
   [inspector expr]
-  (let [{:keys [index path current-page page-size value]} inspector
+  (let [{:keys [current-page value]} inspector
         eval-fn `(fn [~'v] ~(read-string expr))
         result ((eval eval-fn) value)]
     (-> (update inspector :stack conj value)
@@ -204,7 +204,7 @@
 
 (defmulti inspect-value #'value-types)
 
-(defmethod inspect-value nil [value]
+(defmethod inspect-value nil [_value]
   "nil")
 
 (defmethod inspect-value :atom [value]
@@ -360,7 +360,7 @@
     inspector))
 
 ;; Inspector multimethod
-(defn known-types [ins obj]
+(defn known-types [_ins obj]
   (cond
     (nil? obj) :nil
     (map? obj) :coll
@@ -375,12 +375,12 @@
     (instance? List obj) :coll
     (instance? Map obj) :coll
     (.isArray (class obj)) :array
-    :default (or (:inspector-tag (meta obj))
-                 (type obj))))
+    :else (or (:inspector-tag (meta obj))
+              (type obj))))
 
 (defmulti inspect #'known-types)
 
-(defmethod inspect :nil [inspector obj]
+(defmethod inspect :nil [inspector _obj]
   (-> inspector
       (render-ln "nil")))
 
@@ -459,14 +459,6 @@
           (render-fields "Fields:" non-static)
           (render-fields "Static fields:" static)))))
 
-(defn- render-class-section [inspector obj section]
-  (let [method (symbol (str ".get" (name section)))
-        elements (eval (list method obj))]
-    (if (seq elements)
-      `(~(name section) ": " (:newline)
-                        ~@(mapcat (fn [f]
-                                    `("  " (:value ~f) (:newline))) elements)))))
-
 (defn- render-section [obj inspector section]
   (let [method (symbol (str ".get" (name section)))
         elements (eval (list method obj))]
@@ -517,7 +509,7 @@
           (render-ln inspector "Var: #'" ns "/" sym)
           (= type :expr)
           (render-ln inspector "Expr: " expr)
-          :default
+          :else
           inspector)))
 
 (defn render-path [inspector]

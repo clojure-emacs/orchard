@@ -2,7 +2,6 @@
   "Retrieve the info map from var and symbols."
   (:refer-clojure :exclude [qualified-symbol?])
   (:require
-   [clojure.edn :as edn]
    [clojure.java.io :as io]
    [orchard.cljs.analysis :as cljs-ana]
    [orchard.cljs.meta :as cljs-meta]
@@ -186,7 +185,7 @@
   (let [[resource-relative resource-full] (resource/resource-path-tuple path)]
     (merge {:file (or (file-path path) resource-full path)}
            ;; Classpath-relative path if possible
-           (if resource-relative
+           (when resource-relative
              {:resource resource-relative}))))
 
 (defn javadoc-info
