@@ -6,15 +6,12 @@
    [clojure.java.io :as io]
    [clojure.string :as str])
   (:import
-   (java.net URI)
    (java.io StringReader StringWriter)
    (javax.lang.model.element Element ElementKind ExecutableElement
                              TypeElement VariableElement)
    (javax.swing.text.html HTML$Tag HTMLEditorKit$ParserCallback)
    (javax.swing.text.html.parser ParserDelegator)
-   (javax.tools DocumentationTool JavaFileObject$Kind
-                SimpleJavaFileObject ToolProvider)
-   (javax.tools JavaFileObject$Kind SimpleJavaFileObject)
+   (javax.tools ToolProvider)
    (jdk.javadoc.doclet Doclet DocletEnvironment)))
 
 ;;; ## JDK Compatibility

@@ -21,7 +21,7 @@
   (map #(mapv str %) raw-arglists))
 
 (defn- extract-ns-or-class
-  [{:keys [ns class candidates] :as info}]
+  [{:keys [ns class candidates]}]
   (cond
     ns {:ns (str ns)}
     class {:class [(str class)]}

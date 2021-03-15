@@ -50,4 +50,4 @@
         all-vars (q/vars {:ns-query {:project? true} :private? true})
         all-vals (map var-get all-vars)
         deps-map (zipmap all-vars (map fn-deps all-vals))]
-    (map first (filter (fn [[k v]] (contains? v var)) deps-map))))
+    (map first (filter (fn [[_k v]] (contains? v var)) deps-map))))

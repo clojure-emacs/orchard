@@ -9,8 +9,7 @@
    [orchard.java.classpath :as cp]
    [orchard.misc :as misc])
   (:import
-   (clojure.lang Namespace)
-   (java.io File PushbackReader)
+   (java.io PushbackReader)
    (java.net URL)))
 
 ;;; Namespace/source resolution
