@@ -23,6 +23,9 @@ eastwood:
 cljfmt:
 	lein with-profile +$(VERSION),+cljfmt cljfmt check
 
+kondo:
+	clj-kondo --lint src
+
 # Cloverage can't handle some of the code in this project.  For now we
 # must filter problematic namespaces (`-e`) and tests (`-t`) from
 # instrumentation. Note: this means for now coverage reporting isn't
