@@ -86,6 +86,14 @@ Just add `orchard` as a dependency and start hacking.
 Consult the [API documentation](https://cljdoc.org/d/cider/orchard/CURRENT) to get a better idea about the
 functionality that's provided.
 
+## Configuration options
+
+So far, Orchard follows these options, which can be specified as Java system properties
+(which means that end users can choose to set them globally without fiddling with tooling internals):
+
+* `"-Dorchard.initialize-cache.silent=true"` (default: `true`)
+  * if false, the _class info cache_ initialization may print warnings (possibly spurious ones).
+
 ## History
 
 Originally [SLIME][] was the most

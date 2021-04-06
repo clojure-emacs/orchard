@@ -8,7 +8,8 @@
    [clojure.string :as str]
    [orchard.java.classpath :as cp]
    [orchard.misc :as misc]
-   [orchard.java.resource :as resource])
+   [orchard.java.resource :as resource]
+   [orchard.util.io :as util.io])
   (:import
    (clojure.lang IPersistentMap)
    (clojure.reflect Constructor Field JavaReflector Method)
@@ -421,10 +422,22 @@
                                       (javadoc-base-urls 11))))))
       path))
 
-;;; ## Initialization
-;;
-;; On startup, cache info for the most commonly referenced classes.
-(future
+(defn- initialize-cache!* []
   (doseq [class (->> (ns-imports 'clojure.core)
                      (map #(-> % ^Class val .getName symbol)))]
     (class-info class)))
+
+(def initialize-cache-silently?
+  "Should `#'cache-initializer` refrain from printing to `System/out`?"
+  (= "true" (System/getProperty "orchard.initialize-cache.silent" "true")))
+
+(def ^:private initialize-cache!
+  (cond-> initialize-cache!*
+    initialize-cache-silently? util.io/wrap-silently))
+
+(def cache-initializer
+  "On startup, cache info for the most commonly referenced classes.
+
+  This is a def for allowing others to wait for this workload to complete (can be useful sometimes)."
+  (future
+   (initialize-cache!)))
