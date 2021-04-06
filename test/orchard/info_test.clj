@@ -3,10 +3,13 @@
    [clojure.test :as test :refer [deftest is testing use-fixtures]]
    [clojure.string :as str]
    [orchard.info :as info]
+   [orchard.java :as java]
    [orchard.misc :as misc]
    [orchard.cljs.test-env :as test-env]
    [orchard.meta :as meta]
    [orchard.test-ns]))
+
+@java/cache-initializer ;; make tests more deterministic
 
 (def ^:dynamic *cljs-params*)
 
