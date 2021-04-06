@@ -38,7 +38,9 @@
                       :dependencies [[org.clojure/clojure "1.11.0-master-SNAPSHOT"]
                                      [org.clojure/clojure "1.11.0-master-SNAPSHOT" :classifier "sources"]]}
 
-             :test {:resource-paths ["test-resources"]}
+             :test {:resource-paths ["test-resources"]
+                    ;; Initialize the cache verbosely, as usual, so that possible issues can be more easily diagnosed:
+                    :jvm-opts ["-Dorchard.initialize-cache.silent=false"]}
 
              ;; Development tools
              :dev {:dependencies [[pjstadig/humane-test-output "0.10.0"]]
