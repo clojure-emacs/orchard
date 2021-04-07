@@ -17,6 +17,8 @@
 
 (def inspect-result-with-nil ["(\"Class\" \": \" (:value \"clojure.lang.PersistentVector\" 0) (:newline) \"Contents: \" (:newline) \"  \" \"0\" \". \" (:value \"1\" 1) (:newline) \"  \" \"1\" \". \" (:value \"2\" 2) (:newline) \"  \" \"2\" \". \" (:value \"nil\" 3) (:newline) \"  \" \"3\" \". \" (:value \"3\" 4) (:newline))"])
 
+(def inspect-result-configure-length ["(\"Class\" \": \" (:value \"clojure.lang.PersistentVector\" 0) (:newline) \"Contents: \" (:newline) \"  \" \"0\" \". \" (:value \"[ 1... 2222 333 ... ]\" 1) (:newline))"])
+
 (def eval-and-inspect-result ["(\"Class\" \": \" (:value \"java.lang.String\" 0) (:newline) \"Value: \" \"\\\"1001\\\"\")"])
 
 (def java-hashmap-inspect-result ["(\"Class\" \": \" (:value \"java.util.HashMap\" 0) (:newline) \"Contents: \" (:newline) \"  \" (:value \":b\" 1) \" = \" (:value \"2\" 2) (:newline) \"  \" (:value \":c\" 3) \" = \" (:value \"3\" 4) (:newline) \"  \" (:value \":a\" 5) \" = \" (:value \"1\" 6) (:newline))"])
@@ -27,7 +29,7 @@
 (def long-vector (vec (range 70)))
 (def long-map (zipmap (range 70) (range 70)))
 (def long-nested-coll (vec (map #(range (* % 10) (+ (* % 10) 80)) (range 200))))
-(def truncated-string (str "\"" (apply str (repeat 147 "a")) "..."))
+(def truncated-string (str "\"" (apply str (repeat 146 "a")) "..."))
 
 (defn inspect
   [value]
@@ -264,12 +266,40 @@
       "{ :a 1, :b 2 }" (java.util.HashMap. {:a 1 :b 2})
       "long[] { 1, 2, 3, 4 }" (long-array [1 2 3 4])
       "java.lang.Long[] { 0, 1, 2, 3, 4 ... }" (into-array Long (range 10))
-      "#<MyTestType test1>" (MyTestType. "test1"))))
+      "#<MyTestType test1>" (MyTestType. "test1")))
+
+  (testing "inspect-value adjust length and size"
+    (binding [inspect/*max-atom-length* 6
+              inspect/*max-coll-size* 2]
+      (are [result form] (= result (inspect/inspect-value form))
+        "1" 1
+        "nil" nil
+        "\"2\"" "2"
+        ":ab..." :abc/def
+        "( :a :b )" '(:a :b)
+        "[ 1 2 ... ]" [1 2 3]
+        "{ :a 1, :b 2 }" {:a 1 :b 2}
+        "( 1 1 ... )" (repeat 1)
+        "[ ( 1 1 ... ) ]" [(repeat 1)]
+        "{ :a { ( 0 1 ... ) \"ab..., ... } }" {:a {(range 10) "abcdefg", 2 3, 4 5, 6 7, 8 9, 10 11}}
+        "java.lang.Long[] { 0, 1 ... }" (into-array Long (range 10))))
+    (binding [inspect/*max-coll-size* 6]
+      (are [result form] (= result (inspect/inspect-value form))
+        "[ ( 1 1 1 1 1 1 ... ) ]" [(repeat 1)]
+        "{ :a { ( 0 1 2 3 4 5 ... ) 1, 2 3, 4 5, 6 7, 8 9, 10 11 } }" {:a {(range 10) 1, 2 3, 4 5, 6 7, 8 9, 10 11}}))))
 
 (deftest inspect-coll-test
   (testing "inspect :coll prints contents of the coll"
     (is (= inspect-result-with-nil
            (render (inspect/start (inspect/fresh) [1 2 nil 3]))))))
+
+(deftest inspect-configure-length-test
+  (testing "inspect respects :max-atom-length and :max-coll-size configuration"
+    (is (= inspect-result-configure-length
+           (render (-> (inspect/fresh)
+                       (assoc :max-atom-length 4
+                              :max-coll-size 3)
+                       (inspect/start [[111111 2222 333 44 5]])))))))
 
 (deftest inspect-java-hashmap-test
   (testing "inspecting java.util.Map descendendants prints a key-value coll"
