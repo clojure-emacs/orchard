@@ -2,6 +2,12 @@
 
 ## master (unreleased)
 
+### New features
+
+* [#111](https://github.com/clojure-emacs/orchard/pull/111): [Inspector] Configure truncation limits
+
+### Changes
+
 * The _class info cache_ is now initialized silently by default. This results in less confusing output.
   * You can now `@orchard.java/cache-initializer` for deterministically waiting for this cache workload to complete.
   * You can control its verbosity by setting `"-Dorchard.initialize-cache.silent=false"` (or `[...]=true`).

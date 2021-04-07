@@ -129,6 +129,18 @@
                          :page-size new-page-size
                          :current-page 0)))
 
+(defn set-max-atom-length
+  "Set the maximum length of atomic collection members before they're truncated."
+  [inspector max-atom-length]
+  {:pre [(integer? max-atom-length)]}
+  (inspect-render (assoc inspector :max-atom-length max-atom-length)))
+
+(defn set-max-coll-size
+  "Set the maximum number of nested collection members to print before truncating."
+  [inspector max-coll-size]
+  {:pre [(integer? max-coll-size)]}
+  (inspect-render (assoc inspector :max-coll-size max-coll-size)))
+
 (defn eval-and-inspect
   "Evaluate the given expression where `v` is bound to the currently inspected
   value. Open the evaluation result in the inspector."
@@ -167,16 +179,24 @@
         (s/join sep)
         (format fmt))))
 
-(defn- short? [coll]
-  (<= (count coll) 5))
+(def ^:private ^:dynamic *max-atom-length* 150)
+(def ^:private ^:dynamic *max-coll-size* 5)
 
-(def ^:private truncate-max-length 150)
+(defn- short? [coll]
+  ;; Prefer `bounded-count` if available (clojure 1.9+) or fall back to `count`.
+  (let [len (if-let [;; NOTE can't name this `bounded-count` because eastwood's
+                     ;; :local-shadows-var warning can't be suppressed.
+                     bounded-count-fn (some-> (resolve 'clojure.core/bounded-count)
+                                              (var-get))]
+              (bounded-count-fn (inc *max-coll-size*) coll)
+              (count coll))]
+    (<= len *max-coll-size*)))
 
 (defn- truncate-string [s]
   (when s
     (let [len (count s)]
-      (if (> len truncate-max-length)
-        (str (subs s 0 (- truncate-max-length 2)) "...")
+      (if (> len *max-atom-length*)
+        (str (subs s 0 (max (- *max-atom-length* 3) 0)) "...")
         s))))
 
 (defn value-types [value]
@@ -228,25 +248,26 @@
   (safe-pr-seq value "[ %s ]"))
 
 (defmethod inspect-value :vector-long [value]
-  (safe-pr-seq (take 5 value) "[ %s ... ]"))
+  (safe-pr-seq (take *max-coll-size* value) "[ %s ... ]"))
 
 (defmethod inspect-value :lazy-seq [value]
-  (let [first-six (take 6 value)]
-    (if (= (count first-six) 6)
-      (safe-pr-seq (take 5 value) "( %s ... )")
-      (safe-pr-seq first-six "( %s )"))))
+  (let [prefix-length (inc *max-coll-size*)
+        prefix (take prefix-length value)]
+    (if (= (count prefix) prefix-length)
+      (safe-pr-seq (take *max-coll-size* value) "( %s ... )")
+      (safe-pr-seq prefix "( %s )"))))
 
 (defmethod inspect-value :list [value]
   (safe-pr-seq value "( %s )"))
 
 (defmethod inspect-value :list-long [value]
-  (safe-pr-seq (take 5 value) "( %s ... )"))
+  (safe-pr-seq (take *max-coll-size* value) "( %s ... )"))
 
 (defmethod inspect-value :set [value]
   (safe-pr-seq value "#{ %s }"))
 
 (defmethod inspect-value :set-long [value]
-  (safe-pr-seq (take 5 value) "#{ %s ... }"))
+  (safe-pr-seq (take *max-coll-size* value) "#{ %s ... }"))
 
 (defmethod inspect-value :array [value]
   (let [ct (.getName (or (.getComponentType (class value)) Object))]
@@ -254,7 +275,7 @@
 
 (defmethod inspect-value :array-long [value]
   (let [ct (.getName (or (.getComponentType (class value)) Object))]
-    (safe-pr-seq (take 5 value) ", " (str ct "[] { %s ... }"))))
+    (safe-pr-seq (take *max-coll-size* value) ", " (str ct "[] { %s ... }"))))
 (defmethod inspect-value java.lang.Class [value]
   (pr-str value))
 
@@ -531,12 +552,15 @@
 
 (defn inspect-render
   ([inspector] (inspect-render inspector (:value inspector)))
-  ([inspector value] (-> (reset-index inspector)
-                         (assoc :rendered [])
-                         (assoc :value value)
-                         (render-reference)
-                         (inspect value)
-                         (render-path))))
+  ([inspector value]
+   (binding [*max-atom-length* (or (:max-atom-length inspector) *max-atom-length*)
+             *max-coll-size* (or (:max-coll-size inspector) *max-coll-size*)]
+     (-> (reset-index inspector)
+         (assoc :rendered [])
+         (assoc :value value)
+         (render-reference)
+         (inspect value)
+         (render-path)))))
 
 ;; Get a human readable printout of rendered sequence
 (defmulti inspect-print-component first)
