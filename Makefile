@@ -13,12 +13,8 @@ test:
 test-watch: test-resources/clojuredocs/export.edn
 	lein with-profile +$(VERSION),$(TEST_PROFILES) test-refresh
 
-# Eastwood can't handle orchard.java.legacy-parser at the moment, because
-# tools.jar isn't in the classpath when Eastwood runs.
-
 eastwood:
-	lein with-profile +$(VERSION),+eastwood,$(TEST_PROFILES) eastwood \
-	     "{:exclude-namespaces [orchard.java.legacy-parser]}"
+	lein with-profile +$(VERSION),+eastwood,$(TEST_PROFILES) eastwood
 
 cljfmt:
 	lein with-profile +$(VERSION),+cljfmt cljfmt check
