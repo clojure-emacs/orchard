@@ -31,7 +31,7 @@
 (defn- fn->sym
   "Convert a function value `f` to symbol."
   [f]
-  (symbol (Compiler/demunge (.getName (type f)))))
+  (symbol (Compiler/demunge (.getName ^Class (type f)))))
 
 (defn- as-var
   "Convert `thing` to a var."
