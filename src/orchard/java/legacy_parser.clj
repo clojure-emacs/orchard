@@ -84,7 +84,7 @@
                                         .getKind
                                         .asInterface)
                                     ClassTree))
-                        (into-array)
+                        ^"[Ljava.lang.Object;" (into-array)
                         (List/from))]
       (.main enter (List/of tree))
       (RootDocImpl. docenv classes (List/nil) (List/nil)))))
