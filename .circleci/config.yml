@@ -89,9 +89,12 @@ jobs:
       Running utility commands/checks (linter etc.)
       Always uses Java11 and Clojure 1.10
     parameters:
+      jdk_version:
+        description: Version of JDK to test against
+        type: string
       steps:
         type: steps
-    executor: openjdk11
+    executor: << parameters.jdk_version >>
     environment:
       VERSION: "1.10"
     steps:
@@ -191,7 +194,16 @@ workflows:
           clojure_version: "master"
           jdk_version: openjdk15
       - util_job:
-          name: Code Linting
+          name: Code Linting, JDK8 (Eastwood only)
+          jdk_version: openjdk8
+          steps:
+            - run:
+                name: Running Eastwood
+                command: |
+                  make eastwood
+      - util_job:
+          name: Code Linting, (latest LTS JDK)
+          jdk_version: openjdk11
           steps:
             - run:
                 name: Running Eastwood
