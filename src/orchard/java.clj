@@ -58,17 +58,24 @@
                (io/file parent "lib" f)]]
     (->> paths (filter #(.canRead ^File %)) first io/as-url)))
 
+(def add-java-sources-via-dynapath?
+  "Should orchard use the dynapath library to use \"fetch Java sources\" functionality?
+
+  Note that using dynapath currently implies some bugs, so you might want to disable this option."
+  (contains? #{"true" "1"} (System/getProperty "orchard.use-dynapath" "true")))
+
 (def jdk-sources
   "The JDK sources path. If found on the existing classpath, this is the
   corresponding classpath entry. Otherwise, the JDK directory is searched for
   the file `src.zip`."
-  (let [base-url (fn [path]
-                   (some-> (io/resource path)
-                           ^JarURLConnection (. openConnection)
-                           (. getJarFileURL)))]
-    (or (base-url "java.base/java/lang/Object.java") ; JDK9+
-        (base-url "java/lang/Object.java")           ; JDK8-
-        (jdk-find "src.zip"))))
+  (when add-java-sources-via-dynapath?
+    (let [base-url (fn [path]
+                     (some-> (io/resource path)
+                             ^JarURLConnection (. openConnection)
+                             (. getJarFileURL)))]
+      (or (base-url "java.base/java/lang/Object.java") ; JDK9+
+          (base-url "java/lang/Object.java")           ; JDK8-
+          (jdk-find "src.zip")))))
 
 (def jdk-tools
   "The `tools.jar` path, for JDK8 and earlier. If found on the existing
@@ -78,15 +85,17 @@
     (or (some-> (io/resource "com/sun/javadoc/Doc.class")
                 ^JarURLConnection (. openConnection)
                 (. getJarFileURL))
-        (some-> (jdk-find "tools.jar") cp/add-classpath!))))
+        (and add-java-sources-via-dynapath?
+             (some-> (jdk-find "tools.jar") cp/add-classpath!)))))
 
 (defn ensure-jdk-sources
   "If `jdk-sources` is present, check that this entry is on the context
   classpath and if not, add it."
   []
-  (let [classpath (set (cp/classpath))]
-    (when (and jdk-sources (not (classpath jdk-sources)))
-      (cp/add-classpath! jdk-sources))))
+  (when add-java-sources-via-dynapath?
+    (let [classpath (set (cp/classpath))]
+      (when (and jdk-sources (not (classpath jdk-sources)))
+        (cp/add-classpath! jdk-sources)))))
 
 ;;; ## Javadoc URLs
 ;;

@@ -25,9 +25,9 @@ executors:
     docker:
       - image: circleci/clojure:openjdk-11-lein-2.9.1
     <<: *defaults
-  openjdk15:
+  openjdk16:
     docker:
-      - image: circleci/clojure:openjdk-15-lein-2.9.5-buster
+      - image: circleci/clojure:openjdk-16-lein-2.9.5-buster
     <<: *defaults
 
 # Runs a given set of steps, with some standard pre- and post-
@@ -114,9 +114,13 @@ jobs:
       clojure_version:
         description: Version of Clojure to test against
         type: string
+      test_profiles:
+        description: Maps directly to the TEST_PROFILES var in Makefile
+        type: string
     executor: << parameters.jdk_version >>
     environment:
       VERSION: << parameters.clojure_version >>
+      TEST_PROFILES: << parameters.test_profiles >>
     steps:
       - checkout
       - with_cache:
@@ -146,53 +150,11 @@ workflows:
   ci-test-matrix:
     jobs:
       - test_code:
-          name: Java 8, Clojure 1.8
-          clojure_version: "1.8"
-          jdk_version: openjdk8
-      - test_code:
-          name: Java 8, Clojure 1.9
-          clojure_version: "1.9"
-          jdk_version: openjdk8
-      - test_code:
-          name: Java 8, Clojure 1.10
-          clojure_version: "1.10"
-          jdk_version: openjdk8
-      - test_code:
-          name: Java 8, Clojure master
-          clojure_version: "master"
-          jdk_version: openjdk8
-      - test_code:
-          name: Java 11, Clojure 1.8
-          clojure_version: "1.8"
-          jdk_version: openjdk11
-      - test_code:
-          name: Java 11, Clojure 1.9
-          clojure_version: "1.9"
-          jdk_version: openjdk11
-      - test_code:
-          name: Java 11, Clojure 1.10
-          clojure_version: "1.10"
-          jdk_version: openjdk11
-      - test_code:
-          name: Java 11, Clojure master
-          clojure_version: "master"
-          jdk_version: openjdk11
-      - test_code:
-          name: Java 15, Clojure 1.8
-          clojure_version: "1.8"
-          jdk_version: openjdk15
-      - test_code:
-          name: Java 15, Clojure 1.9
-          clojure_version: "1.9"
-          jdk_version: openjdk15
-      - test_code:
-          name: Java 15, Clojure 1.10
-          clojure_version: "1.10"
-          jdk_version: openjdk15
-      - test_code:
-          name: Java 15, Clojure master
-          clojure_version: "master"
-          jdk_version: openjdk15
+          matrix:
+            parameters:
+              jdk_version: [openjdk8, openjdk11, openjdk16]
+              clojure_version: ["1.8", "1.9", "1.10", "master"]
+              test_profiles: ["+test", "+test,+no-dynapath"]
       - util_job:
           name: Code Linting, JDK8 (Eastwood only)
           jdk_version: openjdk8

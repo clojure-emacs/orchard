@@ -9,8 +9,11 @@
 
 (def jdk-parser? (or (>= misc/java-api-version 9) jdk-tools))
 
-(when-not jdk-parser? (println "No JDK parser available!"))
-(when-not jdk-sources (println "No JDK sources available!"))
+(assert jdk-parser? "No JDK parser available!")
+(assert (if orchard.java/add-java-sources-via-dynapath?
+          jdk-sources
+          true)
+        "No JDK sources available!")
 
 (javadoc/add-remote-javadoc "com.amazonaws." "http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/")
 (javadoc/add-remote-javadoc "org.apache.kafka." "https://kafka.apache.org/090/javadoc/")
@@ -25,7 +28,8 @@
                              (dp/all-classpath-urls)
                              (set))]
       (testing "of defined vars"
-        (is (= jdk-sources jdk-sources-path))
+        (when orchard.java/add-java-sources-via-dynapath?
+          (is (= jdk-sources jdk-sources-path)))
         (is (= jdk-tools jdk-tools-path)))
       (testing "of dynamically added classpath entries"
         (is (= jdk-sources (classpath-urls jdk-sources)))
