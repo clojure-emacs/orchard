@@ -6,7 +6,8 @@
   :scm {:name "git" :url "https://github.com/clojure-emacs/orchard"}
 
   :dependencies [[org.tcrawley/dynapath "1.1.0"]
-                 [org.clojure/clojurescript "1.10.520"]]
+                 [org.clojure/clojurescript "1.10.520"]
+                 [org.clojure/java.classpath "1.0.0"]]
   :exclusions [org.clojure/clojure] ; see versions matrix below
 
   :aliases {"bump-version" ["change" "version" "leiningen.release/bump-version"]}

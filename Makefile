@@ -8,7 +8,7 @@ resources/clojuredocs/export.edn:
 curl -o $@ https://github.com/clojure-emacs/clojuredocs-export-edn/raw/master/exports/export.compact.edn
 
 test:
-	lein with-profile +$(VERSION),$(TEST_PROFILES) test
+	lein with-profile +$(VERSION),$(TEST_PROFILES) test :only orchard.java.classpath-test.repro
 
 test-watch: test-resources/clojuredocs/export.edn
 	lein with-profile +$(VERSION),$(TEST_PROFILES) test-refresh
