@@ -1,7 +1,6 @@
 (ns orchard.meta-test
   (:require
-   [clojure.java.io :as io]
-   [clojure.test :refer :all]
+   [clojure.test :refer [deftest are is testing]]
    [orchard.clojuredocs :as docs]
    [orchard.meta :as m]))
 
@@ -40,11 +39,6 @@
       'symbol
       [1 2 3] '(1 2 3)
       {1 2} #{1 2 3})))
-
-(defn- test-fn "docstring"
-  ([a b] nil)
-  ([a] nil)
-  ([]))
 
 (defmacro test-macro [& x]
   `(do ~@x))

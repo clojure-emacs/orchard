@@ -20,7 +20,7 @@ cljfmt:
 	lein with-profile +$(VERSION),+cljfmt cljfmt check
 
 kondo:
-	clj-kondo --lint src
+	clj-kondo --lint src test
 
 # Cloverage can't handle some of the code in this project.  For now we
 # must filter problematic namespaces (`-e`) and tests (`-t`) from

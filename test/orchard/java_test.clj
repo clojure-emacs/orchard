@@ -2,9 +2,9 @@
   (:require
    [clojure.java.io :as io]
    [clojure.java.javadoc :as javadoc]
-   [clojure.test :refer :all]
+   [clojure.test :refer [deftest is are testing]]
    [dynapath.util :as dp]
-   [orchard.java :refer :all]
+   [orchard.java :refer [cache class-info class-info* javadoc-url jdk-find jdk-sources jdk-tools member-info resolve-class resolve-javadoc-path resolve-member resolve-symbol resolve-type source-info]]
    [orchard.misc :as misc]))
 
 (def jdk-parser? (or (>= misc/java-api-version 9) jdk-tools))

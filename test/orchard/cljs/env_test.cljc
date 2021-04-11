@@ -1,6 +1,6 @@
 (ns orchard.cljs.env-test
   (:require [clojure.set :as set]
-            [clojure.test :as test #?(:clj :refer :cljs :refer-macros) [deftest is testing use-fixtures]]
+            [clojure.test :as test #?(:clj :refer :cljs :refer-macros) [deftest is testing]]
             [orchard.cljs.analysis :as a]
             [orchard.cljs.test-env :as test-env]))
 
