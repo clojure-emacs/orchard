@@ -205,6 +205,7 @@
     (atom? value)                                  :atom
     (and (instance? Seqable value) (empty? value)) :seq-empty
     (and (map? value) (short? value))              :map
+    (map-entry? value)                             :map-entry
     (map? value)                                   :map-long
     (and (vector? value) (short? value))           :vector
     (vector? value)                                :vector-long
@@ -230,19 +231,17 @@
 (defmethod inspect-value :atom [value]
   (truncate-string (pr-str value)))
 
+(defmethod inspect-value :map-entry [[k v]]
+  (str (inspect-value k) " " (inspect-value v)))
+
 (defmethod inspect-value :seq-empty [value]
   (pr-str value))
 
 (defmethod inspect-value :map [value]
-  (->> value
-       (map (fn [[k v]]
-              (str (inspect-value k) " " (inspect-value v))))
-       (s/join ", ")
-       (format "{ %s }")))
+  (safe-pr-seq value ", " "{ %s }"))
 
 (defmethod inspect-value :map-long [value]
-  (let [[k v] (first value)]
-    (str "{ " (inspect-value k) " " (inspect-value v) ", ... }")))
+  (safe-pr-seq (take *max-coll-size* value) ", " "{ %s ... }"))
 
 (defmethod inspect-value :vector [value]
   (safe-pr-seq value "[ %s ]"))
