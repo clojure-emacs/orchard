@@ -91,8 +91,13 @@ functionality that's provided.
 So far, Orchard follows these options, which can be specified as Java system properties
 (which means that end users can choose to set them globally without fiddling with tooling internals):
 
+* `"-Dorchard.use-dynapath=false"` (default: true)
+  * if `false`, all features that currently depend on dynapath (and therefore alter the classpath) will be disabled.
+  * This is a way to avoid a number of known issues: [#103](https://github.com/clojure-emacs/orchard/issues/103), [#105](https://github.com/clojure-emacs/orchard/issues/105), [#112](https://github.com/clojure-emacs/orchard/pull/112).
+  * Note that if this option is `false`, Orchard clients will have to figure out themselves a way to e.g. fetch Java sources.
+    * It is foreseen that soon enough this will be reliably offered as a Lein plugin.
 * `"-Dorchard.initialize-cache.silent=true"` (default: `true`)
-  * if false, the _class info cache_ initialization may print warnings (possibly spurious ones).
+  * if `false`, the _class info cache_ initialization may print warnings (possibly spurious ones).xx
 
 ## History
 

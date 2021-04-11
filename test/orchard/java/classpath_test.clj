@@ -4,6 +4,7 @@
    [clojure.set :as set]
    [clojure.string :as str]
    [clojure.test :refer [deftest is testing]]
+   [orchard.java]
    [orchard.java.classpath :as cp]
    [orchard.misc :as misc])
   (:import
@@ -48,31 +49,33 @@
            (set (cp/system-classpath))
            (set (cp/classpath)))))))
 
-(deftest classpath-resources-test
-  (testing "Iterating classpath resources"
-    (testing "returns non-empty lists"
-      (is (every? seq (map cp/classpath-seq (cp/classpath)))))
-    (testing "returns relative paths"
-      (is (every? #(not (.isAbsolute (File. %)))
-                  (mapcat cp/classpath-seq (cp/classpath)))))))
+(when orchard.java/add-java-sources-via-dynapath?
+  (deftest classpath-resources-test
+    (testing "Iterating classpath resources"
+      (testing "returns non-empty lists"
+        (is (every? seq (map cp/classpath-seq (cp/classpath)))))
+      (testing "returns relative paths"
+        (is (every? #(not (.isAbsolute (File. %)))
+                    (mapcat cp/classpath-seq (cp/classpath))))))))
 
-(deftest classloader-test
-  (testing "Classloader hierarchy contains current classloader"
-    (is (contains? (set (cp/classloaders)) (cp/context-classloader))))
-  (testing "Classpath modification"
-    (let [orig-classloaders (cp/classloaders)
-          orig-classpath (cp/classpath)
-          url (-> (System/getProperty "java.io.tmpdir")
-                  (io/file "test.txt")
-                  (io/as-url))]
-      (cp/add-classpath! url)
-      (testing "adds the URL"
-        (is (contains? (set (cp/classpath)) url)))
-      (testing "preserves prior classpath URLs"
-        (is (set/subset?
-             (set orig-classpath)
-             (set (cp/classpath)))))
-      (testing "preserves the classloader hierarchy"
-        (is (set/subset?
-             (set orig-classloaders)
-             (set (cp/classloaders))))))))
+(when orchard.java/add-java-sources-via-dynapath?
+  (deftest classloader-test
+    (testing "Classloader hierarchy contains current classloader"
+      (is (contains? (set (cp/classloaders)) (cp/context-classloader))))
+    (testing "Classpath modification"
+      (let [orig-classloaders (cp/classloaders)
+            orig-classpath (cp/classpath)
+            url (-> (System/getProperty "java.io.tmpdir")
+                    (io/file "test.txt")
+                    (io/as-url))]
+        (cp/add-classpath! url)
+        (testing "adds the URL"
+          (is (contains? (set (cp/classpath)) url)))
+        (testing "preserves prior classpath URLs"
+          (is (set/subset?
+               (set orig-classpath)
+               (set (cp/classpath)))))
+        (testing "preserves the classloader hierarchy"
+          (is (set/subset?
+               (set orig-classloaders)
+               (set (cp/classloaders)))))))))

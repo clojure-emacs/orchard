@@ -8,6 +8,8 @@
 
 ### Changes
 
+* [#113](https://github.com/clojure-emacs/orchard/issues/113) Add ability to skip functionality that works by altering the classpath
+  * You an opt in to this choice by setting `"-Dorchard.use-dynapath=false"`.
 * The _class info cache_ is now initialized silently by default. This results in less confusing output.
   * You can now `@orchard.java/cache-initializer` for deterministically waiting for this cache workload to complete.
   * You can control its verbosity by setting `"-Dorchard.initialize-cache.silent=false"` (or `[...]=true`).

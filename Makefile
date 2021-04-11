@@ -2,7 +2,7 @@
 
 VERSION ?= 1.10
 
-TEST_PROFILES := +test
+TEST_PROFILES ?= +test
 
 resources/clojuredocs/export.edn:
 curl -o $@ https://github.com/clojure-emacs/clojuredocs-export-edn/raw/master/exports/export.compact.edn

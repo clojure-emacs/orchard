@@ -3,6 +3,7 @@
 /checkouts
 /classes
 /gh-pages
+/unzipped-jdk-source
 /target
 autodoc.sh
 pom.xml
