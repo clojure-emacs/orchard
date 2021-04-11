@@ -63,10 +63,6 @@ commands:
           command: |
             sudo apt-get install make
       - run:
-          name: Install clj-kondo
-          command: |
-           sudo curl -sLO https://raw.githubusercontent.com/clj-kondo/clj-kondo/master/script/install-clj-kondo && sudo chmod +x install-clj-kondo && sudo ./install-clj-kondo
-      - run:
           name: Generate Cache Checksum
           command: |
             for file in << parameters.files >>
@@ -210,10 +206,6 @@ workflows:
           jdk_version: openjdk11
           steps:
             - run:
-                name: Running Eastwood
-                command: |
-                  make eastwood
-            - run:
                 name: Running cljfmt
                 command: |
                   make cljfmt
@@ -221,6 +213,10 @@ workflows:
                 name: Running clj-kondo
                 command: |
                   make kondo
+            - run:
+                name: Running Eastwood
+                command: |
+                  make eastwood
       # - util_job:
       #     name: Code coverage
       #     steps:

@@ -58,7 +58,10 @@
                                          with-debug-bindings [[:inner 0]]
                                          merge-meta [[:inner 0]]
                                          letfn [[:block 1] [:inner 2]]}}}
-
+             
+             :clj-kondo [:test
+                         {:dependencies [[clj-kondo "2021.03.31"]]}]
+             
              :eastwood  {:plugins  [[jonase/eastwood "0.4.0"]]
                          :eastwood {:exclude-namespaces [~(if (-> "java.version"
                                                                   System/getProperty
