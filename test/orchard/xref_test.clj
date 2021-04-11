@@ -1,9 +1,9 @@
 (ns orchard.xref-test
   (:require
-   [clojure.test :refer :all]
+   [clojure.test :refer [deftest is testing]]
    [orchard.xref :as xref]))
 
-(defn- dummy-fn [x]
+(defn- dummy-fn [_x]
   (map #(* % 2) (filter even? (range 1 10))))
 
 (deftest fn-deps-test

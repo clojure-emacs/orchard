@@ -2,8 +2,7 @@
   (:require
    [clojure.java.io :as io]
    [clojure.string :as str]
-   [clojure.test :refer :all]
-   [orchard.java.classpath :as cp]
+   [clojure.test :refer [deftest is testing]]
    [orchard.misc :as misc]
    [orchard.namespace :as n]))
 

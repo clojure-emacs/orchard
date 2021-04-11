@@ -3,7 +3,7 @@
    [clojure.java.io :as io]
    [clojure.set :as set]
    [clojure.string :as str]
-   [clojure.test :refer :all]
+   [clojure.test :refer [deftest is testing]]
    [orchard.java.classpath :as cp]
    [orchard.misc :as misc])
   (:import

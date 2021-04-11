@@ -1,5 +1,5 @@
 (ns orchard.cljs.meta-test
-  (:require [clojure.test :as test #?(:clj :refer :cljs :refer-macros) [deftest is testing]]
+  (:require [clojure.test :as test #?(:clj :refer :cljs :refer-macros) [deftest is]]
             [orchard.cljs.meta :as cljs-meta]))
 
 (deftest unquote-test

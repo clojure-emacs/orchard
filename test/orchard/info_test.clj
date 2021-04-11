@@ -4,8 +4,8 @@
    [clojure.string :as str]
    [orchard.info :as info]
    [orchard.misc :as misc]
+   [clojure.java.io :refer [resource]]
    [orchard.cljs.test-env :as test-env]
-   [orchard.meta :as meta]
    [orchard.test-ns]))
 
 (def ^:dynamic *cljs-params*)
@@ -497,19 +497,19 @@
 
 ;; TODO: Assess the value of this test
 (deftest javadoc-url-test
-  (if (= misc/java-api-version 7)
+  (when (= misc/java-api-version 7)
     (testing "java 1.7"
       (is (= "java/lang/StringBuilder.html#charAt(int)"
              (-> (info/info-java 'java.lang.StringBuilder 'charAt)
                  (get :javadoc))))))
 
-  (if (= misc/java-api-version 8)
+  (when (= misc/java-api-version 8)
     (testing "java 1.8"
       (is (= "java/lang/StringBuilder.html#charAt-int-"
              (-> (info/info-java 'java.lang.StringBuilder 'charAt)
                  (get :javadoc))))))
 
-  (if (= misc/java-api-version 9)
+  (when (= misc/java-api-version 9)
     (testing "java 9"
       (is (= "java/lang/StringBuilder.html#charAt-int-"
              (-> (info/info-java 'java.lang.StringBuilder 'charAt)
@@ -525,7 +525,7 @@
   (:resource (info/file-info x)))
 
 (deftest resource-path-test
-  (is (= (class (file (subs (str (clojure.java.io/resource "clojure/core.clj")) 4)))
+  (is (= (class (file (subs (str (resource "clojure/core.clj")) 4)))
          java.net.URL))
   (is (= (class (file "clojure/core.clj"))
          java.net.URL))

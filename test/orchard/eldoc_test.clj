@@ -1,6 +1,6 @@
 (ns orchard.eldoc-test
   (:require
-   [clojure.test :refer :all]
+   [clojure.test :refer [deftest is testing]]
    [orchard.eldoc :as eldoc]
    [orchard.info :as info]))
 

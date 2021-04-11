@@ -1,6 +1,5 @@
 (ns orchard.misc-test
   (:require
-   [clojure.string :as str]
    [clojure.test :as test :refer [deftest is testing]]
    [orchard.misc :as misc]))
 

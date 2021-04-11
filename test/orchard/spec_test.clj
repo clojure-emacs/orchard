@@ -1,6 +1,6 @@
 (ns orchard.spec-test
   (:require
-   [clojure.test :refer :all]
+   [clojure.test :refer [deftest is testing]]
    [orchard.spec :as spec]))
 
 (deftest normalize-spec-form-test

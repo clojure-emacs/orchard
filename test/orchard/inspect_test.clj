@@ -1,6 +1,6 @@
 (ns orchard.inspect-test
   (:require
-   [clojure.test :refer :all]
+   [clojure.test :refer [deftest is are testing]]
    [orchard.inspect :as inspect]))
 
 (def nil-result ["(\"nil\" (:newline))"])
@@ -238,7 +238,7 @@
 
 (deftype MyTestType [name]
   IMyTestType
-  (get-name [this] name))
+  (get-name [_this] name))
 
 (defmethod inspect/inspect-value MyTestType [obj]
   (str "#<MyTestType " (get-name obj) ">"))

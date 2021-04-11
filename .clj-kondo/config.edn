@@ -1,2 +1,4 @@
 {:output {:progress true
-          :exclude-files ["analysis.cljc" "meta.cljc"]}}
+          :exclude-files ["analysis.cljc" "meta.cljc"]}
+ :linters {:unused-private-var {:level :warning :exclude [orchard.query-test/a-private orchard.query-test/docd-fn]}}}
+

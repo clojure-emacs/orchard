@@ -1,8 +1,8 @@
 (ns orchard.query-test
   (:require
    [clojure.set :as set]
-   [clojure.test :refer :all]
-   [orchard.query :refer :all]))
+   [clojure.test :refer [deftest are is]]
+   [orchard.query :refer [namespaces vars]]))
 
 (def ^:private a-private)
 (def ^:abc a-metad)
@@ -61,7 +61,7 @@
     (set
      (vars
       {:manipulate-vars
-       (fn [nss vars]
+       (fn [_nss vars]
          (concat vars ['x/my-test-var]))}))))
 
   (are [var-query subset] (empty? (set/intersection
