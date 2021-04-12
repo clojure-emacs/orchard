@@ -241,7 +241,7 @@
   (safe-pr-seq value ", " "{ %s }"))
 
 (defmethod inspect-value :map-long [value]
-  (safe-pr-seq (take *max-coll-size* value) ", " "{ %s ... }"))
+  (safe-pr-seq (take *max-coll-size* value) ", " "{ %s, ... }"))
 
 (defmethod inspect-value :vector [value]
   (safe-pr-seq value "[ %s ]"))
@@ -274,7 +274,7 @@
 
 (defmethod inspect-value :array-long [value]
   (let [ct (.getName (or (.getComponentType (class value)) Object))]
-    (safe-pr-seq (take *max-coll-size* value) ", " (str ct "[] { %s ... }"))))
+    (safe-pr-seq (take *max-coll-size* value) ", " (str ct "[] { %s, ... }"))))
 (defmethod inspect-value java.lang.Class [value]
   (pr-str value))
 

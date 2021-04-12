@@ -259,13 +259,13 @@
       "#{ :a }" #{:a}
       "( 1 1 1 1 1 ... )" (repeat 1)
       "[ ( 1 1 1 1 1 ... ) ]" [(repeat 1)]
-      "{ :a { ( 0 1 2 3 4 ... ) 1, 2 3, 4 5, 6 7, 8 9 ... } }" {:a {(range 10) 1, 2 3, 4 5, 6 7, 8 9, 10 11}}
+      "{ :a { ( 0 1 2 3 4 ... ) 1, 2 3, 4 5, 6 7, 8 9, ... } }" {:a {(range 10) 1, 2 3, 4 5, 6 7, 8 9, 10 11}}
       "( 1 2 3 )" (lazy-seq '(1 2 3))
       "( 1 1 1 1 1 ... )" (java.util.ArrayList. (repeat 100 1))
       "( 1 2 3 )" (java.util.ArrayList. [1 2 3])
       "{ :a 1, :b 2 }" (java.util.HashMap. {:a 1 :b 2})
       "long[] { 1, 2, 3, 4 }" (long-array [1 2 3 4])
-      "java.lang.Long[] { 0, 1, 2, 3, 4 ... }" (into-array Long (range 10))
+      "java.lang.Long[] { 0, 1, 2, 3, 4, ... }" (into-array Long (range 10))
       "#<MyTestType test1>" (MyTestType. "test1")))
 
   (testing "inspect-value adjust length and size"
@@ -279,12 +279,12 @@
         "( :a :b )" '(:a :b)
         "[ 1 2 ... ]" [1 2 3]
         "{ :a 1, :b 2 }" {:a 1 :b 2}
-        "{ :a 1, :b 2 ... }" {:a 1 :b 2 :c 3}
-        "{ :a 1, :b 2 ... }" (sorted-map :d 4 :b 2 :a 1 :c 3)
+        "{ :a 1, :b 2, ... }" {:a 1 :b 2 :c 3}
+        "{ :a 1, :b 2, ... }" (sorted-map :d 4 :b 2 :a 1 :c 3)
         "( 1 1 ... )" (repeat 1)
         "[ ( 1 1 ... ) ]" [(repeat 1)]
-        "{ :a { ( 0 1 ... ) \"ab..., 2 3 ... } }" {:a {(range 10) "abcdefg", 2 3, 4 5, 6 7, 8 9, 10 11}}
-        "java.lang.Long[] { 0, 1 ... }" (into-array Long (range 10))))
+        "{ :a { ( 0 1 ... ) \"ab..., 2 3, ... } }" {:a {(range 10) "abcdefg", 2 3, 4 5, 6 7, 8 9, 10 11}}
+        "java.lang.Long[] { 0, 1, ... }" (into-array Long (range 10))))
     (binding [inspect/*max-coll-size* 6]
       (are [result form] (= result (inspect/inspect-value form))
         "[ ( 1 1 1 1 1 1 ... ) ]" [(repeat 1)]
