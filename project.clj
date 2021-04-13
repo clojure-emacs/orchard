@@ -56,7 +56,9 @@
 
 (def jdk8? (->> "java.version" System/getProperty (re-find #"^1.8.")))
 
-(defproject cider/orchard "0.6.5"
+;;;; Project definition
+
+(defproject cider/orchard "0.7.0"
   :description "A fertile ground for Clojure tooling"
   :url "https://github.com/clojure-emacs/orchard"
   :license {:name "Eclipse Public License"
@@ -82,7 +84,7 @@
                                     :sign-releases false}]]
 
   :jvm-opts ["-Dorchard.use-dynapath=true"]
-  
+
   :profiles {
              ;; Clojure versions matrix
              :provided {:dependencies [[org.clojure/clojure "1.10.1"]
@@ -125,10 +127,10 @@
                                          with-debug-bindings [[:inner 0]]
                                          merge-meta [[:inner 0]]
                                          letfn [[:block 1] [:inner 2]]}}}
-             
+
              :clj-kondo [:test
                          {:dependencies [[clj-kondo "2021.03.31"]]}]
-             
+
              :eastwood  {:plugins  [[jonase/eastwood "0.4.0"]]
                          :eastwood {:exclude-namespaces [~(if jdk8?
                                                             'orchard.java.parser

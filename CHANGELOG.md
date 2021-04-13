@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+## 0.7.0 (2021-04-13)
+
 ### New features
 
 * [#111](https://github.com/clojure-emacs/orchard/pull/111): [Inspector] Configure truncation limits
