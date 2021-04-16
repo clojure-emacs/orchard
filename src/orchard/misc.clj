@@ -38,12 +38,15 @@
   file extensions"
   [f & exts]
   (when-let [file (if (url? f)
-                    (when  (= (.getProtocol ^java.net.URL f) "file")
+                    (when (= (.getProtocol ^java.net.URL f) "file")
                       (io/as-file f))
                     (io/as-file f))]
-    (some (fn [ext]
-            (.endsWith (.. file getName toLowerCase) ext))
-          exts)))
+    (and
+     ;; Check for file-ness because having a specific extension implies we assume `f` is a file:
+     (not (directory? f))
+     (some (fn [ext]
+             (.endsWith (.. file getName toLowerCase) ext))
+           exts))))
 
 (defn clj-file?  [f] (file-ext? f ".clj" ".cljc"))
 (defn java-file? [f] (file-ext? f ".java"))

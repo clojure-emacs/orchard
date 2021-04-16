@@ -9,6 +9,7 @@ autodoc.sh
 pom.xml
 pom.xml.asc
 *.jar
+!not-a.jar
 *.class
 .cljs_nashorn_repl/
 nashorn_code_cache/
