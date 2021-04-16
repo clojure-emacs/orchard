@@ -2,6 +2,10 @@
 
 ## master (unreleased)
 
+### Bugs Fixed
+
+* Directories in the classpath having a file extension (such as .jar) will not confuse Orchard anymore, which had the potential to cause errors. 
+
 ## 0.7.0 (2021-04-13)
 
 ### New features

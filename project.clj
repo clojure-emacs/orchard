@@ -83,7 +83,8 @@
                                     :password :env/clojars_password
                                     :sign-releases false}]]
 
-  :jvm-opts ["-Dorchard.use-dynapath=true"]
+  :jvm-opts ["-Dorchard.use-dynapath=true"
+             "-Dclojure.main.report=stderr"]
 
   :profiles {
              ;; Clojure versions matrix
@@ -101,7 +102,8 @@
                                      [org.clojure/clojure "1.11.0-master-SNAPSHOT" :classifier "sources"]]}
 
              :test {:dependencies [[org.clojure/java.classpath "1.0.0"]]
-                    :resource-paths ["test-resources"]
+                    :resource-paths ["test-resources"
+                                     "not-a.jar"]
                     ;; Initialize the cache verbosely, as usual, so that possible issues can be more easily diagnosed:
                     :jvm-opts ["-Dorchard.initialize-cache.silent=false"]}
 
