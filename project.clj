@@ -58,7 +58,7 @@
 
 ;;;; Project definition
 
-(defproject cider/orchard "0.7.0"
+(defproject cider/orchard "0.7.1"
   :description "A fertile ground for Clojure tooling"
   :url "https://github.com/clojure-emacs/orchard"
   :license {:name "Eclipse Public License"

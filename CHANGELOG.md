@@ -2,19 +2,21 @@
 
 ## master (unreleased)
 
+## 0.7.1 (2021-04-18)
+
 ### Bugs Fixed
 
-* Directories in the classpath having a file extension (such as .jar) will not confuse Orchard anymore, which had the potential to cause errors. 
+* [#116](https://github.com/clojure-emacs/orchard/pull/116): Directories in the classpath having a file extension (such as `.jar`) will not confuse Orchard anymore, which had the potential to cause errors.
 
 ## 0.7.0 (2021-04-13)
 
 ### New features
 
-* [#111](https://github.com/clojure-emacs/orchard/pull/111): [Inspector] Configure truncation limits
+* [#111](https://github.com/clojure-emacs/orchard/pull/111): [Inspector] Configure truncation limits.
 
 ### Changes
 
-* [#113](https://github.com/clojure-emacs/orchard/issues/113) Add ability to skip functionality that works by altering the classpath
+* [#113](https://github.com/clojure-emacs/orchard/issues/113): Add ability to skip functionality that works by altering the classpath.
   * You an opt in to this choice by setting `"-Dorchard.use-dynapath=false"`.
 * The _class info cache_ is now initialized silently by default. This results in less confusing output.
   * You can now `@orchard.java/cache-initializer` for deterministically waiting for this cache workload to complete.
