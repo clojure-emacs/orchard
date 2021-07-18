@@ -116,11 +116,11 @@
     (is (= 65 (-> long-map
                   inspect
                   :counter)))
-    (is (.startsWith (-> long-vector
-                         inspect
-                         :rendered
-                         last)
-                     "  Page size:")))
+    (is (-> long-vector
+            inspect
+            :rendered
+            ^String (last)
+            (.startsWith "  Page size:"))))
   (testing "small collections are not paginated"
     (is (= '(:newline)
            (-> (range 10)
@@ -205,35 +205,13 @@
 
 (deftest path-test
   (testing "inspector tracks the path in the data structure"
-    (is (.endsWith (first (-> long-map
-                              inspect
-                              (inspect/down 39)
-                              render))
-                   "\"  Path: (find 50) key\")"))
-    (is (.endsWith (first (-> long-map
-                              inspect
-                              (inspect/down 40)
-                              render))
-                   "\"  Path: (get 50)\")"))
-    (is (.endsWith (first (-> long-map
-                              inspect
-                              (inspect/down 40)
-                              (inspect/down 0)
-                              render))
-                   "\"  Path: (get 50) class\")")))
+    (is (-> long-map inspect (inspect/down 39) render ^String (first) (.endsWith "\"  Path: (find 50) key\")")))
+    (is (-> long-map inspect (inspect/down 40) render ^String (first) (.endsWith "\"  Path: (get 50)\")")))
+    (is (-> long-map inspect (inspect/down 40) (inspect/down 0) render ^String (first) (.endsWith "\"  Path: (get 50) class\")"))))
   (testing "doesn't show path if unknown navigation has happened"
-    (is (.endsWith (first (-> long-map
-                              inspect
-                              (inspect/down 40)
-                              (inspect/down 0)
-                              (inspect/down 1)
-                              render))
-                   "(:newline))")))
+    (is (-> long-map inspect (inspect/down 40) (inspect/down 0) (inspect/down 1) render ^String (first) (.endsWith "(:newline))"))))
   (testing "doesn't show the path in the top level"
-    (is (.endsWith (first (-> [1 2 3]
-                              inspect
-                              render))
-                   "(:newline))"))))
+    (is (-> [1 2 3] inspect render ^String (first) (.endsWith "(:newline))")))))
 
 (defprotocol IMyTestType
   (^String get-name [this]))
@@ -261,9 +239,11 @@
       "[ ( 1 1 1 1 1 ... ) ]" [(repeat 1)]
       "{ :a { ( 0 1 2 3 4 ... ) 1, 2 3, 4 5, 6 7, 8 9, ... } }" {:a {(range 10) 1, 2 3, 4 5, 6 7, 8 9, 10 11}}
       "( 1 2 3 )" (lazy-seq '(1 2 3))
-      "( 1 1 1 1 1 ... )" (java.util.ArrayList. (repeat 100 1))
-      "( 1 2 3 )" (java.util.ArrayList. [1 2 3])
-      "{ :a 1, :b 2 }" (java.util.HashMap. {:a 1 :b 2})
+      "( 1 1 1 1 1 ... )" (java.util.ArrayList. ^java.util.Collection (repeat 100 1))
+      "( 1 2 3 )" (let [^java.util.Collection x [1 2 3]]
+                    (java.util.ArrayList. x))
+      "{ :a 1, :b 2 }" (let [^java.util.Map x {:a 1 :b 2}]
+                         (java.util.HashMap. x))
       "long[] { 1, 2, 3, 4 }" (long-array [1 2 3 4])
       "java.lang.Long[] { 0, 1, 2, 3, 4, ... }" (into-array Long (range 10))
       "#<MyTestType test1>" (MyTestType. "test1")))
@@ -305,9 +285,11 @@
 
 (deftest inspect-java-hashmap-test
   (testing "inspecting java.util.Map descendendants prints a key-value coll"
-    (is (= java-hashmap-inspect-result
-           (render (inspect/start (inspect/fresh)
-                                  (java.util.HashMap. {:a 1, :b 2, :c 3})))))))
+    (let [^java.util.Map the-map  {:a 1, :b 2, :c 3}]
+      (is (= java-hashmap-inspect-result
+             (-> (inspect/fresh)
+                 (inspect/start (java.util.HashMap. the-map))
+                 render))))))
 
 (deftest inspect-java-object-test
   (testing "inspecting any Java object prints its fields"

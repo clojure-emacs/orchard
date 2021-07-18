@@ -421,10 +421,10 @@
           cljs-merged-params (merge *cljs-params* params)
           f "orchard/test_no_defs.cljc"]
       (testing "- :cljs"
-        (is (.endsWith (:file (info/info* cljs-merged-params)) f)))
+        (is (-> cljs-merged-params info/info* ^String (:file) (.endsWith f))))
 
       (testing "- :clj"
-        (is (.endsWith (:file (info/info* params)) f))))))
+        (is (-> params info/info* ^String (:file) (.endsWith f)))))))
 
 ;;;;;;;;;;;;;;;;;;
 ;; Clojure Only ;;

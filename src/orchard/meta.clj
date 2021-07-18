@@ -264,6 +264,7 @@
 
 (defn ns-file
   "Finds the path to the file defining this `ns`"
+  ^String
   [ns]
   (or (some-> (ns-publics ns)
               first
