@@ -15,31 +15,31 @@
 ;; slashes; classpath entries specified at JVM launch may or may not.
 (defn- trim-trailing-slash [x]
   (let [s (if (instance? URL x)
-            (.getPath x)
+            (.getPath ^URL x)
             x)]
     (str/replace s #"/$" "")))
 
 (deftest classpath-test
   (testing "Classpath"
     (testing "URLs are absolute file paths"
-      (doseq [entry (cp/classpath)]
+      (doseq [^URL entry (cp/classpath)]
         (is (-> entry .getPath File. .isAbsolute)
             (pr-str entry))))
     (testing "directory paths have a trailing slash"
-      (doseq [entry (->> (cp/classpath)
-                         (filter misc/directory?))]
+      (doseq [^URL entry (->> (cp/classpath)
+                              (filter misc/directory?))]
         (is (-> entry .getPath (.endsWith "/")))))
     (testing "contains expected entries"
       (let [project-root (System/getProperty "user.dir")
-            directory-with-jar-extension (some #(re-find #"not-a\.jar" (.getPath %))
+            directory-with-jar-extension (some #(re-find #"not-a\.jar" (.getPath ^URL %))
                                                (cp/classpath))]
         (is (some #(= (str (io/file project-root "src")) %)
                   (map trim-trailing-slash (cp/classpath))))
         (is (some #(= (str (io/file project-root "test")) %)
                   (map trim-trailing-slash (cp/classpath))))
-        (is (some #(re-find #".*/clojure-.*\.jar" (.getPath %))
+        (is (some #(re-find #".*/clojure-.*\.jar" (.getPath ^URL %))
                   (cp/classpath)))
-        (is (some #(re-find #".*/clojure-.*-sources\.jar" (.getPath %))
+        (is (some #(re-find #".*/clojure-.*-sources\.jar" (.getPath ^URL %))
                   (cp/classpath)))
         (testing "Directories with .jar extension"
           (assert (-> directory-with-jar-extension io/file .isDirectory))
@@ -64,7 +64,7 @@
           (is (seq entry)
               (pr-str entry))))
       (testing "returns relative paths"
-        (doseq [entry (mapcat cp/classpath-seq (cp/classpath))]
+        (doseq [^String entry (mapcat cp/classpath-seq (cp/classpath))]
           (is (not (-> entry File. .isAbsolute))))))))
 
 (when orchard.java/add-java-sources-via-dynapath?
