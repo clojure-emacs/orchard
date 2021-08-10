@@ -1,5 +1,8 @@
 (ns orchard.namespace
-  "Utilities for resolving and loading namespaces."
+  "Utilities for resolving and loading namespaces.
+
+  Operations are parallel wherever it makes sense and it's safe to do so;
+  efficiency matters particularly for large projects/classpaths."
   {:author "Jeff Valk"
    :added "0.5"}
   (:require
@@ -38,12 +41,17 @@
 
 ;;; Namespace Loading
 
-(defn ensure-namespace
+(defn ensure-namespace!
   "Require `ns` (no-op if already loaded). Return the symbol if successful,
   and `nil` if this fails."
   [ns]
   (try (doto (symbol ns) require)
        (catch Exception _)))
+
+(defn ^:deprecated ensure-namespace
+  "Renamed - please use `#'ensure-namespace!` instead."
+  [ns]
+  (ensure-namespace! ns))
 
 ;;; Filters
 
@@ -92,9 +100,14 @@
   "Returns all namespaces defined in sources on the classpath or the specified
   classpath URLs."
   ([classpath-urls]
-   (->> (mapcat cp/classpath-seq classpath-urls)
-        (filter misc/clj-file?)
-        (map (comp read-namespace io/resource))
+   (->> classpath-urls
+        (pmap cp/classpath-seq)
+        (apply concat)
+        (pmap (fn [x]
+                (when (misc/clj-file? x)
+                  x)))
+        (filter identity)
+        (pmap (comp read-namespace io/resource))
         (filter identity)
         (sort)))
   ([]
@@ -104,7 +117,10 @@
   "Returns all namespaces defined in sources within the current project."
   []
   (->> (cp/classpath)
-       (filter (every-pred misc/directory? in-project?))
+       (pmap (fn [x]
+               (when ((every-pred misc/directory? in-project?) x)
+                 x)))
+       (filter identity)
        (classpath-namespaces)))
 
 (defn loaded-project-namespaces
@@ -118,7 +134,8 @@
   "Require and return all namespaces validly defined in the current project."
   []
   (->> (project-namespaces)
-       (map ensure-namespace)
+       ;; don't pmap this - it performs a `require`:
+       (map ensure-namespace!)
        (filter identity)
        sort))
 
