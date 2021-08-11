@@ -1,4 +1,4 @@
-.PHONY: test test-watch docs eastwood cljfmt cloverage release deploy clean
+.PHONY: test test-watch docs eastwood cljfmt release deploy clean
 
 VERSION ?= 1.10
 
@@ -21,15 +21,6 @@ cljfmt:
 
 kondo:
 	lein with-profile -dev,+clj-kondo run -m clj-kondo.main --lint src test
-
-# Cloverage can't handle some of the code in this project.  For now we
-# must filter problematic namespaces (`-e`) and tests (`-t`) from
-# instrumentation. Note: this means for now coverage reporting isn't
-# exact. See issue cider-nrepl/#457 for background.
-
-cloverage:
-	lein with-profile +$(VERSION),+cloverage cloverage,$(TEST_PROFILES) --codecov \
-	     -e "orchard.java.legacy-parser"
 
 # When releasing, the BUMP variable controls which field in the
 # version string will be incremented in the *next* snapshot

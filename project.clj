@@ -121,9 +121,6 @@
                                 (pjstadig.humane-test-output/activate!)]
                    :test-refresh {:changes-only true}}
 
-             ;; CI tools
-             :cloverage {:plugins [[lein-cloverage "1.1.2"]]}
-
              :cljfmt {:plugins [[lein-cljfmt "0.6.4"]]
                       :cljfmt {:indents {as-> [[:inner 0]]
                                          with-debug-bindings [[:inner 0]]

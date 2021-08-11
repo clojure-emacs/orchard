@@ -179,10 +179,3 @@ workflows:
                 name: Running Eastwood
                 command: |
                   make eastwood
-      # - util_job:
-      #     name: Code coverage
-      #     steps:
-      #       - run:
-      #           name: Running cloverage
-      #           command: |
-      #             make cloverage
