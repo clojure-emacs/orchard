@@ -130,7 +130,7 @@
              :clj-kondo [:test
                          {:dependencies [[clj-kondo "2021.03.31"]]}]
 
-             :eastwood  {:plugins  [[jonase/eastwood "0.9.1"]]
+             :eastwood  {:plugins  [[jonase/eastwood "0.9.6"]]
                          :eastwood {:exclude-namespaces [~(if jdk8?
                                                             'orchard.java.parser
                                                             'orchard.java.legacy-parser)]}}})
