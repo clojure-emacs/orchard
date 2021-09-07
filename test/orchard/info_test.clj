@@ -467,6 +467,22 @@
                :returns int}))
       (is (re-find #"Returns the greater of two" (:doc i))))))
 
+(deftest info-undefined-namespace-test
+  (testing "Fully qualified sym can still be resolved"
+    (is (= '{:added "1.2"
+             :ns clojure.string
+             :name upper-case
+             :file "clojure/string.clj"}
+           (select-keys (info/info* {:ns 'gibberish :sym 'clojure.string/upper-case})
+                        [:added :ns :name :file]))))
+  (testing "clojure.core syms can still be resolved"
+    (is (= '{:added "1.0"
+             :ns clojure.core
+             :name merge
+             :file "clojure/core.clj"}
+           (select-keys (info/info* {:ns 'gibberish :sym 'merge})
+                        [:added :ns :name :file])))))
+
 (deftest javadoc-info-unit-test
   (testing "Get an HTTP URL for a Sun/Oracle Javadoc"
     (testing "Javadoc 1.7 format"
