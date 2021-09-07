@@ -6,6 +6,10 @@
 
 * `orchard.namespace` functionality is now parallelized when possible.
 
+### Bugs Fixed
+
+* [#123](https://github.com/clojure-emacs/orchard/pull/123): Fix info lookups from namespaces that don't yet exist
+
 ## 0.7.1 (2021-04-18)
 
 ### Bugs Fixed
