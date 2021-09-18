@@ -304,7 +304,9 @@
                       (map #(parse-info % root))
                       (filter #(= klass (:class %)))
                       (first))
+                 ;; relative path on the classpath
                  :file path
-                 :path (.getPath (io/resource path)))
+                 ;; Full URL, e.g. file:.. or jar:...
+                 :resource-url (io/resource path))
           (finally (.close (.getJavaFileManager root))))))
     (catch Throwable _)))

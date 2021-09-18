@@ -195,3 +195,7 @@
   classes. If no source is available, return the relative path as is."
   [^String path]
   {:javadoc (java/resolve-javadoc-path path)})
+
+(comment
+  (info-java 'clojure.lang.RT 'baseLoader)
+  (file-info "clojure/core.clj"))

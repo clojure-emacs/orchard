@@ -250,16 +250,6 @@
 
 (def cache (atom {}))
 
-(defn- immutable-source-file?
-  "Return true if the source file is effectively immutable. Specifically, this
-  returns true if no source file is available, or if the source file is in a
-  jar/zip archive."
-  [info]
-  (let [path (:file info)
-        src  (when path (io/resource path))]
-    (or (not src)
-        (re-find #"\.(jar|zip)!" (str src)))))
-
 (defn class-info
   "For the class symbol, return (possibly cached) Java class and member info.
   Members are indexed first by name, and then by argument types to list all
@@ -269,9 +259,11 @@
         info (if cached
                (:info cached)
                (class-info* class))
-        last-modified (if (immutable-source-file? info)
+        resource (:resource-url info)
+        last-modified (if (or (nil? resource)
+                              (util.io/url-to-file-within-archive? resource))
                         0
-                        (.lastModified ^File (io/file (:path info))))
+                        (util.io/last-modified-time resource))
         stale (not= last-modified (:last-modified cached))
         ;; If last-modified in cache mismatches last-modified of the file,
         ;; regenerate class-info.

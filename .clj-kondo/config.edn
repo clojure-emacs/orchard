@@ -1,4 +1,4 @@
 {:output {:progress true
           :exclude-files ["analysis.cljc" "meta.cljc" "inspect_test.clj"]}
- :linters {:unused-private-var {:level :warning :exclude [orchard.query-test/a-private orchard.query-test/docd-fn]}}}
-
+ :linters {:unused-private-var {:level :warning :exclude [orchard.query-test/a-private orchard.query-test/docd-fn]}
+           :refer-all {:exclude [clojure.test]}}}

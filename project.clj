@@ -87,6 +87,9 @@
              "-Dclojure.main.report=stderr"]
 
   :source-paths ["src" "src-jdk8" "src-newer-jdks"]
+  :test-paths ~(cond-> ["test"]
+                 (not jdk8?)
+                 (conj "test-newer-jdks"))
 
   :profiles {
              ;; Clojure versions matrix
@@ -96,8 +99,8 @@
                                   [org.clojure/clojure "1.8.0" :classifier "sources"]]}
              :1.9 {:dependencies [[org.clojure/clojure "1.9.0"]
                                   [org.clojure/clojure "1.9.0" :classifier "sources"]]}
-             :1.10 {:dependencies [[org.clojure/clojure "1.10.1"]
-                                   [org.clojure/clojure "1.10.1" :classifier "sources"]]}
+             :1.10 {:dependencies [[org.clojure/clojure "1.10.3"]
+                                   [org.clojure/clojure "1.10.3" :classifier "sources"]]}
              :master {:repositories [["snapshots"
                                       "https://oss.sonatype.org/content/repositories/snapshots"]]
                       :dependencies [[org.clojure/clojure "1.11.0-master-SNAPSHOT"]
