@@ -15,7 +15,9 @@
     s))
 
 (defn project-resources
-  "Get a list of classpath resources."
+  "Get a list of classpath resources, i.e. files that are not clojure/java source
+  or class files. Only consider classpath entries that are directories, does not
+  consider jars."
   []
   (mapcat
    (fn [^File directory]
@@ -32,7 +34,7 @@
                    {:root directory
                     :file file
                     :relpath relpath
-                    :url (io/resource relpath)})))
+                    :url (io/as-url file)})))
           (remove #(.startsWith ^String (:relpath %) "META-INF/"))
           (remove #(re-matches #".*\.(clj[cs]?|java|class)" (:relpath %)))))
    (filter (memfn ^File isDirectory) (map io/as-file (cp/classpath (cp/boot-aware-classloader))))))

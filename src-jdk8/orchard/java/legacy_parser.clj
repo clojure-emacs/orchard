@@ -273,6 +273,8 @@
         (assoc (->> (map parse-info (.classes root))
                     (filter #(= klass (:class %)))
                     (first))
+               ;; relative path on the classpath
                :file path
-               :path (. (io/resource path) getPath))))
+               ;; Full URL, e.g. file:.. or jar:...
+               :resource-url (io/resource path))))
     (catch Abort _)))

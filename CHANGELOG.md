@@ -21,6 +21,7 @@
 * [#123](https://github.com/clojure-emacs/orchard/pull/123): Fix info lookups from namespaces that don't yet exist
 * [#125](https://github.com/clojure-emacs/orchard/issues/125): Don't fail if the classpath references a non-existing .jar
 * [#128](https://github.com/clojure-emacs/orchard/issues/128): Strengthen `apropos`
+* [#124](https://github.com/clojure-emacs/orchard/pull/124): Remove costly `io/resource` lookup
 
 ## 0.7.1 (2021-04-18)
 
