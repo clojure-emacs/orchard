@@ -103,7 +103,8 @@
 
              :test {:dependencies [[org.clojure/java.classpath "1.0.0"]]
                     :resource-paths ["test-resources"
-                                     "not-a.jar"]
+                                     "not-a.jar"
+                                     "does-not-exist.jar"]
                     ;; Initialize the cache verbosely, as usual, so that possible issues can be more easily diagnosed:
                     :jvm-opts ["-Dorchard.initialize-cache.silent=false"]}
 
