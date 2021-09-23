@@ -20,7 +20,6 @@
 ;; clojure version                                                  ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
 (defn get-spec [v] (spec "get-spec" v))
 
 (defn describe [s] (spec "describe" s))

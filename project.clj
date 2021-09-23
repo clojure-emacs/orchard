@@ -121,16 +121,16 @@
                                 (pjstadig.humane-test-output/activate!)]
                    :test-refresh {:changes-only true}}
 
-             :cljfmt {:plugins [[lein-cljfmt "0.6.4"]]
+             :cljfmt {:plugins [[lein-cljfmt "0.8.0"]]
                       :cljfmt {:indents {as-> [[:inner 0]]
                                          with-debug-bindings [[:inner 0]]
                                          merge-meta [[:inner 0]]
                                          letfn [[:block 1] [:inner 2]]}}}
 
              :clj-kondo [:test
-                         {:dependencies [[clj-kondo "2021.03.31"]]}]
+                         {:dependencies [[clj-kondo "2021.09.15"]]}]
 
-             :eastwood  {:plugins  [[jonase/eastwood "0.9.6"]]
+             :eastwood  {:plugins  [[jonase/eastwood "0.9.9"]]
                          :eastwood {:exclude-namespaces [~(if jdk8?
                                                             'orchard.java.parser
                                                             'orchard.java.legacy-parser)]}}})
