@@ -44,6 +44,13 @@ executors:
       <<: *env_defaults
       <<: *newer_jdk_env_defaults
     <<: *defaults
+  openjdk17:
+    docker:
+      - image: circleci/clojure:openjdk-17-lein-2.9.5-buster
+    environment:
+      <<: *env_defaults
+      <<: *newer_jdk_env_defaults
+    <<: *defaults
 
 # Runs a given set of steps, with some standard pre- and post-
 # steps, including restoring of cache, saving of cache.
@@ -167,10 +174,12 @@ workflows:
       - test_code:
           matrix:
             parameters:
-              jdk_version: [openjdk8, openjdk11, openjdk16]
+              jdk_version: [openjdk8, openjdk11, openjdk16, openjdk17]
               clojure_version: ["1.8", "1.9", "1.10", "master"]
               test_profiles: ["+test", "+test,+no-dynapath"]
       - util_job:
+          # This step exercises JDK8 specifically. Eastwood, given its runtime-based approach can detect problems specific to JDK8
+          # (specifically, it will analyze the `java.legacy-parser` ns):
           name: Code Linting, JDK8 (Eastwood only)
           jdk_version: openjdk8
           steps:
@@ -180,7 +189,7 @@ workflows:
                   make eastwood
       - util_job:
           name: Code Linting, (latest LTS JDK)
-          jdk_version: openjdk11
+          jdk_version: openjdk17
           steps:
             - run:
                 name: Running cljfmt
