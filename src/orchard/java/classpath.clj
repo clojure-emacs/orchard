@@ -84,10 +84,16 @@
   as relative paths."
   [^URL url]
   (let [f (io/as-file url)]
-    (if (misc/archive? url)
+    (cond
+      (not (.exists f))
+      []
+
+      (misc/archive? url)
       (->> (enumeration-seq (.entries (JarFile. f)))
            (filter #(not (.isDirectory ^JarEntry %)))
            (map #(.getName ^JarEntry %)))
+
+      :else
       (->> (file-seq f)
            (filter #(not (.isDirectory ^File %)))
            (map #(.getPath (.relativize (.toURI url) (.toURI ^File %))))))))

@@ -60,9 +60,37 @@
   (deftest classpath-resources-test
     (testing "Iterating classpath resources"
       (testing "returns non-empty lists"
-        (doseq [entry (map cp/classpath-seq (cp/classpath))]
-          (is (seq entry)
-              (pr-str entry))))
+        ;; The non-existing .jar can get misteriously created (is it Lein?).
+        ;; Work around it:
+        (-> "does-not-exist.jar" File. .delete)
+
+        (let [dev-resources-path (-> "dev-resources" File. .getAbsolutePath)
+              the-classpath (cp/classpath)
+              corpus (->> the-classpath
+                          (filter (fn [^URL u]
+                                    (let [f (-> u io/as-file)]
+                                      ;; filter out intentionally non-existing files
+                                      ;; (which we put in the :test classpath for reproducing certain bug)
+                                      (and (-> f .exists)
+                                           (not (= (.getAbsolutePath f)
+                                                   ;; remove dev-resources, only present in the :dev profile:
+                                                   dev-resources-path)))))))
+              ^File non-existing-jar (->> the-classpath
+                                          (filter (fn [u]
+                                                    ;; Find the non-existing jar declared under the :test profile:
+                                                    (-> u io/as-file str (.contains "does-not-exist.jar"))))
+                                          first)]
+          (assert (seq corpus)
+                  "There's something to test")
+          (assert non-existing-jar
+                  "The classpath includes the non-existing jar")
+          (testing "Orchard will succeed even in presence of an entry in the classpath that refers to a non-existing.jar"
+            (is (not (-> non-existing-jar io/as-file .exists))
+                (pr-str non-existing-jar)))
+          (doseq [item corpus
+                  :let [entry (cp/classpath-seq item)]]
+            (is (seq entry)
+                (pr-str [item entry])))))
       (testing "returns relative paths"
         (doseq [^String entry (mapcat cp/classpath-seq (cp/classpath))]
           (is (not (-> entry File. .isAbsolute))))))))

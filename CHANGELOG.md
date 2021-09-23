@@ -9,6 +9,7 @@
 ### Bugs Fixed
 
 * [#123](https://github.com/clojure-emacs/orchard/pull/123): Fix info lookups from namespaces that don't yet exist
+* [#125](https://github.com/clojure-emacs/orchard/pull/125): Don't fail if the classpath references a non-existing .jar
 
 ## 0.7.1 (2021-04-18)
 
