@@ -86,6 +86,8 @@
   :jvm-opts ["-Dorchard.use-dynapath=true"
              "-Dclojure.main.report=stderr"]
 
+  :source-paths ["src" "src-jdk8" "src-newer-jdks"]
+
   :profiles {
              ;; Clojure versions matrix
              :provided {:dependencies [[org.clojure/clojure "1.10.1"]
@@ -116,7 +118,9 @@
                                        [])}
 
              ;; Development tools
-             :dev {:dependencies [[pjstadig/humane-test-output "0.10.0"]]
+             :dev {:dependencies [[org.clojure/tools.namespace "1.1.0"]
+                                  [pjstadig/humane-test-output "0.10.0"]]
+                   :source-paths ["dev"]
                    :resource-paths ["test-resources"]
                    :plugins [[com.jakemccrary/lein-test-refresh "0.23.0"]]
                    :injections [(require 'pjstadig.humane-test-output)
