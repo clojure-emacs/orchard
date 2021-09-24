@@ -17,28 +17,44 @@
 
 ;;; ## Symbol Search
 
-(defn- apropos-sort
+(defn- safe-comparator [x y]
+  (compare (pr-str x) (pr-str y)))
+
+(defn- default-comparator [ns clojure-ns?]
+  (fn [x y]
+    (cond
+      (= x y)  0
+      (nil? x) 1
+      (nil? y) -1
+      (= x ns) -1
+      (= y ns)  1
+      (and (clojure-ns? x) (not (clojure-ns? y))) -1
+      (and (clojure-ns? y) (not (clojure-ns? x)))  1
+      :else (safe-comparator x y))))
+
+(defn apropos-sort
   "Return a list of vars, ordered with `ns` first,
   followed by `clojure.*` namespaces, and then all others sorted
   alphabetically."
   [ns vars]
-  (let [clojure-ns? #(.startsWith (str (ns-name %)) "clojure.")]
-    (sort-by
-     (comp :ns meta)
-     (fn [x y]
-       (cond
-         (nil? x) 1
-         (nil? y) -1
-         (= x ns) -1
-         (= y ns)  1
-         (and (clojure-ns? x) (not (clojure-ns? y))) -1
-         (and (clojure-ns? y) (not (clojure-ns? x)))  1
-         :else (compare (str x) (str y))))
-     vars)))
+  (assert (every? (some-fn class? var? symbol?) vars)
+          (pr-str vars))
+  (let [clojure-ns? #(.startsWith (str (ns-name %)) "clojure.")
+        key-fn (comp :ns meta)]
+    ;; https://clojure.org/guides/comparators
+    (try
+      (sort-by key-fn (default-comparator ns clojure-ns?) vars)
+      ;; Handle https://github.com/clojure-emacs/orchard/issues/128
+      (catch IllegalArgumentException e
+        (when (System/getProperty "orchard.internal.test-suite-running")
+          ;; Don't accept this exception in our CI - we should fix this if it's reproducible.
+          (throw e))
+        ;; Fallback to a simpler comparator:
+        (sort-by key-fn safe-comparator vars)))))
 
 (defn find-symbols
   "Takes a map and returns a list of maps containing name, doc and type.
-  `:var-query` See `vars`.
+  `:var-query` See `#'query/vars`.
   `:full-doc?` Causes the full doc to be returned instead of the abbreviated form.
   `:ns` If provided, the results will be sorted to show this namespace first."
   [{:keys [ns full-doc? var-query]}]

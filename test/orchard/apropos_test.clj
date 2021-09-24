@@ -3,12 +3,18 @@
    [clojure.repl :as repl]
    [clojure.string :as str]
    [clojure.test :refer [are deftest is testing]]
-   [orchard.apropos :refer [find-symbols]]
+   [orchard.apropos :as sut :refer [find-symbols]]
    [orchard.meta :refer [var-name var-doc]]))
 
 (def ^{:doc "Test1. Test2. Test3."} public-var [1 2 3])
 
 (defn some-random-function [])
+
+(deftest apropos-sort-test
+  (doseq [namespace (all-ns)]
+    (let [vars (->> namespace ns-interns vals)]
+      (is (sut/apropos-sort namespace vars)
+          "Doesn't throw errors"))))
 
 (deftest var-name-test
   (testing "Returns Var's namespace-qualified name"
@@ -64,7 +70,12 @@
     (is (empty? (find-symbols {:var-query {:search #"xxxxxxxx"}}))
         "Failing searches should return empty.")
     (is (= 1 (count (find-symbols {:var-query {:search #"some-random-function"}})))
-        "Search for specific fn should return it."))
+        "Search for specific fn should return it.")
+    (doseq [private? [true false]]
+      (is (< 1000
+             (count (find-symbols {:var-query {:search #".*"
+                                               :private? private?}})))
+          "Everything is searchable; it won't throw errors")))
 
   (testing "Types are correct"
     (is (= :special-form (:type (apropos-first "def"))))

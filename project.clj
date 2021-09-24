@@ -106,7 +106,8 @@
                                      "not-a.jar"
                                      "does-not-exist.jar"]
                     ;; Initialize the cache verbosely, as usual, so that possible issues can be more easily diagnosed:
-                    :jvm-opts ["-Dorchard.initialize-cache.silent=false"]}
+                    :jvm-opts ["-Dorchard.initialize-cache.silent=false"
+                               "-Dorchard.internal.test-suite-running=true"]}
 
              :no-dynapath {:jvm-opts ["-Dorchard.use-dynapath=false"]
                            :resource-paths [~(unzipped-jdk-source)]
