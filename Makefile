@@ -20,7 +20,7 @@ cljfmt:
 	lein with-profile +$(VERSION),+cljfmt cljfmt check
 
 kondo:
-	lein with-profile -dev,+clj-kondo run -m clj-kondo.main --lint src test
+	lein with-profile -dev,+clj-kondo run -m clj-kondo.main --lint src test src-jdk8 src-newer-jdks
 
 # When releasing, the BUMP variable controls which field in the
 # version string will be incremented in the *next* snapshot
