@@ -64,13 +64,19 @@ commands:
     description: |
       Run a set of steps with Maven dependencies and Clojure classpath cache
       files cached.
-      This command restores ~/.m2 and .cpcache if they were previously cached,
+      This command restores ~/.m2, .cpcache and such if they were previously cached,
       then runs the provided steps, and finally saves the cache.
       The cache-key is generated based on the contents of `deps.edn` present in
       the `working_directory`.
     parameters:
       steps:
         type: steps
+      jdk_version:
+        description: Will be used as part of the cache key. Especially important for unzipped-jdk-source
+        type: string
+      clojure_version:
+        description: Will be used as part of the cache key. Especially important for unzipped-jdk-source
+        type: string
       files:
         description: Files to consider when creating the cache key
         type: string
@@ -92,14 +98,14 @@ commands:
               find . -name $file -exec cat {} +
             done | shasum | awk '{print $1}' > /tmp/clojure_cache_seed
       - restore_cache:
-          key: clojure-<< parameters.cache_version >>-{{ checksum "/tmp/clojure_cache_seed" }}
+          key: clojure-<< parameters.cache_version >>-<< parameters.jdk_version >>-<< parameters.clojure_version >>-{{ checksum "/tmp/clojure_cache_seed" }}
       - steps: << parameters.steps >>
       - save_cache:
           paths:
             - ~/.m2
             - .cpcache
-            - repo
-          key: clojure-<< parameters.cache_version >>-{{ checksum "/tmp/clojure_cache_seed" }}
+            - unzipped-jdk-source
+          key: clojure-<< parameters.cache_version >>-<< parameters.jdk_version >>-<< parameters.clojure_version >>-{{ checksum "/tmp/clojure_cache_seed" }}
 
 # The jobs are relatively simple. One runs utility commands against
 # latest stable JDK + Clojure, the other against specified versions
@@ -122,7 +128,9 @@ jobs:
     steps:
       - checkout
       - with_cache:
-          cache_version: "1.10"
+          cache_version: "util-job-v1"
+          jdk_version: << parameters.jdk_version >>
+          clojure_version: "1.10"
           steps: << parameters.steps >>
 
 
@@ -146,7 +154,9 @@ jobs:
     steps:
       - checkout
       - with_cache:
-          cache_version: << parameters.clojure_version >>
+          jdk_version: << parameters.jdk_version >>
+          clojure_version: << parameters.clojure_version >>
+          cache_version: "test_code-v2"
           steps:
             - run:
                 name: Running tests

@@ -47,12 +47,12 @@
         (-> output .close)))))
 
 (defn unzipped-jdk-source []
-  (let [choice jdk-sources]
-    (when-not (-> "unzipped-jdk-source" io/file .exists)
+  (when-not (-> "unzipped-jdk-source" io/file .exists)
+    (let [choice jdk-sources]
       (-> "unzipped-jdk-source" io/file .mkdirs)
       ;; For some reason simply adding a .zip to the classpath doesn't work, so one has to uncompress the contents:
-      (uncompress "./unzipped-jdk-source/" choice))
-    "unzipped-jdk-source"))
+      (uncompress "./unzipped-jdk-source/" choice)))
+  "unzipped-jdk-source")
 
 (def jdk8? (->> "java.version" System/getProperty (re-find #"^1.8.")))
 
