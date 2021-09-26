@@ -3,8 +3,8 @@
   {:author "Jeff Valk"}
   (:require
    [orchard.meta :refer [var-name var-doc] :as m]
-   [orchard.query :as query]
-   [orchard.misc :as misc])
+   [orchard.misc :as misc]
+   [orchard.query :as query])
   (:import
    [clojure.lang MultiFn]))
 

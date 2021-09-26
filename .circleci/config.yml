@@ -161,6 +161,11 @@ jobs:
             - run:
                 name: Running tests
                 command: make test
+            # Eastwood is run for every item in the CI matrix, because its results are sensitive to the code in the runtime,
+            # so we make the most out of this linter by exercising all profiles, JDK versions, etc.
+            - run:
+                name: Running Eastwood
+                command: make eastwood
 
 ######################################################################
 #
@@ -172,10 +177,9 @@ jobs:
 # The ci-test-matrix does the following:
 #
 # - run tests against the target matrix
-#   - Java 8 and 11
+#   - Java 8, 11, 16 and 17
 #   - Clojure 1.8, 1.9, 1.10, master
 # - linter, eastwood and cljfmt
-# - runs code coverage report
 
 workflows:
   version: 2.1
@@ -186,17 +190,7 @@ workflows:
             parameters:
               jdk_version: [openjdk8, openjdk11, openjdk16, openjdk17]
               clojure_version: ["1.8", "1.9", "1.10", "master"]
-              test_profiles: ["+test", "+test,+no-dynapath"]
-      - util_job:
-          # This step exercises JDK8 specifically. Eastwood, given its runtime-based approach can detect problems specific to JDK8
-          # (specifically, it will analyze the `java.legacy-parser` ns):
-          name: Code Linting, JDK8 (Eastwood only)
-          jdk_version: openjdk8
-          steps:
-            - run:
-                name: Running Eastwood
-                command: |
-                  make eastwood
+              test_profiles: ["+test", "+test,+enrich-classpath"]
       - util_job:
           name: Code Linting, (latest LTS JDK)
           jdk_version: openjdk17
@@ -209,7 +203,3 @@ workflows:
                 name: Running clj-kondo
                 command: |
                   make kondo
-            - run:
-                name: Running Eastwood
-                command: |
-                  make eastwood

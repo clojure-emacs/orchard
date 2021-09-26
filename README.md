@@ -51,8 +51,6 @@ Orchard is meant to run alongside your application and we can't have a
 dev tools library interfere with your app right? Dependency collisions are nasty problems which are best solved
 by making sure there can't be any shared libraries to cause the conflict.
 
-Currently Orchard has one runtime dependency (`dynapath`), but we hope to eliminate it at some point.
-
 ### API Optimized for Editors
 
 Code editors can't know what symbols resolve to without consulting a REPL that's why they would typically
@@ -86,18 +84,19 @@ Just add `orchard` as a dependency and start hacking.
 Consult the [API documentation](https://cljdoc.org/d/cider/orchard/CURRENT) to get a better idea about the
 functionality that's provided.
 
+#### Using `enrich-classpath` for best results
+
+There are features that Orchard intends to provide (especially, those related to Java interaction) which need to assume a pre-existing initial classpath that already has various desirable items, such as the JDK sources, third-party sources, special jars such as `tools` (for JDK8), a given project's own Java sources... all that is a domain in itself, which is why our [enrich-classpath](https://github.com/clojure-emacs/enrich-classpath) project does it.
+
+For getting the most out of Orchard, it is therefore recommended/necessary to use `enrich-classpath`. Please refer to its installation/usage instructions.
+
 ## Configuration options
 
 So far, Orchard follows these options, which can be specified as Java system properties
 (which means that end users can choose to set them globally without fiddling with tooling internals):
 
-* `"-Dorchard.use-dynapath=false"` (default: true)
-  * if `false`, all features that currently depend on dynapath (and therefore alter the classpath) will be disabled.
-  * This is a way to avoid a number of known issues: [#103](https://github.com/clojure-emacs/orchard/issues/103), [#105](https://github.com/clojure-emacs/orchard/issues/105), [#112](https://github.com/clojure-emacs/orchard/pull/112).
-  * Note that if this option is `false`, Orchard clients will have to figure out themselves a way to e.g. fetch Java sources.
-    * It is foreseen that soon enough this will be reliably offered as a Lein plugin.
 * `"-Dorchard.initialize-cache.silent=true"` (default: `true`)
-  * if `false`, the _class info cache_ initialization may print warnings (possibly spurious ones).xx
+  * if `false`, the _class info cache_ initialization may print warnings (possibly spurious ones).
 
 ## History
 

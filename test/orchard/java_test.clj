@@ -2,50 +2,26 @@
   (:require
    [clojure.java.io :as io]
    [clojure.java.javadoc :as javadoc]
-   [clojure.test :refer [deftest is are testing]]
-   [dynapath.util :as dp]
-   [orchard.java :refer [cache class-info class-info* javadoc-url jdk-find jdk-sources jdk-tools member-info resolve-class resolve-javadoc-path resolve-member resolve-symbol resolve-type source-info]]
-   [orchard.misc :as misc]))
+   [clojure.test :refer [are deftest is testing]]
+   [orchard.java :refer [cache class-info class-info* javadoc-url jdk-tools member-info resolve-class resolve-javadoc-path resolve-member resolve-symbol resolve-type source-info]]
+   [orchard.misc :as misc]
+   [orchard.test.util :as util]))
 
 (def jdk-parser? (or (>= misc/java-api-version 9) jdk-tools))
-
-(assert jdk-parser? "No JDK parser available!")
-(assert (if orchard.java/add-java-sources-via-dynapath?
-          jdk-sources
-          true)
-        "No JDK sources available!")
 
 (javadoc/add-remote-javadoc "com.amazonaws." "http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/")
 (javadoc/add-remote-javadoc "org.apache.kafka." "https://kafka.apache.org/090/javadoc/")
 
-(deftest resources-test
-  ;; If the JDK resources we wish to load dynamically are present on the file
-  ;; system, test that we've resolved them and added them to the classpath.
-  (testing "Resource loading correctness"
-    (let [jdk-sources-path (jdk-find "src.zip")
-          jdk-tools-path (jdk-find "tools.jar")
-          classpath-urls (-> (.getContextClassLoader (Thread/currentThread))
-                             (dp/all-classpath-urls)
-                             (set))]
-      (testing "of defined vars"
-        (when orchard.java/add-java-sources-via-dynapath?
-          (is (= jdk-sources jdk-sources-path)))
-        (is (= jdk-tools jdk-tools-path)))
-      (testing "of dynamically added classpath entries"
-        (is (= jdk-sources (classpath-urls jdk-sources)))
-        (is (= jdk-tools (classpath-urls jdk-tools)))))))
-
-(deftest source-info-test
-  (let [resolve-src (comp (fnil io/resource "-none-") :file source-info)]
-    (when jdk-parser?
+(when util/has-enriched-classpath?
+  (deftest source-info-test
+    (let [resolve-src (comp (fnil io/resource "-none-") :file source-info)]
       (testing "Source file resolution"
         (testing "for Clojure classes"
           (is (resolve-src 'clojure.lang.Obj))
           (is (resolve-src 'clojure.lang.Fn)))
-        (when jdk-sources
-          (testing "for JDK classes"
-            (is (resolve-src 'java.lang.String))
-            (is (resolve-src 'java.util.regex.Matcher))))
+        (testing "for JDK classes"
+          (is (resolve-src 'java.lang.String))
+          (is (resolve-src 'java.util.regex.Matcher)))
         (testing "for non-existent classes"
           (is (not (resolve-src 'not.actually.AClass)))))
 
@@ -57,107 +33,104 @@
           (is (-> (source-info 'clojure.lang.Numbers$Ops) :line)) ; nested default interface
           (is (-> (source-info 'clojure.lang.Range$BoundsCheck) :line)) ; nested private interface
           (is (-> (source-info 'clojure.lang.Numbers$Category) :line))) ; nested enum
-        (when jdk-sources
-          (testing "for JDK classes"
-            (is (-> (source-info 'java.util.Collection) :line)) ; interface
-            (is (-> (source-info 'java.util.AbstractCollection) :line)) ; abstract class
-            (is (-> (source-info 'java.lang.Thread$UncaughtExceptionHandler) :line)) ; nested interface
-            (is (-> (source-info 'java.net.Authenticator$RequestorType) :line)) ; nested enum
-            (is (-> (source-info 'java.sql.ClientInfoStatus) :line))))) ; top-level enum
+        (testing "for JDK classes"
+          (is (-> (source-info 'java.util.Collection) :line)) ; interface
+          (is (-> (source-info 'java.util.AbstractCollection) :line)) ; abstract class
+          (is (-> (source-info 'java.lang.Thread$UncaughtExceptionHandler) :line)) ; nested interface
+          (is (-> (source-info 'java.net.Authenticator$RequestorType) :line)) ; nested enum
+          (is (-> (source-info 'java.sql.ClientInfoStatus) :line)))) ; top-level enum
 
       (testing "Source parsing"
         (testing "for Clojure classes"
           (is (-> (source-info 'clojure.lang.ExceptionInfo) :doc))
-          (is (-> (get-in (source-info 'clojure.lang.BigInt)
-                          [:members 'multiply])
-                  first val :line)))
-        (when jdk-sources
-          (testing "for JDK classes"
-            (is (-> (source-info 'java.util.AbstractCollection) :doc))
-            (is (-> (get-in (source-info 'java.util.AbstractCollection)
-                            [:members 'size])
-                    first val :line))))))))
+          (is (some-> (get-in (source-info 'clojure.lang.BigInt)
+                              [:members 'multiply])
+                      first val :line)))
+        (testing "for JDK classes"
+          (is (-> (source-info 'java.util.AbstractCollection) :doc))
+          (is (some-> (get-in (source-info 'java.util.AbstractCollection)
+                              [:members 'size])
+                      first val :line)))))))
 
 (deftest map-structure-test
-  (when jdk-parser?
-    (testing "Parsed map structure = reflected map structure"
-      (let [cols #{:file :line :column :doc :argnames :argtypes :path :resource-url}
-            keys= #(= (set (keys (apply dissoc %1 cols)))
-                      (set (keys %2)))
-            c1 (class-info* 'clojure.lang.Compiler)
-            c2 (with-redefs [source-info (constantly nil)]
-                 (class-info* 'clojure.lang.Compiler))]
-        ;; Class info
-        (is (keys= c1 c2)
-            (str "Difference: "
-                 (pr-str [(remove (set (keys c1)) (keys c2))
-                          (remove (set (keys c2)) (keys c1))])))
-        ;; Members
-        (is (keys (:members c1)))
-        (is (= (keys (:members c1))
-               (keys (:members c2))))
-        ;; Member info
-        (is (->> (map keys=
-                      (vals (:members c1))
-                      (vals (:members c2)))
-                 (every? true?)))))))
+  (testing "Parsed map structure = reflected map structure"
+    (let [cols #{:file :line :column :doc :argnames :argtypes :path :resource-url}
+          keys= #(= (set (keys (apply dissoc %1 cols)))
+                    (set (keys %2)))
+          c1 (class-info* 'clojure.lang.Compiler)
+          c2 (with-redefs [source-info (constantly nil)]
+               (class-info* 'clojure.lang.Compiler))]
+      ;; Class info
+      (is (keys= c1 c2)
+          (str "Difference: "
+               (pr-str [(remove (set (keys c1)) (keys c2))
+                        (remove (set (keys c2)) (keys c1))])))
+      ;; Members
+      (is (keys (:members c1)))
+      (is (= (keys (:members c1))
+             (keys (:members c2))))
+      ;; Member info
+      (is (->> (map keys=
+                    (vals (:members c1))
+                    (vals (:members c2)))
+               (every? true?))))))
 
-(deftest class-info-test
-  (let [c1 (class-info 'clojure.lang.Agent)
-        c2 (class-info 'clojure.lang.Range$BoundsCheck)
-        c3 (class-info 'not.actually.AClass)]
-    (testing "Class"
-      (when jdk-parser?
+(when util/has-enriched-classpath?
+  (deftest class-info-test
+    (let [c1 (class-info 'clojure.lang.Agent)
+          c2 (class-info 'clojure.lang.Range$BoundsCheck)
+          c3 (class-info 'not.actually.AClass)]
+      (testing "Class"
         (testing "source file"
           (is (string? (:file c1)))
           (is (io/resource (:file c1))))
         (testing "source file for nested class"
           (is (string? (:file c2)))
-          (is (io/resource (:file c2)))))
-      (testing "member info"
-        (is (map? (:members c1)))
-        (is (every? map? (vals (:members c1))))
-        (is (apply (every-pred :name :modifiers)
-                   (mapcat vals (vals (:members c1))))))
-      (testing "doesn't throw on classes without dots in classname"
-        (let [reified (binding [*ns* (create-ns 'foo)]
-                        (clojure.core/eval
-                         '(clojure.core/reify Object)))
-              sym (symbol (.getName (class reified)))]
-          (is (class-info sym))))
-      (testing "that doesn't exist"
-        (is (nil? c3))))))
+          (is (io/resource (:file c2))))
+        (testing "member info"
+          (is (map? (:members c1)))
+          (is (every? map? (vals (:members c1))))
+          (is (apply (every-pred :name :modifiers)
+                     (mapcat vals (vals (:members c1))))))
+        (testing "doesn't throw on classes without dots in classname"
+          (let [reified (binding [*ns* (create-ns 'foo)]
+                          (clojure.core/eval
+                           '(clojure.core/reify Object)))
+                sym (symbol (.getName (class reified)))]
+            (is (class-info sym))))
+        (testing "that doesn't exist"
+          (is (nil? c3)))))))
 
-(deftest member-info-test
-  (let [m1 (member-info 'clojure.lang.PersistentHashMap 'assoc)
-        m2 (member-info 'java.util.AbstractCollection 'non-existent-member)
-        m3 (member-info 'not.actually.AClass 'nada)
-        m4 (member-info 'java.awt.Point 'x)
-        m5 (member-info 'java.lang.Class 'forName)
-        m6 (member-info 'java.util.AbstractMap 'finalize)
-        m7 (member-info 'java.util.HashMap 'finalize)]
-    (testing "Member"
-      (when jdk-parser?
+(when util/has-enriched-classpath?
+  (deftest member-info-test
+    (let [m1 (member-info 'clojure.lang.PersistentHashMap 'assoc)
+          m2 (member-info 'java.util.AbstractCollection 'non-existent-member)
+          m3 (member-info 'not.actually.AClass 'nada)
+          m4 (member-info 'java.awt.Point 'x)
+          m5 (member-info 'java.lang.Class 'forName)
+          m6 (member-info 'java.util.AbstractMap 'finalize)
+          m7 (member-info 'java.util.HashMap 'finalize)]
+      (testing "Member"
         (testing "source file"
           (is (string? (:file m1)))
           (is (io/resource (:file m1))))
         (testing "line number"
-          (is (number? (:line m1)))))
-      (testing "arglists"
-        (is (seq? (:arglists m1)))
-        (is (every? vector? (:arglists m1))))
-      (testing "that doesn't exist"
-        (is (nil? m2)))
-      (testing "in a class that doesn't exist"
-        (is (nil? m3)))
-      (testing "that is a field"
-        (is m4))
-      (testing "that is static"
-        (is m5))
-      (testing "implemented on immediate superclass"
-        (is (not= 'java.lang.Object (:class m6))))
-      (testing "implemented on ancestor superclass"
-        (is (not= 'java.lang.Object (:class m7)))))))
+          (is (number? (:line m1))))
+        (testing "arglists"
+          (is (seq? (:arglists m1)))
+          (is (every? vector? (:arglists m1))))
+        (testing "that doesn't exist"
+          (is (nil? m2)))
+        (testing "in a class that doesn't exist"
+          (is (nil? m3)))
+        (testing "that is a field"
+          (is m4))
+        (testing "that is static"
+          (is m5))
+        (testing "implemented on immediate superclass"
+          (is (not= 'java.lang.Object (:class m6))))
+        (testing "implemented on ancestor superclass"
+          (is (not= 'java.lang.Object (:class m7))))))))
 
 (deftest arglists-test
   (let [+this (comp #{'this} first)]

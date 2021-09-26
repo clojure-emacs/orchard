@@ -2,6 +2,15 @@
 
 ## master (unreleased)
 
+### Changes
+
+* Remove `dynapath` dependency
+  * With it, defns related with mutable classloader are now deprecated and are no-ops
+  * `-Dorchard.use-dynapath=false` has no effect now either.
+* Accomodate [`enrich-classpath`](https://github.com/clojure-emacs/enrich-classpath)
+  * Now, if you intend to use Orchard for its Java functionality, it is expected that you use enrich-classpath also.
+  * If not present, Java-related features won't work (but at least won't throw a compile-time error).
+
 ### Bugs Fixed
 
 * [#135](https://github.com/clojure-emacs/orchard/issues/135): Fix problematic double var lookup in `orchard.xref/fn-refs`.

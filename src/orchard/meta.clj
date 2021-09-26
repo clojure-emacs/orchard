@@ -6,8 +6,8 @@
    [clojure.string :as str]
    [clojure.walk :as walk]
    [orchard.clojuredocs :as cljdocs]
-   [orchard.namespace :as ns]
    [orchard.misc :as misc]
+   [orchard.namespace :as ns]
    [orchard.spec :as spec])
   (:import
    [clojure.lang LineNumberingPushbackReader]))
