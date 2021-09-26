@@ -186,7 +186,7 @@ workflows:
             parameters:
               jdk_version: [openjdk8, openjdk11, openjdk16, openjdk17]
               clojure_version: ["1.8", "1.9", "1.10", "master"]
-              test_profiles: ["+test", "+test,+no-dynapath"]
+              test_profiles: ["+test"]
       - util_job:
           # This step exercises JDK8 specifically. Eastwood, given its runtime-based approach can detect problems specific to JDK8
           # (specifically, it will analyze the `java.legacy-parser` ns):

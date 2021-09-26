@@ -32,11 +32,8 @@
    (classloaders (context-classloader))))
 
 (defn modifiable-classloader
-  "Returns the highest classloader in the hierarchy that satisfies
-  `dynapath.util/addable-classpath?`, or nil if none do."
   ([^ClassLoader loader]
-   (last (filter dp/addable-classpath?
-                 (classloaders loader))))
+   loader)
   ([]
    (modifiable-classloader (context-classloader))))
 
@@ -70,12 +67,7 @@
   "Adds the URL to the classpath and returns it if successful, or nil otherwise,
   ensuring that a modifiable classloader is available."
   [^URL url]
-  (let [loader (or (modifiable-classloader)
-                   (modifiable-classloader
-                    (set-classloader! (clojure.lang.DynamicClassLoader.
-                                       (clojure.lang.RT/baseLoader)))))]
-    (when (dp/add-classpath-url loader url)
-      url)))
+  url)
 
 ;;; Classpath resources
 

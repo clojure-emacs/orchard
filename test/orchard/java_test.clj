@@ -3,37 +3,15 @@
    [clojure.java.io :as io]
    [clojure.java.javadoc :as javadoc]
    [clojure.test :refer [deftest is are testing]]
-   [dynapath.util :as dp]
-   [orchard.java :refer [cache class-info class-info* javadoc-url jdk-find jdk-sources jdk-tools member-info resolve-class resolve-javadoc-path resolve-member resolve-symbol resolve-type source-info]]
+   [orchard.java :refer [cache class-info class-info* javadoc-url jdk-tools member-info resolve-class resolve-javadoc-path resolve-member resolve-symbol resolve-type source-info]]
    [orchard.misc :as misc]))
 
 (def jdk-parser? (or (>= misc/java-api-version 9) jdk-tools))
 
 (assert jdk-parser? "No JDK parser available!")
-(assert (if orchard.java/add-java-sources-via-dynapath?
-          jdk-sources
-          true)
-        "No JDK sources available!")
 
 (javadoc/add-remote-javadoc "com.amazonaws." "http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/")
 (javadoc/add-remote-javadoc "org.apache.kafka." "https://kafka.apache.org/090/javadoc/")
-
-(deftest resources-test
-  ;; If the JDK resources we wish to load dynamically are present on the file
-  ;; system, test that we've resolved them and added them to the classpath.
-  (testing "Resource loading correctness"
-    (let [jdk-sources-path (jdk-find "src.zip")
-          jdk-tools-path (jdk-find "tools.jar")
-          classpath-urls (-> (.getContextClassLoader (Thread/currentThread))
-                             (dp/all-classpath-urls)
-                             (set))]
-      (testing "of defined vars"
-        (when orchard.java/add-java-sources-via-dynapath?
-          (is (= jdk-sources jdk-sources-path)))
-        (is (= jdk-tools jdk-tools-path)))
-      (testing "of dynamically added classpath entries"
-        (is (= jdk-sources (classpath-urls jdk-sources)))
-        (is (= jdk-tools (classpath-urls jdk-tools)))))))
 
 (deftest source-info-test
   (let [resolve-src (comp (fnil io/resource "-none-") :file source-info)]
@@ -42,10 +20,9 @@
         (testing "for Clojure classes"
           (is (resolve-src 'clojure.lang.Obj))
           (is (resolve-src 'clojure.lang.Fn)))
-        (when jdk-sources
-          (testing "for JDK classes"
-            (is (resolve-src 'java.lang.String))
-            (is (resolve-src 'java.util.regex.Matcher))))
+        (testing "for JDK classes"
+          (is (resolve-src 'java.lang.String))
+          (is (resolve-src 'java.util.regex.Matcher)))
         (testing "for non-existent classes"
           (is (not (resolve-src 'not.actually.AClass)))))
 
@@ -57,26 +34,24 @@
           (is (-> (source-info 'clojure.lang.Numbers$Ops) :line)) ; nested default interface
           (is (-> (source-info 'clojure.lang.Range$BoundsCheck) :line)) ; nested private interface
           (is (-> (source-info 'clojure.lang.Numbers$Category) :line))) ; nested enum
-        (when jdk-sources
-          (testing "for JDK classes"
-            (is (-> (source-info 'java.util.Collection) :line)) ; interface
-            (is (-> (source-info 'java.util.AbstractCollection) :line)) ; abstract class
-            (is (-> (source-info 'java.lang.Thread$UncaughtExceptionHandler) :line)) ; nested interface
-            (is (-> (source-info 'java.net.Authenticator$RequestorType) :line)) ; nested enum
-            (is (-> (source-info 'java.sql.ClientInfoStatus) :line))))) ; top-level enum
+        (testing "for JDK classes"
+          (is (-> (source-info 'java.util.Collection) :line)) ; interface
+          (is (-> (source-info 'java.util.AbstractCollection) :line)) ; abstract class
+          (is (-> (source-info 'java.lang.Thread$UncaughtExceptionHandler) :line)) ; nested interface
+          (is (-> (source-info 'java.net.Authenticator$RequestorType) :line)) ; nested enum
+          (is (-> (source-info 'java.sql.ClientInfoStatus) :line)))) ; top-level enum
 
       (testing "Source parsing"
         (testing "for Clojure classes"
           (is (-> (source-info 'clojure.lang.ExceptionInfo) :doc))
-          (is (-> (get-in (source-info 'clojure.lang.BigInt)
-                          [:members 'multiply])
-                  first val :line)))
-        (when jdk-sources
-          (testing "for JDK classes"
-            (is (-> (source-info 'java.util.AbstractCollection) :doc))
-            (is (-> (get-in (source-info 'java.util.AbstractCollection)
-                            [:members 'size])
-                    first val :line))))))))
+          (is (some-> (get-in (source-info 'clojure.lang.BigInt)
+                              [:members 'multiply])
+                      first val :line)))
+        (testing "for JDK classes"
+          (is (-> (source-info 'java.util.AbstractCollection) :doc))
+          (is (some-> (get-in (source-info 'java.util.AbstractCollection)
+                              [:members 'size])
+                      first val :line)))))))
 
 (deftest map-structure-test
   (when jdk-parser?

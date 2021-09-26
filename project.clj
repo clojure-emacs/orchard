@@ -83,8 +83,7 @@
                                     :password :env/clojars_password
                                     :sign-releases false}]]
 
-  :jvm-opts ["-Dorchard.use-dynapath=true"
-             "-Dclojure.main.report=stderr"]
+  :jvm-opts ["-Dclojure.main.report=stderr"]
 
   :source-paths ["src" "src-jdk8" "src-newer-jdks"]
   :test-paths ~(cond-> ["test"]
@@ -107,18 +106,20 @@
                                      [org.clojure/clojure "1.11.0-master-SNAPSHOT" :classifier "sources"]]}
 
              :test {:dependencies [[org.clojure/java.classpath "1.0.0"]]
-                    :resource-paths ["test-resources"
-                                     "not-a.jar"
-                                     "does-not-exist.jar"]
+                    :resource-paths ~(cond-> ["test-resources"
+                                              "not-a.jar"
+                                              "does-not-exist.jar"]
+                                       jdk8? (conj (unzipped-jdk-source))
+                                       ;; must go last
+                                       ;; must be unconditional - Orchard must work when src.zip is present;
+                                       ;; for w/e reason:
+                                       true (conj jdk-sources))
+                    :plugins ~(if jdk8?
+                                '[[lein-jdk-tools "0.1.1"]]
+                                [])
                     ;; Initialize the cache verbosely, as usual, so that possible issues can be more easily diagnosed:
                     :jvm-opts ["-Dorchard.initialize-cache.silent=false"
                                "-Dorchard.internal.test-suite-running=true"]}
-
-             :no-dynapath {:jvm-opts ["-Dorchard.use-dynapath=false"]
-                           :resource-paths [~(unzipped-jdk-source)]
-                           :plugins ~(if jdk8?
-                                       '[[lein-jdk-tools "0.1.1"]]
-                                       [])}
 
              ;; Development tools
              :dev {:dependencies [[org.clojure/tools.namespace "1.1.0"]]
