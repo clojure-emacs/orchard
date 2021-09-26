@@ -1,4 +1,4 @@
-.PHONY: test test-watch docs eastwood cljfmt release deploy clean
+.PHONY: test test-watch docs eastwood cljfmt release deploy clean .EXPORT_ALL_VARIABLES
 
 VERSION ?= 1.10
 
@@ -7,10 +7,11 @@ TEST_PROFILES ?= +test
 resources/clojuredocs/export.edn:
 curl -o $@ https://github.com/clojure-emacs/clojuredocs-export-edn/raw/master/exports/export.compact.edn
 
-test:
+# .EXPORT_ALL_VARIABLES passes TEST_PROFILES to Lein so that it can inspect the active profiles, which is needed for a complete Eastwood setup:
+test: clean .EXPORT_ALL_VARIABLES
 	lein with-profile -user,-dev,+$(VERSION),$(TEST_PROFILES) test
 
-test-watch: test-resources/clojuredocs/export.edn
+test-watch: test-resources/clojuredocs/export.edn clean
 	lein with-profile +$(VERSION),$(TEST_PROFILES) test-refresh
 
 eastwood:

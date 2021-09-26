@@ -6,14 +6,12 @@
    [clojure.java.javadoc :as javadoc]
    [clojure.reflect :as r]
    [clojure.string :as str]
-   [orchard.java.classpath :as cp]
-   [orchard.misc :as misc]
    [orchard.java.resource :as resource]
+   [orchard.misc :as misc]
    [orchard.util.io :as util.io])
   (:import
    (clojure.lang IPersistentMap)
    (clojure.reflect Constructor Field JavaReflector Method)
-   (java.io File)
    (java.net JarURLConnection)))
 
 ;;; ## Java Class/Member Info
@@ -44,58 +42,27 @@
 ;; functions that modify the classpath. You can find a more extensive discussion
 ;; on that topic here https://github.com/clojure-emacs/orchard/issues/103.
 
-(defn jdk-find
+(defn ^:deprecated jdk-find
   "Search common JDK path configurations for a specified file name and return a
   URL if found. This accommodates `java.home` being set to either the JDK root
   (JDK9+) or a JRE directory within this (JDK 8), and searches both the home and
   `lib` directories."
-  [f]
-  (let [home (io/file (System/getProperty "java.home"))
-        parent (.getParentFile home)
-        paths [(io/file home f)
-               (io/file home "lib" f)
-               (io/file parent f)
-               (io/file parent "lib" f)]]
-    (->> paths (filter #(.canRead ^File %)) first io/as-url)))
+  [_]
+  nil)
 
-(def add-java-sources-via-dynapath?
-  "Should orchard use the dynapath library to use \"fetch Java sources\" functionality?
-
-  Note that using dynapath currently implies some bugs, so you might want to disable this option."
-  (contains? #{"true" "1"} (System/getProperty "orchard.use-dynapath" "true")))
-
-(def jdk-sources
-  "The JDK sources path. If found on the existing classpath, this is the
-  corresponding classpath entry. Otherwise, the JDK directory is searched for
-  the file `src.zip`."
-  (when add-java-sources-via-dynapath?
-    (let [base-url (fn [path]
-                     (some-> (io/resource path)
-                             ^JarURLConnection (. openConnection)
-                             (. getJarFileURL)))]
-      (or (base-url "java.base/java/lang/Object.java") ; JDK9+
-          (base-url "java/lang/Object.java")           ; JDK8-
-          (jdk-find "src.zip")))))
+(def ^:deprecated jdk-sources nil)
 
 (def jdk-tools
   "The `tools.jar` path, for JDK8 and earlier. If found on the existing
   classpath, this is the corresponding classpath entry. Otherwise, if available,
   this is added to the classpath."
   (when (<= misc/java-api-version 8)
-    (or (some-> (io/resource "com/sun/javadoc/Doc.class")
-                ^JarURLConnection (. openConnection)
-                (. getJarFileURL))
-        (and add-java-sources-via-dynapath?
-             (some-> (jdk-find "tools.jar") cp/add-classpath!)))))
+    (some-> (io/resource "com/sun/javadoc/Doc.class")
+            ^JarURLConnection (. openConnection)
+            (. getJarFileURL))))
 
-(defn ensure-jdk-sources
-  "If `jdk-sources` is present, check that this entry is on the context
-  classpath and if not, add it."
-  []
-  (when add-java-sources-via-dynapath?
-    (let [classpath (set (cp/classpath))]
-      (when (and jdk-sources (not (classpath jdk-sources)))
-        (cp/add-classpath! jdk-sources)))))
+(defn ^:deprecated ensure-jdk-sources
+  [])
 
 ;;; ## Javadoc URLs
 ;;
@@ -141,16 +108,16 @@
   (if (>= misc/java-api-version 9)
     (do (require '[orchard.java.parser :as src])
         (resolve 'src/source-info))
-    (if jdk-tools
-      (do (require '[orchard.java.legacy-parser :as src])
-          (resolve 'src/source-info))
-      (constantly nil))))
+    (if-not jdk-tools
+      (constantly nil)
+      (do
+        (require '[orchard.java.legacy-parser :as src])
+        (resolve 'src/source-info)))))
 
 (defn source-info
   "Ensure that JDK sources are visible on the classpath if present, and return
   class info from its parsed source if available."
   [class]
-  (ensure-jdk-sources)
   (source-info* class))
 
 (def module-name

@@ -7,13 +7,12 @@
   (:require
    [clojure.java.io :as io]
    [clojure.string :as str]
-   [dynapath.util :as dp]
    [orchard.misc :as misc])
   (:import
    (java.io File)
-   (java.net URL)
+   (java.net URL URLClassLoader)
    (java.nio.file Paths)
-   (java.util.jar JarFile JarEntry)))
+   (java.util.jar JarEntry JarFile)))
 
 ;;; Classloaders
 
@@ -31,14 +30,9 @@
   ([]
    (classloaders (context-classloader))))
 
-(defn modifiable-classloader
-  "Returns the highest classloader in the hierarchy that satisfies
-  `dynapath.util/addable-classpath?`, or nil if none do."
-  ([^ClassLoader loader]
-   (last (filter dp/addable-classpath?
-                 (classloaders loader))))
-  ([]
-   (modifiable-classloader (context-classloader))))
+(defn ^:deprecated modifiable-classloader
+  ([_])
+  ([]))
 
 (defn set-classloader!
   "Sets the current classloader for the current thread."
@@ -56,26 +50,26 @@
        (.split (System/getProperty "java.class.path")
                (System/getProperty "path.separator"))))
 
+(defn classpath-urls [classloader]
+  (if-not (instance? URLClassLoader classloader)
+    nil
+    (-> ^URLClassLoader classloader .getURLs seq)))
+
 (defn classpath
   "Returns the URLs on the classpath."
   ([^ClassLoader loader]
    (->> (classloaders loader)
-        (mapcat dp/classpath-urls)
+        (mapcat classpath-urls)
         (concat (system-classpath))
         (distinct)))
   ([]
    (classpath (context-classloader))))
 
-(defn add-classpath!
+(defn ^:deprecated add-classpath!
   "Adds the URL to the classpath and returns it if successful, or nil otherwise,
   ensuring that a modifiable classloader is available."
-  [^URL url]
-  (let [loader (or (modifiable-classloader)
-                   (modifiable-classloader
-                    (set-classloader! (clojure.lang.DynamicClassLoader.
-                                       (clojure.lang.RT/baseLoader)))))]
-    (when (dp/add-classpath-url loader url)
-      url)))
+  [_]
+  nil)
 
 ;;; Classpath resources
 

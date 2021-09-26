@@ -7,7 +7,7 @@
    [clojure.set :as set]
    [clojure.string :as string]
    [clojure.test :as test]
-   [clojure.tools.namespace.repl :refer [refresh refresh-all clear refresh-dirs set-refresh-dirs]]))
+   [clojure.tools.namespace.repl :refer [clear refresh refresh-all refresh-dirs set-refresh-dirs]]))
 
 (def jdk8?
   (->> "java.version" System/getProperty (re-find #"^1.8.")))

@@ -7,8 +7,7 @@
    [clojure.string :as str])
   (:import
    (java.io StringReader StringWriter)
-   (javax.lang.model.element Element ElementKind ExecutableElement
-                             TypeElement VariableElement)
+   (javax.lang.model.element Element ElementKind ExecutableElement TypeElement VariableElement)
    (javax.swing.text.html HTML$Tag HTMLEditorKit$ParserCallback)
    (javax.swing.text.html.parser ParserDelegator)
    (javax.tools ToolProvider)
@@ -69,9 +68,15 @@
           sources  (-> (.getStandardFileManager compiler nil nil nil)
                        (.getJavaFileObjectsFromFiles [tmpfile]))
           doclet   (class (reify Doclet
-                            (init [this _ _] (reset! result nil))
-                            (run [this root] (reset! result root) true)
-                            (getSupportedOptions [this] #{})))
+                            (init [_this _ _]
+                              (reset! result nil))
+
+                            (run [_this root]
+                              (reset! result root)
+                              true)
+
+                            (getSupportedOptions [_this]
+                              #{})))
           out      (StringWriter.) ; discard compiler messages
           opts     (apply conj ["--show-members" "private"
                                 "--show-types" "private"
