@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+## 0.7.2 (2021-09-30)
+
 ### Changes
 
 * `orchard.namespace` functionality is now parallelized when possible.
