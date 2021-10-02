@@ -355,7 +355,10 @@
     (let [params '[{:sym orchard.test-ns/my-add},
 
                    {:ns orchard.test-ns
-                    :sym my-add}]
+                    :sym my-add},
+
+                   {:ns orchard.test-ns
+                    :sym orchard.test-ns/my-add}]
           expected '{:name my-add
                      :ns orchard.test-macros
                      :arglists ([a b])
@@ -363,13 +366,13 @@
                      :macro true}]
 
       (testing "- :cljs"
-        (is (= (take 2 (repeat expected))
+        (is (= (take 3 (repeat expected))
                (->> params
                     (map #(info/info* (merge *cljs-params* %)))
                     (map #(select-keys % [:ns :name :arglists :macro :file]))))))
 
       (testing "- :clj"
-        (is (= [{}, expected]
+        (is (= [{}, expected, {}]
                (->> params
                     (map #(info/info* %))
                     (map #(select-keys % [:ns :name :arglists :macro :file])))))))))
@@ -479,6 +482,7 @@
     (are [input expected] (= expected
                              (select-keys (info/info* input)
                                           [:added :ns :name :file]))
+      {:ns current-ns :sym 'does-not-exist}             {}
       {:ns current-ns :sym 'some-var}                   '{:ns   orchard.info-test,
                                                           :name some-var,
                                                           :file "orchard/info_test.clj"}
@@ -497,6 +501,7 @@
                                                           :file  "clojure/string.clj"}
       {:ns current-ns :sym 'non.existing.ns/upper-case} {}
 
+      {:ns 'gibberish :sym 'does-not-exist}             {}
       {:ns 'gibberish :sym 'some-var}                   {}
       {:ns 'gibberish :sym 'replace-first}              {}
       {:ns 'gibberish :sym 'merge}                      '{:added "1.0"
