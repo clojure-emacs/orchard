@@ -470,6 +470,10 @@
 
 (def some-var nil)
 
+(def workaround
+  "Prevents a clj-kondo warning."
+  replace-first)
+
 (deftest info-undefined-namespace-test
   (let [current-ns (-> ::_ namespace symbol)]
     (are [input expected] (= expected
