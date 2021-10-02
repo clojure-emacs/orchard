@@ -63,7 +63,7 @@
 
 (defn clj-meta
   {:added "0.5"}
-  [{:keys [dialect ns sym computed-ns unqualified-sym] :as opts}]
+  [{:keys [dialect ns sym computed-ns unqualified-sym]}]
   {:pre [(= dialect :clj)]}
   (let [ns (or ns computed-ns)
         ns (or (when (some-> ns find-ns)
