@@ -1,12 +1,12 @@
 (ns orchard.info-test
   (:require
-   [clojure.test :as test :refer [deftest is testing use-fixtures]]
-   [clojure.string :as str]
+   [clojure.java.io :refer [resource]]
+   [clojure.string :as str :refer [replace-first]]
+   [clojure.test :refer [are deftest is testing use-fixtures]]
+   [orchard.cljs.test-env :as test-env]
    [orchard.info :as info]
    [orchard.java :as java]
    [orchard.misc :as misc]
-   [clojure.java.io :refer [resource]]
-   [orchard.cljs.test-env :as test-env]
    [orchard.test-ns]))
 
 @java/cache-initializer ;; make tests more deterministic
@@ -352,7 +352,8 @@
 
 (deftest info-macros-referred-var-test
   (testing "Macro - referred"
-    (let [params '[{:sym orchard.test-ns/my-add}
+    (let [params '[{:sym orchard.test-ns/my-add},
+
                    {:ns orchard.test-ns
                     :sym my-add}]
           expected '{:name my-add
@@ -368,7 +369,7 @@
                     (map #(select-keys % [:ns :name :arglists :macro :file]))))))
 
       (testing "- :clj"
-        (is (= (take 2 (repeat expected))
+        (is (= [{}, expected]
                (->> params
                     (map #(info/info* %))
                     (map #(select-keys % [:ns :name :arglists :macro :file])))))))))
@@ -467,21 +468,43 @@
                :returns int}))
       (is (re-find #"Returns the greater of two" (:doc i))))))
 
+(def some-var nil)
+
 (deftest info-undefined-namespace-test
-  (testing "Fully qualified sym can still be resolved"
-    (is (= '{:added "1.2"
-             :ns clojure.string
-             :name upper-case
-             :file "clojure/string.clj"}
-           (select-keys (info/info* {:ns 'gibberish :sym 'clojure.string/upper-case})
-                        [:added :ns :name :file]))))
-  (testing "clojure.core syms can still be resolved"
-    (is (= '{:added "1.0"
-             :ns clojure.core
-             :name merge
-             :file "clojure/core.clj"}
-           (select-keys (info/info* {:ns 'gibberish :sym 'merge})
-                        [:added :ns :name :file])))))
+  (let [current-ns (-> ::_ namespace symbol)]
+    (are [input expected] (= expected
+                             (select-keys (info/info* input)
+                                          [:added :ns :name :file]))
+      {:ns current-ns :sym 'some-var}                   '{:ns   orchard.info-test,
+                                                          :name some-var,
+                                                          :file "orchard/info_test.clj"}
+      {:ns current-ns :sym 'replace-first}              '{:added "1.2",
+                                                          :ns    clojure.string,
+                                                          :name  replace-first,
+                                                          :file  "clojure/string.clj"}
+      {:ns current-ns :sym 'merge}                      '{:added "1.0"
+                                                          :ns    clojure.core
+                                                          :name  merge
+                                                          :file  "clojure/core.clj"}
+      {:ns current-ns :sym 'non.existing.ns/merge}      {}
+      {:ns current-ns :sym 'clojure.string/upper-case}  '{:added "1.2"
+                                                          :ns    clojure.string
+                                                          :name  upper-case
+                                                          :file  "clojure/string.clj"}
+      {:ns current-ns :sym 'non.existing.ns/upper-case} {}
+
+      {:ns 'gibberish :sym 'some-var}                   {}
+      {:ns 'gibberish :sym 'replace-first}              {}
+      {:ns 'gibberish :sym 'merge}                      '{:added "1.0"
+                                                          :ns    clojure.core
+                                                          :name  merge
+                                                          :file  "clojure/core.clj"}
+      {:ns 'gibberish :sym 'non.existing.ns/merge}      {}
+      {:ns 'gibberish :sym 'clojure.string/upper-case}  '{:added "1.2"
+                                                          :ns    clojure.string
+                                                          :name  upper-case
+                                                          :file  "clojure/string.clj"}
+      {:ns 'gibberish :sym 'non.existing.ns/upper-case} {})))
 
 (deftest javadoc-info-unit-test
   (testing "Get an HTTP URL for a Sun/Oracle Javadoc"

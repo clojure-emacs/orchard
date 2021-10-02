@@ -7,9 +7,9 @@
    [orchard.cljs.meta :as cljs-meta]
    [orchard.java :as java]
    [orchard.java.classpath :as cp]
+   [orchard.java.resource :as resource]
    [orchard.meta :as m]
-   [orchard.misc :as misc]
-   [orchard.java.resource :as resource]))
+   [orchard.misc :as misc]))
 
 (defn qualify-sym
   "Qualify a symbol, if any in `sym`, with `ns`.
@@ -65,32 +65,29 @@
   {:added "0.5"}
   [{:keys [dialect ns sym computed-ns unqualified-sym] :as opts}]
   {:pre [(= dialect :clj)]}
-  (let [ns (or ns computed-ns)]
-    (if-not (and ns (find-ns ns))
-      ;; Lookups in files whose namespaces don't exist yet should still be able
-      ;; to resolve built-ins and fully-qualified syms
-      (recur (assoc opts :ns 'clojure.core))
-      (or
-       ;; it's a special (special-symbol?)
-       (m/special-sym-meta sym)
-       ;; it's a var
-       (some-> ns (m/resolve-var sym) (m/var-meta))
-       ;; it's a Java constructor/static member symbol
-       (some-> ns (java/resolve-symbol sym))
-       ;; it's an unqualified sym maybe referred
-       (some-> ns (m/resolve-var unqualified-sym) (m/var-meta))
-       ;; it's a Java class/record type symbol
-       (some-> ns (java/resolve-type unqualified-sym))
-       ;; it's an alias for another ns
-       (some-> ns (m/resolve-aliases) (get sym) (m/ns-meta))
-       ;; We use :unqualified-sym *exclusively* here because because our :ns is
-       ;; too ambiguous.
-       ;;
-       ;; Observe the incorrect behavior (should return nil, there is a test):
-       ;;
-       ;;   (info '{:ns clojure.core :sym non-existing}) ;;=> {:author "Rich Hickey" :ns clojure.core ...}
-       ;;
-       (some-> (find-ns unqualified-sym) (m/ns-meta))))))
+  (let [ns (or ns computed-ns)
+        ns (or (when (some-> ns find-ns)
+                 ns)
+               'clojure.core)]
+    (or
+     ;; it's a special (special-symbol?)
+     (m/special-sym-meta sym)
+     ;; it's a var
+     (some-> ns (m/resolve-var sym) (m/var-meta))
+     ;; it's a Java constructor/static member symbol
+     (some-> ns (java/resolve-symbol sym))
+     ;; it's a Java class/record type symbol
+     (some-> ns (java/resolve-type unqualified-sym))
+     ;; it's an alias for another ns
+     (some-> ns (m/resolve-aliases) (get sym) (m/ns-meta))
+     ;; We use :unqualified-sym *exclusively* here because because our :ns is
+     ;; too ambiguous.
+     ;;
+     ;; Observe the incorrect behavior (should return nil, there is a test):
+     ;;
+     ;;   (info '{:ns clojure.core :sym non-existing}) ;;=> {:author "Rich Hickey" :ns clojure.core ...}
+     ;;
+     (some-> (find-ns unqualified-sym) (m/ns-meta)))))
 
 (defn cljs-meta
   {:added "0.5"}
