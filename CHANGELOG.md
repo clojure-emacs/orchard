@@ -2,6 +2,10 @@
 
 ## master (unreleased)
 
+### Changes
+
+* [#133](https://github.com/clojure-emacs/orchard/issues/133): `info:` don't fall back to `clojure.core` for fully-qualified symbols. 
+
 ## 0.7.2 (2021-09-30)
 
 ### Changes
