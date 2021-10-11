@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+* [#135](https://github.com/clojure-emacs/orchard/issues/135): Fix problematic double var lookup in `orchard.xref/fn-refs`
+
 ## 0.7.3 (2021-10-02)
 
 ### Changes

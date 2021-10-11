@@ -48,6 +48,5 @@
   [var]
   (let [var (as-var var)
         all-vars (q/vars {:ns-query {:project? true} :private? true})
-        all-vals (map var-get all-vars)
-        deps-map (zipmap all-vars (map fn-deps all-vals))]
+        deps-map (zipmap all-vars (map fn-deps all-vars))]
     (map first (filter (fn [[_k v]] (contains? v var)) deps-map))))
