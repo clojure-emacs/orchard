@@ -118,14 +118,9 @@
                                        [])}
 
              ;; Development tools
-             :dev {:dependencies [[org.clojure/tools.namespace "1.1.0"]
-                                  [pjstadig/humane-test-output "0.10.0"]]
+             :dev {:dependencies [[org.clojure/tools.namespace "1.1.0"]]
                    :source-paths ["dev"]
-                   :resource-paths ["test-resources"]
-                   :plugins [[com.jakemccrary/lein-test-refresh "0.23.0"]]
-                   :injections [(require 'pjstadig.humane-test-output)
-                                (pjstadig.humane-test-output/activate!)]
-                   :test-refresh {:changes-only true}}
+                   :resource-paths ["test-resources"]}
 
              :cljfmt {:plugins [[lein-cljfmt "0.8.0"]]
                       :cljfmt {:indents {as-> [[:inner 0]]
