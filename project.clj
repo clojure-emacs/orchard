@@ -129,7 +129,7 @@
                                          letfn [[:block 1] [:inner 2]]}}}
 
              :clj-kondo [:test
-                         {:dependencies [[clj-kondo "2021.09.15"]]}]
+                         {:dependencies [[clj-kondo "2021.10.19"]]}]
 
              :eastwood  {:plugins  [[jonase/eastwood "0.9.9"]]
                          :eastwood {:exclude-namespaces [~(if jdk8?
