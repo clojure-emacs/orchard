@@ -1,4 +1,6 @@
 (ns orchard.misc
+  ;; These will be added in clojure 1.11:
+  (:refer-clojure :exclude [update-keys update-vals])
   (:require
    [clojure.java.io :as io]
    [clojure.string :as str]))
