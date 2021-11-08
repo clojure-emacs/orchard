@@ -81,16 +81,17 @@
 (deftest map-structure-test
   (when jdk-parser?
     (testing "Parsed map structure = reflected map structure"
-      (let [cols #{:file :line :column :doc :argnames :argtypes :resource-url}
+      (let [cols #{:file :line :column :doc :argnames :argtypes :path :resource-url}
             keys= #(= (set (keys (apply dissoc %1 cols)))
                       (set (keys %2)))
             c1 (class-info* 'clojure.lang.Compiler)
             c2 (with-redefs [source-info (constantly nil)]
                  (class-info* 'clojure.lang.Compiler))]
         ;; Class info
-        (is (keys= c1 c2) (str "Difference: "
-                               (pr-str [(remove (set (keys c1)) (keys c2))
-                                        (remove (set (keys c2)) (keys c1))])))
+        (is (keys= c1 c2)
+            (str "Difference: "
+                 (pr-str [(remove (set (keys c1)) (keys c2))
+                          (remove (set (keys c2)) (keys c1))])))
         ;; Members
         (is (keys (:members c1)))
         (is (= (keys (:members c1))

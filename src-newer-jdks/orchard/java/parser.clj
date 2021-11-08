@@ -306,6 +306,8 @@
                       (first))
                  ;; relative path on the classpath
                  :file path
+                 ;; Legacy key. Please do not remove - we don't do breaking changes!
+                 :path (-> path io/resource .getPath)
                  ;; Full URL, e.g. file:.. or jar:...
                  :resource-url (io/resource path))
           (finally (.close (.getJavaFileManager root))))))
