@@ -3,7 +3,8 @@
   (:refer-clojure :exclude [update-keys update-vals])
   (:require
    [clojure.java.io :as io]
-   [clojure.string :as str]))
+   [clojure.string :as str]
+   [orchard.util.io :as util.io]))
 
 (defn os-windows? []
   (.startsWith (System/getProperty "os.name") "Windows"))
@@ -31,7 +32,7 @@
   "Whether the argument is a directory or an url that points to a directory"
   [f]
   (if (url? f)
-    (and (= (.getProtocol ^java.net.URL f) "file")
+    (and (util.io/direct-url-to-file? f)
          (.isDirectory (io/as-file f)))
     (.isDirectory (io/as-file f))))
 
@@ -40,7 +41,7 @@
   file extensions"
   [f & exts]
   (when-let [file (if (url? f)
-                    (when (= (.getProtocol ^java.net.URL f) "file")
+                    (when (util.io/direct-url-to-file? f)
                       (io/as-file f))
                     (io/as-file f))]
     (and

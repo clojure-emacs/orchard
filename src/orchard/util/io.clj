@@ -31,23 +31,34 @@
 
 (defn url-protocol
   "Get the URL protocol as a string, e.g. http, file, jar."
+  ^String
   [^java.net.URL url]
   (.getProtocol url))
 
+(def jar? #{"jar"})
+
+(def file? #{"file"})
+
 (defn url-to-file-within-archive?
-  "Does this URL point to a file inside a jar (or zip) archive.
-  i.e. does it use the jar: protocol."
+  "Does this URL point to a file inside a jar (or zip) archive?
+  i.e., does it use the jar: protocol."
   [^java.net.URL url]
-  (= "jar" (url-protocol url)))
+  (jar? (url-protocol url)))
+
+(defn direct-url-to-file?
+  "Does this URL point to a file directly?
+  i.e., does it use the file: protocol."
+  [^java.net.URL url]
+  (file? (url-protocol url)))
 
 (defn resource-jarfile
   "Given a jar:file:...!/... URL, return the location of the jar file on the
   filesystem. Returns nil on any other URL."
   ^File [^URL jar-resource]
-  (assert (= "jar" (url-protocol jar-resource)))
+  (assert (jar? (url-protocol jar-resource)))
   (let [^JarURLConnection conn (.openConnection jar-resource)
         inner-url (.getJarFileURL conn)]
-    (when (= "file" (url-protocol inner-url))
+    (when (file? (url-protocol inner-url))
       (io/as-file inner-url))))
 
 (defn resource-artifact
@@ -59,12 +70,14 @@
   Throws when the URL is not a `file:` or `jar:` URL."
   ^File [^java.net.URL resource]
   (let [protocol (url-protocol resource)]
-    (case protocol
-      "file"
+    (cond
+      (file? protocol)
       (io/as-file resource)
-      "jar"
+
+      (jar? protocol)
       (resource-jarfile resource)
-      #_else
+
+      :else
       (throw (ex-info (str "URLs with a " protocol
                            " protocol can't be situated on the filesystem.")
                       {:resource resource})))))
