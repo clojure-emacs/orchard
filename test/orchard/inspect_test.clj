@@ -218,7 +218,7 @@
 
 (deftype MyTestType [name]
   IMyTestType
-  (get-name [this] name))
+  (get-name [_this] name))
 
 (defmethod inspect/inspect-value MyTestType [obj]
   (str "#<MyTestType " (get-name obj) ">"))

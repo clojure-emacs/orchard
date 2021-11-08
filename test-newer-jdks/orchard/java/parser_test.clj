@@ -1,7 +1,7 @@
 (ns orchard.java.parser-test
-  (:require [orchard.misc :as misc]
-            [orchard.java.parser :as parser]
-            [clojure.test :refer :all]))
+  (:require
+   [orchard.java.parser :as parser]
+   [clojure.test :refer [deftest is testing]]))
 
 (defn compile-class-from-source
   "Compile a java file on the classpath.
@@ -55,10 +55,10 @@
             :resource-url (java.net.URL. (str "file:"
                                               (System/getProperty "user.dir")
                                               "/test/orchard/java/DummyClass.java"))}
-           ((resolve 'orchard.java.parser/source-info) 'orchard.java.DummyClass))))
+           (parser/source-info 'orchard.java.DummyClass))))
 
   (testing "java file in a jar"
-    (let [rt-info ((resolve 'orchard.java.parser/source-info) 'clojure.lang.RT)]
+    (let [rt-info (parser/source-info 'clojure.lang.RT)]
       (is (= {:file "clojure/lang/RT.java"}
              (select-keys rt-info [:file])))
       (is (re-find #"jar:file:/.*/.m2/repository/org/clojure/clojure/.*/clojure-.*-sources.jar!/clojure/lang/RT.java"
