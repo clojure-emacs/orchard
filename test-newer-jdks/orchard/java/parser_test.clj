@@ -55,7 +55,8 @@
             :resource-url (java.net.URL. (str "file:"
                                               (System/getProperty "user.dir")
                                               "/test/orchard/java/DummyClass.java"))}
-           (parser/source-info 'orchard.java.DummyClass))))
+           (dissoc (parser/source-info 'orchard.java.DummyClass)
+                   :path))))
 
   (testing "java file in a jar"
     (let [rt-info (parser/source-info 'clojure.lang.RT)]
