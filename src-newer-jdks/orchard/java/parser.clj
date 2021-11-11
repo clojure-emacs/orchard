@@ -296,19 +296,20 @@
     (when-let [path (source-path klass)]
       (when-let [^DocletEnvironment root (parse-java path (module-name klass))]
         (try
-          (assoc (->> (.getIncludedElements root)
-                      (filter #(#{ElementKind/CLASS
-                                  ElementKind/INTERFACE
-                                  ElementKind/ENUM}
-                                (.getKind ^Element %)))
-                      (map #(parse-info % root))
-                      (filter #(= klass (:class %)))
-                      (first))
-                 ;; relative path on the classpath
-                 :file path
-                 ;; Legacy key. Please do not remove - we don't do breaking changes!
-                 :path (-> path io/resource .getPath)
-                 ;; Full URL, e.g. file:.. or jar:...
-                 :resource-url (io/resource path))
+          (let [path-resource (io/resource path)]
+            (assoc (->> (.getIncludedElements root)
+                        (filter #(#{ElementKind/CLASS
+                                    ElementKind/INTERFACE
+                                    ElementKind/ENUM}
+                                  (.getKind ^Element %)))
+                        (map #(parse-info % root))
+                        (filter #(= klass (:class %)))
+                        (first))
+                   ;; relative path on the classpath
+                   :file path
+                   ;; Legacy key. Please do not remove - we don't do breaking changes!
+                   :path (.getPath path-resource)
+                   ;; Full URL, e.g. file:.. or jar:...
+                   :resource-url path-resource))
           (finally (.close (.getJavaFileManager root))))))
     (catch Throwable _)))

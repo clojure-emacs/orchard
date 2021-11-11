@@ -270,13 +270,14 @@
   (try
     (let [path (source-path klass)]
       (when-let [root (parse-java path)]
-        (assoc (->> (map parse-info (.classes root))
-                    (filter #(= klass (:class %)))
-                    (first))
-               ;; relative path on the classpath
-               :file path
-               ;; Legacy key. Please do not remove - we don't do breaking changes!
-               :path (-> path io/resource .getPath)
-               ;; Full URL, e.g. file:.. or jar:...
-               :resource-url (io/resource path))))
+        (let [path-resource (io/resource path)]
+          (assoc (->> (map parse-info (.classes root))
+                      (filter #(= klass (:class %)))
+                      (first))
+                 ;; relative path on the classpath
+                 :file path
+                 ;; Legacy key. Please do not remove - we don't do breaking changes!
+                 :path (.getPath path-resource)
+                 ;; Full URL, e.g. file:.. or jar:...
+                 :resource-url path-resource))))
     (catch Abort _)))
