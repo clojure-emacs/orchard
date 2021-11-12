@@ -2,13 +2,19 @@
 
 ## master (unreleased)
 
-* [#135](https://github.com/clojure-emacs/orchard/issues/135): Fix problematic double var lookup in `orchard.xref/fn-refs`
+### Bugs Fixed
+
+* [#135](https://github.com/clojure-emacs/orchard/issues/135): Fix problematic double var lookup in `orchard.xref/fn-refs`.
+
+### Changes
+
+* [#124](https://github.com/clojure-emacs/orchard/pull/124): Remove costly `io/resource` lookup.
 
 ## 0.7.3 (2021-10-02)
 
 ### Changes
 
-* [#133](https://github.com/clojure-emacs/orchard/issues/133): `info:` don't fall back to `clojure.core` for fully-qualified symbols. 
+* [#133](https://github.com/clojure-emacs/orchard/issues/133): `info:` don't fall back to `clojure.core` for fully-qualified symbols.
 
 ## 0.7.2 (2021-09-30)
 
@@ -21,7 +27,6 @@
 * [#123](https://github.com/clojure-emacs/orchard/pull/123): Fix info lookups from namespaces that don't yet exist
 * [#125](https://github.com/clojure-emacs/orchard/issues/125): Don't fail if the classpath references a non-existing .jar
 * [#128](https://github.com/clojure-emacs/orchard/issues/128): Strengthen `apropos`
-* [#124](https://github.com/clojure-emacs/orchard/pull/124): Remove costly `io/resource` lookup
 
 ## 0.7.1 (2021-04-18)
 
