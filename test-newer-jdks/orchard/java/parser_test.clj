@@ -1,30 +1,12 @@
 (ns orchard.java.parser-test
   (:require
    [orchard.java.parser :as parser]
-   [clojure.test :refer [deftest is testing]]))
-
-(defn compile-class-from-source
-  "Compile a java file on the classpath.
-  Returns true if all went well."
-  [classname]
-  (let [compiler (javax.tools.ToolProvider/getSystemJavaCompiler)]
-    (.. compiler
-        (getTask
-         nil ;; out
-         nil ;; fileManager
-         nil ;; diagnosticListener
-         nil ;; compilerOptions
-         nil ;; classnames for annotation processing
-         ;; compilationUnits
-         [(.. compiler
-              (getStandardFileManager nil nil nil)
-              (getJavaFileForInput javax.tools.StandardLocation/CLASS_PATH
-                                   classname
-                                   javax.tools.JavaFileObject$Kind/SOURCE))])
-        call)))
+   [clojure.test :refer [deftest is testing]])
+  (:import
+   (orchard.java DummyClass)))
 
 (deftest source-info-test
-  (is (compile-class-from-source "orchard.java.DummyClass"))
+  (is (class? DummyClass))
 
   (testing "file on the filesystem"
     (is (= {:class 'orchard.java.DummyClass,
@@ -54,7 +36,7 @@
             :file "orchard/java/DummyClass.java"
             :resource-url (java.net.URL. (str "file:"
                                               (System/getProperty "user.dir")
-                                              "/test/orchard/java/DummyClass.java"))}
+                                              "/test-java/orchard/java/DummyClass.java"))}
            (dissoc (parser/source-info 'orchard.java.DummyClass)
                    :path))))
 

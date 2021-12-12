@@ -69,9 +69,15 @@
           sources  (-> (.getStandardFileManager compiler nil nil nil)
                        (.getJavaFileObjectsFromFiles [tmpfile]))
           doclet   (class (reify Doclet
-                            (init [this _ _] (reset! result nil))
-                            (run [this root] (reset! result root) true)
-                            (getSupportedOptions [this] #{})))
+                            (init [_this _ _]
+                              (reset! result nil))
+
+                            (run [_this root]
+                              (reset! result root)
+                              true)
+
+                            (getSupportedOptions [_this]
+                              #{})))
           out      (StringWriter.) ; discard compiler messages
           opts     (apply conj ["--show-members" "private"
                                 "--show-types" "private"

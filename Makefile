@@ -7,10 +7,10 @@ TEST_PROFILES ?= +test
 resources/clojuredocs/export.edn:
 curl -o $@ https://github.com/clojure-emacs/clojuredocs-export-edn/raw/master/exports/export.compact.edn
 
-test:
+test: clean
 	lein with-profile -user,-dev,+$(VERSION),$(TEST_PROFILES) test
 
-test-watch: test-resources/clojuredocs/export.edn
+test-watch: test-resources/clojuredocs/export.edn clean
 	lein with-profile +$(VERSION),$(TEST_PROFILES) test-refresh
 
 eastwood:

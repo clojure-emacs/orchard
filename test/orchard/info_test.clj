@@ -458,7 +458,7 @@
 (deftest info-java-test
   (is (info/info-java 'clojure.lang.Atom 'swap)))
 
-(deftest info-java-member-precendence-test
+(deftest info-java-member-precedence-test
   (testing "Integer/max - issue #86"
     (let [i (info/info* {:ns 'user :sym 'Integer/max})]
       (is (= (select-keys i [:class :member :modifiers :throws :argtypes :arglists :returns])
