@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+## 0.8.0 (2021-12-15)
+
 ### Changes
 
 * Remove `dynapath` dependency
