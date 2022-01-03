@@ -43,5 +43,4 @@
     (is (= (xref/fn-refs 'orchard.xref-test/dummy-fn) '()))
     (is (contains? (into #{} (xref/fn-refs #'map)) #'orchard.xref-test/dummy-fn)))
   (testing "with a lambda"
-    (is (= (xref/fn-refs dummy-fn) '()))
     (is (contains? (into #{} (xref/fn-refs #'times)) #'orchard.xref-test/dummy-fn))))

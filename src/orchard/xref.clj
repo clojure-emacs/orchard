@@ -3,47 +3,25 @@
   references."
   {:added "0.5"}
   (:require
-   [clojure.tools.reader :as r]
-   [clojure.tools.reader.reader-types :as rts]
    [clojure.repl :as repl]
    [orchard.query :as q]))
-
-;;;;;;; taken from sayid, needs to be cleaned up
-(defn- mk-dummy-whitespace
-  [lines cols]
-  (apply str
-         (concat (repeat lines "\n")
-                 (repeat cols " "))))
-
-(defn- mk-positionalble-src-logging-push-back-rdr
-  [s file line col]
-  (rts/source-logging-push-back-reader (str (mk-dummy-whitespace (dec line) ;;this seem unfortunate
-                                                                 (dec col))
-                                            s)
-                                       (+ (count s) line col 1)
-                                       file))
 
 (defn- hunt-down-source
   [fn-sym]
   (let [{:keys [source file line column]} (-> fn-sym
                                               resolve
                                               meta)]
-    ;; (println file)
-    (or source
-        (and file (r/read (mk-positionalble-src-logging-push-back-rdr
-                           (or
-                            (clojure.repl/source-fn fn-sym)
-                            (->> file
-                                 slurp
-                                 clojure.string/split-lines
-                                 (drop (dec line))
-                                 (clojure.string/join "\n"))
-                            "nil")
-                           file
-                           line
-                           column))))))
-
-;;;;;;; taken from sayid, needs to be cleaned up
+    (try (or source
+             (and file (read-string {:read-cond :allow}
+                                    (or
+                                     (clojure.repl/source-fn fn-sym)
+                                     (->> file
+                                          slurp
+                                          clojure.string/split-lines
+                                          (drop (dec line))
+                                          (clojure.string/join "\n"))
+                                     "nil"))))
+         (catch Exception ex)))) ;; explodes on namespaced keywords
 
 (defn- as-val
   "Convert `thing` to a function value."
@@ -85,16 +63,15 @@
                              clojure.lang.Compiler/COLUMN column})
       (try
         (let [form (macroexpand form)]
-          (binding [*ns* (create-ns ns-sym)]
-            (clojure.lang.Compiler/analyze
-             clojure.lang.Compiler$C/EVAL
-             (nth form 2))))
+          (when (and (coll? form) (= 'clojure.core/fn (first (nth form 2 nil))))
+            (binding [*ns* (create-ns ns-sym)]
+              (clojure.lang.Compiler/analyze
+               clojure.lang.Compiler$C/EVAL
+               (nth form 2)))))
         (finally
           (pop-thread-bindings))))
     (finally
       (pop-thread-bindings))))
-
-
 
 (defn- fn-deps-class
   [val]
@@ -151,11 +128,10 @@
   (map #(* % 2) (filter even? (range 1 10))))
 
 (comment
-
+  (nth (macroexpand (read-string "(def archive? (clojure.core/fn ([f] (file-ext? f .jar .zip))))")) 2)
+  (hunt-down-source 'orchard.util.os-test/cache-dir-windows-test)
   (fn-deps #'user/jdk8?)
-  (fn-deps #'orchard.meta/ns-file)
+  (fn-deps #'orchard.util.os-test/cache-dir-windows-test)
+  (fn-deps #'orchard.xref/fn->sym)
   (def vars (q/vars {:ns-query {:project? true} :private? true}))
-  (map fn-deps vars)
-  (drop 100 vars)
-  (when-let [x (fn? (as-val user/jdk8?))]
-    "some"))
+  (map fn-deps vars))
