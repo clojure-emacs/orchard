@@ -3,6 +3,7 @@
   references."
   {:added "0.5"}
   (:require
+   [clojure.string]
    [clojure.repl :as repl]
    [orchard.query :as q]))
 
@@ -31,13 +32,13 @@
     (symbol? thing) (var-get (find-var thing))
     (fn? thing) thing))
 
-(defn- f->sym [f]
+(defn- f->sym [^clojure.lang.AFn f]
   (-> f .getClass .getName repl/demunge symbol))
 
 (defn- fn-source [f]
   (hunt-down-source (f->sym f)))
 
-(defn- fn-name [f]
+(defn- fn-name [^java.lang.Class f]
   (-> f .getName repl/demunge symbol))
 
 (defonce classbytes (atom {}))
@@ -75,9 +76,9 @@
 
 (defn- fn-deps-class
   [val]
-  (let [v (if (class? val)
-            val
-            (eval val))]
+  (let [^java.lang.Class v (if (class? val)
+                             val
+                             (eval val))]
     (set (some->> v .getDeclaredFields
                   (keep (fn [^java.lang.reflect.Field f]
                           (or (and (identical? clojure.lang.Var (.getType f))
@@ -133,5 +134,6 @@
   (fn-deps #'user/jdk8?)
   (fn-deps #'orchard.util.os-test/cache-dir-windows-test)
   (fn-deps #'orchard.xref/fn->sym)
+  (supers (type @clojure.lang.Compiler/LOADER))
   (def vars (q/vars {:ns-query {:project? true} :private? true}))
   (map fn-deps vars))

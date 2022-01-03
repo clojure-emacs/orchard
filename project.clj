@@ -84,4 +84,5 @@
                                                                         System/getenv
                                                                         (doto assert)
                                                                         (.contains "enrich-classpath"))))
-                                                           (conj 'orchard.java.legacy-parser))}}})
+                                                           (conj 'orchard.java.legacy-parser))
+                                    :reflection {'orchard.xref true}}}})
