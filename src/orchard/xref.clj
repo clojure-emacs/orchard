@@ -4,7 +4,7 @@
   {:added "0.5"}
   (:require
    [clojure.repl :as repl]
-   [clojure.string]
+   [clojure.string :as str]
    [orchard.query :as q]))
 
 (defn- hunt-down-source
@@ -88,7 +88,7 @@
                                    (.get f (fn-name v)))
                               nil)))))))
 
-(defn fn-deps
+(defn fn-deps-compiling
   "Returns a set with all the functions invoked by `val`.
   `val` can be a function value, a var or a symbol."
   {:added "0.5"}
@@ -101,6 +101,17 @@
             class-names (map first b)
             deps (set (mapcat #(-> % symbol fn-deps-class) class-names))]
         deps))))
+
+(defn fn-deps [s]
+  (when-let [^clojure.lang.AFn v (as-val s)]
+    (let [f-class-name (-> v .getClass .getName)
+          ^java.lang.reflect.Field field (->> clojure.lang.DynamicClassLoader .getDeclaredFields second)
+          classes (into {} (.get field clojure.lang.DynamicClassLoader))
+          filtered-classes (->> classes
+                                (filter (fn [[k _v]] (clojure.string/includes? k f-class-name)))
+                                (map (fn [[_k v]] (.get ^java.lang.ref.Reference v))))
+          deps (set (mapcat fn-deps-class filtered-classes))]
+      deps)))
 
 (defn- fn->sym
   "Convert a function value `f` to symbol."
@@ -130,6 +141,7 @@
   (hunt-down-source 'orchard.util.os-test/cache-dir-windows-test)
   (fn-deps #'fn-refs)
   (fn-deps #'orchard.xref/fn->sym)
+  (fn-refs #'orchard.xref/fn->sym)
   (supers (type @clojure.lang.Compiler/LOADER))
   (def vars (q/vars {:ns-query {:project? true} :private? true}))
   (map fn-deps vars))
