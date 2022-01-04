@@ -105,7 +105,7 @@
 (defn fn-deps [s]
   (when-let [^clojure.lang.AFn v (as-val s)]
     (let [f-class-name (-> v .getClass .getName)
-          ^java.lang.reflect.Field field (->> clojure.lang.DynamicClassLoader .getDeclaredFields second)
+          field (->> clojure.lang.DynamicClassLoader .getDeclaredFields second)
           classes (into {} (.get field clojure.lang.DynamicClassLoader))
           filtered-classes (->> classes
                                 (filter (fn [[k _v]] (clojure.string/includes? k f-class-name)))
