@@ -3,15 +3,15 @@
   references."
   {:added "0.5"}
   (:require
-   [clojure.string]
    [clojure.repl :as repl]
+   [clojure.string]
    [orchard.query :as q]))
 
 (defn- hunt-down-source
   [fn-sym]
-  (let [{:keys [source file line column]} (-> fn-sym
-                                              resolve
-                                              meta)]
+  (let [{:keys [source file line]} (-> fn-sym
+                                       resolve
+                                       meta)]
     (try (or source
              (and file (read-string {:read-cond :allow}
                                     (or
@@ -22,7 +22,7 @@
                                           (drop (dec line))
                                           (clojure.string/join "\n"))
                                      "nil"))))
-         (catch Exception ex)))) ;; explodes on namespaced keywords
+         (catch Exception _)))) ;; explodes on namespaced keywords
 
 (defn- as-val
   "Convert `thing` to a function value."
@@ -75,10 +75,10 @@
       (pop-thread-bindings))))
 
 (defn- fn-deps-class
-  [val]
-  (let [^java.lang.Class v (if (class? val)
-                             val
-                             (eval val))]
+  [v]
+  (let [^java.lang.Class v (if (class? v)
+                             v
+                             (eval v))]
     (set (some->> v .getDeclaredFields
                   (keep (fn [^java.lang.reflect.Field f]
                           (or (and (identical? clojure.lang.Var (.getType f))
@@ -119,20 +119,16 @@
   "Find all functions that refer `var`.
   `var` can be a function value, a var or a symbol."
   {:added "0.5"}
-  [var]
-  (let [var (as-var var)
+  [v]
+  (let [var (as-var v)
         all-vars (q/vars {:ns-query {:project? true} :private? true})
         deps-map (zipmap all-vars (map fn-deps all-vars))]
     (map first (filter (fn [[_k v]] (contains? v var)) deps-map))))
 
-(defn- dummy-fn [_x]
-  (map #(* % 2) (filter even? (range 1 10))))
-
 (comment
   (nth (macroexpand (read-string "(def archive? (clojure.core/fn ([f] (file-ext? f .jar .zip))))")) 2)
   (hunt-down-source 'orchard.util.os-test/cache-dir-windows-test)
-  (fn-deps #'user/jdk8?)
-  (fn-deps #'orchard.util.os-test/cache-dir-windows-test)
+  (fn-deps #'fn-refs)
   (fn-deps #'orchard.xref/fn->sym)
   (supers (type @clojure.lang.Compiler/LOADER))
   (def vars (q/vars {:ns-query {:project? true} :private? true}))

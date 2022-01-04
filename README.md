@@ -98,6 +98,12 @@ So far, Orchard follows these options, which can be specified as Java system pro
 * `"-Dorchard.initialize-cache.silent=true"` (default: `true`)
   * if `false`, the _class info cache_ initialization may print warnings (possibly spurious ones).
 
+## Tests and formatting
+
+To run the CI tasks locally use:
+
+`make test cljfmt eastwood kondo`
+
 ## History
 
 Originally [SLIME][] was the most

@@ -85,4 +85,4 @@
                                                                         (doto assert)
                                                                         (.contains "enrich-classpath"))))
                                                            (conj 'orchard.java.legacy-parser))
-                                    :reflection {'orchard.xref true}}}})
+                                    :ignored-faults {:reflection {orchard.xref [{:line 53}]}}}}})
