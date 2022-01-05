@@ -32,7 +32,7 @@
                                    (.get f (fn-name v)))
                               nil)))))))
 
-(defn fn-deps 
+(defn fn-deps
   "Returns a set with all the functions invoked by `val`.
   `val` can be a function value, a var or a symbol."
   {:added "0.5"}
