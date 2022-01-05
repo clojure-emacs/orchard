@@ -7,23 +7,6 @@
    [clojure.string :as str]
    [orchard.query :as q]))
 
-(defn- hunt-down-source
-  [fn-sym]
-  (let [{:keys [source file line]} (-> fn-sym
-                                       resolve
-                                       meta)]
-    (try (or source
-             (and file (read-string {:read-cond :allow}
-                                    (or
-                                     (clojure.repl/source-fn fn-sym)
-                                     (->> file
-                                          slurp
-                                          clojure.string/split-lines
-                                          (drop (dec line))
-                                          (clojure.string/join "\n"))
-                                     "nil"))))
-         (catch Exception _)))) ;; explodes on namespaced keywords
-
 (defn- as-val
   "Convert `thing` to a function value."
   [thing]
@@ -32,47 +15,8 @@
     (symbol? thing) (var-get (find-var thing))
     (fn? thing) thing))
 
-(defn- f->sym [^clojure.lang.AFn f]
-  (-> f .getClass .getName repl/demunge symbol))
-
-(defn- fn-source [f]
-  (hunt-down-source (f->sym f)))
-
 (defn- fn-name [^java.lang.Class f]
   (-> f .getName repl/demunge symbol))
-
-(defonce classbytes (atom {}))
-
-(defn- recompile [ns-sym form]
-  (push-thread-bindings
-   {clojure.lang.Compiler/LOADER
-    (proxy [clojure.lang.DynamicClassLoader] [@clojure.lang.Compiler/LOADER]
-      (defineClass
-        ([name bytes src]
-         (swap! classbytes assoc name bytes)
-         (proxy-super defineClass name bytes src))))})
-  (try
-    (let [line @clojure.lang.Compiler/LINE
-          column @clojure.lang.Compiler/COLUMN
-          line (if-let [line (:line (meta form))]
-                 line
-                 line)
-          column (if-let [column (:column (meta form))]
-                   column
-                   column)]
-      (push-thread-bindings {clojure.lang.Compiler/LINE line
-                             clojure.lang.Compiler/COLUMN column})
-      (try
-        (let [form (macroexpand form)]
-          (when (and (coll? form) (= 'clojure.core/fn (first (nth form 2 nil))))
-            (binding [*ns* (create-ns ns-sym)]
-              (clojure.lang.Compiler/analyze
-               clojure.lang.Compiler$C/EVAL
-               (nth form 2)))))
-        (finally
-          (pop-thread-bindings))))
-    (finally
-      (pop-thread-bindings))))
 
 (defn- fn-deps-class
   [v]
@@ -88,25 +32,17 @@
                                    (.get f (fn-name v)))
                               nil)))))))
 
-(defn fn-deps-compiling
+(defn fn-deps 
   "Returns a set with all the functions invoked by `val`.
   `val` can be a function value, a var or a symbol."
   {:added "0.5"}
-  [f]
-  (reset! classbytes {})
-  (let [f (as-val f)]
-    (when-let [source (and (fn? f) (fn-source f))]
-      (let [sym (f->sym f)
-            b (do (recompile (-> sym namespace symbol) source) @classbytes)
-            class-names (map first b)
-            deps (set (mapcat #(-> % symbol fn-deps-class) class-names))]
-        deps))))
-
-(defn fn-deps [s]
+  [s]
   (when-let [^clojure.lang.AFn v (as-val s)]
     (let [f-class-name (-> v .getClass .getName)
-          field (->> clojure.lang.DynamicClassLoader .getDeclaredFields second)
-          classes (into {} (.get field clojure.lang.DynamicClassLoader))
+          ;; breaks when called with
+          ;; (.getDeclaredField clojure.lang.DynamicClassLoader "classCache")
+          classCache (->> clojure.lang.DynamicClassLoader .getDeclaredFields second)
+          classes (into {} (.get classCache clojure.lang.DynamicClassLoader))
           filtered-classes (->> classes
                                 (filter (fn [[k _v]] (clojure.string/includes? k f-class-name)))
                                 (map (fn [[_k v]] (.get ^java.lang.ref.Reference v))))
@@ -138,10 +74,9 @@
 
 (comment
   (nth (macroexpand (read-string "(def archive? (clojure.core/fn ([f] (file-ext? f .jar .zip))))")) 2)
-  (hunt-down-source 'orchard.util.os-test/cache-dir-windows-test)
   (fn-deps #'fn-refs)
   (fn-deps #'orchard.xref/fn->sym)
   (fn-refs #'orchard.xref/fn->sym)
-  (supers (type @clojure.lang.Compiler/LOADER))
+  (into {} (.get (->> clojure.lang.DynamicClassLoader .getDeclaredFields second) clojure.lang.DynamicClassLoader))
   (def vars (q/vars {:ns-query {:project? true} :private? true}))
   (map fn-deps vars))
