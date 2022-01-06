@@ -18,7 +18,10 @@
 (defn- fn-name [^java.lang.Class f]
   (-> f .getName repl/demunge symbol))
 
-(defn- fn-deps-class
+(defn fn-deps-class
+  "Returns a set with all the functions invoked by `v`.
+  `v` can be a function class or a symbol."
+  {:added "0.8"}
   [v]
   (let [^java.lang.Class v (if (class? v)
                              v
@@ -32,22 +35,26 @@
                                    (.get f (fn-name v)))
                               nil)))))))
 
+(def ^java.lang.reflect.Field classCache
+  (let [classCache* (.getDeclaredField clojure.lang.DynamicClassLoader "classCache")]
+    (.setAccessible classCache* true)
+    (.get classCache* clojure.lang.DynamicClassLoader)))
+
 (defn fn-deps
-  "Returns a set with all the functions invoked by `val`.
-  `val` can be a function value, a var or a symbol."
+  "Returns a set with all the functions invoked by `v` and its lambdas.
+  `v` can be a function value, a var or a symbol.
+   If a function was defined multiple times, old lambda deps will
+   be returned."
   {:added "0.5"}
-  [s]
-  (when-let [^clojure.lang.AFn v (as-val s)]
-    (let [f-class-name (-> v .getClass .getName)
-          ;; breaks when called with
-          ;; (.getDeclaredField clojure.lang.DynamicClassLoader "classCache")
-          classCache (->> clojure.lang.DynamicClassLoader .getDeclaredFields second)
-          classes (into {} (.get classCache clojure.lang.DynamicClassLoader))
-          filtered-classes (->> classes
-                                (filter (fn [[k _v]] (clojure.string/includes? k f-class-name)))
-                                (map (fn [[_k v]] (.get ^java.lang.ref.Reference v))))
-          deps (set (mapcat fn-deps-class filtered-classes))]
-      deps)))
+  [v]
+  (when-let [^clojure.lang.AFn v (as-val v)]
+    (let [f-class-name (-> v .getClass .getName)]
+      ;; this uses the implementation detail that the clojure compiler always
+      ;; prefixes names of lambdas with the name of its surrounding function class
+      (into #{} (comp (filter (fn [[k _v]] (clojure.string/includes? k f-class-name)))
+                      (map (fn [[_k v]] (.get ^java.lang.ref.Reference v)))
+                      (mapcat fn-deps-class))
+            classCache))))
 
 (defn- fn->sym
   "Convert a function value `f` to symbol."
@@ -73,10 +80,15 @@
     (map first (filter (fn [[_k v]] (contains? v var)) deps-map))))
 
 (comment
-  (nth (macroexpand (read-string "(def archive? (clojure.core/fn ([f] (file-ext? f .jar .zip))))")) 2)
   (fn-deps #'fn-refs)
-  (fn-deps #'orchard.xref/fn->sym)
+  (fn-deps #'orchard.xref/fn-deps)
   (fn-refs #'orchard.xref/fn->sym)
-  (into {} (.get (->> clojure.lang.DynamicClassLoader .getDeclaredFields second) clojure.lang.DynamicClassLoader))
+
+  (let [f-class-name (-> orchard.xref/fn-deps .getClass .getName)
+        classes (into #{} (comp (filter (fn [[k _v]] (clojure.string/includes? k f-class-name)))
+                                (map (fn [[_k v]] (.get ^java.lang.ref.Reference v))))
+                      classCache)]
+    classes)
   (def vars (q/vars {:ns-query {:project? true} :private? true}))
+
   (map fn-deps vars))
