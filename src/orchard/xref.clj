@@ -35,7 +35,7 @@
                                    (.get f (fn-name v)))
                               nil)))))))
 
-(def ^:private classCache
+(def ^:private class-cache
   "Reference to Clojures class cache.
    This holds of classes compiled by the Clojure compiler,
    one class per function and one per repl eval.
@@ -62,7 +62,7 @@
       (into #{} (comp (filter (fn [[k _v]] (clojure.string/includes? k f-class-name)))
                       (map (fn [[_k v]] (.get ^java.lang.ref.Reference v)))
                       (mapcat fn-deps-class))
-            classCache))))
+            class-cache))))
 
 (defn- fn->sym
   "Convert a function value `f` to symbol."
@@ -106,7 +106,7 @@
   (let [f-class-name "orchard.xref" #_(-> orchard.xref/fn-deps .getClass .getName)
         classes (into #{} (comp (filter (fn [[k _v]] (clojure.string/includes? k f-class-name)))
                                 (map (fn [[_k v]] (.get ^java.lang.ref.Reference v))))
-                      classCache)]
+                      class-cache)]
     classes)
 
   (let [memKiller (java.util.ArrayList.)]
