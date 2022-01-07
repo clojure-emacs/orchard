@@ -35,7 +35,13 @@
                                    (.get f (fn-name v)))
                               nil)))))))
 
-(def classCache
+(def ^:private classCache
+  "Reference to Clojures class cache.
+   This holds of classes compiled by the Clojure compiler,
+   one class per function and one per repl eval.
+   This field is package private, so it has to be set to
+   accessible otherwise an IllegalAccess exception would
+   be thrown."
   (let [classCache* (.getDeclaredField clojure.lang.DynamicClassLoader "classCache")]
     (.setAccessible classCache* true)
     (.get classCache* clojure.lang.DynamicClassLoader)))
@@ -97,7 +103,7 @@
   (fn-deps #'orchard.xref/fn-deps)
   (fn-refs #'orchard.xref/fn->sym)
 
-  (let [f-class-name (-> orchard.xref/fn-deps .getClass .getName)
+  (let [f-class-name "orchard.xref" #_(-> orchard.xref/fn-deps .getClass .getName)
         classes (into #{} (comp (filter (fn [[k _v]] (clojure.string/includes? k f-class-name)))
                                 (map (fn [[_k v]] (.get ^java.lang.ref.Reference v))))
                       classCache)]
