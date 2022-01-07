@@ -35,7 +35,7 @@
                                    (.get f (fn-name v)))
                               nil)))))))
 
-(def ^java.lang.reflect.Field classCache
+(def classCache
   (let [classCache* (.getDeclaredField clojure.lang.DynamicClassLoader "classCache")]
     (.setAccessible classCache* true)
     (.get classCache* clojure.lang.DynamicClassLoader)))
@@ -44,7 +44,9 @@
   "Returns a set with all the functions invoked by `v` and its lambdas.
   `v` can be a function value, a var or a symbol.
    If a function was defined multiple times, old lambda deps will
-   be returned."
+   be returned.
+   This does not return functions marked with meta :inline like +
+   since they are already compiled away at this point."
   {:added "0.5"}
   [v]
   (when-let [^clojure.lang.AFn v (as-val v)]
@@ -80,6 +82,17 @@
     (map first (filter (fn [[_k v]] (contains? v var)) deps-map))))
 
 (comment
+  (defn oom []
+    (try (let [memKiller (java.util.ArrayList.)]
+           (loop [free 10000000]
+             (.add memKiller (object-array free))
+             (.get memKiller 0)
+             (recur 100000 #_(if (< (Math/abs (.. Runtime (getRuntime) (freeMemory))) Integer/MAX_VALUE)
+                               (Math/abs (.. Runtime (getRuntime) (freeMemory)))
+                               Integer/MAX_VALUE))))
+         (catch OutOfMemoryError _
+           (println "freed"))))
+
   (fn-deps #'fn-refs)
   (fn-deps #'orchard.xref/fn-deps)
   (fn-refs #'orchard.xref/fn->sym)
@@ -89,6 +102,13 @@
                                 (map (fn [[_k v]] (.get ^java.lang.ref.Reference v))))
                       classCache)]
     classes)
+
+  (let [memKiller (java.util.ArrayList.)]
+    (loop [free (.. Runtime (getRuntime) (freeMemory))]
+      (.add memKiller (object-array free))
+      (recur (.. Runtime (getRuntime) (freeMemory)))))
+  (oom)
+  (Math/min 1 2)
   (def vars (q/vars {:ns-query {:project? true} :private? true}))
 
   (map fn-deps vars))
