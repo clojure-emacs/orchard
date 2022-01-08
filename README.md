@@ -115,7 +115,7 @@ So far, Orchard follows these options, which can be specified as Java system pro
 
 To run the CI tasks locally use:
 
-`make test cljfmt eastwood kondo`
+`make test cljfmt kondo eastwood`
 
 ## History
 

@@ -7,7 +7,7 @@
    [clojure.string :as str]
    [orchard.query :as q]))
 
-(defn- as-val
+(defn- to-fn
   "Convert `thing` to a function value."
   [thing]
   (cond
@@ -26,14 +26,14 @@
   (let [^java.lang.Class v (if (class? v)
                              v
                              (eval v))]
-    (set (some->> v .getDeclaredFields
-                  (keep (fn [^java.lang.reflect.Field f]
-                          (or (and (identical? clojure.lang.Var (.getType f))
-                                   (java.lang.reflect.Modifier/isPublic (.getModifiers f))
-                                   (java.lang.reflect.Modifier/isStatic (.getModifiers f))
-                                   (-> f .getName (.startsWith "const__"))
-                                   (.get f (fn-name v)))
-                              nil)))))))
+    (into #{} (keep (fn [^java.lang.reflect.Field f]
+                      (or (and (identical? clojure.lang.Var (.getType f))
+                               (java.lang.reflect.Modifier/isPublic (.getModifiers f))
+                               (java.lang.reflect.Modifier/isStatic (.getModifiers f))
+                               (-> f .getName (.startsWith "const__"))
+                               (.get f (fn-name v)))
+                          nil))
+                    (.getDeclaredFields v)))))
 
 (def ^:private class-cache
   "Reference to Clojures class cache.
@@ -47,20 +47,20 @@
     (.get classCache* clojure.lang.DynamicClassLoader)))
 
 (defn fn-deps
-  "Returns a set with all the functions invoked by `v` and its lambdas.
+  "Returns a set with all the functions invoked inside `v` or any contained anonymous functions.
   `v` can be a function value, a var or a symbol.
    If a function was defined multiple times, old lambda deps will
    be returned.
-   This does not return functions marked with meta :inline like +
+   This does not return functions marked with meta :inline like `+`
    since they are already compiled away at this point."
   {:added "0.5"}
   [v]
-  (when-let [^clojure.lang.AFn v (as-val v)]
+  (when-let [^clojure.lang.AFn v (to-fn v)]
     (let [f-class-name (-> v .getClass .getName)]
       ;; this uses the implementation detail that the clojure compiler always
       ;; prefixes names of lambdas with the name of its surrounding function class
       (into #{} (comp (filter (fn [[k _v]] (clojure.string/includes? k f-class-name)))
-                      (map (fn [[_k v]] (.get ^java.lang.ref.Reference v)))
+                      (map (fn [[_k value]] (.get ^java.lang.ref.Reference value)))
                       (mapcat fn-deps-class))
             class-cache))))
 
