@@ -11,6 +11,10 @@
   * added `orchard.xref/fn-deps-class` as a lower level API so you can still get the main functions deps only
   * added `orchard.xref/fn-transitive-deps`
 
+### Bugs fixed
+
+* [142](https://github.com/clojure-emacs/orchard/issues/142): Make read-namespace handle read conditionals gracefully
+
 ## 0.8.0 (2021-12-15)
 
 ### Changes
