@@ -4,6 +4,7 @@
   {:added "0.5"}
   (:require
    [clojure.repl :as repl]
+   [clojure.set :as set]
    [clojure.string :as str]
    [orchard.query :as q]))
 
@@ -21,7 +22,7 @@
 (defn fn-deps-class
   "Returns a set with all the functions invoked by `v`.
   `v` can be a function class or a symbol."
-  {:added "0.8"}
+  {:added "0.9"}
   [v]
   (let [^java.lang.Class v (if (class? v)
                              v
@@ -64,6 +65,23 @@
                       (mapcat fn-deps-class))
             class-cache))))
 
+(defn fn-transitive-deps
+  "Returns a set with all the functions invoked inside `v` or inside those functions.
+  `v` can be a function value, a var or a symbol."
+  {:added "0.9"}
+  [v]
+  (let [deps (fn-deps v)]
+    (loop [checked #{}
+           to-check deps
+           deps deps]
+      (cond
+        (empty? to-check) deps
+        :else (let [[current & remaining] to-check
+                    new-deps (fn-deps current)]
+                (recur (conj checked current)
+                       (concat remaining (filter #(contains? deps %) new-deps))
+                       (set/union deps new-deps)))))))
+
 (defn- fn->sym
   "Convert a function value `f` to symbol."
   [f]
@@ -88,6 +106,7 @@
     (map first (filter (fn [[_k v]] (contains? v var)) deps-map))))
 
 (comment
+  ;; this can be used to blow up memory, which will clear the class cache of old references
   (defn oom []
     (try (let [memKiller (java.util.ArrayList.)]
            (loop [free 10000000]
@@ -103,18 +122,14 @@
   (fn-deps #'orchard.xref/fn-deps)
   (fn-refs #'orchard.xref/fn->sym)
 
+  ;; returns all classes in this ns, even repl eval'd
   (let [f-class-name "orchard.xref" #_(-> orchard.xref/fn-deps .getClass .getName)
         classes (into #{} (comp (filter (fn [[k _v]] (clojure.string/includes? k f-class-name)))
                                 (map (fn [[_k v]] (.get ^java.lang.ref.Reference v))))
                       class-cache)]
     classes)
 
-  (let [memKiller (java.util.ArrayList.)]
-    (loop [free (.. Runtime (getRuntime) (freeMemory))]
-      (.add memKiller (object-array free))
-      (recur (.. Runtime (getRuntime) (freeMemory)))))
   (oom)
-  (Math/min 1 2)
   (def vars (q/vars {:ns-query {:project? true} :private? true}))
 
   (map fn-deps vars))

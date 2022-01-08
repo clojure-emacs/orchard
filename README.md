@@ -102,6 +102,7 @@ The important implications from this are:
 * functions marked with meta :inline will not be found (inc, +, ...)
 * redefining function vars that include lambdas will still return the dependencies of the old plus the new ones
 ([explanation](https://lukas-domagala.de/blog/clojure-compiler-class-cache.html))
+* does not work on AoT compiled functions
 
 ## Configuration options
 

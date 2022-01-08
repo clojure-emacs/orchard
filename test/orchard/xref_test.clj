@@ -3,8 +3,11 @@
    [clojure.test :refer [deftest is testing]]
    [orchard.xref :as xref]))
 
-(defn- times [a b]
+(defn- times* [a b]
   (* a b))
+
+(defn- times [a b]
+  (times* a b))
 
 (defn- dummy-fn [_x]
   (map #(times % 2) (filter even? (range 1 10))))
@@ -44,3 +47,9 @@
     (is (contains? (into #{} (xref/fn-refs #'map)) #'orchard.xref-test/dummy-fn)))
   (testing "with a lambda"
     (is (contains? (into #{} (xref/fn-refs #'times)) #'orchard.xref-test/dummy-fn))))
+
+(deftest fn-transitive-deps-test
+  (testing "basics"
+    (is (= (xref/fn-transitive-deps dummy-fn)
+           #{#'clojure.core/even? #'clojure.core/filter #'clojure.core/map
+             #'clojure.core/range #'orchard.xref-test/times #'orchard.xref-test/times*}))))
