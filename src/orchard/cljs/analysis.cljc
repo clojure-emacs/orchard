@@ -6,16 +6,19 @@
    [orchard.misc :as misc])
   (:refer-clojure :exclude [find-ns find-var all-ns ns-aliases]))
 
-(defn all-ns
-  [env]
-  (->> (:cljs.analyzer/namespaces env)
-       ;; recent CLJS versions include data about macro namespaces in the
-       ;; compiler env, but we should not include them in completions or pass
-       ;; them to format-ns unless they're actually required (which is handled
-       ;; by macro-ns-candidates below)
-       (into {} (filter (fn [[_ ns]]
-                          (not (and (contains? ns :macros)
-                                    (= 1 (count ns)))))))))
+(defn all-ns [{namespaces :cljs.analyzer/namespaces}]
+  (into {}
+        (remove (fn [[ns-sym ns]]
+                  ;; Remove pseudo-namespaces that the cljs analyzer
+                  ;; started returning at some point:
+                  (or (-> ns-sym name (.startsWith "goog."))
+                      ;; recent CLJS versions include data about macro namespaces in the
+                      ;; compiler env, but we should not include them in completions or pass
+                      ;; them to format-ns unless they're actually required (which is handled
+                      ;; by macro-ns-candidates below):
+                      (and (contains? ns :macros)
+                           (= 1 (count ns))))))
+        namespaces))
 
 (defn find-ns
   [env ns]

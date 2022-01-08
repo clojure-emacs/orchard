@@ -7,8 +7,8 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :scm {:name "git" :url "https://github.com/clojure-emacs/orchard"}
 
-  :dependencies [[org.clojure/clojurescript "1.10.520"]]
-  :exclusions [org.clojure/clojure] ; see versions matrix below
+  :exclusions [org.clojure/clojure ; see versions matrix below
+               org.clojure/clojurescript]
 
   :aliases {"bump-version" ["change" "version" "leiningen.release/bump-version"]}
 
@@ -33,8 +33,10 @@
 
   :profiles {
              ;; Clojure versions matrix
-             :provided {:dependencies [[org.clojure/clojure "1.10.1"]
-                                       [org.clojure/clojure "1.10.1" :classifier "sources"]]}
+             :provided {:dependencies [[org.clojure/clojure "1.10.3"]
+                                       [org.clojure/clojure "1.10.3" :classifier "sources"]
+                                       [org.clojure/clojurescript "1.11.4"]]
+                        :test-paths ["test-cljs"]}
              :1.8 {:dependencies [[org.clojure/clojure "1.8.0"]
                                   [org.clojure/clojure "1.8.0" :classifier "sources"]]}
              :1.9 {:dependencies [[org.clojure/clojure "1.9.0"]
@@ -72,9 +74,9 @@
                                          letfn [[:block 1] [:inner 2]]}}}
 
              :clj-kondo [:test
-                         {:dependencies [[clj-kondo "2021.12.01"]]}]
+                         {:dependencies [[clj-kondo "2021.12.19"]]}]
 
-             :eastwood  {:plugins  [[jonase/eastwood "1.0.0"]]
+             :eastwood  {:plugins  [[jonase/eastwood "1.1.0"]]
                          :eastwood {:exclude-namespaces ~(cond-> []
                                                            jdk8?
                                                            (conj 'orchard.java.parser)

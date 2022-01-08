@@ -190,7 +190,7 @@ workflows:
             parameters:
               jdk_version: [openjdk8, openjdk11, openjdk16, openjdk17]
               clojure_version: ["1.8", "1.9", "1.10", "master"]
-              test_profiles: ["+test", "+test,+enrich-classpath"]
+              test_profiles: ["+test,-provided", "+test,+provided", "+test,+provided,+enrich-classpath"]
       - util_job:
           name: Code Linting, (latest LTS JDK)
           jdk_version: openjdk17
