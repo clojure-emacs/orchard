@@ -50,6 +50,9 @@
 
 (deftest fn-transitive-deps-test
   (testing "basics"
-    (is (= (xref/fn-transitive-deps dummy-fn)
-           #{#'clojure.core/even? #'clojure.core/filter #'clojure.core/map
-             #'clojure.core/range #'orchard.xref-test/times #'orchard.xref-test/times*}))))
+    (let [expected #{#'clojure.core/even? #'clojure.core/filter #'clojure.core/map
+                     #'clojure.core/range #'orchard.xref-test/times #'orchard.xref-test/times*}]
+      (is (contains? expected #'orchard.xref-test/times*)
+          "Specifically includes `#'times*`, which is a transitive dep of `#'dummy-fn` (via `#'times`)")
+      (is (= expected
+             (xref/fn-transitive-deps dummy-fn))))))
