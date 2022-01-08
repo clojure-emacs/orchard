@@ -1,6 +1,8 @@
 (ns orchard.java.legacy-parser
   "Source and docstring info for Java classes and members"
-  {:author "Jeff Valk"}
+  {:author "Jeff Valk"
+   ;; exclude from cljdoc since its build system runs newer JDKs:
+   :no-doc true}
   (:require
    [clojure.java.io :as io]
    [clojure.string :as str])
