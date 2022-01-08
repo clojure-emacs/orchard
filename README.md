@@ -84,11 +84,25 @@ Just add `orchard` as a dependency and start hacking.
 Consult the [API documentation](https://cljdoc.org/d/cider/orchard/CURRENT) to get a better idea about the
 functionality that's provided.
 
-#### Using `enrich-classpath` for best results
+### Using `enrich-classpath` for best results
 
 There are features that Orchard intends to provide (especially, those related to Java interaction) which need to assume a pre-existing initial classpath that already has various desirable items, such as the JDK sources, third-party sources, special jars such as `tools` (for JDK8), a given project's own Java sources... all that is a domain in itself, which is why our [enrich-classpath](https://github.com/clojure-emacs/enrich-classpath) project does it.
 
 For getting the most out of Orchard, it is therefore recommended/necessary to use `enrich-classpath`. Please refer to its installation/usage instructions.
+
+### xref/fn-deps and xref/fn-refs limitations
+
+These functions use a Clojure compiler implementation detail to find references to other function var dependencies.
+
+You can find a more in-depth explanation in this [post](https://lukas-domagala.de/blog/clojure-analysis-and-introspection.html).
+
+The important implications from this are:
+
+* very fast
+* functions marked with meta :inline will not be found (inc, +, ...)
+* redefining function vars that include lambdas will still return the dependencies of the old plus the new ones
+([explanation](https://lukas-domagala.de/blog/clojure-compiler-class-cache.html))
+* does not work on AoT compiled functions
 
 ## Configuration options
 
@@ -97,6 +111,12 @@ So far, Orchard follows these options, which can be specified as Java system pro
 
 * `"-Dorchard.initialize-cache.silent=true"` (default: `true`)
   * if `false`, the _class info cache_ initialization may print warnings (possibly spurious ones).
+
+## Tests and formatting
+
+To run the CI tasks locally use:
+
+`make test cljfmt kondo eastwood`
 
 ## History
 

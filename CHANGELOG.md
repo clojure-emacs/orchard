@@ -2,6 +2,15 @@
 
 ## master (unreleased)
 
+## 0.9.0 (2022-01-8)
+
+### Changes
+
+* [#51](https://github.com/clojure-emacs/orchard/issues/51): extend find-usages
+  * `orchard.xref/fn-deps` now also finds anonymous function dependencies
+  * added `orchard.xref/fn-deps-class` as a lower level API so you can still get the main functions deps only
+  * added `orchard.xref/fn-transitive-deps`
+
 ## 0.8.0 (2021-12-15)
 
 ### Changes
