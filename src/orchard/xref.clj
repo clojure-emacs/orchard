@@ -72,7 +72,7 @@
   [v]
   (let [deps (fn-deps v)]
     (loop [checked #{}
-           to-check deps
+           to-check (into [] deps)
            deps deps]
       (cond
         (empty? to-check) deps
