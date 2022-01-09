@@ -58,5 +58,9 @@
                      #'clojure.test/test-var #'clojure.core/range #'clojure.core/inc'}]
       (is (contains? expected #'orchard.xref-test/fn-transitive-dep)
           "Specifically includes `#'fn-transitive-dep`, which is a transitive dep of `#'dummy-fn` (via `#'fn-dep`)")
+      (is (contains? expected #'clojure.core/inc')
+          "Specifically includes `#'clojure.core/inc'`, which is a transitive dep of `#'dummy-fn` 
+           (via `#'clojure.core/range'`). Unlike other AoT compiled core transitive dependancies 
+           it gets found because its a non `:static` dependancy.")
       (is (= expected
              (xref/fn-transitive-deps dummy-fn))))))
