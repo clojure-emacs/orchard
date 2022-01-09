@@ -1,9 +1,8 @@
 (ns orchard.info-test
   (:require
-   [clojure.java.io :refer [resource]]
+   [clojure.java.io :as io]
    [clojure.string :as str :refer [replace-first]]
    [clojure.test :refer [are deftest is testing use-fixtures]]
-   [orchard.cljs.test-env :as test-env]
    [orchard.info :as info]
    [orchard.java :as java]
    [orchard.misc :as misc]
@@ -12,12 +11,24 @@
 
 @java/cache-initializer ;; make tests more deterministic
 
+(def cljs-available?
+  (let [sym 'orchard.cljs.test-env
+        fname (-> sym str (str/replace "." "/") (str/replace "-" "_") (str ".cljc"))]
+    (assert (some-> fname io/resource io/as-file .exists)
+            (format "The %s file can be required to begin with" fname))
+    (try
+      (require sym)
+      true
+      (catch Exception _
+        false))))
+
 (def ^:dynamic *cljs-params*)
 
 (defn wrap-info-params
   [f]
-  (binding [*cljs-params* {:dialect :cljs
-                           :env (test-env/create-test-env)}]
+  (with-bindings (cond-> {}
+                   cljs-available? (assoc #'*cljs-params* {:dialect :cljs
+                                                           :env (@(resolve 'orchard.cljs.test-env/create-test-env))}))
     (f)))
 
 (use-fixtures :once wrap-info-params)
@@ -31,16 +42,17 @@
 
 (deftest info-deftype-test
   (testing "deftype"
-    (testing "- :cljs"
-      (let [i (info/info 'orchard.test-ns 'TestType *cljs-params*)]
-        (is (= '{:ns orchard.test-ns
-                 :name TestType
-                 :type true
-                 :record false
-                 :tag function
-                 :arglists nil}
-               (select-keys i [:ns :name :record :type :tag :arglists])))
-        (is (str/includes? (:file i) "test_ns")))))
+    (when cljs-available?
+      (testing "- :cljs"
+        (let [i (info/info 'orchard.test-ns 'TestType *cljs-params*)]
+          (is (= '{:ns orchard.test-ns
+                   :name TestType
+                   :type true
+                   :record false
+                   :tag function
+                   :arglists nil}
+                 (select-keys i [:ns :name :record :type :tag :arglists])))
+          (is (str/includes? (:file i) "test_ns"))))))
 
   (testing "- :clj"
     (let [i (info/info 'orchard.test-ns 'TestType)]
@@ -54,16 +66,17 @@
 
 (deftest info-defrecord-test
   (testing "defrecord"
-    (testing "- :cljs"
-      (let [i (info/info 'orchard.test-ns 'TestRecord *cljs-params*)]
-        (is (= '{:ns orchard.test-ns
-                 :name TestRecord
-                 :type true
-                 :record true
-                 :tag function
-                 :arglists nil}
-               (select-keys i [:ns :name :record :type :tag :arglists])))
-        (is (str/includes? (:file i) "test_ns"))))
+    (when cljs-available?
+      (testing "- :cljs"
+        (let [i (info/info 'orchard.test-ns 'TestRecord *cljs-params*)]
+          (is (= '{:ns orchard.test-ns
+                   :name TestRecord
+                   :type true
+                   :record true
+                   :tag function
+                   :arglists nil}
+                 (select-keys i [:ns :name :record :type :tag :arglists])))
+          (is (str/includes? (:file i) "test_ns")))))
 
     (testing "- :clj"
       (let [i (info/info 'orchard.test-ns 'TestRecord)]
@@ -92,12 +105,13 @@
                             (get it true)
                             (map :name it)
                             (set it)))]
-      (testing "- :cljs"
-        (let [special-doc-map (misc/require-and-resolve 'cljs.repl/special-doc-map)
-              special-syms (into '#{in-ns load load-file} (keys special-doc-map))]
-          (is (= special-syms (->> (into special-syms ns-syms)
-                                   (map #(merge *cljs-params* {:ns target-ns :sym %}))
-                                   (info-specials))))))
+      (when cljs-available?
+        (testing "- :cljs"
+          (let [special-doc-map (misc/require-and-resolve 'cljs.repl/special-doc-map)
+                special-syms (into '#{in-ns load load-file} (keys special-doc-map))]
+            (is (= special-syms (->> (into special-syms ns-syms)
+                                     (map #(merge *cljs-params* {:ns target-ns :sym %}))
+                                     (info-specials)))))))
       (testing "- :clj"
         (let [special-doc-map (misc/require-and-resolve 'clojure.repl/special-doc-map)
               special-syms (into '#{letfn let loop fn} (keys special-doc-map))]
@@ -112,10 +126,11 @@
           expected '{:ns orchard.test-ns-dep
                      :name foo-in-dep
                      :arglists ([foo])}]
-      (testing "- :cljs"
-        (let [i (info/info* (merge *cljs-params* params))]
-          (is (= expected (select-keys i [:ns :name :arglists])))
-          (is (str/includes? (:file i) "test_ns_dep"))))
+      (when cljs-available?
+        (testing "- :cljs"
+          (let [i (info/info* (merge *cljs-params* params))]
+            (is (= expected (select-keys i [:ns :name :arglists])))
+            (is (str/includes? (:file i) "test_ns_dep")))))
       (testing "- :clj"
         (let [i (info/info* params)]
           (is (= expected (select-keys i [:ns :name :arglists])))
@@ -126,9 +141,10 @@
     (let [expected '{:ns clojure.string
                      :name replace
                      :arglists ([s match replacement])}]
-      (testing "- :cljs"
-        (let [i (info/info 'orchard.test-ns 'clojure.string/replace *cljs-params*)]
-          (is (= expected (select-keys i [:ns :name :arglists])))))
+      (when cljs-available?
+        (testing "- :cljs"
+          (let [i (info/info 'orchard.test-ns 'clojure.string/replace *cljs-params*)]
+            (is (= expected (select-keys i [:ns :name :arglists]))))))
 
       (testing "- :clj"
         (let [i (info/info 'orchard.test-ns 'clojure.string/replace)]
@@ -138,9 +154,10 @@
     (let [expected '{:ns clojure.string
                      :name replace
                      :arglists ([s match replacement])}]
-      (testing "- :cljs"
-        (let [i (info/info 'orchard.test-ns 'replace *cljs-params*)]
-          (is (= expected (select-keys i [:ns :name :arglists])))))
+      (when cljs-available?
+        (testing "- :cljs"
+          (let [i (info/info 'orchard.test-ns 'replace *cljs-params*)]
+            (is (= expected (select-keys i [:ns :name :arglists]))))))
 
       (testing "- :clj"
         (let [i (info/info 'orchard.test-ns 'replace)]
@@ -154,9 +171,10 @@
                      :name trim
                      :arglists ([s])
                      :doc "Removes whitespace from both ends of string."}]
-      (testing "- :cljs"
-        (is (= expected (-> (info/info* (merge *cljs-params* params))
-                            (select-keys [:ns :name :arglists :doc])))))
+      (when cljs-available?
+        (testing "- :cljs"
+          (is (= expected (-> (info/info* (merge *cljs-params* params))
+                              (select-keys [:ns :name :arglists :doc]))))))
       (testing "- :clj"
         (is (= expected (-> (info/info* params)
                             (select-keys [:ns :name :arglists :doc])
@@ -164,35 +182,38 @@
 
 (deftest info-unqualified-sym-and-namespace-test
   (testing "Resolution from current namespace"
-    (testing "- :cljs"
-      (let [i (info/info* (merge *cljs-params* '{:ns cljs.core :sym +}))]
-        (is (= '+ (:name i)))
-        (is (= 'cljs.core (:ns i)))))
+    (when cljs-available?
+      (testing "- :cljs"
+        (let [i (info/info* (merge *cljs-params* '{:ns cljs.core :sym +}))]
+          (is (= '+ (:name i)))
+          (is (= 'cljs.core (:ns i))))))
     (testing "- :clj"
       (let [i (info/info* '{:ns clojure.core :sym +})]
         (is (= '+ (:name i)))
         (is (= 'clojure.core (:ns i))))))
 
   (testing "Resolution from other namespaces"
-    (testing "- :cljs"
-      (let [i (info/info* (merge *cljs-params* '{:ns cljs.user :sym +}))]
-        (is (= (-> #'+ meta :name) (:name i)))
-        (is (= 'cljs.core (:ns i)))))
+    (when cljs-available?
+      (testing "- :cljs"
+        (let [i (info/info* (merge *cljs-params* '{:ns cljs.user :sym +}))]
+          (is (= (-> #'+ meta :name) (:name i)))
+          (is (= 'cljs.core (:ns i))))))
     (testing "- :clj"
       (let [i (info/info* '{:ns user :sym +})]
         (is (= '+ (:name i)))
         (is (= 'clojure.core (:ns i)))))))
 
-(deftest info-cljs-tooling-issue-28-test
-  (testing "Resolution from current namespace - issue #28 from cljs-tooling"
-    (let [i (info/info* (merge *cljs-params* '{:ns orchard.test-ns :sym issue-28}))]
-      (is (= '{:arglists ([])
-               :line 15
-               :column 1
-               :ns orchard.test-ns
-               :name issue-28}
-             (select-keys i [:arglists :line :column :ns :name])))
-      (is (str/includes? (:file i) "orchard/test_ns")))))
+(when cljs-available?
+  (deftest info-cljs-tooling-issue-28-test
+    (testing "Resolution from current namespace - issue #28 from cljs-tooling"
+      (let [i (info/info* (merge *cljs-params* '{:ns orchard.test-ns :sym issue-28}))]
+        (is (= '{:arglists ([])
+                 :line 15
+                 :column 1
+                 :ns orchard.test-ns
+                 :name issue-28}
+               (select-keys i [:arglists :line :column :ns :name])))
+        (is (str/includes? (:file i) "orchard/test_ns"))))))
 
 (deftest info-ns-as-sym-test
   (testing "Only namespace as qualified symbol"
@@ -201,25 +222,27 @@
                      :name orchard.test-ns
                      :doc "A test namespace"
                      :line 1}]
-      (testing "- :cljs"
-        (let [i (info/info* (merge *cljs-params* params))]
-          (is (= expected (select-keys i [:line :doc :name :ns])))
-          (is (str/includes? (:file i) "orchard/test_ns"))))
+      (when cljs-available?
+        (testing "- :cljs"
+          (let [i (info/info* (merge *cljs-params* params))]
+            (is (= expected (select-keys i [:line :doc :name :ns])))
+            (is (str/includes? (:file i) "orchard/test_ns")))))
       (testing "- :clj"
         (let [i (info/info* params)]
           (is (= expected (select-keys i [:line :doc :name :ns])))
           (is (str/includes? (:file i) "orchard/test_ns"))))
 
-      ;; is how the info middleware sends it
-      (testing "- :cljs with context"
-        (let [params '{:context-ns orchard.test-ns
-                       :sym orchard.test-ns}
-              i (info/info* (merge *cljs-params* params))]
-          (is (= '{:ns orchard.test-ns
-                   :name orchard.test-ns
-                   :line 1}
-                 (select-keys i [:line :name :ns])))
-          (is (str/includes? (:file i) "orchard/test_ns")))))))
+      (when cljs-available?
+        ;; is how the info middleware sends it
+        (testing "- :cljs with context"
+          (let [params '{:context-ns orchard.test-ns
+                         :sym orchard.test-ns}
+                i (info/info* (merge *cljs-params* params))]
+            (is (= '{:ns orchard.test-ns
+                     :name orchard.test-ns
+                     :line 1}
+                   (select-keys i [:line :name :ns])))
+            (is (str/includes? (:file i) "orchard/test_ns"))))))))
 
 (deftest info-ns-dependency-as-sym-test
   (testing "Namespace dependency"
@@ -228,31 +251,34 @@
                      :name orchard.test-ns-dep
                      :doc "Dependency of test-ns namespace"
                      :line 1}]
-      (testing "- :cljs"
-        (let [i (info/info* (merge *cljs-params* params))]
-          (is (= expected (select-keys i [:line :doc :name :ns])))
-          (is (str/includes? (:file i) "orchard/test_ns_dep"))))
+      (when cljs-available?
+        (testing "- :cljs"
+          (let [i (info/info* (merge *cljs-params* params))]
+            (is (= expected (select-keys i [:line :doc :name :ns])))
+            (is (str/includes? (:file i) "orchard/test_ns_dep")))))
       (testing "- :clj"
         (let [i (info/info* params)]
           (is (= expected (select-keys i [:line :doc :name :ns])))
           (is (str/includes? (:file i) "orchard/test_ns_dep"))))
 
       ;; is how the info middleware sends it
-      (testing "- :cljs with context"
-        (let [params '{:sym orchard.test-ns-dep
-                       :context-ns orchard.test-ns}
-              i (info/info* (merge *cljs-params* params))]
-          (is (= '{:ns orchard.test-ns-dep
-                   :name orchard.test-ns-dep
-                   :doc "Dependency of test-ns namespace"
-                   :line 1}
-                 (select-keys i [:line :name :doc :ns])))
-          (is (str/includes? (:file i) "orchard/test_ns_dep")))))))
+      (when cljs-available?
+        (testing "- :cljs with context"
+          (let [params '{:sym orchard.test-ns-dep
+                         :context-ns orchard.test-ns}
+                i (info/info* (merge *cljs-params* params))]
+            (is (= '{:ns orchard.test-ns-dep
+                     :name orchard.test-ns-dep
+                     :doc "Dependency of test-ns namespace"
+                     :line 1}
+                   (select-keys i [:line :name :doc :ns])))
+            (is (str/includes? (:file i) "orchard/test_ns_dep"))))))))
 
 (deftest info-cljs-core-namespace-test
   (testing "Namespace itself but cljs.core"
-    (testing "- :cljs"
-      (is (= 'cljs.core (:ns (info/info* (merge *cljs-params* '{:sym cljs.core}))))))
+    (when cljs-available?
+      (testing "- :cljs"
+        (is (= 'cljs.core (:ns (info/info* (merge *cljs-params* '{:sym cljs.core})))))))
     (testing "- :clj"
       (is (= 'clojure.core (:ns (info/info* '{:sym clojure.core})))))))
 
@@ -264,10 +290,11 @@
                      :name orchard.test-ns-dep
                      :doc "Dependency of test-ns namespace"
                      :line 1}]
-      (testing "- :cljs"
-        (let [i (info/info* (merge *cljs-params* params))]
-          (is (= expected (select-keys i [:ns :name :doc :arglists :line])))
-          (is (str/includes? (:file i) "orchard/test_ns_dep"))))
+      (when cljs-available?
+        (testing "- :cljs"
+          (let [i (info/info* (merge *cljs-params* params))]
+            (is (= expected (select-keys i [:ns :name :doc :arglists :line])))
+            (is (str/includes? (:file i) "orchard/test_ns_dep")))))
 
       (testing "- :clj"
         (let [i (info/info* params)]
@@ -276,66 +303,70 @@
 
 (deftest info-namespace-macro-test
   (testing "Macro namespace"
-    (testing "- :cljs"
-      (let [params '[{:sym orchard.test-macros}
-                     {:sym orchard.test-macros
-                      :ns orchard.test-ns}
-                     {:sym orchard.test-macros
-                      :context-ns orchard.test-ns}
-                     {:sym orchard.test-macros
-                      :context-ns orchard.test-ns}]
-            expected '{:ns orchard.test-macros
-                       :file "orchard/test_macros.clj"
-                       :name orchard.test-macros
-                       :line 1}]
-        (is (= (take 4 (repeat expected))
-               (map #(info/info* (merge *cljs-params* %)) params)))))))
+    (when cljs-available?
+      (testing "- :cljs"
+        (let [params '[{:sym orchard.test-macros}
+                       {:sym orchard.test-macros
+                        :ns orchard.test-ns}
+                       {:sym orchard.test-macros
+                        :context-ns orchard.test-ns}
+                       {:sym orchard.test-macros
+                        :context-ns orchard.test-ns}]
+              expected '{:ns orchard.test-macros
+                         :file "orchard/test_macros.clj"
+                         :name orchard.test-macros
+                         :line 1}]
+          (is (= (take 4 (repeat expected))
+                 (map #(info/info* (merge *cljs-params* %)) params))))))))
 
 (deftest info-namespace-cljs-core-macro-test
-  (testing "cljs.core macro"
-    (testing "- :cljs"
-      (let [params '[{:sym loop}
-                     {:sym loop :ns cljs.core}
-                     {:sym loop :context-ns cljs.core}
-                     {:sym cljs.core/loop}
-                     {:sym cljs.core/loop :context-ns cljs.user}
-                     {:sym cljs.core/loop :ns cljs.user}]
-            expected '{:ns cljs.core
-                       :doc "Evaluates the exprs in a lexical context in which the symbols in\n  the binding-forms are bound to their respective init-exprs or parts\n  therein. Acts as a recur target."
-                       :name loop
-                       :arglists ([bindings & body])}]
-        (is (= (take 6 (repeat expected))
-               (->> params
-                    (map #(info/info* (merge *cljs-params* %)))
-                    (map #(select-keys % [:ns :name :doc :arglists])))))))))
+  (when cljs-available?
+    (testing "cljs.core macro"
+      (testing "- :cljs"
+        (let [params '[{:sym loop}
+                       {:sym loop :ns cljs.core}
+                       {:sym loop :context-ns cljs.core}
+                       {:sym cljs.core/loop}
+                       {:sym cljs.core/loop :context-ns cljs.user}
+                       {:sym cljs.core/loop :ns cljs.user}]
+              expected '{:ns cljs.core
+                         :doc "Evaluates the exprs in a lexical context in which the symbols in\n  the binding-forms are bound to their respective init-exprs or parts\n  therein. Acts as a recur target."
+                         :name loop
+                         :arglists ([bindings & body])}]
+          (is (= (take 6 (repeat expected))
+                 (->> params
+                      (map #(info/info* (merge *cljs-params* %)))
+                      (map #(select-keys % [:ns :name :doc :arglists]))))))))))
 
 (deftest info-namespace-macro-alias-test
-  (testing "Macro namespace alias"
-    (testing "- :cljs"
-      (let [params '[{:sym test-macros :context-ns orchard.test-ns}
-                     {:sym test-macros :ns orchard.test-ns}]
-            expected '{:ns orchard.test-macros
-                       :name orchard.test-macros
-                       :file "orchard/test_macros.clj"
-                       :line 1}]
-        (is (= (take 2 (repeat expected))
-               (map #(info/info* (merge *cljs-params* %)) params)))))))
+  (when cljs-available?
+    (testing "Macro namespace alias"
+      (testing "- :cljs"
+        (let [params '[{:sym test-macros :context-ns orchard.test-ns}
+                       {:sym test-macros :ns orchard.test-ns}]
+              expected '{:ns orchard.test-macros
+                         :name orchard.test-macros
+                         :file "orchard/test_macros.clj"
+                         :line 1}]
+          (is (= (take 2 (repeat expected))
+                 (map #(info/info* (merge *cljs-params* %)) params))))))))
 
 (deftest info-macros-var-test
   (testing "Macro"
-    (testing "- :cljs"
-      (let [params '[{:sym orchard.test-macros/my-add}
-                     {:ns orchard.test-macros
-                      :sym my-add}]
-            expected '{:ns orchard.test-macros
-                       :name my-add
-                       :arglists ([a b])
-                       :macro true
-                       :file "orchard/test_macros.clj"}]
-        (is (= (take 2 (repeat expected))
-               (->> params
-                    (map #(info/info* (merge *cljs-params* %)))
-                    (map #(select-keys % [:ns :name :arglists :macro :file])))))))
+    (when cljs-available?
+      (testing "- :cljs"
+        (let [params '[{:sym orchard.test-macros/my-add}
+                       {:ns orchard.test-macros
+                        :sym my-add}]
+              expected '{:ns orchard.test-macros
+                         :name my-add
+                         :arglists ([a b])
+                         :macro true
+                         :file "orchard/test_macros.clj"}]
+          (is (= (take 2 (repeat expected))
+                 (->> params
+                      (map #(info/info* (merge *cljs-params* %)))
+                      (map #(select-keys % [:ns :name :arglists :macro :file]))))))))
 
     (testing "- :clj"
       (let [params '[{:sym orchard.test-macros/my-add}
@@ -366,11 +397,12 @@
                      :file "orchard/test_macros.clj"
                      :macro true}]
 
-      (testing "- :cljs"
-        (is (= (take 3 (repeat expected))
-               (->> params
-                    (map #(info/info* (merge *cljs-params* %)))
-                    (map #(select-keys % [:ns :name :arglists :macro :file]))))))
+      (when cljs-available?
+        (testing "- :cljs"
+          (is (= (take 3 (repeat expected))
+                 (->> params
+                      (map #(info/info* (merge *cljs-params* %)))
+                      (map #(select-keys % [:ns :name :arglists :macro :file])))))))
 
       (testing "- :clj"
         (is (= [{}, expected, {}]
@@ -388,11 +420,12 @@
                      :file "orchard/test_macros.clj"
                      :macro true}]
 
-      (testing "- :cljs"
-        (is (= (take 1 (repeat expected))
-               (->> params
-                    (map #(info/info* (merge *cljs-params* %)))
-                    (map #(select-keys % [:ns :name :arglists :macro :file]))))))
+      (when cljs-available?
+        (testing "- :cljs"
+          (is (= (take 1 (repeat expected))
+                 (->> params
+                      (map #(info/info* (merge *cljs-params* %)))
+                      (map #(select-keys % [:ns :name :arglists :macro :file])))))))
 
       (testing "- :clj"
         (is (= (take 1 (repeat expected))
@@ -423,10 +456,11 @@
   (testing "File resolves, issue #75"
     (let [params '{:ns orchard.test-ns
                    :sym orchard.test-no-defs}
-          cljs-merged-params (merge *cljs-params* params)
           f "orchard/test_no_defs.cljc"]
-      (testing "- :cljs"
-        (is (-> cljs-merged-params info/info* ^String (:file) (.endsWith f))))
+      (when cljs-available?
+        (testing "- :cljs"
+          (let [cljs-merged-params (merge *cljs-params* params)]
+            (is (-> cljs-merged-params info/info* ^String (:file) (.endsWith f))))))
 
       (testing "- :clj"
         (is (-> params info/info* ^String (:file) (.endsWith f)))))))
@@ -578,7 +612,7 @@
   (:resource (info/file-info x)))
 
 (deftest resource-path-test
-  (is (= (class (file (subs (str (resource "clojure/core.clj")) 4)))
+  (is (= (class (file (subs (str (io/resource "clojure/core.clj")) 4)))
          java.net.URL))
   (is (= (class (file "clojure/core.clj"))
          java.net.URL))
@@ -648,10 +682,11 @@
   ;; and specifically test-resources/orchard/test_ns.cljc
   ;;
   ;; Note that :file in :meta is left untouched
-  (with-redefs [orchard.misc/boot-project? (constantly true)]
-    (is (= '{:ns orchard.test-ns
-             :name x
-             :file "orchard/test_ns.cljc"}
-           (-> (merge *cljs-params* '{:ns orchard.test-ns :sym x})
-               (info/info*)
-               (select-keys [:ns :name :file]))))))
+  (when cljs-available?
+    (with-redefs [orchard.misc/boot-project? (constantly true)]
+      (is (= '{:ns orchard.test-ns
+               :name x
+               :file "orchard/test_ns.cljc"}
+             (-> (merge *cljs-params* '{:ns orchard.test-ns :sym x})
+                 (info/info*)
+                 (select-keys [:ns :name :file])))))))

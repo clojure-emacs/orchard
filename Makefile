@@ -21,7 +21,7 @@ cljfmt:
 	lein with-profile -user,-dev,+$(VERSION),+cljfmt cljfmt check
 
 kondo:
-	lein with-profile -user,-dev,+clj-kondo run -m clj-kondo.main --lint src test src-jdk8 src-newer-jdks test-newer-jdks
+	lein with-profile -user,-dev,+clj-kondo run -m clj-kondo.main --lint src test src-jdk8 src-newer-jdks test-newer-jdks test-cljs
 
 # When releasing, the BUMP variable controls which field in the
 # version string will be incremented in the *next* snapshot
@@ -30,17 +30,17 @@ kondo:
 BUMP ?= patch
 
 release: clean
-	lein with-profile -user,-dev,+$(VERSION) release $(BUMP)
+	lein with-profile -user,-dev,+$(VERSION),-provided release $(BUMP)
 
 # Deploying requires the caller to set environment variables as
 # specified in project.clj to provide a login and password to the
 # artifact repository.
 
 deploy: clean
-	lein with-profile -user,-dev,+$(VERSION) deploy clojars
+	lein with-profile -user,-dev,+$(VERSION),-provided deploy clojars
 
 install: clean
-	lein with-profile -user,-dev,+$(VERSION) install
+	lein with-profile -user,-dev,+$(VERSION),-provided install
 
 clean:
 	lein with-profile -user,-dev clean
