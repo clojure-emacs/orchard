@@ -26,8 +26,8 @@
            #{#'clojure.core/map #'clojure.core/filter
              #'clojure.core/even? #'clojure.core/range #'orchard.xref-test/fn-dep})))
   (testing "AoT compiled functions return deps"
-    (is (= (xref/fn-deps reverse)
-           #{#'clojure.core/conj}))))
+    (is (= #{#'clojure.core/conj}
+           (xref/fn-deps reverse)))))
 
 ;; The mere presence of this var can reproduce a certain issue. See:
 ;; https://github.com/clojure-emacs/orchard/issues/135#issuecomment-939731698
