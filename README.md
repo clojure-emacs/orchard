@@ -78,19 +78,19 @@ Documentation for the master branch as well as tagged releases are available
 Just add `orchard` as a dependency and start hacking.
 
 ```clojure
-[cider/orchard "0.8.0"]
+[cider/orchard "0.9.0"]
 ```
 
 Consult the [API documentation](https://cljdoc.org/d/cider/orchard/CURRENT) to get a better idea about the
 functionality that's provided.
 
-### Using `enrich-classpath` for best results
+#### Using `enrich-classpath` for best results
 
 There are features that Orchard intends to provide (especially, those related to Java interaction) which need to assume a pre-existing initial classpath that already has various desirable items, such as the JDK sources, third-party sources, special jars such as `tools` (for JDK8), a given project's own Java sources... all that is a domain in itself, which is why our [enrich-classpath](https://github.com/clojure-emacs/enrich-classpath) project does it.
 
 For getting the most out of Orchard, it is therefore recommended/necessary to use `enrich-classpath`. Please refer to its installation/usage instructions.
 
-### xref/fn-deps and xref/fn-refs limitations
+#### xref/fn-deps and xref/fn-refs limitations
 
 These functions use a Clojure compiler implementation detail to find references to other function var dependencies.
 

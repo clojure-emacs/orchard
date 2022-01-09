@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+## 0.9.0 (2022-01-10)
+
 ### Changes
 
 * [#51](https://github.com/clojure-emacs/orchard/issues/51): extend `find-usages`

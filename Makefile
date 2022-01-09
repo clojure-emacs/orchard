@@ -35,12 +35,27 @@ release: clean
 # Deploying requires the caller to set environment variables as
 # specified in project.clj to provide a login and password to the
 # artifact repository.
-
+# Example:
+# GIT_TAG=v0.9.0 CLOJARS_USERNAME=$USER CLOJARS_PASSWORD=$(pbpaste) make deploy
 deploy: clean
 	lein with-profile -user,-dev,+$(VERSION),-provided deploy clojars
+	git tag -a "$$GIT_TAG" -m "$$GIT_TAG"
+	git push
+	git push --tags
 
 install: clean
 	lein with-profile -user,-dev,+$(VERSION),-provided install
 
 clean:
 	lein with-profile -user,-dev clean
+
+check-env:
+ifndef CLOJARS_USERNAME
+	$(error CLOJARS_USERNAME is undefined)
+endif
+ifndef CLOJARS_PASSWORD
+	$(error CLOJARS_PASSWORD is undefined)
+endif
+ifndef GIT_TAG
+	$(error GIT_TAG is undefined)
+endif
