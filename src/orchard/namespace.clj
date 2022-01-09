@@ -6,7 +6,6 @@
   {:author "Jeff Valk"
    :added "0.5"}
   (:require
-   [clojure.edn :as edn]
    [clojure.java.io :as io]
    [clojure.string :as str]
    [orchard.java.classpath :as cp]
@@ -20,13 +19,21 @@
 (defn read-namespace
   "Returns the namespace name from the first top-level `ns` form in the file."
   [url]
-  (try
-    (with-open [r (PushbackReader. (io/reader url))]
-      (->> (repeatedly #(edn/read r))
-           (filter #(and (list? %) (= (first %) 'ns))) ; ns form
-           (map second)                                ; ns name
-           (first)))
-    (catch Exception _)))
+  (with-open [r (PushbackReader. (io/reader url))]
+    (loop []
+      (let [found (try
+                    (binding [*read-eval* false]
+                      (read {:read-cond :allow
+                             :eof ::eof}
+                            r))
+                    (catch Exception _
+                      ::fail))]
+        (cond
+          (#{::eof ::fail} found) nil
+          (and (list? found)
+               (-> found first #{`ns 'ns}))
+          (second found)
+          :else (recur))))))
 
 (defn canonical-source
   "Returns the URL of the source file for the namespace object or symbol,
