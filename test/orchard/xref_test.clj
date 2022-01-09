@@ -24,7 +24,10 @@
   (testing "with a symbol"
     (is (= (xref/fn-deps 'orchard.xref-test/dummy-fn)
            #{#'clojure.core/map #'clojure.core/filter
-             #'clojure.core/even? #'clojure.core/range #'orchard.xref-test/fn-dep}))))
+             #'clojure.core/even? #'clojure.core/range #'orchard.xref-test/fn-dep})))
+  (testing "AoT compiled functions return deps"
+    (is (= (xref/fn-deps reverse)
+           #{#'clojure.core/conj}))))
 
 ;; The mere presence of this var can reproduce a certain issue. See:
 ;; https://github.com/clojure-emacs/orchard/issues/135#issuecomment-939731698
@@ -52,7 +55,7 @@
   (testing "basics"
     (let [expected #{#'orchard.xref-test/fn-deps-test #'orchard.xref-test/fn-dep #'clojure.core/even?
                      #'clojure.core/filter #'orchard.xref-test/fn-transitive-dep #'clojure.core/map
-                     #'clojure.test/test-var #'clojure.core/range}]
+                     #'clojure.test/test-var #'clojure.core/range #'clojure.core/inc'}]
       (is (contains? expected #'orchard.xref-test/fn-transitive-dep)
           "Specifically includes `#'fn-transitive-dep`, which is a transitive dep of `#'dummy-fn` (via `#'fn-dep`)")
       (is (= expected
