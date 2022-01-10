@@ -6,16 +6,16 @@
 
 ### Changes
 
-* [#51](https://github.com/clojure-emacs/orchard/issues/51): extend `find-usages`
+* [#51](https://github.com/clojure-emacs/orchard/issues/51): Extend `find-usages`:
   * `orchard.xref/fn-deps` now also finds anonymous function dependencies.
   * New: `orchard.xref/fn-deps-class` as a lower level API so you can still get the main functions deps only.
   * New: `orchard.xref/fn-transitive-deps`.
-* [#65](https://github.com/clojure-emacs/orchard/issues/65): make ClojureScript dependency `:provided`.
+* [#65](https://github.com/clojure-emacs/orchard/issues/65): Make ClojureScript dependency `:provided`.
   * If you were using Orchard for ClojureScript functionality, it might be a good idea to make sure you have an explicit `org.clojure/clojurescript` dependency.
 
 ### Bugs fixed
 
-* [142](https://github.com/clojure-emacs/orchard/issues/142): Make read-namespace handle read conditionals gracefully
+* [#142](https://github.com/clojure-emacs/orchard/issues/142): Make `read-namespace` handle read conditionals gracefully.
 
 ## 0.8.0 (2021-12-15)
 
