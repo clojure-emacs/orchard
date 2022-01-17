@@ -2,6 +2,10 @@
 
 ## master (unreleased)
 
+### Bugs fixed
+
+* Fix a NullPointerException in `orchard.cljs.analysis`. 
+
 ## 0.9.0 (2022-01-10)
 
 ### Changes
