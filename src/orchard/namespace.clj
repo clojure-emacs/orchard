@@ -103,6 +103,14 @@
 ;; These methods search sources on the classpath. Non-classpath source
 ;; files, documentation code, etc within the project directory are ignored.
 
+(defn jvm-clojure-resource-name->ns-name
+  "Given a .clj or .clj `resource-name`, returns its namespace name."
+  [resource-name]
+  (when (misc/clj-file? resource-name)
+    (some-> resource-name
+            io/resource ;; can return nil for Emacs backup files, for example
+            read-namespace)))
+
 (defn classpath-namespaces
   "Returns all namespaces defined in sources on the classpath or the specified
   classpath URLs."
@@ -110,11 +118,7 @@
    (->> classpath-urls
         (pmap cp/classpath-seq)
         (apply concat)
-        (pmap (fn [x]
-                (when (misc/clj-file? x)
-                  x)))
-        (filter identity)
-        (pmap (comp read-namespace io/resource))
+        (pmap jvm-clojure-resource-name->ns-name)
         (filter identity)
         (sort)))
   ([]

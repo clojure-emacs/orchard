@@ -4,7 +4,8 @@
 
 ### Bugs fixed
 
-* Fix a NullPointerException in `orchard.cljs.analysis`. 
+* Fix a NullPointerException in `orchard.cljs.analysis`.
+* Fix a `Cannot open <nil> as a Reader`.
 
 ## 0.9.0 (2022-01-10)
 

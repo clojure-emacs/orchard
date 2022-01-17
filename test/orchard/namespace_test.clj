@@ -2,7 +2,7 @@
   (:require
    [clojure.java.io :as io]
    [clojure.string :as str]
-   [clojure.test :refer [deftest is testing]]
+   [clojure.test :refer [are deftest is testing]]
    [orchard.misc :as misc]
    [orchard.namespace :as sut]))
 
@@ -86,3 +86,9 @@
         (is (= nses (map (comp sut/read-namespace    ; src -> ns
                                sut/canonical-source) ; ns -> src
                          nses)))))))
+
+(deftest jvm-clojure-resource-name->ns-name
+  (are [input expected] (= expected
+                           (sut/jvm-clojure-resource-name->ns-name input))
+    "orchard/namespace_test.clj"   'orchard.namespace-test
+    "orchard/namespace_teeest.clj" nil))
