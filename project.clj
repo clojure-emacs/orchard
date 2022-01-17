@@ -1,6 +1,6 @@
 (def jdk8? (->> "java.version" System/getProperty (re-find #"^1.8.")))
 
-(defproject cider/orchard "0.9.0"
+(defproject cider/orchard "0.9.1"
   :description "A fertile ground for Clojure tooling"
   :url "https://github.com/clojure-emacs/orchard"
   :license {:name "Eclipse Public License"
