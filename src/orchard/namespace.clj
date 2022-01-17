@@ -112,9 +112,9 @@
         (apply concat)
         (pmap (fn [x]
                 (when (misc/clj-file? x)
-                  x)))
+                  (io/resource x))))
         (filter identity)
-        (pmap (comp read-namespace io/resource))
+        (pmap read-namespace)
         (filter identity)
         (sort)))
   ([]
