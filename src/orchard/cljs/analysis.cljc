@@ -11,7 +11,7 @@
         (remove (fn [[ns-sym ns]]
                   ;; Remove pseudo-namespaces that the cljs analyzer
                   ;; started returning at some point:
-                  (or (-> ns-sym name (.startsWith "goog."))
+                  (or (some-> ns-sym name (.startsWith "goog."))
                       ;; recent CLJS versions include data about macro namespaces in the
                       ;; compiler env, but we should not include them in completions or pass
                       ;; them to format-ns unless they're actually required (which is handled
