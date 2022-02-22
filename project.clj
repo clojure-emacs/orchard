@@ -76,7 +76,7 @@
              :clj-kondo [:test
                          {:dependencies [[clj-kondo "2021.12.19"]]}]
 
-             :eastwood  {:plugins  [[jonase/eastwood "1.1.0"]]
+             :eastwood  {:plugins  [[jonase/eastwood "1.2.2"]]
                          :eastwood {:exclude-namespaces ~(cond-> []
                                                            jdk8?
                                                            (conj 'orchard.java.parser)
