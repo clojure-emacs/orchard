@@ -142,9 +142,28 @@ past - `cider-nrepl` was split into two libraries, so that non-nREPL
 clients can make of use of the general functionality contained in
 `cider-nrepl` (e.g. things like `apropos`, `inspect`, etc).
 
+### Development
+
+You can install Orchard locally like this:
+
+```
+PROJECT_VERSION=0.9.2 make install
+```
+
+...note that projects such as cider-nrepl or refactor-nrepl use copies of Orchard that are inlined with [mranderson](https://github.com/benedekfazekas/mranderson),
+so a local Orchard install won't automatically update those.
+
+For releasing to [Clojars](https://clojars.org/):
+
+```
+git tag -a v0.9.2 -m "0.9.2"
+git push --tags
+git push
+```
+
 ## License
 
-Copyright © 2018-2021 Bozhidar Batsov & contributors
+Copyright © 2018-2022 Bozhidar Batsov & contributors
 
 Distributed under the Eclipse Public License either version 1.0 or (at
 your option) any later version.

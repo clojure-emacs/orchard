@@ -1,4 +1,4 @@
-.PHONY: test docs eastwood cljfmt release deploy clean .EXPORT_ALL_VARIABLES
+.PHONY: test docs eastwood cljfmt deploy clean .EXPORT_ALL_VARIABLES
 
 VERSION ?= 1.10
 
@@ -12,33 +12,18 @@ test: clean .EXPORT_ALL_VARIABLES
 	lein with-profile -user,-dev,+$(VERSION),$(TEST_PROFILES) test
 
 eastwood:
-	lein with-profile -user,-dev,+$(VERSION),+eastwood,$(TEST_PROFILES) eastwood
+	lein with-profile -user,-dev,+$(VERSION),+eastwood,+deploy,$(TEST_PROFILES) eastwood
 
 cljfmt:
-	lein with-profile -user,-dev,+$(VERSION),+cljfmt cljfmt check
+	lein with-profile -user,-dev,+$(VERSION),+deploy,+cljfmt cljfmt check
 
 kondo:
-	lein with-profile -user,-dev,+clj-kondo run -m clj-kondo.main --lint src test src-jdk8 src-newer-jdks test-newer-jdks test-cljs
+	lein with-profile -user,-dev,+clj-kondo run -m clj-kondo.main --lint src test src-jdk8 src-newer-jdks test-newer-jdks test-cljs .circleci/deploy
 
-# When releasing, the BUMP variable controls which field in the
-# version string will be incremented in the *next* snapshot
-# version. Typically this is either "major", "minor", or "patch".
-
-BUMP ?= patch
-
-release: clean
-	lein with-profile -user,-dev,+$(VERSION),-provided release $(BUMP)
-
-# Deploying requires the caller to set environment variables as
-# specified in project.clj to provide a login and password to the
-# artifact repository.
-# Example:
-# GIT_TAG=v0.9.0 CLOJARS_USERNAME=$USER CLOJARS_PASSWORD=$(pbpaste) make deploy
-deploy: clean
+# Deployment is performed via CI by creating a git tag prefixed with "v".
+# Please do not deploy locally as it skips various measures.
+deploy: check-env clean
 	lein with-profile -user,-dev,+$(VERSION),-provided deploy clojars
-	git tag -a "$$GIT_TAG" -m "$$GIT_TAG"
-	git push
-	git push --tags
 
 install: clean
 	lein with-profile -user,-dev,+$(VERSION),-provided install
@@ -53,6 +38,11 @@ endif
 ifndef CLOJARS_PASSWORD
 	$(error CLOJARS_PASSWORD is undefined)
 endif
-ifndef GIT_TAG
-	$(error GIT_TAG is undefined)
+ifndef CIRCLE_TAG
+	$(error CIRCLE_TAG is undefined. Please only perform deployments by publishing git tags. CI will do the rest.)
+endif
+
+check-install-env:
+ifndef PROJECT_VERSION
+	$(error Please set PROJECT_VERSION as an env var beforehand.)
 endif

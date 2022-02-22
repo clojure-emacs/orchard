@@ -15,10 +15,10 @@ env_defaults: &env_defaults
   LEIN_ROOT: "true"   # we intended to run lein as root
 
 jdk8_env_defaults: &jdk8_env_defaults
-  JVM_OPTS: -Xmx3200m
+  JVM_OPTS: -Xmx3200m -Dclojure.main.report=stderr
 
 newer_jdk_env_defaults: &newer_jdk_env_defaults
-  JVM_OPTS: -Xmx3200m --illegal-access=deny
+  JVM_OPTS: -Xmx3200m --illegal-access=deny -Dclojure.main.report=stderr
 
 # Runners for OpenJDK 8 and 11
 
@@ -133,6 +133,14 @@ jobs:
           clojure_version: "1.10"
           steps: << parameters.steps >>
 
+  deploy:
+    executor: openjdk8
+    steps:
+      - checkout
+      - run:
+         name: Deploy
+         command: |
+           TEST_PROFILES= lein with-profile -user,+deploy run -m deploy-release make deploy
 
   test_code:
     description: |
@@ -191,6 +199,11 @@ workflows:
               jdk_version: [openjdk8, openjdk11, openjdk16, openjdk17]
               clojure_version: ["1.8", "1.9", "1.10", "master"]
               test_profiles: ["+test,-provided", "+test,+provided", "+test,+provided,+enrich-classpath"]
+          filters:
+            branches:
+              only: /.*/
+            tags:
+              only: /^v\d+\.\d+\.\d+(-alpha\d+)?$/
       - util_job:
           name: Code Linting, (latest LTS JDK)
           jdk_version: openjdk17
@@ -203,3 +216,17 @@ workflows:
                 name: Running clj-kondo
                 command: |
                   make kondo
+          filters:
+            branches:
+              only: /.*/
+            tags:
+              only: /^v\d+\.\d+\.\d+(-alpha\d+)?$/
+      - deploy:
+          requires:
+            - test_code
+            - "Code Linting, (latest LTS JDK)"
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v\d+\.\d+\.\d+(-alpha\d+)?$/
