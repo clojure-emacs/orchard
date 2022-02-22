@@ -2,6 +2,7 @@
   (:require
    [clojure.java.io :as io]
    [clojure.java.javadoc :as javadoc]
+   [clojure.string :as string]
    [clojure.test :refer [are deftest is testing]]
    [orchard.java :refer [cache class-info class-info* javadoc-url jdk-tools member-info resolve-class resolve-javadoc-path resolve-member resolve-symbol resolve-type source-info]]
    [orchard.misc :as misc]
@@ -130,7 +131,9 @@
         (testing "implemented on immediate superclass"
           (is (not= 'java.lang.Object (:class m6))))
         (testing "implemented on ancestor superclass"
-          (is (not= 'java.lang.Object (:class m7))))))))
+          (is (not= 'java.lang.Object (:class m7)))
+          (is (-> m6 :doc (string/starts-with? "Called by the garbage collector on an object when garbage collection "))
+              "Contains doc that is clearly defined in Object (the superclass)"))))))
 
 (deftest arglists-test
   (let [+this (comp #{'this} first)]

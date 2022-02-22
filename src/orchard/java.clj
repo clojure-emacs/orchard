@@ -268,11 +268,16 @@
   implemention. If the member is an instance member, `this` is prepended to its
   arglists."
   [class member]
-  (let [c (->> (class-info class)
-               (iterate (comp class-info :super))
-               (take-while identity)
-               (filter #(get-in % [:members member]))
-               (first))]
+  (let [c
+        ;; NOTE: the following code uses `loop` to avoid retaining more objects in memory than necessary.
+        ;; `class-info` calls can be expensive given the JavaDoc parsing they can perform.
+        (loop [next-class class]
+          (let [{:keys [super] :as c-i} (class-info next-class)
+                v (get-in c-i [:members member])]
+            (cond
+              v c-i
+              (not super) nil
+              :else (recur super))))]
     (when-let [m (get-in c [:members member])]
       (let [m* (first (sort-by :line (vals m)))
             static? (or (:static (:modifiers m*)) (= class member))
