@@ -1,6 +1,7 @@
 (def jdk8? (->> "java.version" System/getProperty (re-find #"^1.8.")))
 
-(defproject cider/orchard "0.9.1"
+(defproject cider/orchard (or (not-empty (System/getenv "PROJECT_VERSION"))
+                              "0.0.0")
   :description "A fertile ground for Clojure tooling"
   :url "https://github.com/clojure-emacs/orchard"
   :license {:name "Eclipse Public License"
@@ -9,8 +10,6 @@
 
   :exclusions [org.clojure/clojure ; see versions matrix below
                org.clojure/clojurescript]
-
-  :aliases {"bump-version" ["change" "version" "leiningen.release/bump-version"]}
 
   :release-tasks [["vcs" "assert-committed"]
                   ["bump-version" "release"]
@@ -86,4 +85,6 @@
                                                                         System/getenv
                                                                         (doto assert)
                                                                         (.contains "enrich-classpath"))))
-                                                           (conj 'orchard.java.legacy-parser))}}})
+                                                           (conj 'orchard.java.legacy-parser))}}
+
+             :deploy {:source-paths [".circleci/deploy"]}})
