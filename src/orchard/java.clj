@@ -28,19 +28,9 @@
 ;; this simply entails having the corresponding source artifacts in the
 ;; project's dev dependencies. The core Java API classes are the exception to
 ;; this, since these are external to lein/maven dependency management. For
-;; these, we search the JDK directory and add the source classpath entry
+;; these, `enrich-classpath` searches the JDK directory and add the source classpath entry
 ;; manually, if available. Prior to JDK9, parsing source files also requires
-;; having `tools.jar` on the classpath, which we'll have to add as well.
-;;
-;; The context classloader may be different at startup and in a
-;; REPL (e.g. nREPL) session, and these classloaders may not share a modifiable
-;; ancestor classloader. That's why the current implementation checks that the
-;; JDK sources are visible on the classpath prior to invoking the Java parser,
-;; and if not, adds a classpath entry for them. (see `ensure-jdk-sources`)
-;;
-;; An alternative approach would be to pass the REPL's classloader to Orchard's
-;; functions that modify the classpath. You can find a more extensive discussion
-;; on that topic here https://github.com/clojure-emacs/orchard/issues/103.
+;; having `tools.jar` on the classpath.
 
 (defn ^:deprecated jdk-find
   "Search common JDK path configurations for a specified file name and return a
