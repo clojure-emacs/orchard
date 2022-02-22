@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+* Guard against OOMs in `orchard.java/member-info`.
+
 ## 0.9.1 (2022-01-17)
 
 ### Bugs fixed
