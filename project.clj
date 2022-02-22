@@ -58,7 +58,7 @@
                                "-Dorchard.internal.test-suite-running=true"
                                "-Dorchard.internal.has-enriched-classpath=false"]}
 
-             :enrich-classpath {:plugins [[mx.cider/enrich-classpath "1.5.0"]]
+             :enrich-classpath {:plugins [[mx.cider/enrich-classpath "1.9.0"]]
                                 :middleware [cider.enrich-classpath/middleware]
                                 :jvm-opts ["-Dorchard.internal.has-enriched-classpath=true"]}
 
