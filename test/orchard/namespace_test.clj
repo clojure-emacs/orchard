@@ -62,6 +62,9 @@
       (testing "when multiple ns forms are present"
         (spit url "(ns ns1) (ns ns2) (ns ns3)")
         (is (= 'ns1 (sut/read-namespace uri))))
+      (testing "when ns form is invalid"
+        (spit url "(ns (:require [clojure.string]))")
+        (is (nil? (sut/read-namespace uri))))
       (testing "of top-level forms only"
         (spit url "(comment (ns ns1)) (ns ns2) (ns ns3)")
         (is (= 'ns2 (sut/read-namespace uri))))
