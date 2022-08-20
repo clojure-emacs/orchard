@@ -2,6 +2,18 @@
 
 ## master (unreleased)
 
+### Changes
+
+* [#161](https://github.com/clojure-emacs/orchard/pull/161): Add Datafy section to inspector and align section headers
+  * Add a `Datafy` section to the inspector. For more details, take a
+    look at the
+    [Datafiable](https://github.com/clojure-emacs/orchard/blob/master/doc/inspector.org#datafiable)
+    and
+    [Navigable](https://github.com/clojure-emacs/orchard/blob/master/doc/inspector.org#navigable)
+    sections of the Orchard inspector
+    [docs](https://github.com/clojure-emacs/orchard/blob/master/doc/inspector.org).
+  * Align all section headers to start with `---`.
+
 ## 0.9.2 (2022-02-22)
 
 * Guard against OOMs in `orchard.java/member-info`.

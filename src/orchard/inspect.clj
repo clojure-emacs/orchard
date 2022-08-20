@@ -9,11 +9,21 @@
 
   Pretty wild, right?"
   (:require
-   [clojure.string :as s])
+   [clojure.string :as s]
+   [orchard.misc :as misc])
   (:import
-   (java.lang.reflect Field Modifier)
-   (java.util List Map)
-   clojure.lang.Seqable))
+   clojure.lang.Seqable
+   (java.lang.reflect Constructor Field Method Modifier)
+   (java.util List Map)))
+
+;; Datafy and Nav are only available since Clojure 1.10
+(require 'clojure.core.protocols)
+
+(def ^:private datafy
+  (misc/call-when-resolved 'clojure.core.protocols/datafy))
+
+(def ^:private nav
+  (misc/call-when-resolved 'clojure.core.protocols/nav))
 
 ;;
 ;; Navigating Inspector State
@@ -67,7 +77,7 @@
   [inspector]
   (merge (reset-index inspector)
          {:value nil, :stack [], :path [], :pages-stack [],
-          :current-page 0, :rendered '()}))
+          :current-page 0, :rendered '(), :indentation 0}))
 
 (defn fresh
   "Return an empty inspector."
@@ -209,7 +219,7 @@
     (map? value)                                   :map-long
     (and (vector? value) (short? value))           :vector
     (vector? value)                                :vector-long
-    (and (seq? value) (not (counted? value)))      :lazy-seq
+    (misc/lazy-seq? value)                         :lazy-seq
     (and (seq? value) (short? value))              :list
     (seq? value)                                   :list-long
     (and (set? value) (short? value))              :set
@@ -290,6 +300,29 @@
 (defn render-ln [inspector & values]
   (render-onto inspector (concat values '((:newline)))))
 
+(defn- indent [inspector]
+  (update inspector :indentation + 2))
+
+(defn- unindent [inspector]
+  (update inspector :indentation - 2))
+
+(defn- padding [{:keys [indentation]}]
+  (when (and (number? indentation) (pos? indentation))
+    (apply str (repeat indentation " "))))
+
+(defn- render-indent [inspector & values]
+  (let [padding (padding inspector)]
+    (cond-> inspector
+      padding
+      (render padding)
+      (seq values)
+      (render-onto values))))
+
+(defn- render-section-header [inspector section]
+  (-> (render-ln inspector)
+      (render (format "%s--- %s:" (or (padding inspector) "") (name section)))
+      (render-ln)))
+
 (defn render-value [inspector value]
   (let [{:keys [counter]} inspector
         expr `(:value ~(inspect-value value) ~counter)]
@@ -300,18 +333,21 @@
 
 (defn render-labeled-value [inspector label value]
   (-> inspector
-      (render label ": ")
+      (render-indent label ": ")
       (render-value value)
       (render-ln)))
+
+(defn- render-class-name [inspector obj]
+  (render-labeled-value inspector "Class" (class obj)))
 
 (defn render-map-values [inspector mappable]
   (reduce (fn [ins [key val]]
             (-> ins
-                (render "  ")
+                (render-indent)
                 (render-value key)
                 (render " = ")
                 (render-value val)
-                (render '(:newline))))
+                (render-ln)))
           inspector
           mappable))
 
@@ -321,37 +357,62 @@
    (loop [ins inspector, obj (seq obj), idx idx-starts-from]
      (if obj
        (recur (-> ins
-                  (render "  " (str idx) ". ")
+                  (render-indent (str idx) ". ")
                   (render-value (first obj))
-                  (render '(:newline)))
+                  (render-ln))
               (next obj) (inc idx))
        ins))))
+
+(defn- last-page [{:keys [current-page page-size]} obj]
+  (if (or (instance? clojure.lang.Counted obj)
+          ;; if there are no more items after the current page,
+          ;; we must have reached the end of the collection, so
+          ;; it's not infinite.
+          (empty? (drop (* (inc current-page) page-size) obj)))
+    (quot (dec (count obj)) page-size)
+    ;; possibly infinite
+    Integer/MAX_VALUE))
+
+(defn- render-page-info [{:keys [current-page page-size] :as inspector} obj]
+  (if-not (sequential? obj)
+    inspector
+    (let [last-page (last-page inspector obj)
+          paginate? (not= last-page 0)]
+      (if-not paginate?
+        inspector
+        (-> (render-section-header inspector "Page Info")
+            (indent)
+            (render-indent (format "Page size: %d, showing page: %d of %s"
+                                   page-size (inc current-page)
+                                   (if (= last-page Integer/MAX_VALUE)
+                                     "?" (inc last-page))))
+            (unindent))))))
+
+(defn- current-page [{:keys [current-page] :as inspector} obj]
+  (let [last-page (last-page inspector obj)]
+    ;; current-page might contain an incorrect value, fix that
+    (cond (< current-page 0) 0
+          (> current-page last-page) last-page
+          :else current-page)))
+
+(defn- chunk-to-display [{:keys [page-size] :as inspector} obj]
+  (let [start-idx (* (current-page inspector obj) page-size)]
+    (->> obj (drop start-idx) (take page-size))))
 
 (defn render-collection-paged
   "Render a single page of either an indexed or associative collection."
   [inspector obj]
-  (let [{:keys [current-page page-size]} inspector
-        last-page (if (or (instance? clojure.lang.Counted obj)
-                          ;; if there are no more items after the current page,
-                          ;; we must have reached the end of the collection, so
-                          ;; it's not infinite.
-                          (empty? (drop (* (inc current-page) page-size) obj)))
-                    (quot (dec (count obj)) page-size)
-                    Integer/MAX_VALUE) ;; possibly infinite
-        ;; current-page might contain an incorrect value, fix that
-        current-page (cond (< current-page 0) 0
-                           (> current-page last-page) last-page
-                           :else current-page)
+  (let [{:keys [page-size]} inspector
+        last-page (last-page inspector obj)
+        current-page (current-page inspector obj)
         start-idx (* current-page page-size)
-        chunk-to-display (->> obj
-                              (drop start-idx)
-                              (take page-size))
+        chunk-to-display (chunk-to-display inspector obj)
         paginate? (not= last-page 0)]
     (as-> inspector ins
       (if (> current-page 0)
         (-> ins
-            (render "  ...")
-            (render '(:newline)))
+            (render-indent "...")
+            (render-ln))
         ins)
 
       (if (or (map? obj) (instance? Map obj))
@@ -359,25 +420,65 @@
         (render-indexed-values ins chunk-to-display start-idx))
 
       (if (< current-page last-page)
-        (render ins "  ...")
+        (-> (render-indent ins "...")
+            (render-ln))
         ins)
 
       (if paginate?
-        (-> ins
-            (render '(:newline))
-            (render (format "  Page size: %d, showing page: %d of %s"
-                            page-size (inc current-page)
-                            (if (= last-page Integer/MAX_VALUE)
-                              "?" (inc last-page))))
-            (assoc :current-page current-page))
+        (assoc ins :current-page current-page)
         ins))))
 
 (defn render-meta-information [inspector obj]
   (if (seq (meta obj))
     (-> inspector
-        (render-ln "Meta Information: ")
-        (render-map-values (meta obj)))
+        (render-section-header "Meta Information")
+        (indent)
+        (render-map-values (meta obj))
+        (unindent))
     inspector))
+
+(defn- nav-datafy-tx [obj]
+  (comp (map (fn [[k v]] (some->> (nav obj k v) datafy (vector k)))) (remove nil?)))
+
+(defn- nav-datafy [obj]
+  (let [data (datafy obj)]
+    (cond (map? data)
+          (into {} (nav-datafy-tx obj) data)
+          (or (sequential? data) (set? data))
+          (map datafy data))))
+
+(defn- render-datafy? [inspector obj]
+  (cond (not misc/datafy?)
+        false
+        (map? obj)
+        (not= obj (nav-datafy obj))
+        (or (sequential? obj) (set? obj))
+        (not= (chunk-to-display inspector obj)
+              (map datafy (chunk-to-display inspector obj)))
+        :else (not= obj (datafy obj))))
+
+(declare inspect)
+
+(defn- render-datafy-content [inspector obj]
+  (let [contents (nav-datafy obj)]
+    (cond (map? contents)
+          (render-collection-paged inspector contents)
+          (sequential? contents)
+          (render-collection-paged inspector contents)
+          :else (-> (indent inspector)
+                    (inspect contents)
+                    (unindent)))))
+
+(defn- render-datafy [inspector obj]
+  ;; Only render the datafy section if the datafyed version of the object is
+  ;; different than object, since we don't want to show the same data twice to
+  ;; the user.
+  (if-not (render-datafy? inspector obj)
+    inspector
+    (-> (render-section-header inspector "Datafy")
+        (indent)
+        (render-datafy-content obj)
+        (unindent))))
 
 ;; Inspector multimethod
 (defn known-types [_ins obj]
@@ -405,35 +506,50 @@
       (render-ln "nil")))
 
 (defmethod inspect :coll [inspector obj]
-  (-> inspector
-      (render-labeled-value "Class" (class obj))
+  (-> (render-class-name inspector obj)
       (render-meta-information obj)
-      (render-ln "Contents: ")
-      (render-collection-paged obj)))
+      (render-section-header "Contents")
+      (indent)
+      (render-collection-paged obj)
+      (unindent)
+      (render-datafy obj)))
 
 (defmethod inspect :array [inspector obj]
-  (-> inspector
-      (render-labeled-value "Class" (class obj))
+  (-> (render-class-name inspector obj)
       (render-labeled-value "Count" (java.lang.reflect.Array/getLength obj)) ; avoid reflection warning from Clojure compiler
       (render-labeled-value "Component Type" (.getComponentType (class obj)))
-      (render-ln "Contents: ")
-      (render-collection-paged obj)))
+      (render-section-header "Contents")
+      (indent)
+      (render-collection-paged obj)
+      (unindent)
+      (render-datafy obj)))
+
+(defn- render-var-value [inspector ^clojure.lang.Var obj]
+  (if-not (.isBound obj)
+    inspector
+    (-> (render-indent inspector "Value: ")
+        (render-value (var-get obj))
+        (render-ln))))
 
 (defmethod inspect :var [inspector ^clojure.lang.Var obj]
-  (let [header-added
-        (-> inspector
-            (render-labeled-value "Class" (class obj))
-            (render-meta-information obj))]
-    (if (.isBound obj)
-      (-> header-added
-          (render "Value: ")
-          (render-value (var-get obj)))
-      header-added)))
+  (-> (render-class-name inspector obj)
+      (render-var-value obj)
+      (render-meta-information obj)
+      (render-datafy obj)))
+
+(defn- render-indent-str-lines [inspector s]
+  (reduce #(-> (render-indent %1 (str %2))
+               (render-ln))
+          inspector (s/split-lines s)))
 
 (defmethod inspect :string [inspector ^java.lang.String obj]
-  (-> inspector
-      (render-labeled-value "Class" (class obj))
-      (render "Value: " (pr-str obj))))
+  (-> (render-class-name inspector obj)
+      (render "Value: " (pr-str obj))
+      (render-ln)
+      (render-section-header "Print")
+      (indent)
+      (render-indent-str-lines obj)
+      (unindent)))
 
 (defmethod inspect :default [inspector obj]
   (let [class-chain (loop [c (class obj), res ()]
@@ -466,59 +582,94 @@
             (render-fields [inspector section-name fields]
               (if (seq fields)
                 (-> inspector
-                    (render-ln section-name)
+                    (render-section-header section-name)
+                    (indent)
                     (render-map-values (->> fields
                                             (map (fn [f] [(field-name f) (field-val f)]))
                                             (into (sorted-map))))
-                    (render-ln))
+                    (unindent))
                 inspector))]
       (-> inspector
           (render-labeled-value "Class" (class obj))
           (render-labeled-value "Value" (pr-str obj))
-          (render-ln "---")
-          (render-fields "Fields:" non-static)
-          (render-fields "Static fields:" static)))))
+          (render-fields "Fields" non-static)
+          (render-fields "Static fields" static)
+          (render-datafy obj)))))
 
-(defn- render-section [obj inspector section]
+(defn- render-section [obj inspector [section sort-key-fn]]
   (let [method (symbol (str ".get" (name section)))
         elements (eval (list method obj))]
-    (if-not elements
+    (if-not (seq elements)
       inspector
-      (reduce (fn [ins elt]
-                (-> ins
-                    (render "  ")
-                    (render-value elt)
-                    (render-ln)))
-              (-> inspector
-                  (render-ln)
-                  (render-ln "--- " (name section) ": "))
-              elements))))
+      (unindent (reduce (fn [ins elt]
+                          (-> ins
+                              (render-indent)
+                              (render-value elt)
+                              (render-ln)))
+                        (-> inspector
+                            (render-section-header section)
+                            (indent))
+                        (sort-by sort-key-fn elements))))))
 
 (defmethod inspect :class [inspector ^Class obj]
-  (reduce (partial render-section obj)
-          (render-labeled-value inspector "Class" (class obj))
-          [:Interfaces :Constructors :Fields :Methods]))
+  (-> (reduce (partial render-section obj)
+              (render-class-name inspector obj)
+              [[:Interfaces #(.getName ^Class %)]
+               [:Constructors #(.toGenericString ^Constructor %)]
+               [:Fields #(.getName ^Field %)]
+               [:Methods #(vector (.getName ^Method %) (.toGenericString ^Method %))]])
+      (render-datafy obj)))
 
 (defmethod inspect :aref [inspector ^clojure.lang.ARef obj]
-  (-> inspector
-      (render-labeled-value "Class" (class obj))
-      (render-ln "Contains:")
-      (render-ln)
-      (inspect (deref obj))))
+  (-> (render-class-name inspector obj)
+      (render-section-header "Contains")
+      (indent)
+      (inspect (deref obj))
+      (unindent)
+      (render-datafy obj)))
 
 (defn ns-refers-by-ns [^clojure.lang.Namespace ns]
   (group-by (fn [^clojure.lang.Var v] (.ns v))
             (map val (ns-refers ns))))
 
+(defn- render-ns-refers [inspector obj]
+  (let [refers (ns-refers-by-ns obj)]
+    (if-not (seq refers)
+      inspector
+      (-> (render-section-header inspector "Refer from")
+          (indent)
+          (render-map-values refers)
+          (unindent)))))
+
+(defn- render-ns-imports [inspector obj]
+  (let [imports (ns-imports obj)]
+    (if-not (seq imports)
+      inspector
+      (-> (render-section-header inspector "Imports")
+          (indent)
+          (render-indent)
+          (render-value imports)
+          (unindent)
+          (render-ln)))))
+
+(defn- render-ns-interns [inspector obj]
+  (let [interns (ns-interns obj)]
+    (if-not (seq interns)
+      inspector
+      (-> (render-section-header inspector "Interns")
+          (indent)
+          (render-indent)
+          (render-value interns)
+          (unindent)
+          (render-ln)))))
+
 (defmethod inspect :namespace [inspector ^clojure.lang.Namespace obj]
-  (-> inspector
-      (render-labeled-value "Class" (class obj))
+  (-> (render-class-name inspector obj)
       (render-labeled-value "Count" (count (ns-map obj)))
-      (render-ln "---")
-      (render-ln "Refer from: ")
-      (render-map-values (ns-refers-by-ns obj))
-      (render-labeled-value "Imports" (ns-imports obj))
-      (render-labeled-value "Interns" (ns-interns obj))))
+      (render-ns-refers obj)
+      (render-ns-imports obj)
+      (render-ns-interns obj)
+      (render-datafy obj)))
 
 ;;
 ;; Entry point to inspect a value and get the serialized rep
@@ -535,10 +686,10 @@
 (defn render-path [inspector]
   (let [path (:path inspector)]
     (if (and (seq path) (not-any? #(= % '<unknown>) path))
-      (-> inspector
-          (render '(:newline))
-          (render (str "  Path: "
-                       (s/join " " (:path inspector)))))
+      (-> (render-section-header inspector "Path")
+          (indent)
+          (render-indent (s/join " " (:path inspector)))
+          (unindent))
       inspector)))
 
 (defn inspect-render
@@ -551,6 +702,7 @@
          (assoc :value value)
          (render-reference)
          (inspect value)
+         (render-page-info value)
          (render-path)))))
 
 ;; Get a human readable printout of rendered sequence
