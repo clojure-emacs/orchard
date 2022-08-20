@@ -13,7 +13,7 @@ Right now `orchard` provides functionality like:
 
 * enhanced apropos
 * classpath utils (alternative for `java.classpath`)
-* value inspector
+* value [inspector](https://github.com/clojure-emacs/orchard/blob/master/doc/inspector.org)
 * Java class handling utilities
 * Utilities for dealing with metadata
 * Namespace utilities

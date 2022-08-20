@@ -1,0 +1,648 @@
+* The Orchard Inspector
+
+The Orchard Inspector provides functionality to inspect Clojure and
+Java objects and is a useful tool for debugging large data
+structures. It is inspired by the [[https://slime.common-lisp.dev/doc/html/Inspector.html][Slime Inspector]] for Common LISP and
+is used in the [[https://github.com/clojure-emacs/cider-nrepl][Cider NREPL middleware]] to power the [[https://docs.cider.mx/cider/debugging/inspector.html][Cider Inspector]].
+
+** Usage
+
+The Orchard inspector is a Clojure map that implements a stack and
+holds information about an inspected object. The =orchard.inspect=
+namespace provides functions to create the inspector data structure
+and to manipulate it, such as drilling down into an object, moving up
+and down the stack, configuring the inspector and paginating large
+collections.
+
+#+begin_src clojure :exports code :results silent
+  (require '[orchard.inspect :as inspect])
+#+end_src
+
+*** The inspector data structure
+
+To create the inspector data structure we can use the =inspect/fresh=
+function. It returns an empty inspector initialized with the value
+=nil= that looks like this:
+
+#+begin_src clojure :exports both :results pp :wrap example
+  (inspect/fresh)
+#+end_src
+
+#+RESULTS:
+#+begin_example
+  {:path [],
+   :index [],
+   :pages-stack [],
+   :value nil,
+   :page-size 32,
+   :counter 0,
+   :rendered ("nil" (:newline)),
+   :stack [],
+   :indentation 0,
+   :current-page 0}
+#+end_example
+
+The map contains the following keys:
+
+- =:path= is a vector that contains a symbolic path to the currently
+  inspected object.
+
+- =:index= is a vector that holds the inspect-able objects that were
+  rendered at the current stack level. These are the objects into
+  which we can drill down to.
+
+- =:pages-stack= is a vector of page numbers, which is used to
+  paginate collections.
+
+- =:value= is the currently inspected object. The empty inspector has
+  this value always set to =nil=.
+
+- =:page-size= controls how many elements should be rendered per page.
+
+- =:counter= is a number that gets incremented when a new object is
+  added to the =index=.
+
+- =:rendered= is a list of instructions on how to render the currently
+  inspected object on the client (e.g in the Cider inspector). Here
+  the list =("nil" (:newline))= instructs the client to render the
+  string =nil= followed by a newline.
+
+- =:stack= is the stack of inspected objects. When drilling down into
+  an object the new object will be pushed onto that stack.
+
+- =:indentation= is the number of spaces used for padding on the left
+  side and is used by some render functions.
+
+- =:current-page= is the current page number used when paginating
+  collections.
+
+*** Inspecting an object
+
+Let's inspect a more interesting object. To start the inspection we
+can use the =inspect/start= function with the inspector and the object
+we want to inspect as its arguments. This will modify the inspector
+data structure in the following way:
+
+#+begin_src clojure :exports both :results pp :wrap example
+  (-> (inspect/fresh)
+      (inspect/start {:a {:b 1}}))
+#+end_src
+
+#+RESULTS:
+#+begin_example
+{:path [],
+ :index [clojure.lang.PersistentArrayMap :a {:b 1}],
+ :pages-stack [],
+ :value {:a {:b 1}},
+ :page-size 32,
+ :counter 3,
+ :rendered
+ ("Class" ": " (:value "clojure.lang.PersistentArrayMap" 0)
+  (:newline)
+  (:newline)
+  "--- Contents:"
+  (:newline)
+  "  " (:value ":a" 1) " = " (:value "{ :b 1 }" 2)
+  (:newline)),
+ :stack [],
+ :indentation 0,
+ :current-page 0}
+#+end_example
+
+The inspected object ={:a {:b 1}}= has been added to the =:value=
+key. The objects, into which we can drill down to, have been added to
+the =:index=, and the =:counter= has been increased by the sum of
+those objects.
+
+Since we are inspecting a Clojure map, the inspector dispatched to a
+render function that knows how to render a Clojure map. The inspector
+has render functions for different kinds of objects, and what is added
+to the =:index= depends on those render functions.
+
+The render function for Clojure maps has been implemented in a way
+that shows the class of the map and the its keys and values. When
+displayed on a client this will look like this:
+
+#+begin_example
+Class: clojure.lang.PersistentArrayMap
+
+--- Contents:
+  :a = { :b 1 }
+#+end_example
+
+The class of the map, their keys and their values are inspect-able
+objects by themselves. The instructions under the =:rendered= key now
+contain lists starting with a =:value= keyword, such as =(:value
+"clojure.lang.PersistentArrayMap" 0)=. These lists represent objects,
+into which can be drilled down to. The first element of those lists
+tells the client that the element should be rendered as an
+inspect-able object. The 2nd element is it's textual representation
+and the 3rd element is the position of the object in the =:index=.
+
+*** Drilling into an object
+
+To drill down into an object we can use the =inspect/down=
+function. After inspecting the object ={:a {:b 1}}= the =:index= is
+set to =[clojure.lang.PersistentArrayMap :a {:b 1}]=. Passing =2= (the
+position in the index) as the argument to the =inspect/down= function
+means the next object that is going to be inspected is ={:b 1}=.
+
+#+begin_src clojure :exports both :results pp :wrap example
+  (-> (inspect/fresh)
+      (inspect/start {:a {:b 1}})
+      (inspect/down 2))
+#+end_src
+
+#+RESULTS:
+#+begin_example
+{:path [:a],
+ :index [clojure.lang.PersistentArrayMap :b 1],
+ :pages-stack [0],
+ :value {:b 1},
+ :page-size 32,
+ :counter 3,
+ :rendered
+ ("Class" ": " (:value "clojure.lang.PersistentArrayMap" 0)
+  (:newline)
+  (:newline)
+  "--- Contents:"
+  (:newline)
+  "  " (:value ":b" 1) " = " (:value "1" 2)
+  (:newline)
+  (:newline)
+  "--- Path:"
+  (:newline)
+  "  " ":a"),
+ :stack [{:a {:b 1}}],
+ :indentation 0,
+ :current-page 0}
+#+end_example
+
+We can see that the inspected object ={:b 1}= has been added to the
+=:value= key and got rendered under the =:rendered= key. The previous
+object has been pushed onto the =:stack=, and =:path= has been updated
+with the instructions that describe how to get from the original
+object to the object we drilled down to. =:counter= is again set to
+=3= because the inspector dispatched to the render function for maps,
+which renders the class of the map and it's keys and values as
+inspected-able objects.
+
+** Spec
+
+The following section describes how the Orchard Inspector renders
+different kinds of objects.
+
+*** Class
+
+Classes are rendered with their name, the implemented interfaces, the
+available constructors, their fields and methods. In Clojure versions
+>= 1.10 an optional =Datafy= section is added.
+
+#+begin_src clojure :exports both :results output :wrap example
+  (inspect/inspect-print Boolean)
+#+end_src
+
+#+RESULTS:
+#+begin_example
+Class: java.lang.Class
+
+--- Interfaces:
+  java.io.Serializable
+  java.lang.Comparable
+
+--- Constructors:
+  public java.lang.Boolean(boolean)
+  public java.lang.Boolean(java.lang.String)
+
+--- Fields:
+  public static final java.lang.Boolean java.lang.Boolean.FALSE
+  public static final java.lang.Boolean java.lang.Boolean.TRUE
+  public static final java.lang.Class java.lang.Boolean.TYPE
+
+--- Methods:
+  public boolean java.lang.Boolean.booleanValue()
+  public static int java.lang.Boolean.compare(boolean,boolean)
+  public int java.lang.Boolean.compareTo(java.lang.Boolean)
+  public int java.lang.Boolean.compareTo(java.lang.Object)
+  public boolean java.lang.Boolean.equals(java.lang.Object)
+  public static boolean java.lang.Boolean.getBoolean(java.lang.String)
+  public final native java.lang.Class java.lang.Object.getClass()
+  public int java.lang.Boolean.hashCode()
+  public static int java.lang.Boolean.hashCode(boolean)
+  public static boolean java.lang.Boolean.logicalAnd(boolean,boolean)
+  public static boolean java.lang.Boolean.logicalOr(boolean,boolean)
+  public static boolean java.lang.Boolean.logicalXor(boolean,boolean)
+  public final native void java.lang.Object.notify()
+  public final native void java.lang.Object.notifyAll()
+  public static boolean java.lang.Boolean.parseBoolean(java.lang.String)
+  public java.lang.String java.lang.Boolean.toString()
+  public static java.lang.String java.lang.Boolean.toString(boolean)
+  public static java.lang.Boolean java.lang.Boolean.valueOf(boolean)
+  public static java.lang.Boolean java.lang.Boolean.valueOf(java.lang.String)
+  public final native void java.lang.Object.wait(long) throws java.lang.InterruptedException
+  public final void java.lang.Object.wait() throws java.lang.InterruptedException
+  public final void java.lang.Object.wait(long,int) throws java.lang.InterruptedException
+
+--- Datafy:
+  :bases = #{ java.lang.Object java.lang.Comparable java.io.Serializable }
+  :flags = #{ :public :final }
+  :members = { FALSE [ { :name FALSE, :type java.lang.Boolean, :declaring-class java.lang.Boolean, :flags #{ :public :static :final } } ], TRUE [ { :name TRUE, :type java.lang.Boolean, :declaring-class java.lang.Boolean, :flags #{ :public :static :final } } ], TYPE [ { :name TYPE, :type java.lang.Class, :declaring-class java.lang.Boolean, :flags #{ :public :static :final } } ], booleanValue [ { :name booleanValue, :return-type boolean, :declaring-class java.lang.Boolean, :parameter-types [], :exception-types [], ... } ], compare [ { :name compare, :return-type int, :declaring-class java.lang.Boolean, :parameter-types [ boolean boolean ], :exception-types [], ... } ], ... }
+  :name = java.lang.Boolean
+#+end_example
+
+*** Datafiable
+
+Objects implementing the [[https://github.com/clojure/clojure/blob/master/src/clj/clojure/core/protocols.clj#L182][Datafiable]] protocol are rendered with an
+optional =Datafy= section. The section shows the result of calling the
+=datafy= function on the object, navigating 1 level into the children
+using =nav= and calling =datafy= again on them.
+
+Since the [[https://github.com/clojure/clojure/blob/master/src/clj/clojure/core/protocols.clj#L182][Datafiable]] protocol is implemented for every object, this
+section will only be rendered if the datafy-ed version of the object
+is different than the original object.
+
+Minimum requirement for this feature is a Clojure version >= 1.10.
+
+#+begin_src clojure :exports both :results output :wrap example
+  (-> {:name "John Doe"}
+      (with-meta {'clojure.core.protocols/datafy
+                  (fn [x] (assoc x :class (.getSimpleName (class x))))})
+      (inspect/inspect-print))
+#+end_src
+
+#+RESULTS:
+#+begin_example
+Class: clojure.lang.PersistentArrayMap
+
+--- Meta Information:
+  clojure.core.protocols/datafy = user$eval11033$fn__11034@213a1033
+
+--- Contents:
+  :name = "John Doe"
+
+--- Datafy:
+  :name = "John Doe"
+  :class = "PersistentArrayMap"
+#+end_example
+
+*** Keyword
+
+Clojure keywords are rendered with their class name, their printed
+value, and the instance and static fields.
+
+#+begin_src clojure :exports both :results output :wrap example
+  (inspect/inspect-print :abc/def)
+#+end_src
+
+#+RESULTS:
+#+begin_example
+Class: clojure.lang.Keyword
+Value: ":abc/def"
+
+--- Fields:
+  "_str" = ":abc/def"
+  "hasheq" = -1043781166
+  "sym" = abc/def
+
+--- Static fields:
+  "rq" = java.lang.ref.ReferenceQueue@7849a4c3
+  "table" = { returns java.lang.ref.WeakReference@1b9ad0c1, dialect java.lang.ref.WeakReference@542db2ec, existing java.lang.ref.WeakReference@17d434cf, clojure.core.logic/unify-with-pmap* java.lang.ref.WeakReference@4d5b7e61, patch java.lang.ref.WeakReference@7239d9d7, ... }
+#+end_example
+
+*** Number
+
+Numbers keywords are rendered with their class name, their printed
+value, and the instance and static fields.
+
+#+begin_src clojure :exports both :results output :wrap example
+  (inspect/inspect-print 1)
+#+end_src
+
+#+RESULTS:
+#+begin_example
+Class: java.lang.Long
+Value: "1"
+
+--- Fields:
+  "value" = 1
+
+--- Static fields:
+  "BYTES" = 8
+  "MAX_VALUE" = 9223372036854775807
+  "MIN_VALUE" = -9223372036854775808
+  "SIZE" = 64
+  "TYPE" = long
+  "serialVersionUID" = 4290774380558885855
+#+end_example
+
+*** List
+
+Lists are rendered with their class name, the number of list items
+and the paginated items in tabular form.
+
+#+begin_src clojure :exports both :results output :wrap example
+  (inspect/inspect-print (list :a :b))
+#+end_src
+
+#+RESULTS:
+#+begin_example
+Class: clojure.lang.PersistentList
+
+--- Contents:
+  0. :a
+  1. :b
+#+end_example
+
+*** Map
+
+Maps are rendered with their class name, the number of map entries
+and the map entries in tabular form.
+
+#+begin_src clojure :exports both :results output :wrap example
+  (inspect/inspect-print {:a 1 :b 2})
+#+end_src
+
+#+RESULTS:
+#+begin_example
+Class: clojure.lang.PersistentArrayMap
+
+--- Contents:
+  :a = 1
+  :b = 2
+#+end_example
+
+*** Metadata
+
+Objects that have metadata attached to them are rendered with a =Meta
+Information= section that shows the metadata in tabular form.
+
+#+begin_src clojure :exports both :results output :wrap example
+  (inspect/inspect-print (with-meta [1 2] {:a 1}))
+#+end_src
+
+#+RESULTS:
+#+begin_example
+Class: clojure.lang.PersistentVector
+
+--- Meta Information:
+  :a = 1
+
+--- Contents:
+  0. 1
+  1. 2
+#+end_example
+
+*** Namespace
+
+Clojure namespaces are rendered with their class name, their
+printed value, the total number of mappings, and sections for the
+=Refer from=, =Interns= and =Imports= mappings.
+
+#+begin_src clojure :exports both :results output :wrap example
+  (inspect/inspect-print (find-ns 'clojure.string))
+#+end_src
+
+#+RESULTS:
+#+begin_example
+Class: clojure.lang.Namespace
+Count: 786
+
+--- Refer from:
+  clojure.core = [ #'clojure.core/primitives-classnames #'clojure.core/+' #'clojure.core/decimal? #'clojure.core/restart-agent #'clojure.core/sort-by ... ]
+
+--- Imports:
+  { Enum java.lang.Enum, InternalError java.lang.InternalError, NullPointerException java.lang.NullPointerException, InheritableThreadLocal java.lang.InheritableThreadLocal, Class java.lang.Class, ... }
+
+--- Interns:
+  { ends-with? #'clojure.string/ends-with?, replace-first-char #'clojure.string/replace-first-char, capitalize #'clojure.string/capitalize, reverse #'clojure.string/reverse, join #'clojure.string/join, ... }
+
+--- Datafy:
+  :name = clojure.string
+  :publics = { blank? #'clojure.string/blank?, capitalize #'clojure.string/capitalize, ends-with? #'clojure.string/ends-with?, escape #'clojure.string/escape, includes? #'clojure.string/includes?, ... }
+  :imports = { AbstractMethodError java.lang.AbstractMethodError, Appendable java.lang.Appendable, ArithmeticException java.lang.ArithmeticException, ArrayIndexOutOfBoundsException java.lang.ArrayIndexOutOfBoundsException, ArrayStoreException java.lang.ArrayStoreException, ... }
+  :interns = { blank? #'clojure.string/blank?, capitalize #'clojure.string/capitalize, ends-with? #'clojure.string/ends-with?, escape #'clojure.string/escape, includes? #'clojure.string/includes?, ... }
+#+end_example
+
+*** Navigable
+
+Objects implementing the [[https://github.com/clojure/clojure/blob/master/src/clj/clojure/core/protocols.clj#L194][Navigable]] protocol are rendered with an
+optional =Datafy= section. The ='clojure.core.protocols/nav= function
+of the object will be used for navigation, instead of the default
+implementation declared on object.
+
+Minimum requirement for this feature is a Clojure version >= 1.10.
+
+#+begin_src clojure :exports both :results output :wrap example
+  (-> {:name "John Doe"}
+      (with-meta {'clojure.core.protocols/nav
+                  (fn [coll k v] [k (get coll k v)])})
+      (inspect/inspect-print))
+#+end_src
+
+#+RESULTS:
+#+begin_example
+Class: clojure.lang.PersistentArrayMap
+
+--- Meta Information:
+  clojure.core.protocols/nav = user$eval11043$fn__11044@4c605d88
+
+--- Contents:
+  :name = "John Doe"
+
+--- Datafy:
+  :name = [ :name "John Doe" ]
+#+end_example
+
+Collections that contain elements that implement the [[https://github.com/clojure/clojure/blob/master/src/clj/clojure/core/protocols.clj#L182][Datafiable]] and
+[[https://github.com/clojure/clojure/blob/master/src/clj/clojure/core/protocols.clj#L194][Navigable]] protocols will be rendered with an additional =Datafy=
+section that shows the datafy-ed version of the elements.
+
+#+begin_src clojure :exports both :results output :wrap example
+  (->> (iterate inc 0)
+       (map #(hash-map :x %))
+       (map #(with-meta %
+               {'clojure.core.protocols/datafy (fn [x] (assoc x :class (.getSimpleName (class x))))
+                'clojure.core.protocols/nav (fn [coll k v] [k (get coll k v)])}))
+       (take 5)
+       (inspect/inspect-print))
+#+end_src
+
+#+RESULTS:
+#+begin_example
+Class: clojure.lang.LazySeq
+
+--- Contents:
+  0. { :x 0 }
+  1. { :x 1 }
+  2. { :x 2 }
+  3. { :x 3 }
+  4. { :x 4 }
+
+--- Datafy:
+  0. { :class "PersistentHashMap", :x 0 }
+  1. { :class "PersistentHashMap", :x 1 }
+  2. { :class "PersistentHashMap", :x 2 }
+  3. { :class "PersistentHashMap", :x 3 }
+  4. { :class "PersistentHashMap", :x 4 }
+#+end_example
+
+*** Pagination
+
+Collections that have more than 32 elements are paginated. A paginated
+collection can be navigated with the =inspect/next-page= and
+=inspect/prev-page= functions. The size of each page can be adjusted
+with the =inspect/set-page-size= function.
+
+#+begin_src clojure :exports both :results output :wrap example
+  (inspect/inspect-print (iterate inc 0))
+#+end_src
+
+#+RESULTS:
+#+begin_example
+Class: clojure.lang.Iterate
+
+--- Contents:
+  0. 0
+  1. 1
+  2. 2
+  3. 3
+  4. 4
+  5. 5
+  6. 6
+  7. 7
+  8. 8
+  9. 9
+  10. 10
+  11. 11
+  12. 12
+  13. 13
+  14. 14
+  15. 15
+  16. 16
+  17. 17
+  18. 18
+  19. 19
+  20. 20
+  21. 21
+  22. 22
+  23. 23
+  24. 24
+  25. 25
+  26. 26
+  27. 27
+  28. 28
+  29. 29
+  30. 30
+  31. 31
+  ...
+
+--- Page Info:
+  Page size: 32, showing page: 1 of ?
+#+end_example
+
+*** Ref
+
+Clojure references are rendered with their class name, their
+containing object in the =Contains= section, and an optional =Datafy=
+section.
+
+The object rendered under the =Contains= section is indented by 2
+spaces to better distinguish it from enclosing reference object.
+
+#+begin_src clojure :exports both :results output :wrap example
+  (inspect/inspect-print (atom {:a 1}))
+#+end_src
+
+#+RESULTS:
+#+begin_example
+Class: clojure.lang.Atom
+
+--- Contains:
+  Class: clojure.lang.PersistentArrayMap
+
+  --- Contents:
+    :a = 1
+
+--- Datafy:
+  0. { :a 1 }
+#+end_example
+
+*** String
+
+Strings are rendered with their class name, their value, and the
+printed version of the string in the =Printed Value= section.
+
+#+begin_src clojure :exports both :results output :wrap example
+  (inspect/inspect-print "Hello world")
+#+end_src
+
+#+RESULTS:
+#+begin_example
+Class: java.lang.String
+Value: "Hello world"
+
+--- Print:
+  Hello world
+#+end_example
+
+*** Symbol
+
+Clojure symbols are rendered with their class name, their printed
+value, and their fields.
+
+#+begin_src clojure :exports both :results output :wrap example
+  (inspect/inspect-print 'abc/def)
+#+end_src
+
+#+RESULTS:
+#+begin_example
+Class: clojure.lang.Symbol
+Value: "abc/def"
+
+--- Fields:
+  "_hasheq" = 0
+  "_meta" =
+  "_str" = "abc/def"
+  "name" = "def"
+  "ns" = "abc"
+#+end_example
+
+*** Var
+
+Clojure vars are rendered with their class name, their value (if
+bound), metadata information and an optional =Datafy= section.
+
+#+begin_src clojure :exports both :results output :wrap example
+  (inspect/inspect-print #'*assert*)
+#+end_src
+
+#+RESULTS:
+#+begin_example
+Class: clojure.lang.Var
+Value: true
+
+--- Meta Information:
+  :ns = clojure.core
+  :name = *assert*
+
+--- Datafy:
+  0. true
+#+end_example
+*** Vector
+
+Vectors are rendered with their class name, the number of items and
+the paginated items in tabular form.
+
+#+begin_src clojure :exports both :results output :wrap example
+  (inspect/inspect-print [1 2 3])
+#+end_src
+
+#+RESULTS:
+#+begin_example
+Class: clojure.lang.PersistentVector
+
+--- Contents:
+  0. 1
+  1. 2
+  2. 3
+#+end_example

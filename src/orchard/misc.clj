@@ -6,6 +6,8 @@
    [clojure.string :as str]
    [orchard.util.io :as util.io]))
 
+(require 'clojure.core.protocols)
+
 (defn os-windows? []
   (.startsWith (System/getProperty "os.name") "Windows"))
 
@@ -157,3 +159,29 @@
         (require ns)
         (catch Exception _ nil)))
     (some-> sym find-var var-get)))
+
+(def datafy?
+  "True if Datafy and Nav (added in Clojure 1.10) are supported,
+  otherwise false."
+  (some? (resolve 'clojure.core.protocols/datafy)))
+
+(defn call-when-resolved
+  "Return a fn that calls the fn resolved through `var-sym` with it's
+  own arguments. `var-sym` will be resolved once. If `var-sym` can't
+  be resolved the function always returns nil."
+  [var-sym]
+  (let [resolved-var (resolve var-sym)]
+    (fn [& args]
+      (when resolved-var
+        (apply resolved-var args)))))
+
+(defn lazy-seq?
+  "Return true if `x` is a lazy seq, otherwise false."
+  [x]
+  (and (seq? x) (not (counted? x))))
+
+(defn safe-count
+  "Call `clojure.core/count` on `x` if it is a collection, but not a lazy seq."
+  [x]
+  (when (and (coll? x) (not (lazy-seq? x)))
+    (count x)))
