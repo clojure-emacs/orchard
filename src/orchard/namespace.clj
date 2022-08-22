@@ -31,7 +31,8 @@
         (cond
           (#{::eof ::fail} found) nil
           (and (list? found)
-               (-> found first #{`ns 'ns}))
+               (-> found first #{`ns 'ns})
+               (symbol? (second found)))
           (second found)
           :else (recur))))))
 
