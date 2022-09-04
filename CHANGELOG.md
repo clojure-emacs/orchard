@@ -1,6 +1,11 @@
 # Changelog
 
 ## master (unreleased)
+
+## 0.10.0 (2022-09-04)
+
+### Bugs fixed
+
 * [#158](https://github.com/clojure-emacs/orchard/issues/158): Make classpath-namespaces resilient to faulty ns declarations.
 
 ### Changes

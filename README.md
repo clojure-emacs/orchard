@@ -78,7 +78,7 @@ Documentation for the master branch as well as tagged releases are available
 Just add `orchard` as a dependency and start hacking.
 
 ```clojure
-[cider/orchard "0.9.2"]
+[cider/orchard "0.10.0"]
 ```
 
 Consult the [API documentation](https://cljdoc.org/d/cider/orchard/CURRENT) to get a better idea about the
@@ -147,7 +147,7 @@ clients can make of use of the general functionality contained in
 You can install Orchard locally like this:
 
 ```
-PROJECT_VERSION=0.9.2 make install
+PROJECT_VERSION=0.10.0 make install
 ```
 
 ...note that projects such as cider-nrepl or refactor-nrepl use copies of Orchard that are inlined with [mranderson](https://github.com/benedekfazekas/mranderson),
@@ -156,7 +156,7 @@ so a local Orchard install won't automatically update those.
 For releasing to [Clojars](https://clojars.org/):
 
 ```
-git tag -a v0.9.2 -m "0.9.2"
+git tag -a v0.10.0 -m "Release 0.10.0"
 git push --tags
 git push
 ```
