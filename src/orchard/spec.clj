@@ -4,15 +4,9 @@
    [clojure.string :as str]
    [clojure.walk :as walk]))
 
-(defmacro spec [fname & args]
-  `(when-let [f# (or (resolve (symbol "clojure.spec.alpha" ~fname))
-                     (resolve (symbol "clojure.spec" ~fname)))]
-     (f# ~@args)))
-
-(defmacro spec-gen [fname & args]
-  `(when-let [f# (or (resolve (symbol "clojure.spec.gen.alpha" ~fname))
-                     (resolve (symbol "clojure.spec.gen" ~fname)))]
-     (f# ~@args)))
+(defn- spec [sym & args]
+  (when-let [f (resolve sym)]
+    (try (apply f args) (catch Exception _))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; This are all wrappers of clojure.spec.[alpha] functions.         ;;
@@ -20,15 +14,37 @@
 ;; clojure version                                                  ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn get-spec [v] (spec "get-spec" v))
+(defn get-spec [v]
+  (or (spec 'clojure.alpha.spec/get-spec v)
+      (spec 'clojure.spec.alpha/get-spec v)
+      (spec 'clojure.spec/get-spec v)))
 
-(defn describe [s] (spec "describe" s))
+(defn describe [s]
+  (or (spec 'clojure.alpha.spec/describe s)
+      (spec 'clojure.spec.alpha/describe s)
+      (spec 'clojure.spec/describe s)))
 
-(defn registry [] (spec "registry"))
+(defn registry []
+  (apply merge
+         (spec 'clojure.spec/registry)
+         (spec 'clojure.spec.alpha/registry)
+         (spec 'clojure.alpha.spec/registry)))
 
-(defn form [s] (spec "form" s))
+(defn form [s]
+  (or (spec 'clojure.alpha.spec/form s)
+      (spec 'clojure.spec.alpha/form s)
+      (spec 'clojure.spec/form s)))
 
-(defn generate [s] (spec-gen "generate" (spec "gen" s)))
+(defn gen [s]
+  (or (spec 'clojure.alpha.spec/gen s)
+      (spec 'clojure.spec.alpha/gen s)
+      (spec 'clojure.spec/gen s)))
+
+(defn generate [s]
+  (let [gen (gen s)]
+    (or (spec 'clojure.alpha.spec.gen/generate gen)
+        (spec 'clojure.spec.gen.alpha/generate gen)
+        (spec 'clojure.spec.gen/generate gen))))
 
 ;;; Utility functions
 
