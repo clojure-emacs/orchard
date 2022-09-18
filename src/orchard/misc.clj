@@ -165,6 +165,18 @@
   otherwise false."
   (some? (resolve 'clojure.core.protocols/datafy)))
 
+(def clojure-spec-alpha?
+  "True if `clojure.spec.alpha` is supported, otherwise false."
+  (some? (resolve (symbol "clojure.spec.alpha" "get-spec"))))
+
+(def clojure-spec?
+  "True if `clojure.spec` is supported, otherwise false."
+  (some? (resolve (symbol "clojure.spec" "get-spec"))))
+
+(def spec-any?
+  "True if `clojure.spec.alpha` or `clojure.spec` is supported, otherwise false."
+  (or clojure-spec-alpha? clojure-spec?))
+
 (defn call-when-resolved
   "Return a fn that calls the fn resolved through `var-sym` with the
   arguments passed to it. `var-sym` will be required and resolved

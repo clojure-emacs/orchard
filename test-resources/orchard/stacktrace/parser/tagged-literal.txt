@@ -1,0 +1,53 @@
+#error {
+ :cause "BOOM-3"
+ :data {:boom "3"}
+ :via
+ [{:type clojure.lang.ExceptionInfo
+   :message "BOOM-1"
+   :data {:boom "1"}
+   :at [clojure.lang.AFn applyToHelper "AFn.java" 160]}
+  {:type clojure.lang.ExceptionInfo
+   :message "BOOM-2"
+   :data {:boom "2"}
+   :at [clojure.lang.AFn applyToHelper "AFn.java" 160]}
+  {:type clojure.lang.ExceptionInfo
+   :message "BOOM-3"
+   :data {:boom "3"}
+   :at [clojure.lang.AFn applyToHelper "AFn.java" 156]}]
+ :trace
+ [[clojure.lang.AFn applyToHelper "AFn.java" 156]
+  [clojure.lang.AFn applyTo "AFn.java" 144]
+  [clojure.lang.Compiler$InvokeExpr eval "Compiler.java" 3706]
+  [clojure.lang.Compiler$InvokeExpr eval "Compiler.java" 3705]
+  [clojure.lang.Compiler$InvokeExpr eval "Compiler.java" 3705]
+  [clojure.lang.Compiler$DefExpr eval "Compiler.java" 457]
+  [clojure.lang.Compiler eval "Compiler.java" 7186]
+  [clojure.lang.Compiler load "Compiler.java" 7640]
+  [orchard.stacktrace.parser_test$eval10939 invokeStatic "form-init13443654147290506544.clj" 1]
+  [orchard.stacktrace.parser_test$eval10939 invoke "form-init13443654147290506544.clj" 1]
+  [clojure.lang.Compiler eval "Compiler.java" 7181]
+  [clojure.lang.Compiler eval "Compiler.java" 7136]
+  [clojure.core$eval invokeStatic "core.clj" 3202]
+  [clojure.core$eval invoke "core.clj" 3198]
+  [nrepl.middleware.interruptible_eval$evaluate$fn__1933$fn__1934 invoke "interruptible_eval.clj" 87]
+  [clojure.lang.AFn applyToHelper "AFn.java" 152]
+  [clojure.lang.AFn applyTo "AFn.java" 144]
+  [clojure.core$apply invokeStatic "core.clj" 667]
+  [clojure.core$with_bindings_STAR_ invokeStatic "core.clj" 1977]
+  [clojure.core$with_bindings_STAR_ doInvoke "core.clj" 1977]
+  [clojure.lang.RestFn invoke "RestFn.java" 425]
+  [nrepl.middleware.interruptible_eval$evaluate$fn__1933 invoke "interruptible_eval.clj" 87]
+  [clojure.main$repl$read_eval_print__9110$fn__9113 invoke "main.clj" 437]
+  [clojure.main$repl$read_eval_print__9110 invoke "main.clj" 437]
+  [clojure.main$repl$fn__9119 invoke "main.clj" 458]
+  [clojure.main$repl invokeStatic "main.clj" 458]
+  [clojure.main$repl doInvoke "main.clj" 368]
+  [clojure.lang.RestFn invoke "RestFn.java" 1523]
+  [nrepl.middleware.interruptible_eval$evaluate invokeStatic "interruptible_eval.clj" 84]
+  [nrepl.middleware.interruptible_eval$evaluate invoke "interruptible_eval.clj" 56]
+  [nrepl.middleware.interruptible_eval$interruptible_eval$fn__1966$fn__1970 invoke "interruptible_eval.clj" 152]
+  [clojure.lang.AFn run "AFn.java" 22]
+  [nrepl.middleware.session$session_exec$main_loop__2036$fn__2040 invoke "session.clj" 218]
+  [nrepl.middleware.session$session_exec$main_loop__2036 invoke "session.clj" 217]
+  [clojure.lang.AFn run "AFn.java" 22]
+  [java.lang.Thread run "Thread.java" 829]]}
