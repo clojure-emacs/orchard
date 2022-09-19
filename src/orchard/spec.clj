@@ -2,11 +2,8 @@
   (:require
    [clojure.pprint :as pp]
    [clojure.string :as str]
-   [clojure.walk :as walk]))
-
-(defn- spec [sym & args]
-  (when-let [f (resolve sym)]
-    (try (apply f args) (catch Exception _))))
+   [clojure.walk :as walk]
+   [orchard.misc :as misc]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; These are all wrappers for Clojure Spec functions.                                   ;;
@@ -16,37 +13,92 @@
 ;; We can't simply require the ns because it's existence depends on the Clojure version ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn get-spec [v]
-  (or (spec 'clojure.alpha.spec/get-spec v)
-      (spec 'clojure.spec.alpha/get-spec v)
-      (spec 'clojure.spec/get-spec v)))
+;; clojure.spec
+
+(def ^:private clojure-spec-get-spec
+  (misc/call-when-resolved 'clojure.spec/get-spec))
+
+(def ^:private clojure-spec-describe
+  (misc/call-when-resolved 'clojure.spec/describe))
+
+(def ^:private clojure-spec-form
+  (misc/call-when-resolved 'clojure.spec/form))
+
+(def ^:private clojure-spec-gen
+  (misc/call-when-resolved 'clojure.spec/gen))
+
+(def ^:private clojure-spec-registry
+  (misc/call-when-resolved 'clojure.spec/registry))
+
+;; clojure.spec.alpha
+
+(def ^:private clojure-spec-alpha-get-spec
+  (misc/call-when-resolved 'clojure.spec.alpha/get-spec))
+
+(def ^:private clojure-spec-alpha-describe
+  (misc/call-when-resolved 'clojure.spec.alpha/describe))
+
+(def ^:private clojure-spec-alpha-form
+  (misc/call-when-resolved 'clojure.spec.alpha/form))
+
+(def ^:private clojure-spec-alpha-gen
+  (misc/call-when-resolved 'clojure.spec.alpha/gen))
+
+(def ^:private clojure-spec-alpha-registry
+  (misc/call-when-resolved 'clojure.spec.alpha/registry))
+
+;; clojure.alpha.spec
+
+(def ^:private clojure-alpha-spec-get-spec
+  (misc/call-when-resolved 'clojure.alpha.spec/get-spec))
+
+(def ^:private clojure-alpha-spec-describe
+  (misc/call-when-resolved 'clojure.alpha.spec/describe))
+
+(def ^:private clojure-alpha-spec-form
+  (misc/call-when-resolved 'clojure.alpha.spec/form))
+
+(def ^:private clojure-alpha-spec-gen
+  (misc/call-when-resolved 'clojure.alpha.spec/gen))
+
+(def ^:private clojure-alpha-spec-registry
+  (misc/call-when-resolved 'clojure.alpha.spec/registry))
+
+(defn get-spec [k]
+  (or (clojure-alpha-spec-get-spec k)
+      (clojure-spec-alpha-get-spec k)
+      (clojure-spec-get-spec k)))
 
 (defn describe [s]
-  (or (spec 'clojure.alpha.spec/describe s)
-      (spec 'clojure.spec.alpha/describe s)
-      (spec 'clojure.spec/describe s)))
+  (or (clojure-alpha-spec-describe s)
+      (clojure-spec-alpha-describe s)
+      (clojure-spec-describe s)))
 
 (defn registry []
   (apply merge
-         (spec 'clojure.spec/registry)
-         (spec 'clojure.spec.alpha/registry)
-         (spec 'clojure.alpha.spec/registry)))
+         (clojure-spec-registry)
+         (clojure-spec-alpha-registry)
+         (clojure-alpha-spec-registry)))
 
 (defn form [s]
-  (or (spec 'clojure.alpha.spec/form s)
-      (spec 'clojure.spec.alpha/form s)
-      (spec 'clojure.spec/form s)))
+  (or (clojure-alpha-spec-form s)
+      (clojure-spec-alpha-form s)
+      (clojure-spec-form s)))
 
 (defn gen [s]
-  (or (spec 'clojure.alpha.spec/gen s)
-      (spec 'clojure.spec.alpha/gen s)
-      (spec 'clojure.spec/gen s)))
+  (or (clojure-alpha-spec-gen s)
+      (clojure-spec-alpha-gen s)
+      (clojure-spec-gen s)))
+
+(def ^:private generate*
+  "All Clojure Spec versions use test.check under the hood. So let's
+  directly use its `generate` function instead of going through the
+  various Spec versions again."
+  (misc/call-when-resolved 'clojure.test.check.generators/generate))
 
 (defn generate [s]
-  (let [gen (gen s)]
-    (or (spec 'clojure.alpha.spec.gen/generate gen)
-        (spec 'clojure.spec.gen.alpha/generate gen)
-        (spec 'clojure.spec.gen/generate gen))))
+  (when-let [gen (gen s)]
+    (generate* gen)))
 
 ;;; Utility functions
 
