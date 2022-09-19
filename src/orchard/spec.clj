@@ -8,11 +8,13 @@
   (when-let [f (resolve sym)]
     (try (apply f args) (catch Exception _))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; This are all wrappers of clojure.spec.[alpha] functions.         ;;
-;; We can't simply require the ns because it's existence depends on ;;
-;; clojure version                                                  ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; These are all wrappers for Clojure Spec functions.                                   ;;
+;; - clojure.spec (released between Clojure 1.8 and 1.9, but never included in Clojure) ;;
+;; - clojure.spec.alpha (renamed from clojure.spec and included in Clojure 1.9)         ;;
+;; - clojure.alpha.spec (spec-2, the new experimental version)                          ;;
+;; We can't simply require the ns because it's existence depends on the Clojure version ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn get-spec [v]
   (or (spec 'clojure.alpha.spec/get-spec v)
