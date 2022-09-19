@@ -11,8 +11,11 @@
          (string? file)
          (number? line))))
 
+(def boom-tagged-literal-str
+  (slurp (io/resource "orchard/stacktrace/parser/boom.tagged-literal.txt")))
+
 (deftest parse-tagged-literal-test
-  (let [{:keys [cause data trace via]} (parser/parse (slurp (io/resource "orchard/stacktrace/parser/tagged-literal.txt")))]
+  (let [{:keys [cause data trace via]} (parser/parse boom-tagged-literal-str)]
     (testing "throwable cause"
       (is (= "BOOM-3" cause)))
     (testing "throwable data"
@@ -39,6 +42,12 @@
           (is (= 'clojure.lang.ExceptionInfo type)))))
     (testing "throwable trace"
       (is (every? stacktrace-element? trace)))))
+
+(deftest parse-tagged-literal-buried-test
+  (testing "parse printed exception buried in a string"
+    (is (= (parser/parse boom-tagged-literal-str)
+           (parser/parse (pr-str boom-tagged-literal-str))
+           (parser/parse (pr-str (pr-str boom-tagged-literal-str)))))))
 
 (deftest parse-throwable-test
   (let [{:keys [cause data trace via]}

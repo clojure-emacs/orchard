@@ -74,10 +74,18 @@
     (when (= 'error tag)
       (assoc form ::product product))))
 
+(def ^:private input-transformations
+  [identity read-edn (comp read-edn read-edn)])
+
 (defn parse
-  "Parse `object` as a stacktrace by trying all implementations of
-  `parse-stacktrace` and returing the first hit."
+  "Parse `object` as a stacktrace by trying the permutation of
+  `parse-stacktrace` method implementations and
+  `input-transformations`."
   [object]
-  (some #(when-let [stacktrace (parse-stacktrace % object)]
-           stacktrace)
-        (keys (methods parse-stacktrace))))
+  (some (fn [transformation]
+          (some (fn [product]
+                  (when-let [object' (try (transformation object)
+                                          (catch Exception _))]
+                    (parse-stacktrace product object')))
+                (keys (methods parse-stacktrace))))
+        input-transformations))
