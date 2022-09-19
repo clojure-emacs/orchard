@@ -21,10 +21,7 @@
              :ret (clojure.core/fn [%] (clojure.core/> (:start %) (:end %)))
              :fn nil)))))
 
-(def spec-available? (or (resolve (symbol "clojure.spec.alpha" "get-spec"))
-                         (resolve (symbol "clojure.spec" "get-spec"))))
-
-(when spec-available?
+(when spec/spec?
   (deftest spec-is-found-by-ns-alias
     (testing "current ns keyword"
       (testing "spec-list finds current ns keyword"
@@ -52,3 +49,11 @@
         (let [spec1 (spec/spec-form "::spec/test-dummy" "orchard.spec-test")
               spec2 (spec/spec-form ":orchard.spec/test-dummy" "orchard.spec-test")]
           (is (= "clojure.core/boolean?" spec1 spec2) "Both return the same correct spec"))))))
+
+(when (and spec/clojure-spec-alpha? spec/clojure-alpha-spec?)
+  (deftest spec-registry-precedence-test
+    (testing "a spec registered in multiple registries"
+      (eval '(clojure.spec.alpha/def ::bar string?))
+      (eval '(clojure.alpha.spec/def ::bar boolean?))
+      (is (= "clojure.core/boolean?" (spec/spec-form "::bar" "orchard.spec-test"))
+          "should be resolved from the spec-2 registry"))))

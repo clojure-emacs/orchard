@@ -30,6 +30,10 @@
 (def ^:private clojure-spec-registry
   (misc/call-when-resolved 'clojure.spec/registry))
 
+(def clojure-spec?
+  "True if `clojure.spec` is supported, otherwise false."
+  (some? (resolve (symbol "clojure.spec" "get-spec"))))
+
 ;; clojure.spec.alpha
 
 (def ^:private clojure-spec-alpha-get-spec
@@ -47,7 +51,11 @@
 (def ^:private clojure-spec-alpha-registry
   (misc/call-when-resolved 'clojure.spec.alpha/registry))
 
-;; clojure.alpha.spec
+(def clojure-spec-alpha?
+  "True if `clojure.spec.alpha` is supported, otherwise false."
+  (some? (resolve (symbol "clojure.spec.alpha" "get-spec"))))
+
+;; clojure.alpha.spec - spec-2
 
 (def ^:private clojure-alpha-spec-get-spec
   (misc/call-when-resolved 'clojure.alpha.spec/get-spec))
@@ -64,15 +72,30 @@
 (def ^:private clojure-alpha-spec-registry
   (misc/call-when-resolved 'clojure.alpha.spec/registry))
 
+(def clojure-alpha-spec?
+  "True if `clojure.alpha.spec` is supported, otherwise false."
+  (some? (resolve (symbol "clojure.alpha.spec" "get-spec"))))
+
+(def spec?
+  "True if `clojure.spec`, `clojure.spec.alpha` or`clojure.alpha.spec` is supported, otherwise false."
+  (or clojure-spec? clojure-spec-alpha? clojure-alpha-spec?))
+
+(defn- try-fn [f & args]
+  (try (apply f args) (catch Exception _)))
+
+(defn- ex-unable-to-resolve-spec [s]
+  (ex-info (format "Unable to resolve spec: %s" s) {:s s}))
+
 (defn get-spec [k]
   (or (clojure-alpha-spec-get-spec k)
       (clojure-spec-alpha-get-spec k)
       (clojure-spec-get-spec k)))
 
 (defn describe [s]
-  (or (clojure-alpha-spec-describe s)
-      (clojure-spec-alpha-describe s)
-      (clojure-spec-describe s)))
+  (or (try-fn clojure-alpha-spec-describe s)
+      (try-fn clojure-spec-alpha-describe s)
+      (try-fn clojure-spec-describe s)
+      (throw (ex-unable-to-resolve-spec s))))
 
 (defn registry []
   (apply merge
@@ -81,14 +104,16 @@
          (clojure-alpha-spec-registry)))
 
 (defn form [s]
-  (or (clojure-alpha-spec-form s)
-      (clojure-spec-alpha-form s)
-      (clojure-spec-form s)))
+  (or (try-fn clojure-alpha-spec-form s)
+      (try-fn clojure-spec-alpha-form s)
+      (try-fn clojure-spec-form s)
+      (throw (ex-unable-to-resolve-spec s))))
 
 (defn gen [s]
-  (or (clojure-alpha-spec-gen s)
-      (clojure-spec-alpha-gen s)
-      (clojure-spec-gen s)))
+  (or (try-fn clojure-alpha-spec-gen s)
+      (try-fn clojure-spec-alpha-gen s)
+      (try-fn clojure-spec-gen s)
+      (throw (ex-unable-to-resolve-spec s))))
 
 (def ^:private generate*
   "All Clojure Spec versions use test.check under the hood. So let's
