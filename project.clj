@@ -77,7 +77,9 @@
                          {:dependencies [[clj-kondo "2021.12.19"]]}]
 
              :eastwood  {:plugins  [[jonase/eastwood "1.2.2"]]
-                         :eastwood {:exclude-namespaces ~(cond-> []
+                         :eastwood {:exclude-namespaces ~(cond-> '[clojure.alpha.spec
+                                                                   clojure.alpha.spec.gen
+                                                                   clojure.alpha.spec.impl]
                                                            jdk8?
                                                            (conj 'orchard.java.parser)
 
