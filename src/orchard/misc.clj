@@ -2,6 +2,7 @@
   ;; These will be added in clojure 1.11:
   (:refer-clojure :exclude [update-keys update-vals])
   (:require
+   [clojure.edn :as edn]
    [clojure.java.io :as io]
    [clojure.string :as str]
    [orchard.util.io :as util.io]))
@@ -200,3 +201,9 @@
   [x]
   (when (and (coll? x) (not (lazy-seq? x)))
     (count x)))
+
+(defn safe-read-edn
+  "Read the string `s` in EDN format in s safe way."
+  [s]
+  (try (edn/read-string {:default tagged-literal} s)
+       (catch Exception _)))

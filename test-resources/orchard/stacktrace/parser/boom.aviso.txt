@@ -1,0 +1,16 @@
+   nrepl.middleware.interruptible-eval/evaluate/fn  interruptible_eval.clj:   87
+                                               ...
+                       clojure.core/with-bindings*                core.clj: 1977 (repeats 2 times)
+                                clojure.core/apply                core.clj:  667
+                                               ...
+nrepl.middleware.interruptible-eval/evaluate/fn/fn  interruptible_eval.clj:   87
+                                 clojure.core/eval                core.clj: 3202
+                                               ...
+          orchard.stacktrace.parser-test/eval15048               REPL Input
+                                               ...
+clojure.lang.ExceptionInfo: BOOM-3
+    boom: "3"
+clojure.lang.ExceptionInfo: BOOM-2
+    boom: "2"
+clojure.lang.ExceptionInfo: BOOM-1
+    boom: "1"

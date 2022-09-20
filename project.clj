@@ -22,6 +22,7 @@
                                     :username :env/clojars_username
                                     :password :env/clojars_password
                                     :sign-releases false}]]
+  :dependencies [[instaparse "1.4.12"]]
 
   :jvm-opts ["-Dclojure.main.report=stderr"]
 

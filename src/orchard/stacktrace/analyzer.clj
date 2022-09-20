@@ -93,9 +93,8 @@
                                    path->url
                                    str)
                            (str (frame->url frame)))))
-    (assoc frame :file-url (some->
-                            (java/resolve-symbol 'user
-                                                 (symbol (:name frame)))
+    (assoc frame :file-url (some->> frame :name symbol
+                            (java/resolve-symbol 'user)
                             :file
                             path->url
                             str))))
@@ -385,7 +384,7 @@
            :stacktrace (analyze-stacktrace-data
                         (remove #(= (:at cause-data) %)
                                 (:trace exception-data)))}]
-    (if-let [data (filtered-ex-data (ex-info "" (:data cause-data)))]
+    (if-let [data (filtered-ex-data (ex-info "" (or (:data cause-data) {})))]
       (if (or (:clojure.spec/failure data)
               (:clojure.spec.alpha/failure data))
         (assoc m

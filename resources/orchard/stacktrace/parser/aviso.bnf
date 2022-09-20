@@ -1,0 +1,38 @@
+S = <#'[^"]'*> traces <newline> (causes <newline>)? <#".*">
+
+traces = trace (<newline> trace)*
+trace = ((frame <newline>)+ <more>)+
+
+frame = <whitespace> class <slash> method frame-info
+<frame-info> = <whitespace> (<'REPL Input'> | frame-location)
+<frame-location> = file <double-colon> <whitespace> number (<whitespace> frame-repeats)?
+<frame-repeats> = <lparen> <'repeats'> <whitespace> times <rparen>
+
+causes = cause (<newline> cause)*
+cause = type <double-colon> <whitespace> message (<newline> data)?
+message = #".+"
+
+data = data-entry (<newline> data-entry)*
+data-entry = <whitespace> data-key <double-colon> <whitespace> data-data
+data-key = simple-name
+data-data = #".+"
+
+type = class
+class = (simple-name (dot simple-name)*)
+file = simple-name (dot simple-name)
+method = simple-name (slash simple-name)*
+more = <whitespace> <dot> <dot> <dot>
+<times> = number <whitespace> <'time'> <'s'>?
+
+<digit> = #'[0-9]'
+<dot> = '.'
+<letter> = #'[a-zA-Z]'
+<slash> = '/'
+
+double-colon = ':'
+newline = #"[\n\r]"
+number = '-'? digit+
+lparen = '('
+rparen = ')'
+simple-name = #"[a-zA-Z0-9_$*-]+"
+whitespace = #"\s+"

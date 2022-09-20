@@ -1,0 +1,34 @@
+S = <#'[^"]'*> exception causes (<newline> | <whitespace>)* <#".*">
+
+exception = type <double-colon> <whitespace> message (<whitespace> data)? <newline> trace
+type = class
+message = #'.'*
+data = lbrace #'.'* rbrace
+
+<causes> = (<newline> cause)*
+<cause> = <caused-by> exception <cause-more>
+cause-more = <whitespace> <dot> <dot> <dot> <whitespace> number <whitespace> <more>
+
+trace = frame ( <newline> frame )*
+<frame> = <whitespace> <at> <whitespace> call
+call = class <dot> method <lparen> file <double-colon> number <rparen>
+
+at = 'at'
+caused-by = 'Caused by: '
+class = (simple-name (dot simple-name)*)
+file = simple-name (dot simple-name)
+method = simple-name
+more = 'more'
+
+<digit> = #'[0-9]'
+<dot> = '.'
+
+double-colon = ':'
+newline = #"[\n\r]"
+number = '-'? digit+
+lparen = '('
+rparen = ')'
+<lbrace> = '{'
+<rbrace> = '}'
+simple-name = #"[a-zA-Z0-9_$/-]+"
+whitespace = #"\s+"

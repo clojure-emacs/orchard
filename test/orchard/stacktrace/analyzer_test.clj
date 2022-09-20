@@ -1,10 +1,21 @@
 (ns orchard.stacktrace.analyzer-test
   (:require
+   [clojure.java.io :as io]
    [clojure.test :refer [are deftest is testing]]
    [orchard.misc :as misc]
-   [orchard.stacktrace.analyzer :as sut]))
+   [orchard.stacktrace.analyzer :as sut]
+   [orchard.stacktrace.parser :as parser]))
 
 ;; # Utils
+
+(defn- fixture [resource]
+  (str (io/file "orchard" "stacktrace" "parser" (str (name resource) ".txt"))))
+
+(defn- read-fixture [name]
+  (some-> name fixture io/resource slurp))
+
+(defn- analyze-resource [name]
+  (some-> name read-fixture parser/parse sut/analyze))
 
 (defn causes
   [form]
@@ -259,3 +270,87 @@
     '[dev user test-runner a.a]         {:valid true :common "a.a"}
     '[dev user test-runner a.a a.b]     {:valid true :common "a"}
     '[dev user test-runner a.a.b a.a.c] {:valid true :common "a.a"}))
+
+(deftest test-analyze-aviso
+  (let [causes (analyze-resource :boom.aviso)]
+    (is (= 3 (count causes)))
+    (let [{:keys [class message stacktrace]} (first causes)]
+      (testing "class"
+        (is (= "clojure.lang.ExceptionInfo" class)))
+      (testing "message"
+        (is (= "BOOM-1" message)))
+      (testing "stacktrace"
+        (is (= 6 (count stacktrace)))
+        (testing "first frame"
+          (is (= {:fn "with-bindings*"
+                  :method "with-bindings*"
+                  :ns "clojure.core"
+                  :name "clojure.core/with-bindings*"
+                  :file "core.clj"
+                  :type :clj
+                  :line 1977
+                  :var "clojure.core/with-bindings*"
+                  :class "clojure.core"
+                  :flags #{:clj}}
+                 (dissoc (first stacktrace) :file-url))))
+        (testing "last frame"
+          (is (= {:type :unknown, :flags #{:dup :unknown}}
+                 (dissoc (last stacktrace) :file-url))))))))
+
+(deftest test-analyze-clojure
+  (let [causes (analyze-resource :boom.clojure)]
+    (is (= 3 (count causes)))
+    (let [{:keys [class message stacktrace]} (first causes)]
+      (testing "class"
+        (is (= "clojure.lang.ExceptionInfo" class)))
+      (testing "BOOM-1"
+        (is (= "BOOM-1" message)))
+      (testing "stacktrace"
+        (is (= 36 (count stacktrace)))
+        (testing "first frame"
+          (is (= {:name "clojure.lang.AFn/applyToHelper"
+                  :file "AFn.java"
+                  :line 156
+                  :class "clojure.lang.AFn"
+                  :method "applyToHelper"
+                  :type :java
+                  :flags #{:java}}
+                 (dissoc (first stacktrace) :file-url))))
+        (testing "last frame"
+          (is (= {:name "java.lang.Thread/run"
+                  :file "Thread.java"
+                  :line 829
+                  :class "java.lang.Thread"
+                  :method "run"
+                  :type :java
+                  :flags #{:java}}
+                 (dissoc (last stacktrace) :file-url))))))))
+
+(deftest test-analyze-java
+  (let [causes (analyze-resource :boom.java)]
+    (is (= 3 (count causes)))
+    (let [{:keys [class message stacktrace]} (first causes)]
+      (testing "class"
+        (is (= "clojure.lang.ExceptionInfo" class)))
+      (testing "BOOM-1"
+        (is (= "BOOM-1" message)))
+      (testing "stacktrace"
+        (is (= 33 (count stacktrace)))
+        (testing "first frame"
+          (is (= {:name "clojure.lang.AFn/applyTo"
+                  :file "AFn.java"
+                  :line 144
+                  :class "clojure.lang.AFn"
+                  :method "applyTo"
+                  :type :java
+                  :flags #{:java}}
+                 (dissoc (first stacktrace) :file-url))))
+        (testing "last frame"
+          (is (= {:name "java.lang.Thread/run"
+                  :file "Thread.java"
+                  :line 829
+                  :class "java.lang.Thread"
+                  :method "run"
+                  :type :java
+                  :flags #{:java}}
+                 (dissoc (last stacktrace) :file-url))))))))

@@ -81,3 +81,7 @@
   (is (= 3 (misc/safe-count [1 2 3])))
   (is (nil? (misc/safe-count (repeat 1))))
   (is (nil? (misc/safe-count :not-a-seq))))
+
+(deftest safe-read-edn
+  (is (= nil (misc/safe-read-edn "[")))
+  (is (= [1 2 3] (misc/safe-read-edn "[1 2 3]"))))
