@@ -6,9 +6,6 @@
 (defparser ^:private parser
   (io/resource "orchard/stacktrace/parser/aviso.bnf"))
 
-(comment
-  (parser (orchard.stacktrace.parser.test/read-fixture :boom.aviso)))
-
 (def ^:private transform-class
   "Transform a :class node from Instaparse to Throwable->map."
   (comp symbol (partial apply str)))
@@ -63,7 +60,7 @@
   [& frames]
   (vec (mapcat (fn [frame]
                  (if-let [n (nth frame 4 nil)]
-                   (repeat (nth frame 4 1) (vec (butlast frame)))
+                   (repeat n (vec (butlast frame)))
                    [frame]))
                frames)))
 
