@@ -10,7 +10,7 @@ frame = <whitespace> class <slash> method frame-info
 
 causes = cause (<newline> cause)*
 cause = type <double-colon> <whitespace> message (<newline> data)?
-message = #".+"
+message = #"."+
 
 data = data-entry (<newline> data-entry)*
 data-entry = <whitespace> data-key <double-colon> <whitespace> data-data

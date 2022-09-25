@@ -37,6 +37,11 @@
   "Transform a :method node from Instaparse to Throwable->map."
   (comp symbol (partial apply str)))
 
+(defn- transform-message
+  "Transform a :message node from Instaparse to Throwable->map."
+  [& content]
+  [:message (apply str content)])
+
 (def ^:private transform-stacktrace
   "Transform a stacktrace node from Instaparse to Throwable->map."
   (fn [[_ & traces] [_ & causes]]
@@ -68,6 +73,7 @@
    :exception transform-exception
    :file transform-file
    :frame vector
+   :message transform-message
    :method transform-method
    :number transform-number
    :simple-name str
