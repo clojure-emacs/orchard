@@ -1,4 +1,4 @@
-S = <#'[^"]'*> traces <newline> (causes <newline>)? <#".*">
+S = <#'[^"]'*> traces <newline> (causes <newline>)? <#"."*>
 
 traces = trace (<newline> trace)*
 trace = ((frame <newline>)+ <more>)+
