@@ -68,8 +68,8 @@
    :cause transform-cause
    :class transform-class
    :data transform-data
-   :data-data safe-read-edn
    :data-key keyword
+   :data-value (comp safe-read-edn (partial apply str))
    :exception transform-exception
    :file transform-file
    :frame vector

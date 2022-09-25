@@ -13,9 +13,9 @@ cause = type <double-colon> <whitespace> message (<newline> data)?
 message = #"."+
 
 data = data-entry (<newline> data-entry)*
-data-entry = <whitespace> data-key <double-colon> <whitespace> data-data
+data-entry = <whitespace> data-key <double-colon> <whitespace> data-value
 data-key = simple-name
-data-data = #".+"
+data-value = #"."+
 
 type = class
 class = (simple-name (dot simple-name)*)
