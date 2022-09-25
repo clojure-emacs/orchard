@@ -94,10 +94,10 @@
                                    str)
                            (str (frame->url frame)))))
     (assoc frame :file-url (some->> frame :name symbol
-                            (java/resolve-symbol 'user)
-                            :file
-                            path->url
-                            str))))
+                                    (java/resolve-symbol 'user)
+                                    :file
+                                    path->url
+                                    str))))
 
 (defn- analyze-file
   "Associate the file type (extension) of the source file to the frame map, and
