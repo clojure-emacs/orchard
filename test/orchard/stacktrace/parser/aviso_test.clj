@@ -51,6 +51,23 @@
     (testing "throwable trace"
       (is (every? test/stacktrace-element? trace)))))
 
+(deftest parse-stacktrace-short-test
+  (let [{:keys [cause data trace via]} (test/parse-fixture :short.aviso)]
+    (testing "throwable cause"
+      (is (= "BOOM-1" cause)))
+    (testing "throwable data"
+      (is (= {:boom "1"} data)))
+    (testing "throwable via"
+      (is (= 1 (count via)))
+      (testing "stacktrace first cause"
+        (let [{:keys [at data message type]} (nth via 0)]
+          (is (test/stacktrace-element? at))
+          (is (= {:boom "1"} data))
+          (is (= "BOOM-1" message))
+          (is (= 'clojure.lang.ExceptionInfo type)))))
+    (testing "throwable trace"
+      (is (every? test/stacktrace-element? trace)))))
+
 (deftest parse-stacktrace-garbage-test
   (let [expected (test/read-fixture :boom.aviso)]
     (testing "parsing a stacktrace with garbage at the end should succeed"
@@ -71,13 +88,15 @@
         (is (= "" input)))
       (testing "failure"
         (is (= {:index 0
-                :reason [{:tag :regexp :expecting "\\s+"}
+                :reason [{:tag :regexp :expecting "[a-zA-Z0-9_$*-]+"}
+                         {:tag :regexp :expecting "\\s+"}
                          {:tag :regexp :expecting "[^\\\"]"}]
                 :line 1
                 :column 1
                 :text nil}
                (into {} (-> (update-in failure [:reason 0 :expecting] str)
-                            (update-in [:reason 1 :expecting] str)))))))))
+                            (update-in [:reason 1 :expecting] str)
+                            (update-in [:reason 2 :expecting] str)))))))))
 
 (deftest parse-stacktrace-unsupported-input-test
   (testing "parsing unsupported input"

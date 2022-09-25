@@ -282,19 +282,28 @@
       (testing "stacktrace"
         (is (= 6 (count stacktrace)))
         (testing "first frame"
-          (is (= {:fn "with-bindings*"
-                  :method "with-bindings*"
+          (is (= {:fn "eval"
+                  :method "eval"
                   :ns "clojure.core"
-                  :name "clojure.core/with-bindings*"
+                  :name "clojure.core/eval"
                   :file "core.clj"
                   :type :clj
-                  :line 1977
-                  :var "clojure.core/with-bindings*"
+                  :line 3202
+                  :var "clojure.core/eval"
                   :class "clojure.core"
                   :flags #{:clj}}
                  (dissoc (first stacktrace) :file-url))))
         (testing "last frame"
-          (is (= {:type :unknown, :flags #{:dup :unknown}}
+          (is (= {:fn "fn"
+                  :method "fn"
+                  :ns "nrepl.middleware.interruptible-eval"
+                  :name "nrepl.middleware.interruptible-eval/fn"
+                  :file "interruptible_eval.clj"
+                  :type :clj
+                  :line 87
+                  :var "nrepl.middleware.interruptible-eval/fn"
+                  :class "nrepl.middleware.interruptible-eval"
+                  :flags #{:tooling :clj}}
                  (dissoc (last stacktrace) :file-url))))))))
 
 (deftest test-analyze-clojure

@@ -1,14 +1,14 @@
-S = <#'[^"]'*> traces <newline> (causes <newline>)? <#"."*>
+S = <#'[^"]'*> traces causes? <#".*">
 
 traces = trace (<newline> trace)*
-trace = ((frame <newline>)+ <more>)+
+trace = frame (<newline> frame)* (<newline> <more>)? <newline>?
 
-frame = <whitespace> class <slash> method frame-info
+frame = <whitespace>? class <slash> method frame-info
 <frame-info> = <whitespace> (<'REPL Input'> | frame-location)
 <frame-location> = file <double-colon> <whitespace> number (<whitespace> frame-repeats)?
 <frame-repeats> = <lparen> <'repeats'> <whitespace> times <rparen>
 
-causes = cause (<newline> cause)*
+causes = cause (<newline> cause)* <newline>?
 cause = type <double-colon> <whitespace> message (<newline> data)?
 message = #"."+
 
@@ -18,7 +18,7 @@ data-key = simple-name
 data-value = #"."+
 
 type = class
-class = (simple-name (dot simple-name)*)
+class = (simple-name (dot simple-name)+)
 file = simple-name (dot simple-name)
 method = simple-name (slash simple-name)*
 more = <whitespace> <dot> <dot> <dot>
