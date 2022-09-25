@@ -34,5 +34,5 @@ newline = #"[\n\r]"
 number = '-'? digit+
 lparen = '('
 rparen = ')'
-simple-name = #"[a-zA-Z0-9_$*-]+"
+simple-name = #"[a-zA-Z0-9_$*-]"+
 whitespace = #"\s+"

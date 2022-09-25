@@ -89,7 +89,7 @@
         (is (= "" input)))
       (testing "failure"
         (is (= {:index 0
-                :reason [{:tag :regexp :expecting "[a-zA-Z0-9_$*-]+"}
+                :reason [{:tag :regexp :expecting "[a-zA-Z0-9_$*-]"}
                          {:tag :regexp :expecting "\\s+"}
                          {:tag :regexp :expecting "[^\\\"]"}]
                 :line 1

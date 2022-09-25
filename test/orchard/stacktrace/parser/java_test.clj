@@ -103,7 +103,7 @@
       (testing "failure"
         (is (= {:index 0
                 :reason
-                [{:tag :regexp :expecting "[a-zA-Z0-9_$/-]+"}
+                [{:tag :regexp :expecting "[a-zA-Z0-9_$/-]"}
                  {:tag :regexp :expecting "[^\\\"]"}]
                 :line 1
                 :column 1
