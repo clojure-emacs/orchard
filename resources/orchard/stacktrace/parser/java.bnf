@@ -9,7 +9,7 @@ data = lbrace #'.'* rbrace
 <cause> = <caused-by> exception <cause-more> <newline>
 cause-more = <whitespace> <dot> <dot> <dot> <whitespace> number <whitespace> <more>
 
-trace = frame*
+trace = frame+
 <frame> = <whitespace> <at> <whitespace> call <newline>
 call = class <dot> method <lparen> file <double-colon> number <rparen>
 
