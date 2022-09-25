@@ -3,9 +3,12 @@
             [orchard.stacktrace.parser.java :as parser]
             [orchard.stacktrace.parser.test :as test]))
 
+(defn- parse-fixture [name]
+  (some-> name test/read-fixture parser/parse-stacktrace))
+
 (deftest parse-stacktrace-test
   (let [text (test/read-fixture :boom.java)
-        {:keys [cause data trace product via] :as stacktrace} (test/parse-fixture :boom.java)]
+        {:keys [cause data trace product via] :as stacktrace} (parse-fixture :boom.java)]
     (testing "product"
       (is (= :java product)))
     (testing ":cause"
@@ -39,7 +42,7 @@
       (is (= stacktrace (parser/parse-stacktrace (str text "\n\n")))))))
 
 (deftest parse-stacktrace-divide-by-zero-test
-  (let [{:keys [cause data trace via]} (test/parse-fixture :divide-by-zero.java)]
+  (let [{:keys [cause data trace via]} (parse-fixture :divide-by-zero.java)]
     (testing "throwable cause"
       (is (= "Divide by zero" cause)))
     (testing "throwable data"
@@ -56,7 +59,7 @@
       (is (every? test/stacktrace-element? trace)))))
 
 (deftest parse-stacktrace-short-test
-  (let [{:keys [cause data trace product via]} (test/parse-fixture :short.java)]
+  (let [{:keys [cause data trace product via]} (parse-fixture :short.java)]
     (testing "product"
       (is (= :java product)))
     (testing "throwable cause"

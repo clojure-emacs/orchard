@@ -282,16 +282,16 @@
       (testing "stacktrace"
         (is (= 6 (count stacktrace)))
         (testing "first frame"
-          (is (= {:fn "eval"
-                  :method "eval"
-                  :ns "clojure.core"
-                  :name "clojure.core/eval"
-                  :file "core.clj"
+          (is (= {:fn "fn/fn"
+                  :method "fn/fn"
+                  :ns "nrepl.middleware.interruptible-eval"
+                  :name "nrepl.middleware.interruptible-eval/fn/fn"
+                  :file "interruptible_eval.clj"
                   :type :clj
-                  :line 3202
-                  :var "clojure.core/eval"
-                  :class "clojure.core"
-                  :flags #{:clj}}
+                  :line 87
+                  :var "nrepl.middleware.interruptible-eval/fn/fn"
+                  :class "nrepl.middleware.interruptible-eval"
+                  :flags #{:tooling :clj}}
                  (dissoc (first stacktrace) :file-url))))
         (testing "last frame"
           (is (= {:fn "fn"
