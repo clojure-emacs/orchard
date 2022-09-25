@@ -1,16 +1,16 @@
-S = <#'[^"]'*> exception causes <whitespace>* <#".*">
+S = <#'[^"]'*> exception causes (<whitespace>)* <#".*">
 
 exception = type <double-colon> <whitespace> message (<whitespace> data)? <newline> trace
 type = class
 message = #'.'*
 data = lbrace #'.'* rbrace
 
-<causes> = (<newline> cause)*
-<cause> = <caused-by> exception <cause-more>
+<causes> = cause*
+<cause> = <caused-by> exception <cause-more> <newline>
 cause-more = <whitespace> <dot> <dot> <dot> <whitespace> number <whitespace> <more>
 
-trace = frame ( <newline> frame )*
-<frame> = <whitespace> <at> <whitespace> call
+trace = frame*
+<frame> = <whitespace> <at> <whitespace> call <newline>
 call = class <dot> method <lparen> file <double-colon> number <rparen>
 
 at = 'at'
