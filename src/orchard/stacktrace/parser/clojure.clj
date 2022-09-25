@@ -3,6 +3,7 @@
             [clojure.string :as str]))
 
 (def ^:private read-options
+  "The options used when reading a stacktrace in EDN format."
   {:default tagged-literal :eof nil})
 
 (defn- strip-garbage

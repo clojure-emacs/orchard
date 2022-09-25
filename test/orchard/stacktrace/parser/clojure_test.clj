@@ -81,7 +81,8 @@
   (let [expected (test/read-fixture :boom.clojure)]
     (testing "parsing a stacktrace with garbage at the end should succeed"
       (is (= (parser/parse-stacktrace expected)
-             (parser/parse-stacktrace (str expected "<garbage>")))))
+             (parser/parse-stacktrace (str expected "<garbage>"))
+             (parser/parse-stacktrace (str expected "\n<garbage>\n")))))
     (testing "parsing a stacktrace with garbage at the end should succeed"
       (is (= (parser/parse-stacktrace expected)
              (parser/parse-stacktrace (str "<garbage>" expected))
