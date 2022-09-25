@@ -382,8 +382,8 @@
         m {:class (name (:type cause-data))
            :message (:message cause-data)
            :stacktrace (analyze-stacktrace-data
-                        (remove #(= (:at cause-data) %)
-                                (:trace exception-data)))}]
+                        (or (seq (remove #(= (:at cause-data) %) (:trace exception-data)))
+                            (:trace exception-data)))}]
     (if-let [data (filtered-ex-data (ex-info "" (or (:data cause-data) {})))]
       (if (or (:clojure.spec/failure data)
               (:clojure.spec.alpha/failure data))

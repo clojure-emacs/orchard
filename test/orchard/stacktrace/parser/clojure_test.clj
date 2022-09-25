@@ -51,6 +51,32 @@
     (testing "throwable trace"
       (is (every? test/stacktrace-element? trace)))))
 
+(deftest parse-stacktrace-short-test
+  (let [{:keys [cause data trace product via]} (test/parse-fixture :short.clojure)]
+    (testing "product"
+      (is (= :clojure product)))
+    (testing "throwable cause"
+      (is (= "BOOM-1" cause)))
+    (testing "throwable data"
+      (is (= {:boom "1"} data)))
+    (testing "throwable via"
+      (is (= 1 (count via)))
+      (testing "stacktrace first cause"
+        (let [{:keys [at data message type]} (nth via 0)]
+          (is (test/stacktrace-element? at))
+          (is (= {:boom "1"} data))
+          (is (= "BOOM-1" message))
+          (is (= 'clojure.lang.ExceptionInfo type)))))
+    (testing "throwable trace"
+      (is (= 2 (count trace)))
+      (is (every? test/stacktrace-element? trace))
+      (testing "stacktrace first frame"
+        (let [[class method file line] (first trace)]
+          (is (= 'orchard.stacktrace.parser.throwable_test$eval13608 class))
+          (is (= 'invokeStatic method))
+          (is (= "form-init17983781294375166615.clj" file))
+          (is (= 74 line)))))))
+
 (deftest parse-stacktrace-garbage-test
   (let [expected (test/read-fixture :boom.clojure)]
     (testing "parsing a stacktrace with garbage at the end should succeed"
