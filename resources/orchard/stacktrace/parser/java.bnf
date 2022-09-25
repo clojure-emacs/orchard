@@ -1,4 +1,4 @@
-S = <#'[^"]'*> exception causes (<newline> | <whitespace>)* <#".*">
+S = <#'[^"]'*> exception causes <whitespace>* <#".*">
 
 exception = type <double-colon> <whitespace> message (<whitespace> data)? <newline> trace
 type = class
