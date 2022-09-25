@@ -88,7 +88,8 @@
              (parser/parse-stacktrace (str expected "<garbage>")))))
     (testing "parsing a stacktrace with garbage at the end should succeed"
       (is (= (parser/parse-stacktrace expected)
-             (parser/parse-stacktrace (str "<garbage>" expected)))))))
+             (parser/parse-stacktrace (str "<garbage>" expected))
+             (parser/parse-stacktrace (str "\n<garbage>\n" expected)))))))
 
 (deftest parse-stacktrace-incorrect-input-test
   (testing "parsing a string not matching the grammar"

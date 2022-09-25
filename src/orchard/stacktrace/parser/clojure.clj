@@ -9,7 +9,7 @@
   "Strip the garbage in front of a Clojure stacktrace."
   [s]
   (if (string? s)
-    (str/replace (str s) #".*#error\s*\{" "#error {")
+    (str/replace (str s) #"(?s).*#error\s*\{" "#error {")
     s))
 
 (defn parse-stacktrace
