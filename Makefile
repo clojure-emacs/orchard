@@ -4,11 +4,13 @@ VERSION ?= 1.10
 
 TEST_PROFILES ?= +test
 
+SPEC2_SOURCE_DIR = src-spec-alpha-2
+
 resources/clojuredocs/export.edn:
 curl -o $@ https://github.com/clojure-emacs/clojuredocs-export-edn/raw/master/exports/export.compact.edn
 
 # .EXPORT_ALL_VARIABLES passes TEST_PROFILES to Lein so that it can inspect the active profiles, which is needed for a complete Eastwood setup:
-test: clean .EXPORT_ALL_VARIABLES
+test: clean spec-2 .EXPORT_ALL_VARIABLES
 	lein with-profile -user,-dev,+$(VERSION),$(TEST_PROFILES) test
 
 eastwood:
@@ -30,6 +32,10 @@ install: clean
 
 clean:
 	lein with-profile -user,-dev clean
+	rm -rf $(SPEC2_SOURCE_DIR)
+
+spec-2:
+	@if [ ! -d "$(SPEC2_SOURCE_DIR)" ]; then git clone https://github.com/clojure/spec-alpha2.git $(SPEC2_SOURCE_DIR); fi
 
 check-env:
 ifndef CLOJARS_USERNAME

@@ -55,7 +55,8 @@
                     ;; Initialize the cache verbosely, as usual, so that possible issues can be more easily diagnosed:
                     :jvm-opts ["-Dorchard.initialize-cache.silent=false"
                                "-Dorchard.internal.test-suite-running=true"
-                               "-Dorchard.internal.has-enriched-classpath=false"]}
+                               "-Dorchard.internal.has-enriched-classpath=false"]
+                    :source-paths ["test" "src-spec-alpha-2/src/main/clojure"]}
 
              :enrich-classpath {:plugins [[mx.cider/enrich-classpath "1.9.0"]]
                                 :middleware [cider.enrich-classpath/middleware]
@@ -63,7 +64,7 @@
 
              ;; Development tools
              :dev {:dependencies [[org.clojure/tools.namespace "1.1.0"]]
-                   :source-paths ["dev"]
+                   :source-paths ["dev" "src-spec-alpha-2/src/main/clojure"]
                    :resource-paths ["test-resources"]}
 
              :cljfmt {:plugins [[lein-cljfmt "0.8.0"]]
@@ -76,7 +77,10 @@
                          {:dependencies [[clj-kondo "2021.12.19"]]}]
 
              :eastwood  {:plugins  [[jonase/eastwood "1.2.2"]]
-                         :eastwood {:exclude-namespaces ~(cond-> []
+                         :eastwood {:exclude-namespaces ~(cond-> '[clojure.alpha.spec
+                                                                   clojure.alpha.spec.gen
+                                                                   clojure.alpha.spec.impl
+                                                                   clojure.alpha.spec.test]
                                                            jdk8?
                                                            (conj 'orchard.java.parser)
 

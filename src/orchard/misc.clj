@@ -166,10 +166,13 @@
   (some? (resolve 'clojure.core.protocols/datafy)))
 
 (defn call-when-resolved
-  "Return a fn that calls the fn resolved through `var-sym` with it's
-  own arguments. `var-sym` will be resolved once. If `var-sym` can't
-  be resolved the function always returns nil."
+  "Return a fn that calls the fn resolved through `var-sym` with the
+  arguments passed to it. `var-sym` will be required and resolved
+  once. If requiring failed or the `var-sym` can't be resolved the
+  function always returns nil."
   [var-sym]
+  (try (require (symbol (namespace var-sym)))
+       (catch Exception _))
   (let [resolved-var (resolve var-sym)]
     (fn [& args]
       (when resolved-var

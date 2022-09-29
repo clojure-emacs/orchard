@@ -2,33 +2,128 @@
   (:require
    [clojure.pprint :as pp]
    [clojure.string :as str]
-   [clojure.walk :as walk]))
+   [clojure.walk :as walk]
+   [orchard.misc :as misc]))
 
-(defmacro spec [fname & args]
-  `(when-let [f# (or (resolve (symbol "clojure.spec.alpha" ~fname))
-                     (resolve (symbol "clojure.spec" ~fname)))]
-     (f# ~@args)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; These are all wrappers for Clojure Spec functions.                                   ;;
+;; - clojure.spec (released between Clojure 1.8 and 1.9, but never included in Clojure) ;;
+;; - clojure.spec.alpha (renamed from clojure.spec and included in Clojure 1.9)         ;;
+;; - clojure.alpha.spec (spec-2, the new experimental version)                          ;;
+;; We can't simply require the ns because it's existence depends on the Clojure version ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro spec-gen [fname & args]
-  `(when-let [f# (or (resolve (symbol "clojure.spec.gen.alpha" ~fname))
-                     (resolve (symbol "clojure.spec.gen" ~fname)))]
-     (f# ~@args)))
+;; clojure.spec
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; This are all wrappers of clojure.spec.[alpha] functions.         ;;
-;; We can't simply require the ns because it's existence depends on ;;
-;; clojure version                                                  ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(def ^:private clojure-spec-get-spec
+  (misc/call-when-resolved 'clojure.spec/get-spec))
 
-(defn get-spec [v] (spec "get-spec" v))
+(def ^:private clojure-spec-describe
+  (misc/call-when-resolved 'clojure.spec/describe))
 
-(defn describe [s] (spec "describe" s))
+(def ^:private clojure-spec-form
+  (misc/call-when-resolved 'clojure.spec/form))
 
-(defn registry [] (spec "registry"))
+(def ^:private clojure-spec-gen
+  (misc/call-when-resolved 'clojure.spec/gen))
 
-(defn form [s] (spec "form" s))
+(def ^:private clojure-spec-registry
+  (misc/call-when-resolved 'clojure.spec/registry))
 
-(defn generate [s] (spec-gen "generate" (spec "gen" s)))
+(def clojure-spec?
+  "True if `clojure.spec` is supported, otherwise false."
+  (some? (resolve (symbol "clojure.spec" "get-spec"))))
+
+;; clojure.spec.alpha
+
+(def ^:private clojure-spec-alpha-get-spec
+  (misc/call-when-resolved 'clojure.spec.alpha/get-spec))
+
+(def ^:private clojure-spec-alpha-describe
+  (misc/call-when-resolved 'clojure.spec.alpha/describe))
+
+(def ^:private clojure-spec-alpha-form
+  (misc/call-when-resolved 'clojure.spec.alpha/form))
+
+(def ^:private clojure-spec-alpha-gen
+  (misc/call-when-resolved 'clojure.spec.alpha/gen))
+
+(def ^:private clojure-spec-alpha-registry
+  (misc/call-when-resolved 'clojure.spec.alpha/registry))
+
+(def clojure-spec-alpha?
+  "True if `clojure.spec.alpha` is supported, otherwise false."
+  (some? (resolve (symbol "clojure.spec.alpha" "get-spec"))))
+
+;; clojure.alpha.spec - spec-2
+
+(def ^:private clojure-alpha-spec-get-spec
+  (misc/call-when-resolved 'clojure.alpha.spec/get-spec))
+
+(def ^:private clojure-alpha-spec-describe
+  (misc/call-when-resolved 'clojure.alpha.spec/describe))
+
+(def ^:private clojure-alpha-spec-form
+  (misc/call-when-resolved 'clojure.alpha.spec/form))
+
+(def ^:private clojure-alpha-spec-gen
+  (misc/call-when-resolved 'clojure.alpha.spec/gen))
+
+(def ^:private clojure-alpha-spec-registry
+  (misc/call-when-resolved 'clojure.alpha.spec/registry))
+
+(def clojure-alpha-spec?
+  "True if `clojure.alpha.spec` is supported, otherwise false."
+  (some? (resolve (symbol "clojure.alpha.spec" "get-spec"))))
+
+(def spec?
+  "True if `clojure.spec`, `clojure.spec.alpha` or`clojure.alpha.spec` is supported, otherwise false."
+  (or clojure-spec? clojure-spec-alpha? clojure-alpha-spec?))
+
+(defn- try-fn [f & args]
+  (try (apply f args) (catch Exception _)))
+
+(defn- ex-unable-to-resolve-spec [s]
+  (ex-info (format "Unable to resolve spec: %s" s) {:s s}))
+
+(defn get-spec [k]
+  (or (clojure-alpha-spec-get-spec k)
+      (clojure-spec-alpha-get-spec k)
+      (clojure-spec-get-spec k)))
+
+(defn describe [s]
+  (or (try-fn clojure-alpha-spec-describe s)
+      (try-fn clojure-spec-alpha-describe s)
+      (try-fn clojure-spec-describe s)
+      (throw (ex-unable-to-resolve-spec s))))
+
+(defn registry []
+  (apply merge
+         (clojure-spec-registry)
+         (clojure-spec-alpha-registry)
+         (clojure-alpha-spec-registry)))
+
+(defn form [s]
+  (or (try-fn clojure-alpha-spec-form s)
+      (try-fn clojure-spec-alpha-form s)
+      (try-fn clojure-spec-form s)
+      (throw (ex-unable-to-resolve-spec s))))
+
+(defn gen [s]
+  (or (try-fn clojure-alpha-spec-gen s)
+      (try-fn clojure-spec-alpha-gen s)
+      (try-fn clojure-spec-gen s)
+      (throw (ex-unable-to-resolve-spec s))))
+
+(def ^:private generate*
+  "All Clojure Spec versions use test.check under the hood. So let's
+  directly use its `generate` function instead of going through the
+  various Spec versions again."
+  (misc/call-when-resolved 'clojure.test.check.generators/generate))
+
+(defn generate [s]
+  (when-let [gen (gen s)]
+    (generate* gen)))
 
 ;;; Utility functions
 
