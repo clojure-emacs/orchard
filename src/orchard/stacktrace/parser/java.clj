@@ -2,7 +2,8 @@
   (:require [clojure.edn :as edn]
             [clojure.java.io :as io]
             [instaparse.core  :as insta :refer [defparser]]
-            [orchard.misc :as misc]))
+            [orchard.misc :as misc]
+            [orchard.stacktrace.parser.util :as util]))
 
 (defparser ^:private parser
   (io/resource "orchard/stacktrace/parser/java.bnf"))
@@ -70,9 +71,9 @@
    :trace transform-trace})
 
 (defn parse-stacktrace
-  "Parse the `stacktrace` string in the Aviso format."
+  "Parse the `stacktrace` string in the Java format."
   [stacktrace]
-  (try (let [result (parser stacktrace)]
+  (try (let [result (util/parse-try parser stacktrace)]
          (if-let [failure (insta/get-failure result)]
            {:error :incorrect
             :type :incorrect-input
