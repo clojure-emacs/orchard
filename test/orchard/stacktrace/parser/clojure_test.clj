@@ -18,19 +18,19 @@
       (is (= 3 (count via)))
       (testing "stacktrace first cause"
         (let [{:keys [at data message type]} (nth via 0)]
-          (is (test/stacktrace-element? at))
+          (is (= '[clojure.lang.AFn applyToHelper "AFn.java" 160] at))
           (is (= {:boom "1"} data))
           (is (= "BOOM-1" message))
           (is (= 'clojure.lang.ExceptionInfo type))))
       (testing "stacktrace second cause"
         (let [{:keys [at data message type]} (nth via 1)]
-          (is (test/stacktrace-element? at))
+          (is (= '[clojure.lang.AFn applyToHelper "AFn.java" 160] at))
           (is (= {:boom "2"} data))
           (is (= "BOOM-2" message))
           (is (= 'clojure.lang.ExceptionInfo type))))
       (testing "stacktrace third cause"
         (let [{:keys [at data message type]} (nth via 2)]
-          (is (test/stacktrace-element? at))
+          (is (= '[clojure.lang.AFn applyToHelper "AFn.java" 156] at))
           (is (= {:boom "3"} data))
           (is (= "BOOM-3" message))
           (is (= 'clojure.lang.ExceptionInfo type)))))
@@ -47,7 +47,7 @@
       (is (= 1 (count via)))
       (testing "stacktrace first cause"
         (let [{:keys [at data message type]} (nth via 0)]
-          (is (test/stacktrace-element? at))
+          (is (= '[clojure.lang.Numbers divide "Numbers.java" 188] at))
           (is (= nil data))
           (is (= "Divide by zero" message))
           (is (= 'java.lang.ArithmeticException type)))))
@@ -66,7 +66,8 @@
       (is (= 1 (count via)))
       (testing "stacktrace first cause"
         (let [{:keys [at data message type]} (nth via 0)]
-          (is (test/stacktrace-element? at))
+          (is (= '[orchard.stacktrace.parser.throwable_test$eval13608
+                   invokeStatic "form-init17983781294375166615.clj" 74] at))
           (is (= {:boom "1"} data))
           (is (= "BOOM-1" message))
           (is (= 'clojure.lang.ExceptionInfo type)))))
