@@ -280,18 +280,9 @@
       (testing "message"
         (is (= "BOOM-1" message)))
       (testing "stacktrace"
-        (is (= 6 (count stacktrace)))
+        (is (= 7 (count stacktrace)))
         (testing "first frame"
-          (is (= {:fn "fn/fn"
-                  :method "fn/fn"
-                  :ns "nrepl.middleware.interruptible-eval"
-                  :name "nrepl.middleware.interruptible-eval/fn/fn"
-                  :file "interruptible_eval.clj"
-                  :type :clj
-                  :line 87
-                  :var "nrepl.middleware.interruptible-eval/fn/fn"
-                  :class "nrepl.middleware.interruptible-eval"
-                  :flags #{:tooling :clj}}
+          (is (= {:type :unknown, :flags #{:unknown}}
                  (dissoc (first stacktrace) :file-url))))
         (testing "last frame"
           (is (= {:fn "fn"

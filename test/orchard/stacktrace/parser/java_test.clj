@@ -6,76 +6,86 @@
 (defn- parse-fixture [name]
   (some-> name test/read-fixture parser/parse-stacktrace))
 
-(deftest parse-stacktrace-test
+(deftest parse-throwable-test
   (let [{:keys [cause data trace product via]} (parse-fixture :boom.java)]
-    (testing "product"
+    (testing ":product"
       (is (= :java product)))
-    (testing ":cause"
+    (testing "throwable cause"
       (is (= "BOOM-3" cause)))
     (testing ":data"
       (is (= {:boom "3"} data)))
     (testing ":via"
-      (is (= '[{:at [clojure.lang.AFn applyToHelper "AFn.java" 160]
-                :data {:boom "1"}
-                :message "BOOM-1"
-                :type clojure.lang.ExceptionInfo}
-               {:at [clojure.lang.AFn applyToHelper "AFn.java" 160]
-                :data {:boom "2"}
-                :message "BOOM-2"
-                :type clojure.lang.ExceptionInfo}
-               {:at [clojure.lang.AFn applyToHelper "AFn.java" 156]
-                :data {:boom "3"}
-                :message "BOOM-3"
-                :type clojure.lang.ExceptionInfo}]
-             via)))
+      (is (= 3 (count via)))
+      (testing "first cause"
+        (let [{:keys [at data message type]} (nth via 0)]
+          (is (= '[clojure.lang.AFn applyToHelper "AFn.java" 160] at))
+          (is (= {:boom "1"} data))
+          (is (= "BOOM-1" message))
+          (is (= 'clojure.lang.ExceptionInfo type))))
+      (testing "second cause"
+        (let [{:keys [at data message type]} (nth via 1)]
+          (is (= '[clojure.lang.AFn applyToHelper "AFn.java" 160] at))
+          (is (= {:boom "2"} data))
+          (is (= "BOOM-2" message))
+          (is (= 'clojure.lang.ExceptionInfo type))))
+      (testing "third cause"
+        (let [{:keys [at data message type]} (nth via 2)]
+          (is (= '[clojure.lang.AFn applyToHelper "AFn.java" 156] at))
+          (is (= {:boom "3"} data))
+          (is (= "BOOM-3" message))
+          (is (= 'clojure.lang.ExceptionInfo type)))))
     (testing ":trace"
-      (is (= '[[clojure.lang.AFn applyToHelper "AFn.java" 160]
-               [clojure.lang.AFn applyTo "AFn.java" 144]
-               [clojure.lang.Compiler$InvokeExpr eval "Compiler.java" 3706]]
-             (take 3 trace))))))
+      (is (every? test/stacktrace-element? trace))
+      (testing "first frame"
+        (is (= '[clojure.lang.AFn applyToHelper "AFn.java" 160] (first trace))))
+      (testing "last frame"
+        (is (= '[java.base/java.lang.Thread run "Thread.java" 829] (last trace)))))))
 
 (deftest parse-stacktrace-divide-by-zero-test
-  (let [{:keys [cause data trace via]} (parse-fixture :divide-by-zero.java)]
+  (let [{:keys [cause data trace product via]} (parse-fixture :divide-by-zero.java)]
+    (testing ":product"
+      (is (= :java product)))
     (testing "throwable cause"
       (is (= "Divide by zero" cause)))
-    (testing "throwable data"
+    (testing ":data"
       (is (= nil data)))
-    (testing "throwable via"
+    (testing ":via"
       (is (= 1 (count via)))
-      (testing "stacktrace first cause"
+      (testing "first cause"
         (let [{:keys [at data message type]} (nth via 0)]
-          (is (test/stacktrace-element? at))
+          (is (= '[clojure.lang.Numbers divide "Numbers.java" 188] at))
           (is (= nil data))
           (is (= "Divide by zero" message))
           (is (= 'java.lang.ArithmeticException type)))))
-    (testing "throwable trace"
-      (is (every? test/stacktrace-element? trace)))))
+    (testing ":trace"
+      (is (every? test/stacktrace-element? trace))
+      (testing "first frame"
+        (is (= '[clojure.lang.Numbers divide "Numbers.java" 188] (first trace))))
+      (testing "last frame"
+        (is (= '[java.base/java.lang.Thread run "Thread.java" 829] (last trace)))))))
 
 (deftest parse-stacktrace-short-test
   (let [{:keys [cause data trace product via]} (parse-fixture :short.java)]
-    (testing "product"
+    (testing ":product"
       (is (= :java product)))
     (testing "throwable cause"
       (is (= "BOOM-1" cause)))
-    (testing "throwable data"
+    (testing ":data"
       (is (= {:boom "1"} data)))
-    (testing "throwable via"
+    (testing ":via"
       (is (= 1 (count via)))
-      (testing "stacktrace first cause"
+      (testing "first cause"
         (let [{:keys [at data message type]} (nth via 0)]
-          (is (test/stacktrace-element? at))
+          (is (= '[java.base/java.lang.Thread run "Thread.java" 829] at))
           (is (= {:boom "1"} data))
           (is (= "BOOM-1" message))
           (is (= 'clojure.lang.ExceptionInfo type)))))
-    (testing "throwable trace"
-      (is (= 1 (count trace)))
+    (testing ":trace"
       (is (every? test/stacktrace-element? trace))
-      (testing "stacktrace first frame"
-        (let [[class method file line] (first trace)]
-          (is (= 'orchard.stacktrace.parser.throwable_test$eval16655 class))
-          (is (= 'invokeStatic method))
-          (is (= "form-init17983781294375166615.clj" file))
-          (is (= 74 line)))))))
+      (testing "first frame"
+        (is (= '[java.base/java.lang.Thread run "Thread.java" 829] (first trace))))
+      (testing "last frame"
+        (is (= '[java.base/java.lang.Thread run "Thread.java" 829] (last trace)))))))
 
 (deftest parse-stacktrace-garbage-test
   (let [text (test/read-fixture :boom.java)

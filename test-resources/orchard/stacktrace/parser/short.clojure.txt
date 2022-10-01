@@ -5,7 +5,16 @@
  [{:type clojure.lang.ExceptionInfo
    :message "BOOM-1"
    :data {:boom "1"}
-   :at [orchard.stacktrace.parser.throwable_test$eval13608 invokeStatic "form-init17983781294375166615.clj" 74]}]
+   :at [java.lang.Thread run "Thread.java" 829]}]
  :trace
- [[orchard.stacktrace.parser.throwable_test$eval13608 invokeStatic "form-init17983781294375166615.clj" 74]
-  [orchard.stacktrace.parser.throwable_test$eval13608 invokeStatic "form-init17983781294375166615.clj" 74]]}
+ [[java.lang.Thread run "Thread.java" 829]]}
+#error {
+ :cause "BOOM-1"
+ :data {:boom "1"}
+ :via
+ [{:type clojure.lang.ExceptionInfo
+   :message "BOOM-1"
+   :data {:boom "1"}
+   :at [java.lang.Thread run "Thread.java" 829]}]
+ :trace
+ [[java.lang.Thread run "Thread.java" 829]]}

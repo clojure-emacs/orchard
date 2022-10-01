@@ -1,2 +1,2 @@
 clojure.lang.ExceptionInfo: BOOM-1 {:boom "1"}
-	at orchard.stacktrace.parser.throwable_test$eval16655.invokeStatic(form-init17983781294375166615.clj:74)
+	at java.base/java.lang.Thread.run(Thread.java:829)

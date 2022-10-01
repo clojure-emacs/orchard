@@ -1,7 +1,8 @@
 (ns orchard.stacktrace.parser.aviso
   (:require [clojure.java.io :as io]
             [instaparse.core  :as insta :refer [defparser]]
-            [orchard.misc :refer [safe-read-edn]]))
+            [orchard.misc :refer [safe-read-edn]]
+            [orchard.stacktrace.parser.util :as util]))
 
 (defparser ^:private parser
   (io/resource "orchard/stacktrace/parser/aviso.bnf"))
@@ -18,7 +19,7 @@
 (defn- transform-data
   "Transform a :data node from Instaparse to Throwable->map."
   [& args]
-  [:data (apply hash-map (mapcat rest args))])
+  [:data (some->> args (apply hash-map))])
 
 (defn- transform-exception
   "Transform a :exception node from Instaparse to Throwable->map."
@@ -46,14 +47,12 @@
   "Transform a stacktrace node from Instaparse to Throwable->map."
   (fn [[_ & traces] [_ & causes]]
     (let [causes (reverse causes)
-          traces (reverse traces)
-          root (last causes)]
+          traces (remove empty? traces)
+          root   (last causes)]
       {:cause (:message root)
-       :data (:data root)
-       :trace (vec (apply concat traces))
-       :via (mapv (fn [cause trace]
-                    (assoc cause :at (last trace)))
-                  causes traces)})))
+       :data  (:data root)
+       :trace (vec (reverse (apply concat traces)))
+       :via   (vec causes)})))
 
 (defn- transform-trace
   "Transform a :trace node from Instaparse to Throwable->map."
@@ -85,7 +84,7 @@
 (defn parse-stacktrace
   "Parse the `stacktrace` string in the Aviso format."
   [stacktrace]
-  (try (let [result (parser stacktrace)]
+  (try (let [result (util/parse-try parser stacktrace)]
          (if-let [failure (insta/get-failure result)]
            {:error :incorrect
             :type :incorrect-input

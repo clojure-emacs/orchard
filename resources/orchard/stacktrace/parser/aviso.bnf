@@ -1,25 +1,35 @@
-S = <#'[^"]'*> traces causes <#"."*>
+S = <whitespace*> stacktrace <garbage>?
 
-traces = trace+
-trace = (frame+ <more>) / frame
+<stacktrace> = (traces causes)
+<garbage> = (newline | whitespace | #".")+
 
-frame = <whitespace>? class <slash> method frame-info <newline>
-<frame-info> = <whitespace> (<'REPL Input'> | frame-location)
-<frame-location> = file <double-colon> <whitespace> number (<whitespace> frame-repeats)?
+traces = trace-seq
+<trace-seq> = trace Epsilon | trace trace-seq
+trace = frames
+
+<frames> = Epsilon | <more> | (frame frames)
+frame = <whitespace>? call <whitespace> file frame-location? <newline>
+<frame-location> = <double-colon> <whitespace> number (<whitespace> frame-repeats)?
 <frame-repeats> = <lparen> <'repeats'> <whitespace> times <rparen>
 
-causes = cause+
-cause = type <double-colon> <whitespace> message <newline> data?
+<call> = call-clojure / call-java
+<call-clojure> = class <slash> method
+<call-java> = class <dot> method
+
+causes = cause-seq
+<cause-seq> = cause Epsilon | cause cause-seq
+cause = type <double-colon> <whitespace> message <newline> data
 message = #"."+
 
-data = data-entry+
-data-entry = <whitespace> data-key <double-colon> <whitespace> data-value <newline>
+data = data-block
+<data-block> = Epsilon | data-entry data-block
+<data-entry> = <whitespace> data-key <double-colon> <whitespace> data-value <newline>
 data-key = simple-name
 data-value = #"."+
 
 type = class
 class = (simple-name (dot simple-name)+)
-file = simple-name (dot simple-name)
+file = 'REPL Input' | (simple-name (dot simple-name))
 method = simple-name (slash simple-name)*
 more = <whitespace> <dot> <dot> <dot> <newline>
 <times> = number <whitespace> <'time'> <'s'>?
@@ -34,5 +44,5 @@ newline = #"[\n\r]"
 number = '-'? digit+
 lparen = '('
 rparen = ')'
-simple-name = #"[a-zA-Z0-9_$*-]"+
-whitespace = #"\s+"
+simple-name = #"[a-zA-Z0-9_$*-]+"
+whitespace = #"[^\S\r\n]+"

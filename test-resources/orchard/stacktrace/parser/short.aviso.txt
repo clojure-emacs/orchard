@@ -1,3 +1,3 @@
-orchard.stacktrace.parser.throwable-test/eval13935  REPL Input
+java.lang.Thread.run  Thread.java: 829
 clojure.lang.ExceptionInfo: BOOM-1
     boom: "1"

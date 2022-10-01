@@ -6,8 +6,8 @@
 nrepl.middleware.interruptible-eval/evaluate/fn/fn  interruptible_eval.clj:   87
                                  clojure.core/eval                core.clj: 3202
                                                ...
-          orchard.stacktrace.parser-test/eval15550               REPL Input
+orchard.stacktrace.parser.throwable-test/eval12321               REPL Input
                                                ...
-                orchard.stacktrace.parser.aviso/fn               aviso.clj:   92
+       orchard.stacktrace.parser.throwable-test/fn      throwable_test.clj:   13
                                                ...
 java.lang.ArithmeticException: Divide by zero
