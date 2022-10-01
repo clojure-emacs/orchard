@@ -8,13 +8,13 @@ type = class
 message = #'.'*
 data = lbrace #'.'* rbrace
 
-<causes> = Epsilon | cause causes
-<cause> = <caused-by> exception <cause-more> <newline>
+<causes> = Epsilon | <newline> cause causes
+<cause> = <caused-by> exception <newline> <cause-more>
 cause-more = <whitespace> <dot> <dot> <dot> <whitespace> number <whitespace> <more>
 
 trace = frame frames
-<frames> = Epsilon | frame frames
-<frame> = <whitespace> <at> <whitespace> call <newline>
+<frames> = Epsilon | <newline> frame frames
+<frame> = <whitespace> <at> <whitespace> call
 call = class <dot> method <lparen> file <double-colon> number <rparen>
 
 at = 'at'
