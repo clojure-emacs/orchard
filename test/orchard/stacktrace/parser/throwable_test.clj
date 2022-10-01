@@ -12,8 +12,8 @@
 (def divide-by-zero
   (try (/ 1 0) (catch Exception e e)))
 
-(def short
-  (let [exception (ex-info "BOOM-1" {:boom "1"})]
+(def short-boom
+  (let [^Throwable exception (ex-info "BOOM-1" {:boom "1"})]
     (.setStackTrace exception (into-array [(last (.getStackTrace exception))]))
     exception))
 
@@ -68,7 +68,7 @@
       (is (every? test/stacktrace-element? trace)))))
 
 (deftest parse-stacktrace-short-test
-  (let [{:keys [cause data trace product via]} (parser/parse-stacktrace short)]
+  (let [{:keys [cause data trace product via]} (parser/parse-stacktrace short-boom)]
     (testing ":product"
       (is (= :throwable product)))
     (testing "throwable cause"

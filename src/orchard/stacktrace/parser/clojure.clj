@@ -1,6 +1,5 @@
 (ns orchard.stacktrace.parser.clojure
   (:require [clojure.edn :as edn]
-            [clojure.string :as str]
             [orchard.stacktrace.parser.util :as util]))
 
 (def ^:private read-options

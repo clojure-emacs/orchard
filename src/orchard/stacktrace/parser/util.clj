@@ -4,7 +4,7 @@
 
 (defn seek-to-regex
   "Return the first substring in `s` matching `regexp`."
-  [s regex]
+  [^String s regex]
   (when-let [match (first (re-find regex s))]
     (when-let [index (str/index-of s match)]
       (.substring s index))))
