@@ -1,5 +1,4 @@
 (ns orchard.stacktrace.parser
-  (:refer-clojure :exclude [StackTraceElement->vec Throwable->map])
   (:require [orchard.misc :refer [safe-read-edn]]
             [orchard.stacktrace.parser.aviso :as parser.aviso]
             [orchard.stacktrace.parser.clojure :as parser.clojure]
