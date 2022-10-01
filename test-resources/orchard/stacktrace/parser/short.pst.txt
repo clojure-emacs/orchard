@@ -1,0 +1,2 @@
+ExceptionInfo BOOM-1 {:boom "1"}
+	java.lang.Thread.run (Thread.java:829)

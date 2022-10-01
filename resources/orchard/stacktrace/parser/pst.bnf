@@ -1,0 +1,38 @@
+S = <whitespace*> stacktrace <garbage>?
+
+<stacktrace> = (exception <newline> causes)
+<garbage> = (newline | whitespace | #".")+
+
+exception = type <whitespace> message (<whitespace> data)? <newline> trace
+type = class
+message = #'.'*
+data = lbrace #'.'* rbrace
+
+<causes> = Epsilon | cause causes
+<cause> = <caused-by> <newline> exception <newline>
+
+trace = frame frames
+<frames> = Epsilon | <newline> frame frames
+<frame> = <whitespace> call
+call = invocation <whitespace> <lparen> file <double-colon> number <rparen>
+<invocation> = class (<dot> | <slash>) method
+
+caused-by = 'Caused by:'
+class = simple-name (dot simple-name)*
+file = simple-name (dot simple-name)
+method = simple-name
+more = 'more'
+
+<digit> = #'[0-9]'
+<dot> = '.'
+<slash> = '/'
+
+double-colon = ':'
+newline = #"[\n\r]"
+number = '-'? digit+
+lparen = '('
+rparen = ')'
+<lbrace> = '{'
+<rbrace> = '}'
+simple-name = #"[a-zA-Z0-9_$/-]"+
+whitespace = #"[^\S\r\n]+"

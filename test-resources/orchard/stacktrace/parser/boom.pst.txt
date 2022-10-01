@@ -1,0 +1,23 @@
+ExceptionInfo BOOM-1 {:boom "1"}
+	clojure.lang.Compiler$InvokeExpr.eval (Compiler.java:3706)
+	clojure.lang.Compiler$DefExpr.eval (Compiler.java:457)
+	clojure.lang.Compiler.eval (Compiler.java:7186)
+	clojure.lang.Compiler.load (Compiler.java:7640)
+	user/eval8462 (form-init11438175174013931757.clj:1)
+	user/eval8462 (form-init11438175174013931757.clj:1)
+	clojure.lang.Compiler.eval (Compiler.java:7181)
+	clojure.lang.Compiler.eval (Compiler.java:7136)
+	clojure.core/eval (core.clj:3202)
+	clojure.core/eval (core.clj:3198)
+	nrepl.middleware.interruptible-eval/evaluate/fn--1933/fn--1934 (interruptible_eval.clj:87)
+	clojure.core/apply (core.clj:667)
+Caused by:
+ExceptionInfo BOOM-2 {:boom "2"}
+	clojure.lang.Compiler$InvokeExpr.eval (Compiler.java:3706)
+	clojure.lang.Compiler$InvokeExpr.eval (Compiler.java:3705)
+	clojure.lang.Compiler$DefExpr.eval (Compiler.java:457)
+Caused by:
+ExceptionInfo BOOM-3 {:boom "3"}
+	clojure.lang.Compiler$InvokeExpr.eval (Compiler.java:3706)
+	clojure.lang.Compiler$InvokeExpr.eval (Compiler.java:3705)
+	clojure.lang.Compiler$InvokeExpr.eval (Compiler.java:3705)

@@ -1,0 +1,13 @@
+ArithmeticException Divide by zero
+	clojure.lang.Numbers.divide (Numbers.java:188)
+	clojure.lang.Numbers.divide (Numbers.java:3901)
+	orchard.stacktrace.parser.throwable-test/fn--8516 (throwable_test.clj:13)
+	orchard.stacktrace.parser.throwable-test/fn--8516 (throwable_test.clj:13)
+	clojure.lang.Compiler$InvokeExpr.eval (Compiler.java:3706)
+	clojure.lang.Compiler$DefExpr.eval (Compiler.java:457)
+	clojure.lang.Compiler.eval (Compiler.java:7186)
+	clojure.lang.Compiler.load (Compiler.java:7640)
+	user/eval8462 (form-init11438175174013931757.clj:1)
+	user/eval8462 (form-init11438175174013931757.clj:1)
+	clojure.lang.Compiler.eval (Compiler.java:7181)
+	clojure.lang.Compiler.eval (Compiler.java:7136)
