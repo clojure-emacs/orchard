@@ -5,6 +5,10 @@
             [orchard.misc :as misc]
             [orchard.stacktrace.parser.util :as util]))
 
+(def ^:private stacktrace-start-regex
+  "The regular expression matching the start of an Java stacktrace."
+  #"(?s)(([^\s]+):\s([^\n\r]+)\s+at+)")
+
 (defparser ^:private parser
   (io/resource "orchard/stacktrace/parser/java.bnf"))
 
@@ -71,14 +75,15 @@
    :trace transform-trace})
 
 (defn parse-stacktrace
-  "Parse the `stacktrace` string in the Java format."
+  "Parse the `stacktrace` string in the Aviso format."
   [stacktrace]
-  (try (let [result (util/parse-try parser stacktrace)]
-         (if-let [failure (insta/get-failure result)]
-           {:error :incorrect
-            :type :incorrect-input
-            :input stacktrace
-            :failure failure}
+  (try (let [result (util/parse-try parser stacktrace stacktrace-start-regex)
+             failure (insta/get-failure result)]
+         (if (or (nil? result) failure)
+           (cond-> {:error :incorrect
+                    :type :incorrect-input
+                    :input stacktrace}
+             failure (assoc :failure failure))
            (-> (insta/transform transformations result)
                (assoc :product :java))))
        (catch Exception e

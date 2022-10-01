@@ -101,19 +101,13 @@
 (deftest parse-stacktrace-incorrect-input-test
   (testing "parsing incorrect input"
     (let [{:keys [error input type]} (parser/parse-stacktrace "")]
-      (testing "error"
-        (is (= :incorrect error)))
-      (testing "type"
-        (is (= :incorrect-input type)))
-      (testing "input"
-        (is (= "" input))))))
+      (is (= :incorrect error))
+      (is (= :incorrect-input type))
+      (is (= "" input)))))
 
 (deftest parse-stacktrace-unsupported-input-test
   (testing "parsing unsupported input"
     (let [{:keys [error input type]} (parser/parse-stacktrace 1)]
-      (testing "error"
-        (is (= :unsupported error)))
-      (testing "type"
-        (is (= :input-not-supported type)))
-      (testing "input"
-        (is (= 1 input))))))
+      (is (= :unsupported error))
+      (is (= :input-not-supported type))
+      (is (= 1 input)))))

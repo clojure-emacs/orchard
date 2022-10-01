@@ -108,27 +108,14 @@
 (deftest parse-stacktrace-incorrect-input-test
   (testing "parsing a string not matching the grammar"
     (let [{:keys [error failure input type]} (parser/parse-stacktrace "")]
-      (testing "error"
-        (is (= :incorrect error)))
-      (testing "type"
-        (is (= :incorrect-input type)))
-      (testing "input"
-        (is (= "" input)))
-      (testing "failure"
-        (is (= {:index 0
-                :reason [{:tag :regexp :expecting "[a-zA-Z0-9_$*-]+"}
-                         {:tag :regexp :expecting "[^\\S\\r\\n]+"}]
-                :line 1
-                :column 1
-                :text nil}
-               (test/stringify-regexp failure)))))))
+      (is (= :incorrect error))
+      (is (= :incorrect-input type))
+      (is (= "" input))
+      (is (nil? failure)))))
 
 (deftest parse-stacktrace-unsupported-input-test
   (testing "parsing unsupported input"
     (let [{:keys [error input type]} (parser/parse-stacktrace 1)]
-      (testing "error"
-        (is (= :unsupported error)))
-      (testing "type"
-        (is (= :input-not-supported type)))
-      (testing "input"
-        (is (= 1 input))))))
+      (is (= :unsupported error))
+      (is (= :input-not-supported type))
+      (is (= 1 input)))))

@@ -1,22 +1,21 @@
 (ns orchard.stacktrace.parser.clojure
   (:require [clojure.edn :as edn]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [orchard.stacktrace.parser.util :as util]))
 
 (def ^:private read-options
   "The options used when reading a stacktrace in EDN format."
   {:default tagged-literal :eof nil})
 
-(defn- strip-garbage
-  "Strip the garbage in front of a Clojure stacktrace."
-  [s]
-  (if (string? s)
-    (str/replace (str s) #"(?s).*#error\s*\{" "#error {")
-    s))
+(def ^:private stacktrace-start-regex
+  "The regular expression matching the start of a Clojure stacktrace."
+  #"(?s)#error\s*\{")
 
 (defn parse-stacktrace
   "Parse the `stacktrace` string in the Clojure's tagged literal format."
   [stacktrace]
-  (try (let [{:keys [form tag]} (edn/read-string read-options (strip-garbage stacktrace))]
+  (try (let [s (util/seek-to-regex stacktrace stacktrace-start-regex)
+             {:keys [form tag]} (edn/read-string read-options s)]
          (if (= 'error tag)
            (assoc form :product :clojure)
            {:error :incorrect
