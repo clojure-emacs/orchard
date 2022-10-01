@@ -15,7 +15,7 @@
   [parser stacktrace regex]
   (loop [stacktrace stacktrace]
     (when-not (empty? stacktrace)
-      (let [result (parser stacktrace)]
+      (let [result (insta/parse parser stacktrace)]
         (if (insta/get-failure result)
           (let [next-stacktrace (seek-to-regex stacktrace regex)]
             (if (= stacktrace next-stacktrace)
