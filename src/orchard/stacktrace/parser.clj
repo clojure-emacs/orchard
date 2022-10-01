@@ -4,6 +4,7 @@
             [orchard.stacktrace.parser.aviso :as parser.aviso]
             [orchard.stacktrace.parser.clojure :as parser.clojure]
             [orchard.stacktrace.parser.java :as parser.java]
+            [orchard.stacktrace.parser.pst :as parser.pst]
             [orchard.stacktrace.parser.throwable :as parser.throwable]))
 
 (defmulti parse-stacktrace
@@ -15,6 +16,9 @@
 
 (defmethod parse-stacktrace :clojure [_ stacktrace]
   (parser.clojure/parse-stacktrace stacktrace))
+
+(defmethod parse-stacktrace :clojure.repl/pst [_ stacktrace]
+  (parser.pst/parse-stacktrace stacktrace))
 
 (defmethod parse-stacktrace :java [_ stacktrace]
   (parser.java/parse-stacktrace stacktrace))
