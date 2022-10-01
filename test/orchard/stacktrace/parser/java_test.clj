@@ -17,23 +17,35 @@
     (testing ":via"
       (is (= 3 (count via)))
       (testing "first cause"
-        (let [{:keys [at data message type]} (nth via 0)]
+        (let [{:keys [at data message trace type]} (nth via 0)]
           (is (= '[clojure.lang.AFn applyToHelper "AFn.java" 160] at))
           (is (= {:boom "1"} data))
           (is (= "BOOM-1" message))
-          (is (= 'clojure.lang.ExceptionInfo type))))
+          (is (= 'clojure.lang.ExceptionInfo type))
+          (is (= '[[clojure.lang.AFn applyToHelper "AFn.java" 160]
+                   [clojure.lang.AFn applyTo "AFn.java" 144]
+                   [clojure.lang.Compiler$InvokeExpr eval "Compiler.java" 3706]]
+                 (take 3 trace)))))
       (testing "second cause"
-        (let [{:keys [at data message type]} (nth via 1)]
+        (let [{:keys [at data message trace type]} (nth via 1)]
           (is (= '[clojure.lang.AFn applyToHelper "AFn.java" 160] at))
           (is (= {:boom "2"} data))
           (is (= "BOOM-2" message))
-          (is (= 'clojure.lang.ExceptionInfo type))))
+          (is (= 'clojure.lang.ExceptionInfo type))
+          (is (= '[[clojure.lang.AFn applyToHelper "AFn.java" 160]
+                   [clojure.lang.AFn applyTo "AFn.java" 144]
+                   [clojure.lang.Compiler$InvokeExpr eval "Compiler.java" 3706]]
+                 (take 3 trace)))))
       (testing "third cause"
-        (let [{:keys [at data message type]} (nth via 2)]
+        (let [{:keys [at data message trace type]} (nth via 2)]
           (is (= '[clojure.lang.AFn applyToHelper "AFn.java" 156] at))
           (is (= {:boom "3"} data))
           (is (= "BOOM-3" message))
-          (is (= 'clojure.lang.ExceptionInfo type)))))
+          (is (= 'clojure.lang.ExceptionInfo type))
+          (is (= '[[clojure.lang.AFn applyToHelper "AFn.java" 156]
+                   [clojure.lang.AFn applyTo "AFn.java" 144]
+                   [clojure.lang.Compiler$InvokeExpr eval "Compiler.java" 3706]]
+                 (take 3 trace))))))
     (testing ":trace"
       (is (every? test/stacktrace-element? trace))
       (testing "first frame"

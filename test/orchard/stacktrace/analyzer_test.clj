@@ -300,57 +300,111 @@
 (deftest test-analyze-clojure
   (let [causes (analyze-resource :boom.clojure)]
     (is (= 3 (count causes)))
-    (let [{:keys [class message stacktrace]} (first causes)]
-      (testing "class"
-        (is (= "clojure.lang.ExceptionInfo" class)))
-      (testing "BOOM-1"
-        (is (= "BOOM-1" message)))
-      (testing "stacktrace"
-        (is (= 36 (count stacktrace)))
-        (testing "first frame"
-          (is (= {:name "clojure.lang.AFn/applyToHelper"
-                  :file "AFn.java"
-                  :line 156
-                  :class "clojure.lang.AFn"
-                  :method "applyToHelper"
-                  :type :java
-                  :flags #{:java}}
-                 (dissoc (first stacktrace) :file-url))))
-        (testing "last frame"
-          (is (= {:name "java.lang.Thread/run"
-                  :file "Thread.java"
-                  :line 829
-                  :class "java.lang.Thread"
-                  :method "run"
-                  :type :java
-                  :flags #{:java}}
-                 (dissoc (last stacktrace) :file-url))))))))
+    (testing "first cause"
+      (let [{:keys [class message stacktrace]} (first causes)]
+        (testing "class"
+          (is (= "clojure.lang.ExceptionInfo" class)))
+        (testing "message"
+          (is (= "BOOM-1" message)))
+        (testing "stacktrace"
+          (is (= 36 (count stacktrace)))
+          (testing "first frame"
+            (is (= {:name "clojure.lang.AFn/applyToHelper"
+                    :file "AFn.java"
+                    :line 156
+                    :class "clojure.lang.AFn"
+                    :method "applyToHelper"
+                    :type :java
+                    :flags #{:java}}
+                   (dissoc (first stacktrace) :file-url))))
+          (testing "last frame"
+            (is (= {:name "java.lang.Thread/run"
+                    :file "Thread.java"
+                    :line 829
+                    :class "java.lang.Thread"
+                    :method "run"
+                    :type :java
+                    :flags #{:java}}
+                   (dissoc (last stacktrace) :file-url)))))))))
 
 (deftest test-analyze-java
   (let [causes (analyze-resource :boom.java)]
     (is (= 3 (count causes)))
-    (let [{:keys [class message stacktrace]} (first causes)]
-      (testing "class"
-        (is (= "clojure.lang.ExceptionInfo" class)))
-      (testing "BOOM-1"
-        (is (= "BOOM-1" message)))
-      (testing "stacktrace"
-        (is (= 33 (count stacktrace)))
-        (testing "first frame"
-          (is (= {:name "clojure.lang.AFn/applyTo"
-                  :file "AFn.java"
-                  :line 144
-                  :class "clojure.lang.AFn"
-                  :method "applyTo"
-                  :type :java
-                  :flags #{:java}}
-                 (dissoc (first stacktrace) :file-url))))
-        (testing "last frame"
-          (is (= {:name "java.lang.Thread/run"
-                  :file "Thread.java"
-                  :line 829
-                  :class "java.lang.Thread"
-                  :method "run"
-                  :type :java
-                  :flags #{:java}}
-                 (dissoc (last stacktrace) :file-url))))))))
+    (testing "first cause"
+      (let [{:keys [class message stacktrace]} (first causes)]
+        (testing "class"
+          (is (= "clojure.lang.ExceptionInfo" class)))
+        (testing "message"
+          (is (= "BOOM-1" message)))
+        (testing "stacktrace"
+          (is (= 34 (count stacktrace)))
+          (testing "first frame"
+            (is (= {:name "clojure.lang.AFn/applyToHelper"
+                    :file "AFn.java"
+                    :line 160
+                    :class "clojure.lang.AFn"
+                    :method "applyToHelper"
+                    :type :java
+                    :flags #{:java}}
+                   (dissoc (first stacktrace) :file-url))))
+          (testing "last frame"
+            (is (= {:name "java.lang.Thread/run"
+                    :file "Thread.java"
+                    :line 829
+                    :class "java.lang.Thread"
+                    :method "run"
+                    :type :java
+                    :flags #{:java}}
+                   (dissoc (last stacktrace) :file-url)))))))
+    (testing "second cause"
+      (let [{:keys [class message stacktrace]} (second causes)]
+        (testing "class"
+          (is (= "clojure.lang.ExceptionInfo" class)))
+        (testing "message"
+          (is (= "BOOM-2" message)))
+        (testing "stacktrace"
+          (is (= 4 (count stacktrace)))
+          (testing "first frame"
+            (is (= {:name "clojure.lang.AFn/applyToHelper"
+                    :file "AFn.java"
+                    :line 160
+                    :class "clojure.lang.AFn"
+                    :method "applyToHelper"
+                    :type :java
+                    :flags #{:java}}
+                   (dissoc (first stacktrace) :file-url))))
+          (testing "last frame"
+            (is (= {:name "clojure.lang.Compiler$InvokeExpr/eval"
+                    :file "Compiler.java"
+                    :line 3705
+                    :class "clojure.lang.Compiler$InvokeExpr"
+                    :method "eval"
+                    :type :java
+                    :flags #{:dup :tooling :java}}
+                   (dissoc (last stacktrace) :file-url)))))))
+    (testing "third cause"
+      (let [{:keys [class message stacktrace]} (nth causes 2 nil)]
+        (testing "class"
+          (is (= "clojure.lang.ExceptionInfo" class)))
+        (testing "message"
+          (is (= "BOOM-3" message)))
+        (testing "stacktrace"
+          (is (= 4 (count stacktrace)))
+          (testing "first frame"
+            (is (= {:name "clojure.lang.AFn/applyToHelper"
+                    :file "AFn.java"
+                    :line 156
+                    :class "clojure.lang.AFn"
+                    :method "applyToHelper"
+                    :type :java
+                    :flags #{:java}}
+                   (dissoc (first stacktrace) :file-url))))
+          (testing "last frame"
+            (is (= {:name "clojure.lang.Compiler$InvokeExpr/eval"
+                    :file "Compiler.java"
+                    :line 3705
+                    :class "clojure.lang.Compiler$InvokeExpr"
+                    :method "eval"
+                    :type :java
+                    :flags #{:dup :tooling :java}}
+                   (dissoc (last stacktrace) :file-url)))))))))

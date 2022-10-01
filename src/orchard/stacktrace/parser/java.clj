@@ -28,7 +28,8 @@
      :via (mapv (fn [{:keys [data type message trace]}]
                   (cond-> {:at (first trace)
                            :message message
-                           :type type}
+                           :type type
+                           :trace trace}
                     data (assoc :data data)))
                 causes)}))
 

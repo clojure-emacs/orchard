@@ -17,23 +17,35 @@
     (testing ":via"
       (is (= 3 (count via)))
       (testing "first cause"
-        (let [{:keys [at data message type]} (nth via 0)]
+        (let [{:keys [at data message trace type]} (nth via 0)]
           (is (= '[clojure.lang.Compiler$InvokeExpr eval "Compiler.java" 3706] at))
           (is (= {:boom "1"} data))
           (is (= "BOOM-1" message))
-          (is (= 'ExceptionInfo type))))
+          (is (= 'ExceptionInfo type))
+          (is (= '[[clojure.lang.Compiler$InvokeExpr eval "Compiler.java" 3706]
+                   [clojure.lang.Compiler$DefExpr eval "Compiler.java" 457]
+                   [clojure.lang.Compiler eval "Compiler.java" 7186]]
+                 (take 3 trace)))))
       (testing "second cause"
-        (let [{:keys [at data message type]} (nth via 1)]
+        (let [{:keys [at data message trace type]} (nth via 1)]
           (is (= '[clojure.lang.Compiler$InvokeExpr eval "Compiler.java" 3706] at))
           (is (= {:boom "2"} data))
           (is (= "BOOM-2" message))
-          (is (= 'ExceptionInfo type))))
+          (is (= 'ExceptionInfo type))
+          (is (= '[[clojure.lang.Compiler$InvokeExpr eval "Compiler.java" 3706]
+                   [clojure.lang.Compiler$InvokeExpr eval "Compiler.java" 3705]
+                   [clojure.lang.Compiler$DefExpr eval "Compiler.java" 457]]
+                 (take 3 trace)))))
       (testing "third cause"
-        (let [{:keys [at data message type]} (nth via 2)]
+        (let [{:keys [at data message trace type]} (nth via 2)]
           (is (= '[clojure.lang.Compiler$InvokeExpr eval "Compiler.java" 3706] at))
           (is (= {:boom "3"} data))
           (is (= "BOOM-3" message))
-          (is (= 'ExceptionInfo type)))))
+          (is (= 'ExceptionInfo type))
+          (is (= '[[clojure.lang.Compiler$InvokeExpr eval "Compiler.java" 3706]
+                   [clojure.lang.Compiler$InvokeExpr eval "Compiler.java" 3705]
+                   [clojure.lang.Compiler$InvokeExpr eval "Compiler.java" 3705]]
+                 (take 3 trace))))))
     (testing ":trace"
       (is (every? test/stacktrace-element? trace))
       (testing "first frame"
