@@ -11,7 +11,7 @@
   #"(?s)#error\s*\{")
 
 (defn parse-stacktrace
-  "Parse the `stacktrace` string in the Clojure's tagged literal format."
+  "Parse the `stacktrace` string in Clojure's tagged literal format."
   [stacktrace]
   (try (let [s (util/seek-to-regex stacktrace stacktrace-start-regex)
              {:keys [form tag]} (edn/read-string read-options s)]
