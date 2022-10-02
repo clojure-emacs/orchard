@@ -373,18 +373,18 @@
           (flag-tooling)))))
 
 (defn- analyze-cause-data
-  "Return a map describing the exception cause. If `ex-data` exists, a `:data`
-  key is appended."
-  [exception-data cause-data print-fn]
+  "Analyze the `cause-data` of an exception in `Throwable->map` format."
+  [cause-data print-fn]
   (let [pprint-str #(let [writer (StringWriter.)]
                       (print-fn % writer)
                       (str writer))
         m {:class (name (:type cause-data))
            :message (:message cause-data)
            :stacktrace (analyze-stacktrace-data
-                        (or (:trace cause-data)
-                            (seq (remove #(= (:at cause-data) %) (:trace exception-data)))
-                            (:trace exception-data)))}]
+                        (cond (seq (:trace cause-data))
+                              (:trace cause-data)
+                              (:at cause-data)
+                              [(:at cause-data)]))}]
     (if-let [data (filtered-ex-data (ex-info "" (or (:data cause-data) {})))]
       (if (or (:clojure.spec/failure data)
               (:clojure.spec.alpha/failure data))
@@ -401,22 +401,22 @@
       m)))
 
 (defn- analyze-causes-data
-  "Return the cause chain beginning with the thrown exception, with stack frames
-  for each. For `ex-info` exceptions response contains :data slot with pretty
-  printed data. For clojure.spec asserts, :spec slot contains a map of pretty
-  printed components describing spec failures."
+  "Analyze the cause chain of the `exception-data` in `Throwable->map` format."
   [exception-data print-fn]
-  (->> exception-data
-       (:via exception-data)
-       (into [] (comp (take-while identity)
-                      (map #(analyze-cause-data exception-data % print-fn))
-                      (map extract-location)))))
+  (let [causes (vec (:via exception-data))]
+    (into [] (comp (map #(analyze-cause-data % print-fn))
+                   (map extract-location))
+          (cond-> causes
+            (not (:trace (first causes)))
+            (assoc-in [0 :trace] (:trace exception-data))))))
 
 (defn analyze
-  "Return the cause chain beginning with the thrown exception, with stack frames
-  for each. For `ex-info` exceptions response contains :data slot with pretty
-  printed data. For clojure.spec asserts, :spec slot contains a map of pretty
-  printed components describing spec failures."
+  "Return the analyzed cause chain for `exception` beginning with the
+  thrown exception. `exception` can be an instance of `Throwable` or a
+  map in the same format as `Throwable->map`. For `ex-info`
+  exceptions, the response contains a :data slot with the pretty
+  printed data. For clojure.spec asserts, the :spec slot contains a
+  map of pretty printed components describing spec failures."
   ([exception]
    (analyze exception pprint))
   ([exception print-fn]
