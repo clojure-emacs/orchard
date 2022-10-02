@@ -72,7 +72,7 @@
     (testing ":trace"
       (is (every? test/stacktrace-element? trace))
       (testing "first frame"
-        (is (= ' [clojure.lang.AFn applyToHelper "AFn.java" 156] (first trace))))
+        (is (= '[clojure.lang.AFn applyToHelper "AFn.java" 156] (first trace))))
       (testing "last frame"
         (is (= '[java.lang.Thread run "Thread.java" 829] (last trace)))))))
 
