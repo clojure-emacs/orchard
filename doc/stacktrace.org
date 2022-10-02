@@ -52,6 +52,9 @@ them with the following stacktrace parsers:
   tagged literal, any =java.lang.Throwable= printed with
   =clojure.core/pr= and friends for example.
 
+- The =:clojure.stacktrace= parser recognizes stacktraces printed with
+  the functions from the =clojure.stacktrace= namespace.
+
 - The =:java= parser recognizes stacktraces formatted with the
   =printStackTrace= method of a =java.lang.Throwable=.
 

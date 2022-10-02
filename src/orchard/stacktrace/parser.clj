@@ -2,6 +2,7 @@
   (:require [orchard.misc :refer [safe-read-edn]]
             [orchard.stacktrace.parser.aviso :as parser.aviso]
             [orchard.stacktrace.parser.clojure :as parser.clojure]
+            [orchard.stacktrace.parser.clojure-stacktrace :as parser.clojure-stacktrace]
             [orchard.stacktrace.parser.java :as parser.java]
             [orchard.stacktrace.parser.pst :as parser.pst]
             [orchard.stacktrace.parser.throwable :as parser.throwable]))
@@ -9,6 +10,7 @@
 (def default-parsers
   "The default stacktrace parsers."
   [parser.clojure/parse-stacktrace
+   parser.clojure-stacktrace/parse-stacktrace
    parser.java/parse-stacktrace
    parser.pst/parse-stacktrace
    parser.aviso/parse-stacktrace
