@@ -16,11 +16,11 @@
 (defmethod parse-stacktrace :clojure [_ stacktrace]
   (parser.clojure/parse-stacktrace stacktrace))
 
-(defmethod parse-stacktrace :clojure.repl/pst [_ stacktrace]
-  (parser.pst/parse-stacktrace stacktrace))
-
 (defmethod parse-stacktrace :java [_ stacktrace]
   (parser.java/parse-stacktrace stacktrace))
+
+(defmethod parse-stacktrace :pst [_ stacktrace]
+  (parser.pst/parse-stacktrace stacktrace))
 
 (defmethod parse-stacktrace :throwable [_ stacktrace]
   (parser.throwable/parse-stacktrace stacktrace))
