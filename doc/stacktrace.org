@@ -1,0 +1,73 @@
+* Orchard Stacktraces
+
+Orchard provides functionality to parse and analyze stacktraces in
+some of the common formats (Clojure, Java, Aviso) and enrich them with
+information. This enriched information is used in tooling such as
+[[https://docs.cider.mx/cider/index.html][Cider]] to [[https://docs.cider.mx/cider/usage/navigating_stacktraces.html][integrate]] stacktraces into editors.
+
+** Parser
+
+An Orchard stacktrace parser transforms input into a parse result. On
+success, the parse result is a enhanced version of the Clojure data
+representation of a Throwable, a map with the following keys:
+
+- =:cause= The root cause message as a string.
+- =:phase= The error phase (optional).
+- =:via= The cause chain, with each cause having the keys:
+  - =:at= The top stack element of the cause as a vector (optional).
+  - =:data= The =ex-data= of the cause as a map (optional).
+  - =:message= The exception message of the cause as a string.
+  - =:type= The exception of the cause as a symbol.
+  - =:trace= The stack elements (optional, extended by Orchard).
+- =:trace=  The root cause stack elements
+
+This is mostly the same format as used by `Throwable->map` in newer
+Clojure versions, except for the additional =:trace= key in the cause
+maps of =:via=.
+
+On failure the parse result is a map with an =:error= key, and
+possibly other keys describing the error.
+
+A parse result can be given to the Orchard analyzer to enrich it with
+more information.
+
+*** Supported formats
+
+Stacktraces come in different formats and Orchard supports some of
+them with the following stacktrace parsers:
+
+- The =:aviso= parser recognizes stacktraces formatted with the
+  [[https://ioavisopretty.readthedocs.io/en/latest/exceptions.html][write-exception]] function of the [[https://github.com/AvisoNovate/pretty][Aviso]] library.
+
+- The =:clojure= parser recognizes stacktraces printed as an =error=
+  tagged literal, any =java.lang.Throwable= printed with
+  =clojure.core/pr= and friends for example.
+
+- The =:java= parser recognizes stacktraces formatted with the
+  =printStackTrace= method of a =java.lang.Throwable=.
+
+- The =:pst= parser recognizes stacktraces formatted with the
+  =clojure.repl/pst= function.
+
+** Analyzer
+
+The Orchard stacktrace analyzer transforms a stacktrace into an
+analysis. An analysis is a sequence of Clojure maps, one for each of
+the causes of the stacktrace, with the following keys:
+
+- =:class= The exception class as a string.
+- =:message= The exception message as a string.
+- =:stacktrace= The stacktrace frames, a list of maps.
+- =:data= The exception data.
+- =:location= The location formation of the exception.
+
+A frame in the =:stacktrace= is a map with the following keys:
+
+- =:class= The class name of the frame invocation.
+- =:file-url= The URL of the frame source file.
+- =:file= The file name of the frame source.
+- =:flags= The flags of the frame.
+- =:line= The line number of the frame source.
+- =:method= The method or function name of the frame invocation.
+- =:name= The name of the frame, typically the class and method of the invocation.
+- =:type= The type of invocation (=:java-, =:tooling=, etc).
