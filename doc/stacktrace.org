@@ -1,9 +1,18 @@
 * Orchard Stacktraces
 
-Orchard provides functionality to parse and analyze stacktraces in
-some of the common formats (Clojure, Java, Aviso) and enrich them with
-information. This enriched information is used in tooling such as
-[[https://docs.cider.mx/cider/index.html][Cider]] to [[https://docs.cider.mx/cider/usage/navigating_stacktraces.html][integrate]] stacktraces into editors.
+** Introduction
+
+Stacktraces are a hot topic in the Clojure community. As a Clojurist
+you deal with them in different kinds of situations. Sometimes you
+catch them "live", like an exception just thrown in a REPL. Other times
+you find them as text, printed in a REPL, or in a log file. Or worst,
+a printed exception buried inside another string, impossible to
+read. And of course, there are different kinds of formats.
+
+Tooling helps, and Orchard provides functionality to parse and analyze
+stacktraces to such tools. Orchard offers stacktrace parsers for some
+of the commonly used formats (Clojure, Java, Aviso), and an analyzer
+that enriches a stacktrace with additional information.
 
 ** Parser
 
