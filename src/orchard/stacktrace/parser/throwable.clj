@@ -53,7 +53,7 @@
   "Parse the `stacktrace` as a `java.lang.Throwable` instance."
   [stacktrace]
   (if (instance? Throwable stacktrace)
-    (assoc (Throwable->map stacktrace) :product :throwable)
+    (assoc (Throwable->map stacktrace) :stacktrace-type :throwable)
     {:error :unsupported
      :type :input-not-supported
      :input stacktrace}))

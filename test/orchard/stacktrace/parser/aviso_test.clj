@@ -7,9 +7,9 @@
   (some-> name test/read-fixture parser/parse-stacktrace))
 
 (deftest parse-stacktrace-boom-test
-  (let [{:keys [cause data trace product via]} (parse-fixture :boom.aviso)]
-    (testing ":product"
-      (is (= :aviso product)))
+  (let [{:keys [cause data trace stacktrace-type via]} (parse-fixture :boom.aviso)]
+    (testing ":stacktrace-type"
+      (is (= :aviso stacktrace-type)))
     (testing "throwable cause"
       (is (= "BOOM-3" cause)))
     (testing ":data"
@@ -42,9 +42,9 @@
         (is (= '[nrepl.middleware.interruptible-eval evaluate/fn "interruptible_eval.clj" 87] (last trace)))))))
 
 (deftest parse-stacktrace-divide-by-zero-test
-  (let [{:keys [cause data trace product via]} (parse-fixture :divide-by-zero.aviso)]
-    (testing ":product"
-      (is (= :aviso product)))
+  (let [{:keys [cause data trace stacktrace-type via]} (parse-fixture :divide-by-zero.aviso)]
+    (testing ":stacktrace-type"
+      (is (= :aviso stacktrace-type)))
     (testing "throwable cause"
       (is (= "Divide by zero" cause)))
     (testing ":data"
@@ -67,9 +67,9 @@
                (last trace)))))))
 
 (deftest parse-stacktrace-short-test
-  (let [{:keys [cause data trace product via]} (parse-fixture :short.aviso)]
-    (testing ":product"
-      (is (= :aviso product)))
+  (let [{:keys [cause data trace stacktrace-type via]} (parse-fixture :short.aviso)]
+    (testing ":stacktrace-type"
+      (is (= :aviso stacktrace-type)))
     (testing "throwable cause"
       (is (= "BOOM-1" cause)))
     (testing ":data"

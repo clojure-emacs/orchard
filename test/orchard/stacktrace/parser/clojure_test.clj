@@ -7,9 +7,9 @@
   (some-> name test/read-fixture parser/parse-stacktrace))
 
 (deftest parse-stacktrace-boom-test
-  (let [{:keys [cause data trace product via]} (parse-fixture :boom.clojure)]
-    (testing ":product"
-      (is (= :clojure product)))
+  (let [{:keys [cause data trace stacktrace-type via]} (parse-fixture :boom.clojure)]
+    (testing ":stacktrace-type"
+      (is (= :clojure stacktrace-type)))
     (testing "throwable cause"
       (is (= "BOOM-3" cause)))
     (testing ":data"
@@ -42,9 +42,9 @@
         (is (= '[java.lang.Thread run "Thread.java" 829] (last trace)))))))
 
 (deftest parse-stacktrace-divide-by-zero-test
-  (let [{:keys [cause data trace product via]} (parse-fixture :divide-by-zero.clojure)]
-    (testing ":product"
-      (is (= :clojure product)))
+  (let [{:keys [cause data trace stacktrace-type via]} (parse-fixture :divide-by-zero.clojure)]
+    (testing ":stacktrace-type"
+      (is (= :clojure stacktrace-type)))
     (testing "throwable cause"
       (is (= "Divide by zero" cause)))
     (testing ":data"
@@ -65,9 +65,9 @@
         (is (= '[java.lang.Thread run "Thread.java" 829] (last trace)))))))
 
 (deftest parse-stacktrace-short-test
-  (let [{:keys [cause data trace product via]} (parse-fixture :short.clojure)]
-    (testing ":product"
-      (is (= :clojure product)))
+  (let [{:keys [cause data trace stacktrace-type via]} (parse-fixture :short.clojure)]
+    (testing ":stacktrace-type"
+      (is (= :clojure stacktrace-type)))
     (testing "throwable cause"
       (is (= "BOOM-1" cause)))
     (testing ":data"

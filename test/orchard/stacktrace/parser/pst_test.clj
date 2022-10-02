@@ -7,9 +7,9 @@
   (some-> name test/read-fixture parser/parse-stacktrace))
 
 (deftest parse-throwable-test
-  (let [{:keys [cause data trace product via]} (parse-fixture :boom.pst)]
-    (testing ":product"
-      (is (= :pst product)))
+  (let [{:keys [cause data trace stacktrace-type via]} (parse-fixture :boom.pst)]
+    (testing ":stacktrace-type"
+      (is (= :pst stacktrace-type)))
     (testing "throwable cause"
       (is (= "BOOM-3" cause)))
     (testing ":data"
@@ -54,9 +54,9 @@
         (is (= '[clojure.lang.Compiler$InvokeExpr eval "Compiler.java" 3705] (last trace)))))))
 
 (deftest parse-stacktrace-divide-by-zero-test
-  (let [{:keys [cause data trace product via]} (parse-fixture :divide-by-zero.pst)]
-    (testing ":product"
-      (is (= :pst product)))
+  (let [{:keys [cause data trace stacktrace-type via]} (parse-fixture :divide-by-zero.pst)]
+    (testing ":stacktrace-type"
+      (is (= :pst stacktrace-type)))
     (testing "throwable cause"
       (is (= "Divide by zero" cause)))
     (testing ":data"
@@ -77,9 +77,9 @@
         (is (= '[clojure.lang.Compiler eval "Compiler.java" 7136] (last trace)))))))
 
 (deftest parse-stacktrace-short-test
-  (let [{:keys [cause data trace product via]} (parse-fixture :short.pst)]
-    (testing ":product"
-      (is (= :pst product)))
+  (let [{:keys [cause data trace stacktrace-type via]} (parse-fixture :short.pst)]
+    (testing ":stacktrace-type"
+      (is (= :pst stacktrace-type)))
     (testing "throwable cause"
       (is (= "BOOM-1" cause)))
     (testing ":data"

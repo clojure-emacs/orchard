@@ -7,8 +7,8 @@
             [orchard.stacktrace.parser.throwable :as parser.throwable]))
 
 (defmulti parse-stacktrace
-  "Parse the stacktrace in `object` produced by `product`."
-  (fn [product _stacktrace] (keyword product)))
+  "Parse the stacktrace in `object` produced by `stacktrace-type`."
+  (fn [stacktrace-type _stacktrace] (keyword stacktrace-type)))
 
 (defmethod parse-stacktrace :aviso [_ stacktrace]
   (parser.aviso/parse-stacktrace stacktrace))
@@ -34,8 +34,8 @@
   `input-transformations`."
   [object]
   (some (fn [transformation]
-          (some (fn [product]
-                  (let [result (parse-stacktrace product (transformation object))]
+          (some (fn [stacktrace-type]
+                  (let [result (parse-stacktrace stacktrace-type (transformation object))]
                     (when-not (:error result)
                       result)))
                 (keys (methods parse-stacktrace))))

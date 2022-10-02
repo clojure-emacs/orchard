@@ -96,7 +96,7 @@
                     :input stacktrace}
              failure (assoc :failure failure))
            (-> (insta/transform transformations result)
-               (assoc :product :aviso))))
+               (assoc :stacktrace-type :aviso))))
        (catch Exception e
          {:error :unsupported
           :type :input-not-supported

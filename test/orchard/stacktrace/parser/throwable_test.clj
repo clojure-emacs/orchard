@@ -18,9 +18,9 @@
     exception))
 
 (deftest parse-throwable-test
-  (let [{:keys [cause data trace product via]} (parser/parse-stacktrace boom)]
-    (testing ":product"
-      (is (= :throwable product)))
+  (let [{:keys [cause data trace stacktrace-type via]} (parser/parse-stacktrace boom)]
+    (testing ":stacktrace-type"
+      (is (= :throwable stacktrace-type)))
     (testing "throwable cause"
       (is (= "BOOM-3" cause)))
     (testing ":data"
@@ -49,9 +49,9 @@
       (is (every? test/stacktrace-element? trace)))))
 
 (deftest parse-stacktrace-divide-by-zero-test
-  (let [{:keys [cause data trace product via]} (parser/parse-stacktrace divide-by-zero)]
-    (testing ":product"
-      (is (= :throwable product)))
+  (let [{:keys [cause data trace stacktrace-type via]} (parser/parse-stacktrace divide-by-zero)]
+    (testing ":stacktrace-type"
+      (is (= :throwable stacktrace-type)))
     (testing "throwable cause"
       (is (= "Divide by zero" cause)))
     (testing ":data"
@@ -68,9 +68,9 @@
       (is (every? test/stacktrace-element? trace)))))
 
 (deftest parse-stacktrace-short-test
-  (let [{:keys [cause data trace product via]} (parser/parse-stacktrace short-boom)]
-    (testing ":product"
-      (is (= :throwable product)))
+  (let [{:keys [cause data trace stacktrace-type via]} (parser/parse-stacktrace short-boom)]
+    (testing ":stacktrace-type"
+      (is (= :throwable stacktrace-type)))
     (testing "throwable cause"
       (is (= "BOOM-1" cause)))
     (testing ":data"

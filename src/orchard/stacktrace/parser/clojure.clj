@@ -16,7 +16,7 @@
   (try (let [s (util/seek-to-regex stacktrace stacktrace-start-regex)
              {:keys [form tag]} (edn/read-string read-options s)]
          (if (= 'error tag)
-           (assoc form :product :clojure)
+           (assoc form :stacktrace-type :clojure)
            {:error :incorrect
             :type :incorrect-input
             :input stacktrace}))
