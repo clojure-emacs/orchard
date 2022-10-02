@@ -6,20 +6,20 @@
             [orchard.stacktrace.parser.util :as util]))
 
 (def ^:private stacktrace-start-regex
-  "The regular expression matching the start of an `clojure.repl/pst` stacktrace."
+  "The regular expression matching the start of a `clojure.repl/pst` stacktrace."
   #"(?s)([a-zA-Z0-9_$/-]+)\s+.*\n\s+([a-zA-Z0-9_$/.-]+)\s+\(([a-zA-Z0-9_$/.-]+):(\d+)\)")
 
 (defparser ^:private parser
   (io/resource "orchard/stacktrace/parser/pst.bnf"))
 
 (defn- transform-data
-  "Transform a :data node from Instaparse to Throwable->map."
+  "Transform a :data node into the `Throwable->map` format."
   [& data]
   (when-let [content (misc/safe-read-edn (apply str data))]
     [:data content]))
 
 (defn- transform-stacktrace
-  "Transform the :S node from Instaparse to Throwable->map."
+  "Transform the :S node into the `Throwable->map` format."
   [& causes]
   (let [root (last causes)]
     {:cause (:message root)
@@ -34,29 +34,29 @@
                 causes)}))
 
 (defn- transform-exception
-  "Transform a :exception node from Instaparse to Throwable->map."
+  "Transform a :exception node into the `Throwable->map` format."
   [& exceptions]
   (reduce (fn [m [k v]] (assoc m k v)) {} exceptions))
 
 (def ^:private transform-file
-  "Transform a :file node from Instaparse to Throwable->map."
+  "Transform a :file node into the `Throwable->map` format."
   (partial apply str))
 
 (def ^:private transform-class
-  "Transform a :class node from Instaparse to Throwable->map."
+  "Transform a :class node into the `Throwable->map` format."
   (comp symbol (partial apply str)))
 
 (defn- transform-message
-  "Transform a :message node from Instaparse to Throwable->map."
+  "Transform a :message node into the `Throwable->map` format."
   [& content]
   [:message (apply str content)])
 
 (def ^:private transform-number
-  "Transform a :number node from Instaparse to Throwable->map."
+  "Transform a :number node into the `Throwable->map` format."
   (comp edn/read-string (partial apply str)))
 
 (defn- transform-trace
-  "Transform a :trace node from Instaparse to Throwable->map."
+  "Transform a :trace node into the `Throwable->map` format."
   [& frames]
   [:trace (vec frames)])
 
@@ -76,7 +76,7 @@
    :trace transform-trace})
 
 (defn parse-stacktrace
-  "Parse the `stacktrace` string in the Aviso format."
+  "Parse the `stacktrace` string in the `clojure.repl/pst` format."
   [stacktrace]
   (try (let [result (util/parse-try parser stacktrace stacktrace-start-regex)
              failure (insta/get-failure result)]

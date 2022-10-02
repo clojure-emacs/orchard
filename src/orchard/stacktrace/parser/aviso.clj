@@ -12,43 +12,43 @@
   (io/resource "orchard/stacktrace/parser/aviso.bnf"))
 
 (def ^:private transform-class
-  "Transform a :class node from Instaparse to Throwable->map."
+  "Transform a :class node into the `Throwable->map` format."
   (comp symbol (partial apply str)))
 
 (defn- transform-cause
-  "Transform a :cause node from Instaparse to Throwable->map."
+  "Transform a :cause node into the `Throwable->map` format."
   [& args]
   (into {} args))
 
 (defn- transform-data
-  "Transform a :data node from Instaparse to Throwable->map."
+  "Transform a :data node into the `Throwable->map` format."
   [& args]
   [:data (some->> args (apply hash-map))])
 
 (defn- transform-exception
-  "Transform a :exception node from Instaparse to Throwable->map."
+  "Transform a :exception node into the `Throwable->map` format."
   [& args]
   (into {} args))
 
 (def ^:private transform-file
-  "Transform a :file node from Instaparse to Throwable->map."
+  "Transform a :file node into the `Throwable->map` format."
   (partial apply str))
 
 (def ^:private transform-number
-  "Transform a :number node from Instaparse to Throwable->map."
+  "Transform a :number node into the `Throwable->map` format."
   (comp safe-read-edn (partial apply str)))
 
 (def ^:private transform-method
-  "Transform a :method node from Instaparse to Throwable->map."
+  "Transform a :method node into the `Throwable->map` format."
   (comp symbol (partial apply str)))
 
 (defn- transform-message
-  "Transform a :message node from Instaparse to Throwable->map."
+  "Transform a :message node into the `Throwable->map` format."
   [& content]
   [:message (apply str content)])
 
 (def ^:private transform-stacktrace
-  "Transform a stacktrace node from Instaparse to Throwable->map."
+  "Transform a stacktrace node into the `Throwable->map` format."
   (fn [[_ & traces] [_ & causes]]
     (let [causes (reverse causes)
           traces (remove empty? traces)
@@ -59,7 +59,7 @@
        :via   (vec causes)})))
 
 (defn- transform-trace
-  "Transform a :trace node from Instaparse to Throwable->map."
+  "Transform a :trace node into the `Throwable->map` format."
   [& frames]
   (vec (mapcat (fn [frame]
                  (if-let [n (nth frame 4 nil)]
