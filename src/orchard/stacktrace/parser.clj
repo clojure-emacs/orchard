@@ -6,37 +6,35 @@
             [orchard.stacktrace.parser.pst :as parser.pst]
             [orchard.stacktrace.parser.throwable :as parser.throwable]))
 
-(defmulti parse-stacktrace
-  "Parse the stacktrace in `object` produced by `stacktrace-type`."
-  (fn [stacktrace-type _stacktrace] (keyword stacktrace-type)))
+(def default-parsers
+  "The default stacktrace parsers."
+  [parser.clojure/parse-stacktrace
+   parser.java/parse-stacktrace
+   parser.pst/parse-stacktrace
+   parser.aviso/parse-stacktrace
+   parser.throwable/parse-stacktrace])
 
-(defmethod parse-stacktrace :aviso [_ stacktrace]
-  (parser.aviso/parse-stacktrace stacktrace))
-
-(defmethod parse-stacktrace :clojure [_ stacktrace]
-  (parser.clojure/parse-stacktrace stacktrace))
-
-(defmethod parse-stacktrace :java [_ stacktrace]
-  (parser.java/parse-stacktrace stacktrace))
-
-(defmethod parse-stacktrace :pst [_ stacktrace]
-  (parser.pst/parse-stacktrace stacktrace))
-
-(defmethod parse-stacktrace :throwable [_ stacktrace]
-  (parser.throwable/parse-stacktrace stacktrace))
-
-(def ^:private input-transformations
+(def default-input-transformations
+  "The default input transformations."
   [identity safe-read-edn (comp safe-read-edn safe-read-edn)])
 
 (defn parse
-  "Parse `object` as a stacktrace by trying the permutation of
-  `parse-stacktrace` method implementations and
-  `input-transformations`."
-  [object]
-  (some (fn [transformation]
-          (some (fn [stacktrace-type]
-                  (let [result (parse-stacktrace stacktrace-type (transformation object))]
-                    (when-not (:error result)
-                      result)))
-                (keys (methods parse-stacktrace))))
-        input-transformations))
+  "Parse the `stacktrace`.
+
+  The `stacktrace` is parsed by applying each function in
+  `input-transformations` on `stacktrace` and invoking each of the
+  `parsers` on the result. The first successful parse result will be
+  returned, or nil if none of the parsers succeeded.
+
+  If `parsers` or `input-transformations` are nil, `default-parsers`
+  and `default-input-transformations` will be used instead."
+  ([stacktrace]
+   (parse stacktrace default-parsers))
+  ([stacktrace {:keys [parsers input-transformations]}]
+   (some (fn [transformation]
+           (some (fn [parser]
+                   (let [result (parser (transformation stacktrace))]
+                     (when-not (:error result)
+                       result)))
+                 (or parsers default-parsers)))
+         (or input-transformations default-input-transformations))))
