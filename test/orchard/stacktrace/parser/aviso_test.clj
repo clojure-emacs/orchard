@@ -41,6 +41,41 @@
       (testing "last frame"
         (is (= '[nrepl.middleware.interruptible-eval evaluate/fn "interruptible_eval.clj" 87] (last trace)))))))
 
+(deftest parse-stacktrace-boom-full-test
+  (let [{:keys [cause data trace stacktrace-type via]} (parse-fixture :boom.aviso.full)]
+    (testing ":stacktrace-type"
+      (is (= :aviso stacktrace-type)))
+    (testing "throwable cause"
+      (is (= "BOOM-3" cause)))
+    (testing ":data"
+      (is (= {:boom "3"} data)))
+    (testing ":via"
+      (is (= 3 (count via)))
+      (testing "first cause"
+        (let [{:keys [at data message type]} (nth via 0)]
+          (is (nil? at))
+          (is (= {:boom "1"} data))
+          (is (= "BOOM-1" message))
+          (is (= 'clojure.lang.ExceptionInfo type))))
+      (testing "second cause"
+        (let [{:keys [at data message type]} (nth via 1)]
+          (is (nil? at))
+          (is (= {:boom "2"} data))
+          (is (= "BOOM-2" message))
+          (is (= 'clojure.lang.ExceptionInfo type))))
+      (testing "third cause"
+        (let [{:keys [at data message type]} (nth via 2)]
+          (is (nil? at))
+          (is (= {:boom "3"} data))
+          (is (= "BOOM-3" message))
+          (is (= 'clojure.lang.ExceptionInfo type)))))
+    (testing ":trace"
+      (is (every? test/stacktrace-element? trace))
+      (testing "first frame"
+        (is (= ' [clojure.lang.AFn applyToHelper "AFn.java" 156] (first trace))))
+      (testing "last frame"
+        (is (= '[java.lang.Thread run "Thread.java" 829] (last trace)))))))
+
 (deftest parse-stacktrace-divide-by-zero-test
   (let [{:keys [cause data trace stacktrace-type via]} (parse-fixture :divide-by-zero.aviso)]
     (testing ":stacktrace-type"

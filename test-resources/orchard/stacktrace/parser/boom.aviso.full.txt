@@ -1,0 +1,37 @@
+                                        java.lang.Thread.run             Thread.java:  829
+                                        clojure.lang.AFn.run                AFn.java:   22
+             nrepl.middleware.session/session-exec/main-loop             session.clj:  217
+          nrepl.middleware.session/session-exec/main-loop/fn             session.clj:  218
+                                        clojure.lang.AFn.run                AFn.java:   22
+nrepl.middleware.interruptible-eval/interruptible-eval/fn/fn  interruptible_eval.clj:  152
+                nrepl.middleware.interruptible-eval/evaluate  interruptible_eval.clj:   84
+                                  clojure.lang.RestFn.invoke             RestFn.java: 1523
+                                           clojure.main/repl                main.clj:  368
+                                           clojure.main/repl                main.clj:  458
+                                        clojure.main/repl/fn                main.clj:  458
+                           clojure.main/repl/read-eval-print                main.clj:  437
+                        clojure.main/repl/read-eval-print/fn                main.clj:  437
+             nrepl.middleware.interruptible-eval/evaluate/fn  interruptible_eval.clj:   87
+                                  clojure.lang.RestFn.invoke             RestFn.java:  425
+                                 clojure.core/with-bindings*                core.clj: 1977 (repeats 2 times)
+                                          clojure.core/apply                core.clj:  667
+                                    clojure.lang.AFn.applyTo                AFn.java:  144
+                              clojure.lang.AFn.applyToHelper                AFn.java:  152
+          nrepl.middleware.interruptible-eval/evaluate/fn/fn  interruptible_eval.clj:   87
+                                           clojure.core/eval                core.clj: 3202
+                                  clojure.lang.Compiler.eval           Compiler.java: 7136
+                                  clojure.lang.Compiler.eval           Compiler.java: 7181
+          orchard.stacktrace.parser.throwable-test/eval40283               REPL Input
+                                  clojure.lang.Compiler.load           Compiler.java: 7640
+                                  clojure.lang.Compiler.eval           Compiler.java: 7186
+                          clojure.lang.Compiler$DefExpr.eval           Compiler.java:  457
+                       clojure.lang.Compiler$InvokeExpr.eval           Compiler.java: 3705 (repeats 2 times)
+                       clojure.lang.Compiler$InvokeExpr.eval           Compiler.java: 3706
+                                    clojure.lang.AFn.applyTo                AFn.java:  144
+                              clojure.lang.AFn.applyToHelper                AFn.java:  156
+clojure.lang.ExceptionInfo: BOOM-3
+    boom: "3"
+clojure.lang.ExceptionInfo: BOOM-2
+    boom: "2"
+clojure.lang.ExceptionInfo: BOOM-1
+    boom: "1"
