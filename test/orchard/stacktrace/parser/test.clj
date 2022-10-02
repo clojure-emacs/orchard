@@ -29,10 +29,11 @@
 
 (defn stacktrace-element?
   "Return true if `element` is a stacktrace element, otherwise false."
-  [[class method file :as element]]
-  (and (symbol? class)
-       (symbol? method)
-       (string? file)))
+  [element]
+  (let [[class method file] element]
+    (and (symbol? class)
+         (symbol? method)
+         (string? file))))
 
 (defn stringify-regexp
   "Post-walk `x` and replace all instances of `java.util.regex.Pattern`

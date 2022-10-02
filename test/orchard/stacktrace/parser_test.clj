@@ -7,7 +7,7 @@
 (deftest parse-test
   (doseq [fixture test/fixtures]
     (testing (format "parse fixture %s" fixture)
-      (let [{:keys [cause error trace type] :as x} (parser/parse (test/read-fixture fixture))]
+      (let [{:keys [cause error trace]} (parser/parse (test/read-fixture fixture))]
         (testing "should succeed"
           (is (nil? error)))
         (testing "should parse the cause"
