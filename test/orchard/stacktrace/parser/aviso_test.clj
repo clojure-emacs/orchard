@@ -6,7 +6,7 @@
 (defn- parse-fixture [name]
   (some-> name test/read-fixture parser/parse-stacktrace))
 
-(deftest parse-throwable-test
+(deftest parse-stacktrace-boom-test
   (let [{:keys [cause data trace product via]} (parse-fixture :boom.aviso)]
     (testing ":product"
       (is (= :aviso product)))

@@ -51,7 +51,7 @@
       (testing "first frame"
         (is (= '[clojure.lang.Compiler$InvokeExpr eval "Compiler.java" 3706] (first trace))))
       (testing "last frame"
-        (is (= '[clojure core/apply "core.clj" 667] (last trace)))))))
+        (is (= '[clojure.lang.Compiler$InvokeExpr eval "Compiler.java" 3705] (last trace)))))))
 
 (deftest parse-stacktrace-divide-by-zero-test
   (let [{:keys [cause data trace product via]} (parse-fixture :divide-by-zero.pst)]

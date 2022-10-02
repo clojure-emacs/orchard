@@ -6,7 +6,7 @@
 (defn- parse-fixture [name]
   (some-> name test/read-fixture parser/parse-stacktrace))
 
-(deftest parse-throwable-test
+(deftest parse-stacktrace-boom-test
   (let [{:keys [cause data trace product via]} (parse-fixture :boom.java)]
     (testing ":product"
       (is (= :java product)))
@@ -49,9 +49,11 @@
     (testing ":trace"
       (is (every? test/stacktrace-element? trace))
       (testing "first frame"
-        (is (= '[clojure.lang.AFn applyToHelper "AFn.java" 160] (first trace))))
+        (is (= '[clojure.lang.AFn applyToHelper "AFn.java" 156]
+               (first trace))))
       (testing "last frame"
-        (is (= '[java.base/java.lang.Thread run "Thread.java" 829] (last trace)))))))
+        (is (= '[clojure.lang.Compiler$InvokeExpr eval "Compiler.java" 3705]
+               (last trace)))))))
 
 (deftest parse-stacktrace-divide-by-zero-test
   (let [{:keys [cause data trace product via]} (parse-fixture :divide-by-zero.java)]

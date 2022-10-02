@@ -274,38 +274,63 @@
 (deftest test-analyze-aviso
   (let [causes (analyze-resource :boom.aviso)]
     (is (= 3 (count causes)))
-    (let [{:keys [class message stacktrace]} (first causes)]
-      (testing "class"
-        (is (= "clojure.lang.ExceptionInfo" class)))
-      (testing "message"
-        (is (= "BOOM-1" message)))
-      (testing "stacktrace"
-        (is (= 7 (count stacktrace)))
-        (testing "first frame"
-          (is (= {:type :unknown, :flags #{:unknown}}
-                 (dissoc (first stacktrace) :file-url))))
-        (testing "last frame"
-          (is (= {:fn "fn"
-                  :method "fn"
-                  :ns "nrepl.middleware.interruptible-eval"
-                  :name "nrepl.middleware.interruptible-eval/fn"
-                  :file "interruptible_eval.clj"
-                  :type :clj
-                  :line 87
-                  :var "nrepl.middleware.interruptible-eval/fn"
-                  :class "nrepl.middleware.interruptible-eval"
-                  :flags #{:tooling :clj}}
-                 (dissoc (last stacktrace) :file-url))))))))
+    (testing "first cause"
+      (let [{:keys [class data message stacktrace]} (first causes)]
+        (testing "class"
+          (is (= "clojure.lang.ExceptionInfo" class)))
+        (testing "message"
+          (is (= "BOOM-1" message)))
+        (testing "data"
+          (is (= "{:boom \"1\"}" data)))
+        (testing "stacktrace"
+          (is (= 7 (count stacktrace)))
+          (testing "first frame"
+            (is (= {:type :unknown, :flags #{:unknown}}
+                   (dissoc (first stacktrace) :file-url))))
+          (testing "last frame"
+            (is (= {:fn "fn"
+                    :method "fn"
+                    :ns "nrepl.middleware.interruptible-eval"
+                    :name "nrepl.middleware.interruptible-eval/fn"
+                    :file "interruptible_eval.clj"
+                    :type :clj
+                    :line 87
+                    :var "nrepl.middleware.interruptible-eval/fn"
+                    :class "nrepl.middleware.interruptible-eval"
+                    :flags #{:tooling :clj}}
+                   (dissoc (last stacktrace) :file-url)))))))
+    (testing "second cause"
+      (let [{:keys [class data message stacktrace]} (second causes)]
+        (testing "class"
+          (is (= "clojure.lang.ExceptionInfo" class)))
+        (testing "message"
+          (is (= "BOOM-2" message)))
+        (testing "data"
+          (is (= "{:boom \"2\"}" data)))
+        (testing "stacktrace"
+          (is (= 0 (count stacktrace))))))
+    (testing "thrid cause"
+      (let [{:keys [class data message stacktrace]} (nth causes 2)]
+        (testing "class"
+          (is (= "clojure.lang.ExceptionInfo" class)))
+        (testing "message"
+          (is (= "BOOM-3" message)))
+        (testing "data"
+          (is (= "{:boom \"3\"}" data)))
+        (testing "stacktrace"
+          (is (= 0 (count stacktrace))))))))
 
 (deftest test-analyze-clojure
   (let [causes (analyze-resource :boom.clojure)]
     (is (= 3 (count causes)))
     (testing "first cause"
-      (let [{:keys [class message stacktrace]} (first causes)]
+      (let [{:keys [class data message stacktrace]} (first causes)]
         (testing "class"
           (is (= "clojure.lang.ExceptionInfo" class)))
         (testing "message"
           (is (= "BOOM-1" message)))
+        (testing "data"
+          (is (= "{:boom \"1\"}" data)))
         (testing "stacktrace"
           (is (= 36 (count stacktrace)))
           (testing "first frame"
@@ -325,17 +350,57 @@
                     :method "run"
                     :type :java
                     :flags #{:java}}
-                   (dissoc (last stacktrace) :file-url)))))))))
+                   (dissoc (last stacktrace) :file-url)))))))
+    (testing "second cause"
+      (let [{:keys [class data message stacktrace]} (second causes)]
+        (testing "class"
+          (is (= "clojure.lang.ExceptionInfo" class)))
+        (testing "message"
+          (is (= "BOOM-2" message)))
+        (testing "data"
+          (is (= "{:boom \"2\"}" data)))
+        (testing "stacktrace"
+          (is (= 1 (count stacktrace)))
+          (testing "first frame"
+            (is (= {:name "clojure.lang.AFn/applyToHelper"
+                    :file "AFn.java"
+                    :line 160
+                    :class "clojure.lang.AFn"
+                    :method "applyToHelper"
+                    :type :java
+                    :flags #{:java}}
+                   (dissoc (first stacktrace) :file-url)))))))
+    (testing "third cause"
+      (let [{:keys [class data message stacktrace]} (nth causes 2)]
+        (testing "class"
+          (is (= "clojure.lang.ExceptionInfo" class)))
+        (testing "message"
+          (is (= "BOOM-3" message)))
+        (testing "data"
+          (is (= "{:boom \"3\"}" data)))
+        (testing "stacktrace"
+          (is (= 1 (count stacktrace)))
+          (testing "first frame"
+            (is (= {:name "clojure.lang.AFn/applyToHelper"
+                    :file "AFn.java"
+                    :line 156
+                    :class "clojure.lang.AFn"
+                    :method "applyToHelper"
+                    :type :java
+                    :flags #{:java}}
+                   (dissoc (first stacktrace) :file-url)))))))))
 
 (deftest test-analyze-java
   (let [causes (analyze-resource :boom.java)]
     (is (= 3 (count causes)))
     (testing "first cause"
-      (let [{:keys [class message stacktrace]} (first causes)]
+      (let [{:keys [class data message stacktrace]} (first causes)]
         (testing "class"
           (is (= "clojure.lang.ExceptionInfo" class)))
         (testing "message"
           (is (= "BOOM-1" message)))
+        (testing "data"
+          (is (= "{:boom \"1\"}" data)))
         (testing "stacktrace"
           (is (= 34 (count stacktrace)))
           (testing "first frame"
@@ -357,11 +422,13 @@
                     :flags #{:java}}
                    (dissoc (last stacktrace) :file-url)))))))
     (testing "second cause"
-      (let [{:keys [class message stacktrace]} (second causes)]
+      (let [{:keys [class data message stacktrace]} (second causes)]
         (testing "class"
           (is (= "clojure.lang.ExceptionInfo" class)))
         (testing "message"
           (is (= "BOOM-2" message)))
+        (testing "data"
+          (is (= "{:boom \"2\"}" data)))
         (testing "stacktrace"
           (is (= 4 (count stacktrace)))
           (testing "first frame"
@@ -383,11 +450,13 @@
                     :flags #{:dup :tooling :java}}
                    (dissoc (last stacktrace) :file-url)))))))
     (testing "third cause"
-      (let [{:keys [class message stacktrace]} (nth causes 2 nil)]
+      (let [{:keys [class data message stacktrace]} (nth causes 2 nil)]
         (testing "class"
           (is (= "clojure.lang.ExceptionInfo" class)))
         (testing "message"
           (is (= "BOOM-3" message)))
+        (testing "data"
+          (is (= "{:boom \"3\"}" data)))
         (testing "stacktrace"
           (is (= 4 (count stacktrace)))
           (testing "first frame"

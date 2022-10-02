@@ -24,7 +24,7 @@
   (let [root (last causes)]
     {:cause (:message root)
      :data (:data root)
-     :trace (:trace (first causes))
+     :trace (:trace root)
      :via (mapv (fn [{:keys [data type message trace]}]
                   (cond-> {:at (first trace)
                            :message message
