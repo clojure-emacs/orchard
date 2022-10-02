@@ -420,8 +420,7 @@
   ([exception]
    (analyze exception pprint))
   ([exception print-fn]
-   (cond
-     (instance? Throwable exception)
-     (analyze-causes exception print-fn)
-     (and (map? exception) (:trace exception))
-     (analyze-causes-data exception print-fn))))
+   (cond (instance? Throwable exception)
+         (analyze-causes exception print-fn)
+         (and (map? exception) (:trace exception))
+         (analyze-causes-data exception print-fn))))
