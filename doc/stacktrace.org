@@ -49,17 +49,18 @@ them with the following stacktrace parsers:
   [[https://ioavisopretty.readthedocs.io/en/latest/exceptions.html][write-exception]] function of the [[https://github.com/AvisoNovate/pretty][Aviso]] library.
 
 - The =:clojure= parser recognizes stacktraces printed as an =error=
-  tagged literal, any =java.lang.Throwable= printed with
-  =clojure.core/pr= and friends for example.
+  tagged literal, like [[https://docs.oracle.com/javase/8/docs/api/java/lang/Throwable.html][java.lang.Throwable]] printed with the [[https://clojure.github.io/clojure/branch-master/clojure.core-api.html#clojure.core/pr][pr]]
+  function.
 
 - The =:clojure.stacktrace= parser recognizes stacktraces printed with
-  the functions from the =clojure.stacktrace= namespace.
+  the [[https://clojure.github.io/clojure/branch-master/clojure.stacktrace-api.html#clojure.stacktrace/print-cause-trace][print-cause-trace]] function from the [[https://clojure.github.io/clojure/branch-master/clojure.stacktrace-api.html][clojure.stacktrace]]
+  namespace.
 
 - The =:java= parser recognizes stacktraces formatted with the
-  =printStackTrace= method of a =java.lang.Throwable=.
+  [[https://docs.oracle.com/javase/8/docs/api/java/lang/Throwable.html#printStackTrace--][printStackTrace]] method of a [[https://docs.oracle.com/javase/8/docs/api/java/lang/Throwable.html][java.lang.Throwable]].
 
-- The =:pst= parser recognizes stacktraces formatted with the
-  =clojure.repl/pst= function.
+- The =:pst= parser recognizes stacktraces formatted with the [[https://clojure.github.io/clojure/branch-master/clojure.repl-api.html#clojure.repl/pst][pst]]
+  function from the [[https://clojure.github.io/clojure/branch-master/clojure.repl-api.html][clojure.repl]] namespace.
 
 ** Analyzer
 
