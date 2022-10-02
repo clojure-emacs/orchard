@@ -101,22 +101,6 @@
       (testing "last frame"
         (is (= '[java.base/java.lang.Thread run "Thread.java" 829] (last trace)))))))
 
-(deftest parse-stacktrace-garbage-test
-  (let [text (test/read-fixture :boom.java)
-        expected (parser/parse-stacktrace text)]
-    (testing "garbage at the beginning is ignored"
-      (is (= expected (parser/parse-stacktrace (str "\n<garbage>\n<garbage>\n" text)))))
-    (testing "garbage at the end is ignored"
-      (is (= expected (parser/parse-stacktrace (str text "\n<garbage>\n<garbage>\n")))))
-    (testing "white space in front of exception is ignored"
-      (is (= expected (parser/parse-stacktrace (str " \t " text)))))
-    (testing "white space at the end of the exception is ignored"
-      (is (= expected (parser/parse-stacktrace (str text " \t ")))))
-    (testing "newlines at in front of the exception is ignored"
-      (is (= expected (parser/parse-stacktrace (str text "\n\n")))))
-    (testing "newlines at the end of the exception is ignored"
-      (is (= expected (parser/parse-stacktrace (str text "\n\n")))))))
-
 (deftest parse-stacktrace-incorrect-input-test
   (testing "parsing a string not matching the grammar"
     (let [{:keys [error failure input type]} (parser/parse-stacktrace "")]

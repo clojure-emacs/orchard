@@ -87,17 +87,6 @@
       (testing "last frame"
         (is (= '[java.lang.Thread run "Thread.java" 829] (last trace)))))))
 
-(deftest parse-stacktrace-garbage-test
-  (let [expected (test/read-fixture :boom.clojure)]
-    (testing "parsing a stacktrace with garbage at the end should succeed"
-      (is (= (parser/parse-stacktrace expected)
-             (parser/parse-stacktrace (str expected "<garbage>"))
-             (parser/parse-stacktrace (str expected "\n<garbage>\n")))))
-    (testing "parsing a stacktrace with garbage at the end should succeed"
-      (is (= (parser/parse-stacktrace expected)
-             (parser/parse-stacktrace (str "<garbage>" expected))
-             (parser/parse-stacktrace (str "\n<garbage>\n" expected)))))))
-
 (deftest parse-stacktrace-incorrect-input-test
   (testing "parsing incorrect input"
     (let [{:keys [error input type]} (parser/parse-stacktrace "")]
