@@ -2,7 +2,7 @@
   (:require
    [clojure.java.io :as io]
    [clojure.test :refer [are deftest is testing]]
-   [orchard.misc :as misc]
+   [orchard.spec :as spec]
    [orchard.stacktrace.analyzer :as sut]
    [orchard.stacktrace.parser :as parser]))
 
@@ -58,9 +58,9 @@
   (when (resolve (symbol "clojure.spec.alpha" "get-spec"))
     (eval `(do
              ~(cond
-                misc/clojure-spec-alpha?
+                spec/clojure-spec-alpha?
                 (require '[clojure.spec.alpha :as s])
-                misc/clojure-spec?
+                spec/clojure-spec?
                 (require '[clojure.spec :as s]))
              (s/check-asserts true)
              (s/def ::email-type
@@ -78,7 +78,7 @@
 
 ;; ## Tests
 
-(when misc/spec-any?
+(when spec/spec?
   (deftest spec-assert-stacktrace-test
     (testing "Spec assert components"
       (is (= 1 (count broken-musk-causes)))
