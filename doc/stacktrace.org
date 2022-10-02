@@ -70,4 +70,4 @@ A frame in the =:stacktrace= is a map with the following keys:
 - =:line= The line number of the frame source.
 - =:method= The method or function name of the frame invocation.
 - =:name= The name of the frame, typically the class and method of the invocation.
-- =:type= The type of invocation (=:java-, =:tooling=, etc).
+- =:type= The type of invocation (=:java=, =:tooling=, etc).
