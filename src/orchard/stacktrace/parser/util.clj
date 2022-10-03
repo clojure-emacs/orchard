@@ -2,6 +2,21 @@
   (:require [clojure.string :as str]
             [instaparse.core :as insta]))
 
+(defn error-incorrect-input
+  "Return the incorrect input error."
+  [input]
+  {:error :incorrect
+   :type :incorrect-input
+   :input input})
+
+(defn error-unsupported-input
+  "Return the unsupported input error."
+  [input & [exception]]
+  (cond-> {:error :unsupported
+           :type :input-not-supported
+           :input input}
+    exception (assoc :exception exception)))
+
 (defn seek-to-regex
   "Return the first substring in `s` matching `regexp`."
   [^String s regex]
@@ -22,3 +37,16 @@
               result
               (recur next-stacktrace)))
           result)))))
+
+(defn parse-stacktrace
+  "Parse a stacktrace with an Instaparse parser and transformations."
+  [stacktrace-type parser transformations input start-regex]
+  (try (let [result (parse-try parser input start-regex)
+             failure (insta/get-failure result)]
+         (if (or (nil? result) failure)
+           (cond-> (error-incorrect-input input)
+             failure (assoc :failure failure))
+           (-> (insta/transform transformations result)
+               (assoc :stacktrace-type stacktrace-type))))
+       (catch Exception e
+         (error-unsupported-input input e))))

@@ -1,5 +1,6 @@
 (ns orchard.stacktrace.parser.throwable
-  (:refer-clojure :exclude [StackTraceElement->vec Throwable->map]))
+  (:refer-clojure :exclude [StackTraceElement->vec Throwable->map])
+  (:require [orchard.stacktrace.parser.util :as util]))
 
 ;; Throwable
 
@@ -54,6 +55,4 @@
   [stacktrace]
   (if (instance? Throwable stacktrace)
     (assoc (Throwable->map stacktrace) :stacktrace-type :throwable)
-    {:error :unsupported
-     :type :input-not-supported
-     :input stacktrace}))
+    (util/error-unsupported-input stacktrace)))

@@ -86,19 +86,6 @@
    :trace transform-trace})
 
 (defn parse-stacktrace
-  "Parse the `stacktrace` string in the Aviso format."
-  [stacktrace]
-  (try (let [result (util/parse-try parser stacktrace stacktrace-start-regex)
-             failure (insta/get-failure result)]
-         (if (or (nil? result) failure)
-           (cond-> {:error :incorrect
-                    :type :incorrect-input
-                    :input stacktrace}
-             failure (assoc :failure failure))
-           (-> (insta/transform transformations result)
-               (assoc :stacktrace-type :aviso))))
-       (catch Exception e
-         {:error :unsupported
-          :type :input-not-supported
-          :input stacktrace
-          :exception e})))
+  "Parse `input` as a stacktrace in the Aviso format."
+  [input]
+  (util/parse-stacktrace :aviso parser transformations input stacktrace-start-regex))

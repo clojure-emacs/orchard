@@ -11,17 +11,12 @@
   #"(?s)#error\s*\{")
 
 (defn parse-stacktrace
-  "Parse the `stacktrace` string in Clojure's tagged literal format."
-  [stacktrace]
-  (try (let [s (util/seek-to-regex stacktrace stacktrace-start-regex)
+  "Parse `input` as a stacktrace in Clojure's tagged literal format."
+  [input]
+  (try (let [s (util/seek-to-regex input stacktrace-start-regex)
              {:keys [form tag]} (edn/read-string read-options s)]
          (if (= 'error tag)
            (assoc form :stacktrace-type :clojure)
-           {:error :incorrect
-            :type :incorrect-input
-            :input stacktrace}))
+           (util/error-incorrect-input input)))
        (catch Exception e
-         {:error :unsupported
-          :type :input-not-supported
-          :input stacktrace
-          :exception e})))
+         (util/error-unsupported-input input e))))

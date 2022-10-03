@@ -77,19 +77,6 @@
    :trace transform-trace})
 
 (defn parse-stacktrace
-  "Parse the `stacktrace` string in the clojure.stacktrace format."
-  [stacktrace]
-  (try (let [result (util/parse-try parser stacktrace stacktrace-start-regex)
-             failure (insta/get-failure result)]
-         (if (or (nil? result) failure)
-           (cond-> {:error :incorrect
-                    :type :incorrect-input
-                    :input stacktrace}
-             failure (assoc :failure failure))
-           (-> (insta/transform transformations result)
-               (assoc :stacktrace-type :clojure.stacktrace))))
-       (catch Exception e
-         {:error :unsupported
-          :type :input-not-supported
-          :input stacktrace
-          :exception e})))
+  "Parse `input` as a stacktrace in the `clojure.stacktrace` format."
+  [input]
+  (util/parse-stacktrace :clojure.stacktrace parser transformations input stacktrace-start-regex))
