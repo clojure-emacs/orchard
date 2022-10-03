@@ -1,8 +1,8 @@
-(ns orchard.stacktrace.parser.throwable-test
+(ns orchard.stacktrace.parser.clojure.throwable-test
   (:require
    [clojure.test :refer [deftest is testing]]
-   [orchard.stacktrace.parser.test :as test]
-   [orchard.stacktrace.parser.throwable :as parser]))
+   [orchard.stacktrace.parser.clojure.throwable :as parser]
+   [orchard.stacktrace.parser.test :as test]))
 
 (def boom
   (ex-info "BOOM-1" {:boom "1"}

@@ -1,4 +1,4 @@
-(ns orchard.stacktrace.parser.clojure-stacktrace
+(ns orchard.stacktrace.parser.clojure.repl
   (:require [clojure.edn :as edn]
             [clojure.java.io :as io]
             [instaparse.core  :as insta :refer [defparser]]
@@ -6,12 +6,11 @@
             [orchard.stacktrace.parser.util :as util]))
 
 (def ^:private stacktrace-start-regex
-  "The regular expression matching the start of a `clojure.stacktrace`
-  formatted stacktrace."
-  #"(?s)(([^\s]+):\s([^\n\r]+).*at+)")
+  "The regular expression matching the start of a `clojure.repl/pst` stacktrace."
+  #"(?s)([a-zA-Z0-9_$/-]+)\s+.*\n\s+([a-zA-Z0-9_$/.-]+)\s+\(([a-zA-Z0-9_$/.-]+):(\d+)\)")
 
 (defparser ^:private parser
-  (io/resource "orchard/stacktrace/parser/clojure.stacktrace.bnf"))
+  (io/resource "orchard/stacktrace/parser/clojure.repl.bnf"))
 
 (defn- transform-data
   "Transform a :data node into the `Throwable->map` format."
@@ -62,7 +61,7 @@
   [:trace (vec frames)])
 
 (def ^:private transformations
-  "The Instaparse Clojure.Stacktrace transformations."
+  "The Instaparse `clojure.repl/pst` transformations."
   {:S transform-stacktrace
    :call vector
    :class transform-class
@@ -77,6 +76,6 @@
    :trace transform-trace})
 
 (defn parse-stacktrace
-  "Parse `input` as a stacktrace in the `clojure.stacktrace` format."
+  "Parse `input` as a stacktrace in the `clojure.repl/pst` format."
   [input]
-  (util/parse-stacktrace :clojure.stacktrace parser transformations input stacktrace-start-regex))
+  (util/parse-stacktrace :clojure.repl parser transformations input stacktrace-start-regex))

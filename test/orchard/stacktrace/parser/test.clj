@@ -10,7 +10,7 @@
 
 (def formats
   "The fixture formats."
-  #{:aviso :clojure :clojure.stacktrace :java :pst})
+  #{:aviso :clojure.repl :clojure.stacktrace :clojure.tagged-literal :java})
 
 (def fixtures
   "The fixture names as keywords."

@@ -1,4 +1,4 @@
-(ns orchard.stacktrace.parser.throwable
+(ns orchard.stacktrace.parser.clojure.throwable
   (:refer-clojure :exclude [StackTraceElement->vec Throwable->map])
   (:require [orchard.stacktrace.parser.util :as util]))
 

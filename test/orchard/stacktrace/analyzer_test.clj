@@ -321,7 +321,7 @@
           (is (= 0 (count stacktrace))))))))
 
 (deftest test-analyze-clojure
-  (let [causes (analyze-resource :boom.clojure)]
+  (let [causes (analyze-resource :boom.clojure.tagged-literal)]
     (is (= 3 (count causes)))
     (testing "first cause"
       (let [{:keys [class data message stacktrace]} (first causes)]

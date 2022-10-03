@@ -1,4 +1,4 @@
-(ns orchard.stacktrace.parser.clojure
+(ns orchard.stacktrace.parser.clojure.tagged-literal
   (:require [clojure.edn :as edn]
             [orchard.stacktrace.parser.util :as util]))
 
@@ -16,7 +16,7 @@
   (try (let [s (util/seek-to-regex input stacktrace-start-regex)
              {:keys [form tag]} (edn/read-string read-options s)]
          (if (= 'error tag)
-           (assoc form :stacktrace-type :clojure)
+           (assoc form :stacktrace-type :clojure.tagged-literal)
            (util/error-incorrect-input input)))
        (catch Exception e
          (util/error-unsupported-input input e))))
