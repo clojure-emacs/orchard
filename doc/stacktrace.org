@@ -30,7 +30,7 @@ representation of a Throwable, a map with the following keys:
   - =:trace= The stack elements (optional, extended by Orchard).
 - =:trace=  The root cause stack elements
 
-This is mostly the same format as used by `Throwable->map` in newer
+This is mostly the same format as used by =Throwable->map= in newer
 Clojure versions, except for the additional =:trace= key in the cause
 maps of =:via=.
 
