@@ -42,16 +42,21 @@
   "Skip over `input` to the start of `regex` and parse the rest of the
   string. Keep doing this repeatedly until the first match."
   [parser input regex]
-  (or (loop [input input]
-        (when (and (string? input) (seq input))
-          (let [result (instaparse parser input)]
-            (if (:error result)
-              (let [next-input (seek-to-regex input regex)]
-                (if (= input next-input)
-                  result
-                  (recur next-input)))
-              result))))
-      (instaparse parser input)))
+  (if-not (string? input)
+    (error-unsupported-input input)
+    (let [result (instaparse parser input)]
+      (or (when-not (:error result)
+            result)
+          (loop [input (seek-to-regex input regex)]
+            (when (seq input)
+              (let [result (instaparse parser input)]
+                (if (:error result)
+                  (let [next-input (seek-to-regex input regex)]
+                    (if (= input next-input)
+                      result
+                      (recur next-input)))
+                  result))))
+          result))))
 
 (defn parse-stacktrace
   "Parse a stacktrace with an Instaparse parser and transformations."
