@@ -42,7 +42,7 @@ more information.
 
 *** Supported formats
 
-Stacktraces come in different formats. Orchards supports the following
+Stacktraces come in different formats. Orchard supports the following
 flavors:
 
 - =:aviso= Stacktraces printed with the [[https://ioavisopretty.readthedocs.io/en/latest/exceptions.html][write-exception]] function of
