@@ -14,7 +14,7 @@
   "Return the unsupported input error."
   [input & [exception]]
   (cond-> {:error :unsupported
-           :type :input-not-supported
+           :type :unsupported-input
            :input input}
     exception (assoc :exception exception)))
 

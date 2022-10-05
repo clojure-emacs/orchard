@@ -89,6 +89,6 @@
 (deftest parse-stacktrace-error-test
   (testing "parsing a string not matching the grammar"
     (is (= {:error :unsupported
-            :type :input-not-supported
+            :type :unsupported-input
             :input ""}
            (parser/parse-stacktrace "")))))

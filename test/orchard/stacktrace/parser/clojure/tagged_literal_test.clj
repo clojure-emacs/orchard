@@ -98,5 +98,5 @@
   (testing "parsing unsupported input"
     (let [{:keys [error input type]} (parser/parse-stacktrace 1)]
       (is (= :unsupported error))
-      (is (= :input-not-supported type))
+      (is (= :unsupported-input type))
       (is (= 1 input)))))
