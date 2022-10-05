@@ -10,10 +10,9 @@ a printed exception buried inside another string, impossible to
 read. And of course, there are different kinds of formats.
 
 Tooling helps, and Orchard provides functionality to parse and analyze
-stacktraces to such tools. Orchard offers stacktrace parsers for some
-of the commonly used formats (Clojure Tagged Literals,
-clojure.stacktrace, clojure.repl, Java, Aviso), and an analyzer that
-enriches a stacktrace with additional information.
+stacktraces to such tools. Orchard has stacktrace parsers for some of
+the commonly used formats in which stacktraces are printed, and an
+analyzer that enriches a stacktrace with additional information.
 
 ** Parser
 
