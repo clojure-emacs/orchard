@@ -9,12 +9,12 @@
 
 (def default-parsers
   "The default stacktrace parsers."
-  [clojure.tagged-literal/parse-stacktrace
+  [clojure.throwable/parse-stacktrace
+   clojure.tagged-literal/parse-stacktrace
    clojure.stacktrace/parse-stacktrace
    java/parse-stacktrace
    clojure.repl/parse-stacktrace
-   aviso/parse-stacktrace
-   clojure.throwable/parse-stacktrace])
+   aviso/parse-stacktrace])
 
 (def default-input-transformations
   "The default input transformations."
