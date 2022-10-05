@@ -46,10 +46,10 @@
         (when (and (string? input) (seq input))
           (let [result (instaparse parser input)]
             (if (:error result)
-              (let [next-stacktrace (seek-to-regex input regex)]
-                (if (= input next-stacktrace)
+              (let [next-input (seek-to-regex input regex)]
+                (if (= input next-input)
                   result
-                  (recur next-stacktrace)))
+                  (recur next-input)))
               result))))
       (instaparse parser input)))
 
