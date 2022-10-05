@@ -78,4 +78,4 @@
 (defn parse-stacktrace
   "Parse `input` as a stacktrace in `clojure.repl` format."
   [input]
-  (util/parse-stacktrace :clojure.repl parser transformations input stacktrace-start-regex))
+  (util/parse-stacktrace parser transformations :clojure.repl stacktrace-start-regex input))

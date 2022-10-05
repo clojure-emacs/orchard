@@ -88,4 +88,4 @@
 (defn parse-stacktrace
   "Parse `input` as a stacktrace in the Aviso format."
   [input]
-  (util/parse-stacktrace :aviso parser transformations input stacktrace-start-regex))
+  (util/parse-stacktrace parser transformations :aviso stacktrace-start-regex input))

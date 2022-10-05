@@ -78,4 +78,4 @@
 (defn parse-stacktrace
   "Parse `input` as a stacktrace in the Java format."
   [input]
-  (util/parse-stacktrace :java parser transformations input stacktrace-start-regex))
+  (util/parse-stacktrace parser transformations :java stacktrace-start-regex input))

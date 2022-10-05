@@ -59,8 +59,8 @@
           result))))
 
 (defn parse-stacktrace
-  "Parse a stacktrace with an Instaparse parser and transformations."
-  [stacktrace-type parser transformations input start-regex]
+  "Parse a stacktrace with AST transformations applied and input skipped."
+  [parser transformations stacktrace-type start-regex input]
   (let [result (parse-try parser input start-regex)]
     (if (:error result)
       result
