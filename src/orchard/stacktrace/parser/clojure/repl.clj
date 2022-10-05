@@ -61,7 +61,7 @@
   [:trace (vec frames)])
 
 (def ^:private transformations
-  "The Instaparse `clojure.repl/pst` transformations."
+  "The Instaparse `clojure.repl` transformations."
   {:S transform-stacktrace
    :call vector
    :class transform-class
@@ -76,6 +76,6 @@
    :trace transform-trace})
 
 (defn parse-stacktrace
-  "Parse `input` as a stacktrace in the `clojure.repl/pst` format."
+  "Parse `input` as a stacktrace in `clojure.repl` format."
   [input]
   (util/parse-stacktrace :clojure.repl parser transformations input stacktrace-start-regex))

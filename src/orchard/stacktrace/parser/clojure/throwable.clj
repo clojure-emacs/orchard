@@ -51,8 +51,8 @@
              {:phase phase}))))
 
 (defn parse-stacktrace
-  "Parse the `stacktrace` as a `java.lang.Throwable` instance."
-  [stacktrace]
-  (if (instance? Throwable stacktrace)
-    (assoc (Throwable->map stacktrace) :stacktrace-type :throwable)
-    (util/error-unsupported-input stacktrace)))
+  "Parse `input` as a `java.lang.Throwable` instance."
+  [input]
+  (if (instance? Throwable input)
+    (assoc (Throwable->map input) :stacktrace-type :throwable)
+    (util/error-unsupported-input input)))
