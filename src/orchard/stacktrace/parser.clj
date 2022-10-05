@@ -31,7 +31,7 @@
   If `parsers` or `input-transformations` are nil, `default-parsers`
   and `default-input-transformations` will be used instead."
   ([stacktrace]
-   (parse stacktrace default-parsers))
+   (parse stacktrace nil))
   ([stacktrace {:keys [parsers input-transformations]}]
    (some (fn [transformation]
            (some (fn [parser]
