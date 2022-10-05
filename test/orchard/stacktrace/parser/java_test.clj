@@ -107,7 +107,14 @@
       (is (= :incorrect error))
       (is (= :incorrect-input type))
       (is (= "" input))
-      (is (nil? failure)))))
+      (is (= {:index 0
+              :reason
+              [{:tag :regexp, :expecting "[a-zA-Z0-9_$/-]"}
+               {:tag :regexp, :expecting "[^\\S\\r\\n]+"}]
+              :line 1
+              :column 1
+              :text nil}
+             (test/stringify-regexp failure))))))
 
 (deftest parse-stacktrace-unsupported-input-test
   (testing "parsing unsupported input"

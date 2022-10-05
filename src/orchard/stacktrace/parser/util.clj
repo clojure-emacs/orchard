@@ -4,10 +4,11 @@
 
 (defn error-incorrect-input
   "Return the incorrect input error."
-  [input]
-  {:error :incorrect
-   :type :incorrect-input
-   :input input})
+  [input & [failure]]
+  (cond-> {:error :incorrect
+           :type :incorrect-input
+           :input input}
+    failure (assoc :failure failure)))
 
 (defn error-unsupported-input
   "Return the unsupported input error."
@@ -24,29 +25,39 @@
     (when-let [index (str/index-of s match)]
       (.substring s index))))
 
+(defn instaparse
+  "Invoke `insta/parse` with `parser` and `input`.
+
+  Returns the parsed tree on success, or a map with an :error key and
+  the Instaparse :failure on error."
+  [parser input]
+  (let [result (try (insta/parse parser input)
+                    (catch Exception e
+                      (error-unsupported-input input e)))]
+    (if-let [failure (insta/get-failure result)]
+      (error-incorrect-input input failure)
+      result)))
+
 (defn parse-try
-  "Try to parse the `stacktrace` string with `parser` skipping garbage
-  at the front of the string."
-  [parser stacktrace regex]
-  (loop [stacktrace stacktrace]
-    (when-not (empty? stacktrace)
-      (let [result (insta/parse parser stacktrace)]
-        (if (insta/get-failure result)
-          (let [next-stacktrace (seek-to-regex stacktrace regex)]
-            (if (= stacktrace next-stacktrace)
-              result
-              (recur next-stacktrace)))
-          result)))))
+  "Skip over `input` to the start of `regex` and parse the rest of the
+  string. Keep doing this repeatedly until the first match."
+  [parser input regex]
+  (or (loop [input input]
+        (when (and (string? input) (seq input))
+          (let [result (instaparse parser input)]
+            (if (:error result)
+              (let [next-stacktrace (seek-to-regex input regex)]
+                (if (= input next-stacktrace)
+                  result
+                  (recur next-stacktrace)))
+              result))))
+      (instaparse parser input)))
 
 (defn parse-stacktrace
   "Parse a stacktrace with an Instaparse parser and transformations."
   [stacktrace-type parser transformations input start-regex]
-  (try (let [result (parse-try parser input start-regex)
-             failure (insta/get-failure result)]
-         (if (or (nil? result) failure)
-           (cond-> (error-incorrect-input input)
-             failure (assoc :failure failure))
-           (-> (insta/transform transformations result)
-               (assoc :stacktrace-type stacktrace-type))))
-       (catch Exception e
-         (error-unsupported-input input e))))
+  (let [result (parse-try parser input start-regex)]
+    (if (:error result)
+      result
+      (-> (insta/transform transformations result)
+          (assoc :stacktrace-type stacktrace-type)))))
