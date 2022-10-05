@@ -42,25 +42,23 @@ more information.
 
 *** Supported formats
 
-Stacktraces come in different formats and Orchard supports some of
-them with the following stacktrace parsers:
+Stacktraces come in different formats. Orchards supports the following
+flavors:
 
-- The =:aviso= parser recognizes stacktraces formatted with the
-  [[https://ioavisopretty.readthedocs.io/en/latest/exceptions.html][write-exception]] function of the [[https://github.com/AvisoNovate/pretty][Aviso]] library.
+- =:aviso= Stacktraces printed with the [[https://ioavisopretty.readthedocs.io/en/latest/exceptions.html][write-exception]] function of
+  the [[https://github.com/AvisoNovate/pretty][Aviso]] library.
 
-- The =:clojure= parser recognizes stacktraces printed as an =error=
-  tagged literal, like [[https://docs.oracle.com/javase/8/docs/api/java/lang/Throwable.html][java.lang.Throwable]] printed with the [[https://clojure.github.io/clojure/branch-master/clojure.core-api.html#clojure.core/pr][pr]]
-  function.
+- =:clojure.tagged-literal= Stacktraces printed as a tagged literal,
+  like a [[https://docs.oracle.com/javase/8/docs/api/java/lang/Throwable.html][java.lang.Throwable]] printed with the [[https://clojure.github.io/clojure/branch-master/clojure.core-api.html#clojure.core/pr][pr]] function.
 
-- The =:clojure.stacktrace= parser recognizes stacktraces printed with
-  the [[https://clojure.github.io/clojure/branch-master/clojure.stacktrace-api.html#clojure.stacktrace/print-cause-trace][print-cause-trace]] function from the [[https://clojure.github.io/clojure/branch-master/clojure.stacktrace-api.html][clojure.stacktrace]]
-  namespace.
+- =:clojure.stacktrace= Stacktraces printed with the [[https://clojure.github.io/clojure/branch-master/clojure.stacktrace-api.html#clojure.stacktrace/print-cause-trace][print-cause-trace]]
+  function of the [[https://clojure.github.io/clojure/branch-master/clojure.stacktrace-api.html][clojure.stacktrace]] namespace.
 
-- The =:java= parser recognizes stacktraces formatted with the
-  [[https://docs.oracle.com/javase/8/docs/api/java/lang/Throwable.html#printStackTrace--][printStackTrace]] method of a [[https://docs.oracle.com/javase/8/docs/api/java/lang/Throwable.html][java.lang.Throwable]].
+- =:clojure.repl= Stacktraces printed with the [[https://clojure.github.io/clojure/branch-master/clojure.repl-api.html#clojure.repl/pst][pst]] function of the
+  [[https://clojure.github.io/clojure/branch-master/clojure.repl-api.html][clojure.repl]] namespace.
 
-- The =:pst= parser recognizes stacktraces formatted with the [[https://clojure.github.io/clojure/branch-master/clojure.repl-api.html#clojure.repl/pst][pst]]
-  function from the [[https://clojure.github.io/clojure/branch-master/clojure.repl-api.html][clojure.repl]] namespace.
+- =:java= Stacktraces printed with the [[https://docs.oracle.com/javase/8/docs/api/java/lang/Throwable.html#printStackTrace--][printStackTrace]] method of
+  [[https://docs.oracle.com/javase/8/docs/api/java/lang/Throwable.html][java.lang.Throwable]].
 
 ** Analyzer
 
