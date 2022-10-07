@@ -191,7 +191,11 @@
     (count x)))
 
 (defn safe-read-edn
-  "Read the string `s` in EDN format in s safe way."
+  "Read the string `s` in EDN format in a safe way.
+
+  The `tagged-literal` function is used as the default tagged literal
+  reader. Any exception thrown while reading is catched and nil will
+  be returned instead."
   [s]
   (try (edn/read-string {:default tagged-literal} s)
        (catch Exception _)))
