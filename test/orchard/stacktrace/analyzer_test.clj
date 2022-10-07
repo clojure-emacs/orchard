@@ -168,7 +168,7 @@
 
 (deftest ex-data-filtering-test
   (is (= {:a :b :c :d}
-         (#'sut/filtered-ex-data (ex-info "msg" {:a :b :c :d :repl-env :e})))))
+         (#'sut/filtered-ex-data {:a :b :c :d :repl-env :e}))))
 
 (deftest cause-data-pretty-printing-test
   (testing "print-length"

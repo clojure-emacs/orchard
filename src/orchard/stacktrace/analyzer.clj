@@ -276,11 +276,11 @@
 (def ^:private ex-data-blacklist #{:repl-env})
 
 (defn- filtered-ex-data
-  "Same as `ex-data`, but filters out entries whose keys are
-  blacklisted (generally for containing data not intended for reading by a
-  human)."
-  [e]
-  (when-let [data (ex-data e)]
+  "Filter keys from the exception `data` which are
+  blacklisted (generally for containing data not intended for reading
+  by a human)."
+  [data]
+  (when data
     (into {} (filter (comp (complement ex-data-blacklist) key) data))))
 
 (def spec-abbrev
@@ -335,7 +335,7 @@
         m {:class (.getName (class e))
            :message (.getMessage e)
            :stacktrace (analyze-throwable-stacktrace e)}]
-    (if-let [data (filtered-ex-data e)]
+    (if-let [data (filtered-ex-data (ex-data e))]
       (if (or (:clojure.spec/failure data)
               (:clojure.spec.alpha/failure data))
         (assoc m
@@ -386,7 +386,7 @@
                               (:trace cause-data)
                               (:at cause-data)
                               [(:at cause-data)]))}]
-    (if-let [data (filtered-ex-data (ex-info "" (or (:data cause-data) {})))]
+    (if-let [data (filtered-ex-data (:data cause-data))]
       (if (or (:clojure.spec/failure data)
               (:clojure.spec.alpha/failure data))
         (assoc m
