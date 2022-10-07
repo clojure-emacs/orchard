@@ -1,4 +1,6 @@
 (ns orchard.stacktrace.parser.java
+  "Parser for stacktraces in the Java format."
+  {:added "0.10.1"}
   (:require [clojure.edn :as edn]
             [clojure.java.io :as io]
             [instaparse.core  :as insta :refer [defparser]]

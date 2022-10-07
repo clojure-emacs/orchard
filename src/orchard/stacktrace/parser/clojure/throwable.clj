@@ -1,4 +1,6 @@
 (ns orchard.stacktrace.parser.clojure.throwable
+  "Convert `java.lang.Throwable` instances into the `Throwable->map` data format."
+  {:added "0.10.1"}
   (:refer-clojure :exclude [StackTraceElement->vec Throwable->map])
   (:require [orchard.stacktrace.parser.util :as util]))
 

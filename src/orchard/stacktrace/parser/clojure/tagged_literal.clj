@@ -1,4 +1,6 @@
 (ns orchard.stacktrace.parser.clojure.tagged-literal
+  "Parser for stacktraces in Clojure's tagged literal format."
+  {:added "0.10.1"}
   (:require [clojure.edn :as edn]
             [orchard.stacktrace.parser.util :as util]))
 

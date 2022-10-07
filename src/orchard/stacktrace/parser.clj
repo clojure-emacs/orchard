@@ -1,4 +1,6 @@
 (ns orchard.stacktrace.parser
+  "The Orchard stacktrace parser."
+  {:added "0.10.1"}
   (:require [orchard.misc :refer [safe-read-edn]]
             [orchard.stacktrace.parser.aviso :as aviso]
             [orchard.stacktrace.parser.clojure.repl :as clojure.repl]

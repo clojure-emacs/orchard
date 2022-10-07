@@ -1,4 +1,6 @@
 (ns orchard.stacktrace.parser.util
+  "Utility functions used by the stacktrace parsers."
+  {:added "0.10.1"}
   (:require [clojure.string :as str]
             [instaparse.core :as insta]))
 

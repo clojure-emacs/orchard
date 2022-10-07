@@ -1,6 +1,7 @@
 (ns orchard.stacktrace.analyzer
   "Cause and stacktrace analysis for exceptions"
-  {:author "Jeff Valk"}
+  {:added "0.10.1"
+   :author "Jeff Valk"}
   (:require
    [clojure.pprint :as pp]
    [clojure.repl :as repl]
