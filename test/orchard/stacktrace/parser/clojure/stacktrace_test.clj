@@ -47,7 +47,8 @@
                    [clojure.lang.Compiler$InvokeExpr eval "Compiler.java" 3706]]
                  (take 3 trace))))))
     (testing ":trace"
-      (is (every? test/stacktrace-element? trace))
+      (doseq [element trace]
+        (is (test/stacktrace-element? element) element))
       (testing "first frame"
         (is (= '[clojure.lang.AFn applyToHelper "AFn.java" 156]
                (first trace))))
@@ -72,7 +73,8 @@
           (is (= "Divide by zero" message))
           (is (= 'java.lang.ArithmeticException type)))))
     (testing ":trace"
-      (is (every? test/stacktrace-element? trace))
+      (doseq [element trace]
+        (is (test/stacktrace-element? element) element))
       (testing "first frame"
         (is (= '[clojure.lang.Numbers divide "Numbers.java" 188] (first trace))))
       (testing "last frame"
@@ -95,7 +97,8 @@
           (is (= "BOOM-1" message))
           (is (= 'clojure.lang.ExceptionInfo type)))))
     (testing ":trace"
-      (is (every? test/stacktrace-element? trace))
+      (doseq [element trace]
+        (is (test/stacktrace-element? element) element))
       (testing "first frame"
         (is (= '[java.lang.Thread run "Thread.java" 829] (first trace))))
       (testing "last frame"

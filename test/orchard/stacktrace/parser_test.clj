@@ -13,7 +13,8 @@
         (testing "should parse the cause"
           (is (string? cause)))
         (testing "should parse the trace"
-          (is (every? test/stacktrace-element? trace)))))))
+          (doseq [element trace]
+            (is (test/stacktrace-element? element) element)))))))
 
 (deftest parse-garbage-test
   (doseq [fixture test/fixtures]

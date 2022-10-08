@@ -46,7 +46,8 @@
           (is (= "BOOM-3" message))
           (is (= 'clojure.lang.ExceptionInfo type)))))
     (testing ":trace"
-      (is (every? test/stacktrace-element? trace)))))
+      (doseq [element trace]
+        (is (test/stacktrace-element? element) element)))))
 
 (deftest parse-stacktrace-divide-by-zero-test
   (let [{:keys [cause data trace stacktrace-type via]} (parser/parse-stacktrace divide-by-zero)]
@@ -65,7 +66,8 @@
           (is (= "Divide by zero" message))
           (is (= 'java.lang.ArithmeticException type)))))
     (testing ":trace"
-      (is (every? test/stacktrace-element? trace)))))
+      (doseq [element trace]
+        (is (test/stacktrace-element? element) element)))))
 
 (deftest parse-stacktrace-short-test
   (let [{:keys [cause data trace stacktrace-type via]} (parser/parse-stacktrace short-boom)]
@@ -84,7 +86,8 @@
           (is (= "BOOM-1" message))
           (is (= 'clojure.lang.ExceptionInfo type)))))
     (testing ":trace"
-      (is (every? test/stacktrace-element? trace)))))
+      (doseq [element trace]
+        (is (test/stacktrace-element? element) element)))))
 
 (deftest parse-stacktrace-error-test
   (testing "parsing a string not matching the grammar"

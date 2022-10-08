@@ -35,7 +35,8 @@
           (is (= "BOOM-3" message))
           (is (= 'clojure.lang.ExceptionInfo type)))))
     (testing ":trace"
-      (is (every? test/stacktrace-element? trace))
+      (doseq [element trace]
+        (is (test/stacktrace-element? element) element))
       (testing "first frame"
         (is (= '[orchard.stacktrace.parser.throwable-test eval12321 "REPL Input"] (first trace))))
       (testing "last frame"
@@ -70,7 +71,8 @@
           (is (= "BOOM-3" message))
           (is (= 'clojure.lang.ExceptionInfo type)))))
     (testing ":trace"
-      (is (every? test/stacktrace-element? trace))
+      (doseq [element trace]
+        (is (test/stacktrace-element? element) element))
       (testing "first frame"
         (is (= '[clojure.lang.AFn applyToHelper "AFn.java" 156] (first trace))))
       (testing "last frame"
@@ -93,7 +95,8 @@
           (is (= "Divide by zero" message))
           (is (= 'java.lang.ArithmeticException type)))))
     (testing ":trace"
-      (is (every? test/stacktrace-element? trace))
+      (doseq [element trace]
+        (is (test/stacktrace-element? element) element))
       (testing "first frame"
         (is (= '[orchard.stacktrace.parser.throwable-test fn "throwable_test.clj" 13]
                (first trace))))
@@ -118,7 +121,8 @@
           (is (= "BOOM-1" message))
           (is (= 'clojure.lang.ExceptionInfo type)))))
     (testing ":trace"
-      (is (every? test/stacktrace-element? trace))
+      (doseq [element trace]
+        (is (test/stacktrace-element? element) element))
       (testing "first frame"
         (is (= '[java.lang.Thread run "Thread.java" 829] (first trace))))
       (testing "last frame"
