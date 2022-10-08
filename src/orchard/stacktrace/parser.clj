@@ -9,7 +9,7 @@
             [orchard.stacktrace.parser.clojure.throwable :as clojure.throwable]
             [orchard.stacktrace.parser.java :as java]))
 
-(def default-parsers
+(def ^{:added "0.10.1"} default-parsers
   "The default stacktrace parsers."
   [clojure.throwable/parse-stacktrace
    clojure.tagged-literal/parse-stacktrace
@@ -18,8 +18,12 @@
    clojure.repl/parse-stacktrace
    aviso/parse-stacktrace])
 
-(def default-input-transformations
-  "The default input transformations."
+(def ^{:added "0.10.1"} default-input-transformations
+  "The default input transformations.
+
+  - `identity` Do nothing, forward input to the parser.
+  - `safe-read-edn` Read input as EDN and pass it to the parser.
+  - 2x `safe-read-edn` Read input as EDN twice and pass it to the parser."
   [identity safe-read-edn (comp safe-read-edn safe-read-edn)])
 
 (defn parse
@@ -32,6 +36,7 @@
 
   If `parsers` or `input-transformations` are nil, `default-parsers`
   and `default-input-transformations` will be used instead."
+  {:added "0.10.1"}
   ([stacktrace]
    (parse stacktrace nil))
   ([stacktrace {:keys [parsers input-transformations]}]

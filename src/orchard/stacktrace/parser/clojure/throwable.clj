@@ -12,7 +12,7 @@
 
 (defn- StackTraceElement->vec
   "Constructs a data representation for a StackTraceElement: [class method file line]"
-  {:added "1.9"}
+  {:added "0.10.1"}
   [^StackTraceElement o]
   [(symbol (.getClassName o)) (symbol (.getMethodName o)) (.getFileName o) (.getLineNumber o)])
 
@@ -26,7 +26,7 @@
              :data - ex-data
              :at - top stack element
     :trace - root cause stack elements"
-  {:added "1.7"}
+  {:added "0.10.1"}
   [^Throwable o]
   (let [base (fn [^Throwable t]
                (merge {:type (symbol (.getName (class t)))}
@@ -54,6 +54,7 @@
 
 (defn parse-stacktrace
   "Parse `input` as a `java.lang.Throwable` instance."
+  {:added "0.10.1"}
   [input]
   (if (instance? Throwable input)
     (assoc (Throwable->map input) :stacktrace-type :throwable)

@@ -6,6 +6,7 @@
 
 (defn error-incorrect-input
   "Return the incorrect input error."
+  {:added "0.10.1"}
   [input & [failure]]
   (cond-> {:error :incorrect
            :type :incorrect-input
@@ -14,6 +15,7 @@
 
 (defn error-unsupported-input
   "Return the unsupported input error."
+  {:added "0.10.1"}
   [input & [exception]]
   (cond-> {:error :unsupported
            :type :unsupported-input
@@ -22,6 +24,7 @@
 
 (defn seek-to-regex
   "Return the first substring in `s` matching `regexp`."
+  {:added "0.10.1"}
   [^String s regex]
   (when-let [match (first (re-find regex s))]
     (when-let [index (str/index-of s match)]
@@ -32,6 +35,7 @@
 
   Returns the parsed tree on success, or a map with an :error key and
   the Instaparse :failure on error."
+  {:added "0.10.1"}
   [parser input]
   (let [result (try (insta/parse parser input)
                     (catch Exception e
@@ -43,6 +47,7 @@
 (defn parse-try
   "Skip over `input` to the start of `regex` and parse the rest of the
   string. Keep doing this repeatedly until the first match."
+  {:added "0.10.1"}
   [parser input regex]
   (if-not (string? input)
     (error-unsupported-input input)
@@ -62,6 +67,7 @@
 
 (defn parse-stacktrace
   "Parse a stacktrace with AST transformations applied and input skipped."
+  {:added "0.10.1"}
   [parser transformations stacktrace-type start-regex input]
   (let [result (parse-try parser input start-regex)]
     (if (:error result)
