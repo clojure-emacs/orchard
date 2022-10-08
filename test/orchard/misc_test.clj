@@ -84,4 +84,7 @@
 
 (deftest safe-read-edn
   (is (= nil (misc/safe-read-edn "[")))
-  (is (= [1 2 3] (misc/safe-read-edn "[1 2 3]"))))
+  (is (= [1 2 3] (misc/safe-read-edn "[1 2 3]")))
+  (let [{:keys [form tag]} (misc/safe-read-edn "#error {:a 1}")]
+    (is (= 'error tag))
+    (is (= {:a 1} form))))
