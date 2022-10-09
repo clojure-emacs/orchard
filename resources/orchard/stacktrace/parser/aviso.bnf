@@ -36,11 +36,12 @@ more = <whitespace> <dot> <dot> <dot> <newline>
 
 <digit> = #'[0-9]'
 <dot> = '.'
+<eof> = <#'\Z'>
 <letter> = #'[a-zA-Z]'
 <slash> = '/'
 
 double-colon = ':'
-newline = #"[\n\r]"
+newline = #"[\n\r]" | <eof>
 number = '-'? digit+
 lparen = '('
 rparen = ')'

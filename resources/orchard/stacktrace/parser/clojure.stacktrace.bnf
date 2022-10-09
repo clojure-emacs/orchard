@@ -27,9 +27,10 @@ more = 'more'
 <digit> = #'[0-9]'
 <dot> = '.'
 <slash> = '/'
+<eof> = <#'\Z'>
 
 double-colon = ':'
-newline = #"[\n\r]"
+newline = #"[\n\r]" | <eof>
 number = '-'? digit+
 lparen = '('
 rparen = ')'

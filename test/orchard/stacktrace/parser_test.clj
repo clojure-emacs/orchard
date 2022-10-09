@@ -1,5 +1,6 @@
 (ns orchard.stacktrace.parser-test
   (:require
+   [clojure.string :as str]
    [clojure.test :refer [deftest is testing]]
    [orchard.stacktrace.parser :as parser]
    [orchard.stacktrace.parser.test :as test]))
@@ -33,6 +34,14 @@
           (is (= expected (parser/parse (str text "\n\n")))))
         (testing "newlines at the end"
           (is (= expected (parser/parse (str text "\n\n")))))))))
+
+(deftest parse-trim-test
+  (doseq [fixture test/fixtures]
+    (testing (format "parse fixture %s with" fixture)
+      (let [text (test/read-fixture fixture)]
+        (testing "trimmed input"
+          (is (= (parser/parse text)
+                 (parser/parse (str/trim text)))))))))
 
 (deftest parse-input-transformation-test
   (doseq [fixture test/fixtures]
