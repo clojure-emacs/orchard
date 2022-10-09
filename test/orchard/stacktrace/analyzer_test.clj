@@ -491,7 +491,7 @@
         (testing "data"
           (is (= "{:boom \"1\"}" data)))
         (testing "stacktrace"
-          (is (< 60 (count stacktrace)))
+          (is (< 40 (count stacktrace)))
           (testing "first frame"
             (let [frame (dissoc (nth stacktrace 0) :file-url)]
               (is (= {:name "clojure.lang.AFn/applyToHelper"
@@ -523,7 +523,7 @@
         (testing "data"
           (is (= "{:boom \"2\"}" data)))
         (testing "stacktrace"
-          (is (< 60 (count stacktrace)))
+          (is (< 40 (count stacktrace)))
           (testing "first frame"
             (let [frame (dissoc (nth stacktrace 0) :file-url)]
               (is (= {:name "clojure.lang.AFn/applyToHelper"
@@ -555,7 +555,7 @@
         (testing "data"
           (is (= "{:boom \"3\"}" data)))
         (testing "stacktrace"
-          (is (< 60 (count stacktrace)))
+          (is (< 40 (count stacktrace)))
           (testing "first frame"
             (let [frame (dissoc (nth stacktrace 0) :file-url)]
               (is (= {:name "clojure.lang.AFn/applyToHelper"
