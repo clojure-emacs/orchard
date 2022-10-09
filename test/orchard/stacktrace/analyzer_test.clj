@@ -4,8 +4,7 @@
    [clojure.test :refer [are deftest is testing]]
    [orchard.spec :as spec]
    [orchard.stacktrace.analyzer :as sut]
-   [orchard.stacktrace.parser :as parser]
-   [orchard.stacktrace.parser.clojure.throwable-test :refer [boom]]))
+   [orchard.stacktrace.parser :as parser]))
 
 ;; # Utils
 
