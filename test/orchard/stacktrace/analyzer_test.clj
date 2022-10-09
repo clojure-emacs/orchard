@@ -320,7 +320,7 @@
         (testing "stacktrace"
           (is (= 0 (count stacktrace))))))))
 
-(deftest test-analyze-clojure
+(deftest test-analyze-clojure-tagged-literal
   (let [causes (analyze-resource :boom.clojure.tagged-literal)]
     (is (= 3 (count causes)))
     (testing "first cause"
