@@ -10,11 +10,30 @@ a printed exception buried inside another string, impossible to
 read. And of course, there are different kinds of formats.
 
 Tooling helps, and Orchard provides functionality to parse and analyze
-stacktraces to such tools. Orchard has stacktrace parsers for some of
-the commonly used formats in which stacktraces are printed, and an
+stacktraces to such tools. Orchard comes with parsers for some of the
+commonly used formats in which stacktraces are printed, and an
 analyzer that enriches a stacktrace with additional information.
 
 ** Parser
+
+The Orchard stacktrace parser can read stacktraces in various
+formats. Given an input, the parser applies some transformations to it
+(unwrapping an EDN string for example) and passes the result to the
+parser functions registered in the
+=orchard.stacktrace.parser/default-parsers= var. Each of the
+registered parsers is tried in order and the first parser that
+succeeds wins.
+
+On success a parser returns a Clojure map with a similar structure as
+=Throwable->map=.
+
+On failure the parser returns a map with an =:error= key, and possibly
+other keys describing the error.
+
+A successful parse result can be given to the Orchard analyzer to
+enrich it with more information.
+
+*** Stacktrace data format
 
 An Orchard stacktrace parser transforms input into a parse result. On
 success, the parse result is a enhanced version of the Clojure data
@@ -33,12 +52,6 @@ representation of a Throwable, a map with the following keys:
 This is mostly the same format as used by =Throwable->map= in newer
 Clojure versions, except for the additional =:trace= key in the cause
 maps of =:via=.
-
-On failure the parse result is a map with an =:error= key, and
-possibly other keys describing the error.
-
-A parse result can be given to the Orchard analyzer to enrich it with
-more information.
 
 *** Supported formats
 
@@ -59,6 +72,54 @@ flavors:
 
 - =:java= Stacktraces printed with the [[https://docs.oracle.com/javase/8/docs/api/java/lang/Throwable.html#printStackTrace--][printStackTrace]] method of
   [[https://docs.oracle.com/javase/8/docs/api/java/lang/Throwable.html][java.lang.Throwable]].
+
+*** Usage
+
+Let's say you want to parse the following stacktrace string and turn
+it back into a data structure for further processing.
+
+#+begin_src clojure :exports code :results silent
+  (def my-stacktrace-str
+    (str "clojure.lang.ExceptionInfo: BOOM-1 {:boom \"1\"}\n"
+         "  at java.base/java.lang.Thread.run(Thread.java:829)"))
+#+end_src
+
+The easiest way to do this is to pass the string to the
+=orchard.stacktrace.parser/parse= function. It will try all registered
+parsers and returns the first successful parse result.
+
+#+begin_src clojure :exports code :results silent
+  (require '[orchard.stacktrace.parser :as stacktrace.parser])
+
+  (def my-stacktrace-data
+    (stacktrace.parser/parse my-stacktrace-str))
+#+end_src
+
+On success the parser will return a Clojure map in the
+=Throwable->map= format.
+
+#+begin_src clojure :exports code :results output
+  (clojure.pprint/pprint my-stacktrace-data)
+#+end_src
+
+For the input used above, this data structure looks like this:
+
+#+RESULTS:
+#+begin_example
+{:cause "BOOM-1",
+ :data {:boom "1"},
+ :trace [[java.base/java.lang.Thread run "Thread.java" 829]],
+ :via
+ [{:at [java.base/java.lang.Thread run "Thread.java" 829],
+   :message "BOOM-1",
+   :type clojure.lang.ExceptionInfo,
+   :trace [[java.base/java.lang.Thread run "Thread.java" 829]],
+   :data {:boom "1"}}],
+ :stacktrace-type :java}
+#+end_example
+
+Tip: If you know in advance with what kind of stacktrace you are
+dealing with, pass it directly to the parser for the given format.
 
 *** Creating a parser
 
@@ -142,3 +203,37 @@ A frame in the =:stacktrace= is a map with the following keys:
 - =:method= The method or function name of the frame invocation.
 - =:name= The name of the frame, typically the class and method of the invocation.
 - =:type= The type of invocation (=:java=, =:tooling=, etc).
+
+The analyzer accepts either an instance of =java.lang.Throwable= or a
+Clojure map in the =Throwable->map= format as input.
+
+*** Usage
+
+We can analyze our previously parsed stacktrace by calling the
+=orchard.stacktrace.analyzer/analyze= function on it.
+
+#+begin_src clojure :exports code :results pp
+  (require '[orchard.stacktrace.analyzer :as stacktrace.analyzer])
+  (stacktrace.analyzer/analyze my-stacktrace-data)
+#+end_src
+
+#+RESULTS:
+#+begin_example
+[{:class "clojure.lang.ExceptionInfo",
+  :message "BOOM-1",
+  :stacktrace
+  ({:name "java.lang.Thread/run",
+    :file "Thread.java",
+    :line 829,
+    :class "java.lang.Thread",
+    :method "run",
+    :type :java,
+    :flags #{:java},
+    :file-url
+    "jar:file:/usr/lib/jvm/openjdk-11/lib/src.zip!/java.base/java/lang/Thread.java"}),
+  :data "{:boom \"1\"}",
+  :location {}}]
+#+end_example
+
+We get back a sequence of maps, one for each cause, which contain
+additional information about each frame discovered from the class path.
