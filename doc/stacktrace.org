@@ -96,16 +96,15 @@ parsers and returns the first successful parse result.
 #+end_src
 
 On success the parser will return a Clojure map in the
-=Throwable->map= format.
+=Throwable->map= format. For the input used above, this data structure
+looks like this:
 
-#+begin_src clojure :exports both :results output
+#+begin_src clojure :exports both :results output :wrap src clojure
   (clojure.pprint/pprint my-stacktrace-data)
 #+end_src
 
-For the input used above, this data structure looks like this:
-
 #+RESULTS:
-#+begin_example
+#+begin_src clojure
 {:cause "BOOM-1",
  :data {:boom "1"},
  :trace [[java.base/java.lang.Thread run "Thread.java" 829]],
@@ -116,7 +115,7 @@ For the input used above, this data structure looks like this:
    :trace [[java.base/java.lang.Thread run "Thread.java" 829]],
    :data {:boom "1"}}],
  :stacktrace-type :java}
-#+end_example
+#+end_src
 
 Tip: If you know in advance with what kind of stacktrace you are
 dealing with, pass it directly to the parser for the given format.
@@ -212,13 +211,13 @@ Clojure map in the =Throwable->map= format as input.
 We can analyze our previously parsed stacktrace by calling the
 =orchard.stacktrace.analyzer/analyze= function on it.
 
-#+begin_src clojure :exports both :results pp
+#+begin_src clojure :exports both :results pp :wrap src clojure
   (require '[orchard.stacktrace.analyzer :as stacktrace.analyzer])
   (stacktrace.analyzer/analyze my-stacktrace-data)
 #+end_src
 
 #+RESULTS:
-#+begin_example
+#+begin_src clojure
 [{:class "clojure.lang.ExceptionInfo",
   :message "BOOM-1",
   :stacktrace
@@ -233,7 +232,7 @@ We can analyze our previously parsed stacktrace by calling the
     "jar:file:/usr/lib/jvm/openjdk-11/lib/src.zip!/java.base/java/lang/Thread.java"}),
   :data "{:boom \"1\"}",
   :location {}}]
-#+end_example
+#+end_src
 
 We get back a sequence of maps, one for each cause, which contain
 additional information about each frame discovered from the class path.
