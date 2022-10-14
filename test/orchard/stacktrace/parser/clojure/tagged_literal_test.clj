@@ -90,6 +90,18 @@
       (testing "last frame"
         (is (= '[java.lang.Thread run "Thread.java" 829] (last trace)))))))
 
+(deftest parse-short-clojure-tagged-literal-println-test
+  (is (= '{:cause "BOOM-1"
+           :data {:boom 1}
+           :via
+           [{:type clojure.lang.ExceptionInfo
+             :message "BOOM-1"
+             :data {:boom 1}
+             :at [java.lang.Thread run "Thread.java" 829]}]
+           :trace [[java.lang.Thread run "Thread.java" 829]]
+           :stacktrace-type :clojure.tagged-literal}
+         (parse-fixture :short.clojure.tagged-literal.println))))
+
 (deftest parse-stacktrace-incorrect-input-test
   (testing "parsing incorrect input"
     (let [{:keys [error input type]} (parser/parse-stacktrace "")]

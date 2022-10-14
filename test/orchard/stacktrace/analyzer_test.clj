@@ -390,6 +390,29 @@
                     :flags #{:java}}
                    (dissoc (first stacktrace) :file-url)))))))))
 
+(deftest test-analyze-short-clojure-tagged-literal-println
+  (let [causes (analyze-resource :short.clojure.tagged-literal.println)]
+    (is (= 1 (count causes)))
+    (testing "first cause"
+      (let [{:keys [class data message stacktrace]} (first causes)]
+        (testing "class"
+          (is (= "clojure.lang.ExceptionInfo" class)))
+        (testing "message"
+          (is (= "BOOM-1" message)))
+        (testing "data"
+          (is (= "{:boom 1}" data)))
+        (testing "stacktrace"
+          (is (= 1 (count stacktrace)))
+          (testing "first frame"
+            (is (= {:name "java.lang.Thread/run"
+                    :file "Thread.java"
+                    :line 829
+                    :class "java.lang.Thread"
+                    :method "run"
+                    :type :java
+                    :flags #{:java}}
+                   (dissoc (first stacktrace) :file-url)))))))))
+
 (deftest test-analyze-java
   (let [causes (analyze-resource :boom.java)]
     (is (= 3 (count causes)))
