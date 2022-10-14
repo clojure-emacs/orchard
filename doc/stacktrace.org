@@ -60,6 +60,66 @@ flavors:
 - =:java= Stacktraces printed with the [[https://docs.oracle.com/javase/8/docs/api/java/lang/Throwable.html#printStackTrace--][printStackTrace]] method of
   [[https://docs.oracle.com/javase/8/docs/api/java/lang/Throwable.html][java.lang.Throwable]].
 
+*** Creating a parser
+
+To add support for another stacktrace format, please create a new
+parser under the =orchard.stacktrace.parser= namespace and add it to
+the =orchard.stacktrace.parser/default-parsers= var. The parser should
+be a function that accepts a single argument, the input (typically a
+string), and returns a map. The parser function should follow the
+following rules:
+
+- On success, the parser should return the stacktrace as a map. The
+  map should be in the =Throwable->map= format described above with a
+  =:stacktrace-type= key that contains the type of stacktrace as a
+  keyword.
+
+- On error, the parser should return a map with an =:error= key and
+  possibly others describing why the input could not be parsed. We use
+  =:incorrect= if the input does not match the grammar, and
+  =:unsupported= if the input type is not supported by the parser.
+
+- Ideally, the parser should be tolerant to any garbage before and
+  after the stacktrace to be parsed. This is to not put the burden of
+  exactly figuring out where a stacktrace starts and ends onto
+  clients.
+
+- When skipping garbage at the beginning of a stacktrace do it
+  efficiently. For example, instead of skipping garbage character by
+  character and trying your parser with the rest of the string, use
+  the =orchard.stacktrace.parser.util/seek-to-regex= function to
+  directly skip to the beginning of the stacktrace, if possible.
+
+- Most of the parsers in Orchard are implemented with [[https://github.com/Engelberg/instaparse][Instaparse]] and
+  have a [[https://en.wikipedia.org/wiki/Backus%E2%80%93Naur_form][BNF]] grammar describing the format of the stacktrace. Try to
+  come up with an Instagram grammar for the new stacktrace format as
+  well, unless you have a better, simpler or more efficient way of
+  parsing it (like the Clojure tagged literal parser for example).
+
+*** Instaparse tips and tricks
+
+Writing a grammar for a stacktrace format might be challenging at
+times, especially when garbage in the input is involved, which might
+introduce ambiguities in your grammar. Here are some tips and trick
+for writing Instaparse grammars:
+
+- Read the [[https://github.com/Engelberg/instaparse][documentation]], it is good and has many examples.
+
+- Start with the most simple parser, try to pass the exception class
+  or name before building up.
+
+- Use the =:start= parameter of the Instaparse parser, to [[https://github.com/Engelberg/instaparse#parsing-from-another-start-rule][parse input
+  from another start rule]]. This is useful if your grammar got complex,
+  but you want to try parsing of an individual rule.
+
+- Be aware of [[https://github.com/Engelberg/instaparse#regular-expressions-a-word-of-warning][greedy regex behavior]].
+
+- When testing input try it against the raw Instaparse parser first,
+  and only apply the Instaparse [[https://github.com/Engelberg/instaparse#transforming-the-tree][transformations]] when the parser works.
+
+- If your parser fails on an input, [[https://github.com/Engelberg/instaparse#revealing-hidden-information][reveal hidden information]] to get a
+  better understanding of what happened.
+
 ** Analyzer
 
 The Orchard stacktrace analyzer transforms a stacktrace into an
