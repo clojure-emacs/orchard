@@ -98,7 +98,7 @@ parsers and returns the first successful parse result.
 On success the parser will return a Clojure map in the
 =Throwable->map= format.
 
-#+begin_src clojure :exports code :results output
+#+begin_src clojure :exports both :results output
   (clojure.pprint/pprint my-stacktrace-data)
 #+end_src
 
@@ -157,7 +157,7 @@ following rules:
   well, unless you have a better, simpler or more efficient way of
   parsing it (like the Clojure tagged literal parser for example).
 
-*** Instaparse tips and tricks
+*** Instaparse Tips & Tricks
 
 Writing a grammar for a stacktrace format might be challenging at
 times, especially when garbage in the input is involved, which might
@@ -212,7 +212,7 @@ Clojure map in the =Throwable->map= format as input.
 We can analyze our previously parsed stacktrace by calling the
 =orchard.stacktrace.analyzer/analyze= function on it.
 
-#+begin_src clojure :exports code :results pp
+#+begin_src clojure :exports both :results pp
   (require '[orchard.stacktrace.analyzer :as stacktrace.analyzer])
   (stacktrace.analyzer/analyze my-stacktrace-data)
 #+end_src
