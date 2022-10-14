@@ -10,13 +10,13 @@
 ;; Clojure, because `StackTraceElement->vec` was introduced in Clojure version
 ;; 1.9 and we want to support it in older Clojure versions as well.
 
-(defn- StackTraceElement->vec
+(defn StackTraceElement->vec
   "Constructs a data representation for a StackTraceElement: [class method file line]"
   {:added "0.10.1"}
   [^StackTraceElement o]
   [(symbol (.getClassName o)) (symbol (.getMethodName o)) (.getFileName o) (.getLineNumber o)])
 
-(defn- Throwable->map
+(defn Throwable->map
   "Constructs a data representation for a Throwable with keys:
     :cause - root cause message
     :phase - error phase
@@ -36,7 +36,11 @@
                         {:data ed})
                       (let [st (.getStackTrace t)]
                         (when (pos? (alength st))
-                          {:at (StackTraceElement->vec (aget st 0))}))))
+                          {:at (StackTraceElement->vec (aget st 0))
+                           ;; This is an additional key not present in
+                           ;; Throwable->map. We added it to have the complete
+                           ;; trace available for analysis.
+                           :trace (vec (map StackTraceElement->vec st))}))))
         via (loop [via [], ^Throwable t o]
               (if t
                 (recur (conj via t) (.getCause t))

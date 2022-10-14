@@ -10,7 +10,8 @@
    [orchard.info :as info]
    [orchard.java :as java]
    [orchard.java.resource :as resource]
-   [orchard.namespace :as namespace])
+   [orchard.namespace :as namespace]
+   [orchard.stacktrace.parser.clojure.throwable :as throwable])
   (:import
    (java.io StringWriter)))
 
@@ -29,22 +30,13 @@
   "Return a map describing the stack frame."
   {:added "0.10.1"}
   [frame]
-  (cond
-    (instance? StackTraceElement frame)
-    (let [^StackTraceElement element frame]
-      {:name   (str (.getClassName element) "/" (.getMethodName element))
-       :file   (.getFileName element)
-       :line   (.getLineNumber element)
-       :class  (.getClassName element)
-       :method (.getMethodName element)})
-    (vector? frame)
-    (let [[class method file line] frame]
-      (when (and class method file line)
-        {:name   (str (name class) "/" (name method))
-         :file   file
-         :line   line
-         :class  (name class)
-         :method (name method)}))))
+  (let [[class method file line] frame]
+    (when (and class method file line)
+      {:name   (str (name class) "/" (name method))
+       :file   file
+       :line   line
+       :class  (name class)
+       :method (name method)})))
 
 (defn- flag-frame
   "Update frame's flags vector to include the new flag."
@@ -238,17 +230,6 @@
   (let [f (comp flag-repl (partial flag-project namespaces) analyze-fn analyze-file stack-frame)]
     (f frame)))
 
-(defn- analyze-throwable-stacktrace
-  "Analyze the stacktrace of `throwable` and return it as a sequence of
-  maps, each describing a stack frame."
-  {:added "0.10.1"}
-  [^Throwable throwable]
-  (let [namespaces (directory-namespaces)]
-    (-> (pmap (partial analyze-frame namespaces)
-              (.getStackTrace throwable))
-        (flag-duplicates)
-        (flag-tooling))))
-
 ;;; ## Causes
 
 (defn- relative-path
@@ -346,47 +327,6 @@
                       (filter clojure.core/val)
                       (into {})))}))
 
-(defn- analyze-cause
-  "Return a map describing the exception cause. If `ex-data` exists, a `:data`
-  key is appended."
-  {:added "0.10.1"}
-  [^Exception e print-fn]
-  (let [pprint-str #(let [writer (StringWriter.)]
-                      (print-fn % writer)
-                      (str writer))
-        m {:class (.getName (class e))
-           :message (.getMessage e)
-           :stacktrace (analyze-throwable-stacktrace e)}]
-    (if-let [data (filtered-ex-data (ex-data e))]
-      (if (or (:clojure.spec/failure data)
-              (:clojure.spec.alpha/failure data))
-        (assoc m
-               :message "Spec assertion failed."
-               :spec (prepare-spec-data data pprint-str))
-        (-> m
-            (assoc :data (pprint-str data)
-                   :location (select-keys data [:clojure.error/line
-                                                :clojure.error/column
-                                                :clojure.error/phase
-                                                :clojure.error/source
-                                                :clojure.error/symbol]))))
-      m)))
-
-(defn- analyze-causes
-  "Return the cause chain beginning with the thrown exception, with stack frames
-  for each. For `ex-info` exceptions response contains :data slot with pretty
-  printed data. For clojure.spec asserts, :spec slot contains a map of pretty
-  printed components describing spec failures."
-  {:added "0.10.1"}
-  [e print-fn]
-  (->> e
-       (iterate #(.getCause ^Exception %))
-       (into [] (comp (take-while identity)
-                      (map #(analyze-cause % print-fn))
-                      (map extract-location)))))
-
-;; Exception data
-
 (defn- analyze-stacktrace-data
   "Return the stacktrace as a sequence of maps, each describing a stack frame."
   {:added "0.10.1"}
@@ -397,7 +337,7 @@
           (flag-duplicates)
           (flag-tooling)))))
 
-(defn- analyze-cause-data
+(defn- analyze-cause
   "Analyze the `cause-data` of an exception in `Throwable->map` format."
   {:added "0.10.1"}
   [cause-data print-fn]
@@ -426,12 +366,12 @@
                                                 :clojure.error/symbol]))))
       m)))
 
-(defn- analyze-causes-data
+(defn- analyze-causes
   "Analyze the cause chain of the `exception-data` in `Throwable->map` format."
   {:added "0.10.1"}
   [exception-data print-fn]
   (let [causes (vec (:via exception-data))]
-    (into [] (comp (map #(analyze-cause-data % print-fn))
+    (into [] (comp (map #(analyze-cause % print-fn))
                    (map extract-location))
           (cond-> causes
             (not (:trace (first causes)))
@@ -449,6 +389,6 @@
    (analyze exception pprint))
   ([exception print-fn]
    (cond (instance? Throwable exception)
-         (analyze-causes exception print-fn)
+         (analyze-causes (throwable/Throwable->map exception) print-fn)
          (and (map? exception) (:trace exception))
-         (analyze-causes-data exception print-fn))))
+         (analyze-causes exception print-fn))))

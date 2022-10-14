@@ -19,7 +19,7 @@
 
 (defn causes
   [form]
-  (#'sut/analyze-causes
+  (sut/analyze
    (try (eval form)
         (catch Exception e
           e))
@@ -27,10 +27,10 @@
 
 (defn stack-frames
   [form]
-  (#'sut/analyze-throwable-stacktrace
-   (try (eval form)
-        (catch Exception e
-          e))))
+  (-> (try (eval form)
+           (catch Exception e
+             e))
+      sut/analyze first :stacktrace))
 
 ;; ## Test fixtures
 
@@ -173,14 +173,14 @@
 (deftest cause-data-pretty-printing-test
   (testing "print-length"
     (is (= "{:a (0 1 2 ...)}"
-           (:data (#'sut/analyze-cause (ex-info "" {:a (range)})
-                                       (fn [value writer]
-                                         (sut/pprint value writer {:length 3})))))))
+           (:data (first (sut/analyze (ex-info "" {:a (range)})
+                                      (fn [value writer]
+                                        (sut/pprint value writer {:length 3}))))))))
   (testing "print-level"
     (is (= "{:a {#}}"
-           (:data (#'sut/analyze-cause (ex-info "" {:a {:b {:c {:d {:e nil}}}}})
-                                       (fn [value writer]
-                                         (sut/pprint value writer {:level 3}))))))))
+           (:data (first (sut/analyze (ex-info "" {:a {:b {:c {:d {:e nil}}}}})
+                                      (fn [value writer]
+                                        (sut/pprint value writer {:level 3})))))))))
 
 (deftest compilation-errors-test
   (let [clojure-version ((juxt :major :minor) *clojure-version*)]
@@ -241,7 +241,7 @@
                              :clojure.error/source "/foo/bar/baz.clj"
                              :clojure.error/phase :macroexpand
                              :clojure.error/symbol 'clojure.core/let})
-          cause (#'sut/analyze-cause e (fn [v _] v))]
+          cause (first (sut/analyze e (fn [v _] v)))]
       (is (= {:clojure.error/line 1
               :clojure.error/column 42
               :clojure.error/source "/foo/bar/baz.clj"
