@@ -4,19 +4,16 @@
   (:require [clojure.edn :as edn]
             [orchard.stacktrace.parser.util :as util]))
 
-(def ^{:added "0.10.1" :private true}
-  read-options
+(def ^:private read-options
   "The options used when reading a stacktrace in EDN format."
   {:default tagged-literal :eof nil})
 
-(def ^{:added "0.10.1" :private true}
-  stacktrace-start-regex
+(def ^:private stacktrace-start-regex
   "The regular expression matching the start of a Clojure stacktrace."
   #"(?s)#error\s*\{")
 
 (defn- transform-trace-element
   "Normalize the stacktrace `element`."
-  {:added "0.10.1"}
   [element]
   (if (sequential? element)
     (let [[class method file line-number] element]
@@ -28,7 +25,6 @@
 
 (defn- transform-cause
   "Normalize the stacktrace `cause`."
-  {:added "0.10.1"}
   [{:keys [at message trace] :as cause}]
   (cond-> cause
     (sequential? at)
@@ -40,7 +36,6 @@
 
 (defn- transform
   "Normalize the `stacktrace`."
-  {:added "0.10.1"}
   [{:keys [cause phase via trace] :as stacktrace}]
   (cond-> stacktrace
     (and cause (not (string? cause)))

@@ -6,60 +6,50 @@
             [orchard.misc :refer [safe-read-edn]]
             [orchard.stacktrace.parser.util :as util]))
 
-(def ^{:added "0.10.1" :private true}
-  stacktrace-start-regex
+(def ^:private stacktrace-start-regex
   "The regular expression matching the start of an Aviso stacktrace."
   #"(?s)([^\s]+\s+[^\s]+:\s+\d+[\s])")
 
-(defparser ^{:added "0.10.1" :private true} parser
+(defparser ^:private parser
   (io/resource "orchard/stacktrace/parser/aviso.bnf"))
 
-(def ^{:added "0.10.1" :private true}
-  transform-class
+(def ^:private transform-class
   "Transform a :class node into the `Throwable->map` format."
   (comp symbol (partial apply str)))
 
 (defn- transform-cause
   "Transform a :cause node into the `Throwable->map` format."
-  {:added "0.10.1"}
   [& args]
   (into {} args))
 
 (defn- transform-data
   "Transform a :data node into the `Throwable->map` format."
-  {:added "0.10.1"}
   [& args]
   [:data (some->> args (apply hash-map))])
 
 (defn- transform-exception
   "Transform a :exception node into the `Throwable->map` format."
-  {:added "0.10.1"}
   [& args]
   (into {} args))
 
-(def ^{:added "0.10.1" :private true}
-  transform-file
+(def ^:private transform-file
   "Transform a :file node into the `Throwable->map` format."
   (partial apply str))
 
-(def ^{:added "0.10.1" :private true}
-  transform-number
+(def ^:private transform-number
   "Transform a :number node into the `Throwable->map` format."
   (comp safe-read-edn (partial apply str)))
 
-(def ^{:added "0.10.1" :private true}
-  transform-method
+(def ^:private transform-method
   "Transform a :method node into the `Throwable->map` format."
   (comp symbol (partial apply str)))
 
 (defn- transform-message
   "Transform a :message node into the `Throwable->map` format."
-  {:added "0.10.1"}
   [& content]
   [:message (apply str content)])
 
-(def ^{:added "0.10.1" :private true}
-  transform-stacktrace
+(def ^:private transform-stacktrace
   "Transform a stacktrace node into the `Throwable->map` format."
   (fn [[_ & traces] [_ & causes]]
     (let [causes (reverse causes)
@@ -72,7 +62,6 @@
 
 (defn- transform-trace
   "Transform a :trace node into the `Throwable->map` format."
-  {:added "0.10.1"}
   [& frames]
   (vec (mapcat (fn [frame]
                  (if-let [n (nth frame 4 nil)]
@@ -80,7 +69,7 @@
                    [frame]))
                frames)))
 
-(def ^{:added "0.10.1" :private true} transformations
+(def ^:private transformations
   "The Aviso stacktrace transformations."
   {:S transform-stacktrace
    :cause transform-cause

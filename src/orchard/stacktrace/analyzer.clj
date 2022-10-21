@@ -28,7 +28,6 @@
 ;; Java stacktraces don't expose column number.
 (defn- stack-frame
   "Return a map describing the stack frame."
-  {:added "0.10.1"}
   [frame]
   (let [[class method file line] frame]
     (when (and class method file line)
@@ -40,20 +39,17 @@
 
 (defn- flag-frame
   "Update frame's flags vector to include the new flag."
-  {:added "0.10.1"}
   [frame flag]
   (update-in frame [:flags] (comp set conj) flag))
 
 (defn- source-path
   "Return the relative source path for the class without extension."
-  {:added "0.10.1"}
   [class]
   (-> (str/replace (str class) #"\$.*" "")
       (str/replace "." "/")))
 
 (defn- path->url
   "Return a url for the path, either relative to classpath, or absolute."
-  {:added "0.10.1"}
   [path]
   (or (info/file-path path) (second (resource/resource-path-tuple path))))
 
@@ -63,7 +59,6 @@
   reasons for this:
   * Failed refresh
   * Top-level evaluation"
-  {:added "0.10.1"}
   [frame]
   (some-> (:name frame)
           source-path
@@ -75,7 +70,6 @@
 (defn- analyze-fn
   "Add namespace, fn, and var to the frame map when the source is a Clojure
   function."
-  {:added "0.10.1"}
   [{:keys [type class method] :as frame}]
   (if (or (= :clj type)
           (= :cljc type))
@@ -102,7 +96,6 @@
 (defn- analyze-file
   "Associate the file type (extension) of the source file to the frame map, and
   add it as a flag. If the name is `NO_SOURCE_FILE`, type `clj` is assumed."
-  {:added "0.10.1"}
   [{:keys [file] :as frame}]
   (let [type (keyword
               (cond (nil? file)                "unknown"
@@ -115,7 +108,6 @@
 
 (defn- flag-repl
   "Flag the frame if its source is a REPL eval."
-  {:added "0.10.1"}
   [{:keys [file] :as frame}]
   (if (and file
            (or (= file "NO_SOURCE_FILE")
@@ -127,7 +119,6 @@
   "Walk the call stack from top to bottom, flagging frames below the first call
   to `clojure.lang.Compiler` or `nrepl.*` as `:tooling` to
   distinguish compilation and nREPL middleware frames from user code."
-  {:added "0.10.1"}
   [frames]
   (let [tool-regex #"^clojure\.lang\.Compiler|^nrepl\.|^cider\."
         tool? #(re-find tool-regex (or (:name %) ""))
@@ -149,7 +140,7 @@
   []
   (into #{} (namespace/project-namespaces)))
 
-(defn- ns-common-prefix* {:added "0.10.1"} [namespaces]
+(defn- ns-common-prefix* [namespaces]
   (let [common
         (try
           (->> namespaces
@@ -200,7 +191,6 @@
   "Flag the frame if it is from the users project. From a users
   project means that the namespace is one we have identified or it
   begins with the identified common prefix."
-  {:added "0.10.1"}
   [namespaces {:keys [ns] :as frame}]
   (if (and ns
            (or (contains? namespaces (symbol ns))
@@ -212,7 +202,6 @@
 (defn- flag-duplicates
   "Where a parent and child frame represent substantially the same source
   location, flag the parent as a duplicate."
-  {:added "0.10.1"}
   [frames]
   (into [(first frames)]
         (map (fn [[frame child]]
@@ -235,7 +224,6 @@
 (defn- relative-path
   "If the path is under the project root, return the relative path; otherwise
   return the original path."
-  {:added "0.10.1"}
   [path]
   (let [dir (str (System/getProperty "user.dir")
                  (System/getProperty "file.separator"))]
@@ -245,7 +233,6 @@
   "If the cause is a compiler exception, extract the useful location information
   from its message or from `:location` if provided.
   Include relative path for simpler reporting."
-  {:added "0.10.1"}
   [{:keys [class message location] :as cause}]
   (if (= class "clojure.lang.Compiler$CompilerException")
     (if (seq location)
@@ -271,15 +258,13 @@
     cause))
 
 ;; CLJS REPLs use :repl-env to store huge amounts of analyzer/compiler state
-(def ^{:added "0.10.1" :private true}
-  ex-data-blacklist
+(def ^:private ex-data-blacklist
   #{:repl-env})
 
 (defn- filtered-ex-data
   "Filter keys from the exception `data` which are
   blacklisted (generally for containing data not intended for reading
   by a human)."
-  {:added "0.10.1"}
   [data]
   (when data
     (into {} (filter (comp (complement ex-data-blacklist) key) data))))
@@ -298,7 +283,6 @@
   Take in a map `ed` as returned by `clojure.spec/explain-data` and return a map
   of pretty printed problems. The content of the returned map is modeled after
   `clojure.spec/explain-printer`."
-  {:added "0.10.1"}
   [ed pprint-str]
   (let [problems (sort-by #(count (:path %))
                           (or (:clojure.spec/problems ed)
@@ -329,7 +313,6 @@
 
 (defn- analyze-stacktrace-data
   "Return the stacktrace as a sequence of maps, each describing a stack frame."
-  {:added "0.10.1"}
   [trace]
   (when (seq trace)
     (let [namespaces (directory-namespaces)]
@@ -339,7 +322,6 @@
 
 (defn- analyze-cause
   "Analyze the `cause-data` of an exception in `Throwable->map` format."
-  {:added "0.10.1"}
   [cause-data print-fn]
   (let [pprint-str #(let [writer (StringWriter.)]
                       (print-fn % writer)
@@ -368,7 +350,6 @@
 
 (defn- analyze-causes
   "Analyze the cause chain of the `exception-data` in `Throwable->map` format."
-  {:added "0.10.1"}
   [exception-data print-fn]
   (let [causes (vec (:via exception-data))]
     (into [] (comp (map #(analyze-cause % print-fn))
