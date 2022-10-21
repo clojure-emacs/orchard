@@ -1,6 +1,6 @@
 (ns orchard.stacktrace.parser.aviso
   "Parser for stacktraces in the Aviso format."
-  {:added "0.10.1"}
+  {:added "0.11.0"}
   (:require [clojure.java.io :as io]
             [instaparse.core  :as insta :refer [defparser]]
             [orchard.misc :refer [safe-read-edn]]
@@ -89,6 +89,6 @@
 
 (defn parse-stacktrace
   "Parse `input` as a stacktrace in the Aviso format."
-  {:added "0.10.1"}
+  {:added "0.11.0"}
   [input]
   (util/parse-stacktrace parser transformations :aviso stacktrace-start-regex input))

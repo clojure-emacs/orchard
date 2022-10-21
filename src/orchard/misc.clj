@@ -196,7 +196,7 @@
   The `tagged-literal` function is used as the default tagged literal
   reader. Any exception thrown while reading is catched and nil will
   be returned instead."
-  {:added "0.10.1"}
+  {:added "0.11.0"}
   [s]
   (try (edn/read-string {:default tagged-literal} s)
        (catch Exception _)))

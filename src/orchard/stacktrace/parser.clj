@@ -1,6 +1,6 @@
 (ns orchard.stacktrace.parser
   "The Orchard stacktrace parser."
-  {:added "0.10.1"}
+  {:added "0.11.0"}
   (:require [orchard.misc :refer [safe-read-edn]]
             [orchard.stacktrace.parser.aviso :as aviso]
             [orchard.stacktrace.parser.clojure.repl :as clojure.repl]
@@ -9,7 +9,7 @@
             [orchard.stacktrace.parser.clojure.throwable :as clojure.throwable]
             [orchard.stacktrace.parser.java :as java]))
 
-(def ^{:added "0.10.1"} default-parsers
+(def ^{:added "0.11.0"} default-parsers
   "The default stacktrace parsers."
   [clojure.throwable/parse-stacktrace
    clojure.tagged-literal/parse-stacktrace
@@ -18,7 +18,7 @@
    clojure.repl/parse-stacktrace
    aviso/parse-stacktrace])
 
-(def ^{:added "0.10.1"} default-input-transformations
+(def ^{:added "0.11.0"} default-input-transformations
   "The default input transformations.
 
   - `identity` Do nothing, forward input to the parser.
@@ -36,7 +36,7 @@
 
   If `parsers` or `input-transformations` are nil, `default-parsers`
   and `default-input-transformations` will be used instead."
-  {:added "0.10.1"}
+  {:added "0.11.0"}
   ([stacktrace]
    (parse stacktrace nil))
   ([stacktrace {:keys [parsers input-transformations]}]

@@ -1,6 +1,6 @@
 (ns orchard.stacktrace.parser.clojure.repl
   "Parser for stacktraces in the `clojure.repl` format."
-  {:added "0.10.1"}
+  {:added "0.11.0"}
   (:require [clojure.edn :as edn]
             [clojure.java.io :as io]
             [instaparse.core  :as insta :refer [defparser]]
@@ -79,6 +79,6 @@
 
 (defn parse-stacktrace
   "Parse `input` as a stacktrace in `clojure.repl` format."
-  {:added "0.10.1"}
+  {:added "0.11.0"}
   [input]
   (util/parse-stacktrace parser transformations :clojure.repl stacktrace-start-regex input))

@@ -1,6 +1,6 @@
 (ns orchard.stacktrace.analyzer
   "Cause and stacktrace analysis for exceptions"
-  {:added "0.10.1"
+  {:added "0.11.0"
    :author "Jeff Valk"}
   (:require
    [clojure.pprint :as pp]
@@ -19,7 +19,7 @@
 
 (defn pprint
   "A simple wrapper around `clojure.pprint/write`."
-  {:added "0.10.1"}
+  {:added "0.11.0"}
   ([value writer]
    (pprint value writer {}))
   ([value writer options]
@@ -136,7 +136,7 @@
   NOTE: depending on the use case, you might want to filter out
   namespaces such as `user` which while belong to the project,
   don't share a common naming scheme with the other namespaces."
-  {:added "0.10.1"}
+  {:added "0.11.0"}
   []
   (into #{} (namespace/project-namespaces)))
 
@@ -182,7 +182,7 @@
 
       {:valid true :common (str/join "." common)})))
 
-(def ^{:added "0.10.1"} ns-common-prefix
+(def ^{:added "0.11.0"} ns-common-prefix
   "In order to match more namespaces, we look for a common namespace
   prefix across the ones we have identified."
   (delay (ns-common-prefix* (directory-namespaces))))
@@ -214,7 +214,7 @@
 
 (defn analyze-frame
   "Return the stacktrace as a sequence of maps, each describing a stack frame."
-  {:added "0.10.1"}
+  {:added "0.11.0"}
   [namespaces frame]
   (let [f (comp flag-repl (partial flag-project namespaces) analyze-fn analyze-file stack-frame)]
     (f frame)))
@@ -269,7 +269,7 @@
   (when data
     (into {} (filter (comp (complement ex-data-blacklist) key) data))))
 
-(def ^{:added "0.10.1"} spec-abbrev
+(def ^{:added "0.11.0"} spec-abbrev
   (delay (if (try (require 'clojure.spec) true
                   (catch Throwable _ false))
            (resolve 'clojure.spec/abbrev)
@@ -365,7 +365,7 @@
   exceptions, the response contains a :data slot with the pretty
   printed data. For clojure.spec asserts, the :spec slot contains a
   map of pretty printed components describing spec failures."
-  {:added "0.10.1"}
+  {:added "0.11.0"}
   ([exception]
    (analyze exception pprint))
   ([exception print-fn]
