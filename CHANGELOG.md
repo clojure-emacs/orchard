@@ -4,6 +4,8 @@
 
 ### New features
 
+## 0.11.0 (2022-10-25)
+
 - [#163](https://github.com/clojure-emacs/orchard/pull/163): Support Clojure Spec 2 in the Spec browser.
 
 ## 0.10.0 (2022-09-04)
