@@ -37,7 +37,11 @@
 (defn- extract-eldoc
   [info]
   (if-let [arglists (seq (-> info extract-arglists format-arglists))]
-    {:eldoc arglists :type "function"}
+    {:eldoc arglists
+     :type (cond
+             (:special-form info) "special-form"
+             (:macro info) "macro"
+             :else "function")}
     {:type "variable"}))
 
 (defn eldoc
