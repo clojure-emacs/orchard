@@ -894,3 +894,16 @@
                           "  " (:value ":data" 36) " = " (:value "{}" 37)
                           (:newline)))
                       (datafy-section rendered))))))))
+
+
+(deftest tap-current-value []
+  (testing "tap> current value"
+    (let [_ (atom nil)
+          test-tap-handler (fn [x] (reset! _ x))]
+
+      (add-tap test-tap-handler)
+      (-> (inspect/fresh)
+          (inspect/start 123)
+          (inspect/tap-current-value))
+      (remove-tap test-tap-handler)
+      (is (= 123 @_)))))

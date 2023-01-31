@@ -171,6 +171,12 @@
   (intern namespace (symbol var-name) (:value inspector))
   (inspect-render inspector))
 
+(defn tap-current-value
+  "Tap the currently inspected value."
+  [inspector]
+  (tap> (:value inspector))
+  (inspect-render inspector))
+
 (declare inspector-value-string)
 
 ;;

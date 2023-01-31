@@ -1,6 +1,7 @@
 # Changelog
 
 ## master (unreleased)
+- added new inspector functin `tap-current-value`
 
 ### New features
 
