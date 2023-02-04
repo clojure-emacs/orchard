@@ -897,13 +897,17 @@
 
 
 (deftest tap-current-value
-  (testing "tap> current value"
-    (let [proof (atom nil)
-          test-tap-handler (fn [x] (reset! proof x))]
-
-      (add-tap test-tap-handler)
-      (-> (inspect/fresh)
-          (inspect/start 123)
-          (inspect/tap-current-value))
-      (remove-tap test-tap-handler)
-      (is (= 123 @proof)))))
+  (testing "tap> current value")
+  (let [proof (atom [])
+        test-tap-handler (fn [x]
+                           (swap! proof conj x))]
+   (add-tap test-tap-handler)
+   (-> (inspect/fresh)
+       (inspect/start {:a {:b 1}})
+       (inspect/tap-current-value)
+       (inspect/down 2)
+       (inspect/tap-current-value)
+       (inspect/down 1)
+       (inspect/tap-current-value))
+   (remove-tap test-tap-handler)
+   (is (= [{:a {:b 1}} {:b 1} 1 ]) @proof)))
