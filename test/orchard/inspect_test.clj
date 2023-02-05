@@ -910,4 +910,6 @@
        (inspect/down 1)
        (inspect/tap-current-value))
    (remove-tap test-tap-handler)
-   (is (= [{:a {:b 1}} {:b 1} 1 ]) @proof)))
+   (is (= [{:a {:b 1}}
+           {:b 1}
+           1]) @proof)))
