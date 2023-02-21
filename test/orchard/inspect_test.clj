@@ -895,21 +895,20 @@
                           (:newline)))
                       (datafy-section rendered))))))))
 
-
 (deftest tap-current-value
   (testing "tap> current value")
   (let [proof (atom [])
         test-tap-handler (fn [x]
                            (swap! proof conj x))]
-   (add-tap test-tap-handler)
-   (-> (inspect/fresh)
-       (inspect/start {:a {:b 1}})
-       (inspect/tap-current-value)
-       (inspect/down 2)
-       (inspect/tap-current-value)
-       (inspect/down 1)
-       (inspect/tap-current-value))
-   (remove-tap test-tap-handler)
-   (is (= [{:a {:b 1}}
-           {:b 1}
-           1]) @proof)))
+    (add-tap test-tap-handler)
+    (-> (inspect/fresh)
+        (inspect/start {:a {:b 1}})
+        (inspect/tap-current-value)
+        (inspect/down 2)
+        (inspect/tap-current-value)
+        (inspect/down 1)
+        (inspect/tap-current-value))
+    (remove-tap test-tap-handler)
+    (is (= [{:a {:b 1}}
+            {:b 1}
+            :b] @proof))))
