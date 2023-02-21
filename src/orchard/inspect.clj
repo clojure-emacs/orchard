@@ -16,7 +16,7 @@
    (java.lang.reflect Constructor Field Method Modifier)
    (java.util List Map)))
 
-;; Datafy and Nav are only available since Clojure 1.10
+;; Datafy Nav and tap> are only available since Clojure 1.10
 (require 'clojure.core.protocols)
 
 (def ^:private datafy
@@ -25,6 +25,8 @@
 (def ^:private nav
   (misc/call-when-resolved 'clojure.core.protocols/nav))
 
+(def ^:private maybe-tap>
+  (misc/call-when-resolved 'clojure.core/tap>))
 ;;
 ;; Navigating Inspector State
 ;;
@@ -174,7 +176,7 @@
 (defn tap-current-value
   "Tap the currently inspected value."
   [inspector]
-  (tap> (:value inspector))
+  (maybe-tap> (:value inspector))
   (inspect-render inspector))
 
 (declare inspector-value-string)
