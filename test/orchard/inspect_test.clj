@@ -9,7 +9,8 @@
    [clojure.string :as str]
    [clojure.test :as t :refer [deftest is are testing]]
    [orchard.inspect :as inspect]
-   [orchard.misc :refer [datafy? tap? java-api-version]])
+   [orchard.misc :refer [datafy? tap? java-api-version]]
+   [orchard.misc :as misc])
   (:import java.io.File))
 
 (defn- demunge-str [s]
@@ -901,7 +902,7 @@
     (let [proof (atom [])
           test-tap-handler (fn [x]
                              (swap! proof conj x))]
-      (add-tap test-tap-handler)
+      ((misc/call-when-resolved 'clojure.core/add-tap) test-tap-handler)
       (-> (inspect/fresh)
           (inspect/start {:a {:b 1}})
           (inspect/tap-current-value)
@@ -909,7 +910,7 @@
           (inspect/tap-current-value)
           (inspect/down 1)
           (inspect/tap-current-value))
-      (remove-tap test-tap-handler)
+      ((misc/call-when-resolved 'clojure.core/remove-tap) test-tap-handler)
       (is (= [{:a {:b 1}}
               {:b 1}
               :b] @proof)))))
