@@ -9,7 +9,8 @@
    [clojure.string :as str]
    [clojure.test :as t :refer [deftest is are testing]]
    [orchard.inspect :as inspect]
-   [orchard.misc :refer [datafy? java-api-version]])
+   [orchard.misc :refer [datafy? tap? java-api-version]]
+   [orchard.misc :as misc])
   (:import java.io.File))
 
 (defn- demunge-str [s]
@@ -894,3 +895,22 @@
                           "  " (:value ":data" 36) " = " (:value "{}" 37)
                           (:newline)))
                       (datafy-section rendered))))))))
+
+(deftest tap-current-value
+  (testing "tap> current value")
+  (when tap?
+    (let [proof (atom [])
+          test-tap-handler (fn [x]
+                             (swap! proof conj x))]
+      ((misc/call-when-resolved 'clojure.core/add-tap) test-tap-handler)
+      (-> (inspect/fresh)
+          (inspect/start {:a {:b 1}})
+          (inspect/tap-current-value)
+          (inspect/down 2)
+          (inspect/tap-current-value)
+          (inspect/down 1)
+          (inspect/tap-current-value))
+      ((misc/call-when-resolved 'clojure.core/remove-tap) test-tap-handler)
+      (is (= [{:a {:b 1}}
+              {:b 1}
+              :b] @proof)))))
