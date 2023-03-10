@@ -90,7 +90,7 @@ There are features that Orchard intends to provide (especially, those related to
 
 For getting the most out of Orchard, it is therefore recommended/necessary to use `enrich-classpath`. Please refer to its installation/usage instructions.
 
-#### xref/fn-deps and xref/fn-refs limitations
+#### `xref/fn-deps` and `xref/fn-refs` limitations
 
 These functions use a Clojure compiler implementation detail to find references to other function var dependencies.
 
@@ -99,7 +99,7 @@ You can find a more in-depth explanation in this [post](https://lukas-domagala.d
 The important implications from this are:
 
 * very fast
-* functions marked with meta :inline will not be found (inc, +, ...)
+* functions marked with meta `:inline` will not be found (`inc`, `+`, ...)
 * redefining function vars that include lambdas will still return the dependencies of the old plus the new ones
 ([explanation](https://lukas-domagala.de/blog/clojure-compiler-class-cache.html))
 * does not work on AoT compiled functions
