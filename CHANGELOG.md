@@ -2,9 +2,13 @@
 
 ## master (unreleased)
 
-### New features.
+### New features
 
 - [#167](https://github.com/clojure-emacs/orchard/pull/167): Added new inspector function `tap-current-value`.
+
+### Changes
+
+- [#165](https://github.com/clojure-emacs/orchard/issues/165): Mark special forms and macros accordingly for ElDoc (before they were all marked as functions).
 
 ### New features
 
