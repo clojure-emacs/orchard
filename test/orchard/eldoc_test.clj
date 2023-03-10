@@ -43,6 +43,18 @@
       (is (:eldoc result))
       (is (:docstring result))))
 
+  (testing "Clojure special form"
+    (let [result (eldoc/eldoc (info/info 'clojure.core 'if))]
+      (is (= (:type result) "special-form"))))
+
+  (testing "Clojure macro"
+    (let [result (eldoc/eldoc (info/info 'clojure.core 'when))]
+      (is (= (:type result) "macro"))))
+
+  (testing "Clojure function"
+    (let [result (eldoc/eldoc (info/info 'clojure.core 'inc))]
+      (is (= (:type result) "function"))))
+
   (testing "Java result structure"
     (let [result (eldoc/eldoc (info/info-java 'java.lang.String 'toLowerCase))]
       (is (:class result))
