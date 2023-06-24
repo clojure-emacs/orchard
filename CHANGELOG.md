@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+## 0.12.0 (2023-06-24)
+
 ### New features
 
 - [#167](https://github.com/clojure-emacs/orchard/pull/167): Added new inspector function `tap-current-value`.
