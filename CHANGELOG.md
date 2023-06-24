@@ -10,9 +10,9 @@
 
 - [#165](https://github.com/clojure-emacs/orchard/issues/165): Mark special forms and macros accordingly for ElDoc (before they were all marked as functions).
 
-### New features
-
 ## 0.11.0 (2022-10-25)
+
+### New features
 
 - [#163](https://github.com/clojure-emacs/orchard/pull/163): Support Clojure Spec 2 in the Spec browser.
 
