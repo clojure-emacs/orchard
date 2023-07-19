@@ -28,7 +28,7 @@
     (doseq [x (into exact fuzzy)]
       (is (or (simple-symbol? x)
               (and (qualified-symbol? x)
-                   (requiring-resolve x)))
+                   (#'sut/try-requiring-resolve x)))
           (str x " denotes an existing var")))))
 
 (deftest compute-style-indent-test
