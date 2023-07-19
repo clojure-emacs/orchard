@@ -2,8 +2,7 @@
   "`:style/indent` inference."
   (:require
    [clojure.set :as set]
-   [clojure.string :as string]
-   [clojure.walk :as walk])
+   [clojure.string :as string])
   (:import
    (java.util List)))
 
@@ -95,7 +94,7 @@
              (try
                (-> x namespace symbol require)
                (resolve x)
-               (catch Throwable e
+               (catch Throwable _
                  nil)))))
 
 (defn- acceptably-analog? [candidate-arglists clojure-core-symbol]
