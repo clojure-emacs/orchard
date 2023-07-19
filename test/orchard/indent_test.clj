@@ -12,7 +12,8 @@
                                       (and (symbol? x)
                                            (-> x symbol namespace)
                                            ;; these complicate the CI matrix, since c.a is not available in older Clojures:
-                                           (-> x namespace (= "clojure.core.async")))))
+                                           (or (-> x namespace (= "clojure.core.async"))
+                                               (-> x namespace (= "clojure.spec.alpha"))))))
                             set))
         exact (extract-keys sut/clojure-mode-indents-exact)
         fuzzy (extract-keys sut/clojure-mode-indents-fuzzy)]
