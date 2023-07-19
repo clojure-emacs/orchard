@@ -104,7 +104,7 @@
         (or (not resolved)
             (structure= candidate-arglists (-> resolved meta :arglists))))))
 
-(defn- compute-style-indent [^String macro-name [arglist :as arglists]]
+(defn- compute-style-indent [^String macro-name [^List arglist :as arglists]]
   (let [[exact-clojure-core-symbol exact-indentation :as exact-match] (get clojure-mode-indents-exact macro-name)
         [fuzzy-clojure-core-symbol fuzzy-indentation :as fuzzy-match] (or
                                                                        ;; an exact match, when available, is of course faster and more desirable:
