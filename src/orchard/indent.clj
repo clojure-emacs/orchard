@@ -99,7 +99,8 @@
                  nil)))))
 
 (defn- acceptably-analog? [candidate-arglists clojure-core-symbol]
-  (or (simple-symbol? clojure-core-symbol)
+  (or (and (symbol? clojure-core-symbol)
+           (not (namespace clojure-core-symbol)))
       (let [resolved (try-requiring-resolve clojure-core-symbol)]
         (or (not resolved)
             (structure= candidate-arglists (-> resolved meta :arglists))))))

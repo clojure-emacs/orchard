@@ -9,7 +9,8 @@
                             vals
                             (map first)
                             (remove (fn [x]
-                                      (and (qualified-symbol? x)
+                                      (and (symbol? x)
+                                           (-> x symbol namespace)
                                            ;; these complicate the CI matrix, since c.a is not available in older Clojures:
                                            (-> x namespace (= "clojure.core.async")))))
                             set))
@@ -26,8 +27,10 @@
         (is (not (contains? exact x)))))
 
     (doseq [x (into exact fuzzy)]
-      (is (or (simple-symbol? x)
-              (and (qualified-symbol? x)
+      (is (or (and (symbol? x)
+                   (not (namespace x)))
+              (and (symbol? x)
+                   (namespace x)
                    (#'sut/try-requiring-resolve x)))
           (str x " denotes an existing var")))))
 
