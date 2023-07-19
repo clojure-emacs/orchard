@@ -4,9 +4,11 @@
    [clojure.test :refer [deftest are is]]
    [orchard.query :refer [namespaces vars]]))
 
-(def ^:private a-private)
-(def ^:abc a-metad)
-(def ^:abc ^:def b-metad)
+(def ^:private a-private nil)
+
+(def ^:abc a-metad nil)
+
+(def ^:abc ^:def b-metad nil)
 
 (defn- docd-fn
   "@@@regexpfriendly"

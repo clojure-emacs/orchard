@@ -22,7 +22,7 @@
       (catch Exception _
         false))))
 
-(def ^:dynamic *cljs-params*)
+(def ^:dynamic *cljs-params* nil)
 
 (defn wrap-info-params
   [f]
