@@ -32,8 +32,8 @@
 
   :profiles {
              ;; Clojure versions matrix
-             :provided {:dependencies [[org.clojure/clojure "1.10.3"]
-                                       [org.clojure/clojure "1.10.3" :classifier "sources"]
+             :provided {:dependencies [[org.clojure/clojure "1.11.1"]
+                                       [org.clojure/clojure "1.11.1" :classifier "sources"]
                                        [org.clojure/clojurescript "1.11.4"]]
                         :test-paths ["test-cljs"]}
              :1.8 {:dependencies [[org.clojure/clojure "1.8.0"]
@@ -42,10 +42,12 @@
                                   [org.clojure/clojure "1.9.0" :classifier "sources"]]}
              :1.10 {:dependencies [[org.clojure/clojure "1.10.3"]
                                    [org.clojure/clojure "1.10.3" :classifier "sources"]]}
+             :1.11 {:dependencies [[org.clojure/clojure "1.11.1"]
+                                   [org.clojure/clojure "1.11.1" :classifier "sources"]]}
              :master {:repositories [["snapshots"
                                       "https://oss.sonatype.org/content/repositories/snapshots"]]
-                      :dependencies [[org.clojure/clojure "1.11.0-master-SNAPSHOT"]
-                                     [org.clojure/clojure "1.11.0-master-SNAPSHOT" :classifier "sources"]]}
+                      :dependencies [[org.clojure/clojure "1.12.0-master-SNAPSHOT"]
+                                     [org.clojure/clojure "1.12.0-master-SNAPSHOT" :classifier "sources"]]}
 
              :test {:dependencies [[org.clojure/java.classpath "1.0.0"]]
                     :resource-paths ["test-resources"
@@ -63,20 +65,20 @@
                                 :jvm-opts ["-Dorchard.internal.has-enriched-classpath=true"]}
 
              ;; Development tools
-             :dev {:dependencies [[org.clojure/tools.namespace "1.1.0"]]
+             :dev {:dependencies [[org.clojure/tools.namespace "1.4.4"]]
                    :source-paths ["dev" "src-spec-alpha-2/src/main/clojure"]
                    :resource-paths ["test-resources"]}
 
-             :cljfmt {:plugins [[lein-cljfmt "0.8.0"]]
+             :cljfmt {:plugins [[lein-cljfmt "0.9.2"]]
                       :cljfmt {:indents {as-> [[:inner 0]]
                                          with-debug-bindings [[:inner 0]]
                                          merge-meta [[:inner 0]]
                                          letfn [[:block 1] [:inner 2]]}}}
 
              :clj-kondo [:test
-                         {:dependencies [[clj-kondo "2021.12.19"]]}]
+                         {:dependencies [[clj-kondo "2023.07.13"]]}]
 
-             :eastwood  {:plugins  [[jonase/eastwood "1.2.2"]]
+             :eastwood  {:plugins  [[jonase/eastwood "1.4.0"]]
                          :eastwood {:exclude-namespaces ~(cond-> '[clojure.alpha.spec
                                                                    clojure.alpha.spec.gen
                                                                    clojure.alpha.spec.impl

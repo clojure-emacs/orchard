@@ -1,6 +1,7 @@
 /.lein-*
 /.nrepl-port
 /checkouts
+/src-spec-alpha-2
 /classes
 /gh-pages
 /unzipped-jdk-source

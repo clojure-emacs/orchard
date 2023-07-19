@@ -1,6 +1,6 @@
 .PHONY: test docs eastwood cljfmt deploy clean .EXPORT_ALL_VARIABLES
 
-VERSION ?= 1.10
+VERSION ?= 1.11
 
 TEST_PROFILES ?= +test
 
