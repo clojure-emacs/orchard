@@ -49,7 +49,8 @@
                       :dependencies [[org.clojure/clojure "1.12.0-master-SNAPSHOT"]
                                      [org.clojure/clojure "1.12.0-master-SNAPSHOT" :classifier "sources"]]}
 
-             :test {:dependencies [[org.clojure/java.classpath "1.0.0"]]
+             :test {:dependencies [[org.clojure/core.async "1.6.673"]
+                                   [org.clojure/java.classpath "1.0.0"]]
                     :resource-paths ["test-resources"
                                      "not-a.jar"
                                      "does-not-exist.jar"]
