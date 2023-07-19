@@ -115,7 +115,7 @@ jobs:
   util_job:
     description: |
       Running utility commands/checks (linter etc.)
-      Always uses Java11 and Clojure 1.10
+      Always uses Java11 and Clojure 1.11
     parameters:
       jdk_version:
         description: Version of JDK to test against
@@ -124,13 +124,13 @@ jobs:
         type: steps
     executor: << parameters.jdk_version >>
     environment:
-      VERSION: "1.10"
+      VERSION: "1.11"
     steps:
       - checkout
       - with_cache:
           cache_version: "util-job-v1"
           jdk_version: << parameters.jdk_version >>
-          clojure_version: "1.10"
+          clojure_version: "1.11"
           steps: << parameters.steps >>
 
   deploy:
@@ -186,7 +186,7 @@ jobs:
 #
 # - run tests against the target matrix
 #   - Java 8, 11, 16 and 17
-#   - Clojure 1.8, 1.9, 1.10, master
+#   - Clojure 1.8, 1.9, 1.10, 1.11, master
 # - linter, eastwood and cljfmt
 
 workflows:
@@ -197,7 +197,7 @@ workflows:
           matrix:
             parameters:
               jdk_version: [openjdk8, openjdk11, openjdk16, openjdk17]
-              clojure_version: ["1.8", "1.9", "1.10", "master"]
+              clojure_version: ["1.8", "1.9", "1.10", "1.11", "master"]
               test_profiles: ["+test,-provided", "+test,+provided", "+test,+provided,+enrich-classpath"]
           filters:
             branches:
