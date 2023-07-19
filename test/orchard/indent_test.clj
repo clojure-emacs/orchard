@@ -5,7 +5,14 @@
 
 (deftest clojure-mode-indents
   (let [extract-keys (fn [m]
-                       (->> m vals (map first) set))
+                       (->> m
+                            vals
+                            (map first)
+                            (remove (fn [x]
+                                      (and (qualified-symbol? x)
+                                           ;; these complicate the CI matrix, since c.a is not available in older Clojures:
+                                           (-> x namespace (= "clojure.core.async")))))
+                            set))
         exact (extract-keys sut/clojure-mode-indents-exact)
         fuzzy (extract-keys sut/clojure-mode-indents-fuzzy)]
     (assert (contains? exact 'clojure.test/are))
