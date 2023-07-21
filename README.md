@@ -78,7 +78,7 @@ Documentation for the master branch as well as tagged releases are available
 Just add `orchard` as a dependency and start hacking.
 
 ```clojure
-[cider/orchard "0.12.0"]
+[cider/orchard "0.13.0"]
 ```
 
 Consult the [API documentation](https://cljdoc.org/d/cider/orchard/CURRENT) to get a better idea about the
@@ -147,7 +147,7 @@ clients can make of use of the general functionality contained in
 You can install Orchard locally like this:
 
 ```
-PROJECT_VERSION=0.12.0 make install
+PROJECT_VERSION=0.13.0 make install
 ```
 
 ...note that projects such as cider-nrepl or refactor-nrepl use copies of Orchard that are inlined with [mranderson](https://github.com/benedekfazekas/mranderson),

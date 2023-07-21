@@ -2,12 +2,14 @@
 
 ## master (unreleased)
 
+## 0.13.0 (2023-07-21)
+- [cider-nrepl #777](https://github.com/clojure-emacs/cider-nrepl/issues/777): Introduce `orchard.indent` ns / functionality.
+
 ## 0.12.0 (2023-06-24)
 
 ### New features
 
 - [#167](https://github.com/clojure-emacs/orchard/pull/167): Added new inspector function `tap-current-value`.
-- [cider-nrepl #777](https://github.com/clojure-emacs/cider-nrepl/issues/777): Introduce `orchard.indent` ns / functionality.
 
 ### Changes
 
