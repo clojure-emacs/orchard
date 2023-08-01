@@ -379,8 +379,10 @@
         ;; possibly infinite
         :else Integer/MAX_VALUE))
 
+(declare known-types)
+
 (defn- render-page-info [{:keys [current-page page-size] :as inspector} obj]
-  (if-not (sequential? obj)
+  (if-not (#{:coll :array} (known-types inspector obj))
     inspector
     (let [last-page (last-page inspector obj)
           paginate? (not= last-page 0)]

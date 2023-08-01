@@ -910,7 +910,12 @@
                       (:value "\"(0 1 2 3 4 5 6 7 8 9)\"" 1)
                       (:newline)
                       (:newline))
-                    (header rendered)))))))
+                    (header rendered)))))
+
+    (let [rendered (-> (eduction (range 100)) inspect render)]
+      (testing "doesn't render page info section"
+        (is (match? '()
+                    (section "Page Info" rendered)))))))
 
 (deftest tap-current-value
   (testing "tap> current value")
