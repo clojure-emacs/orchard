@@ -372,14 +372,12 @@
        ins))))
 
 (defn- last-page [{:keys [current-page page-size]} obj]
-  (if (or (instance? clojure.lang.Counted obj)
-          ;; if there are no more items after the current page,
-          ;; we must have reached the end of the collection, so
-          ;; it's not infinite.
-          (empty? (drop (* (inc current-page) page-size) obj)))
-    (quot (dec (count obj)) page-size)
-    ;; possibly infinite
-    Integer/MAX_VALUE))
+  (cond (instance? clojure.lang.Counted obj) (quot (dec (count obj)) page-size)
+        ;; if there are no more items after the current page, we must have
+        ;; reached the end of the collection, so it's not infinite.
+        (empty? (drop (* (inc current-page) page-size) obj)) current-page
+        ;; possibly infinite
+        :else Integer/MAX_VALUE))
 
 (defn- render-page-info [{:keys [current-page page-size] :as inspector} obj]
   (if-not (sequential? obj)

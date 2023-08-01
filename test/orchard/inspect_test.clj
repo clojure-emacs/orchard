@@ -897,6 +897,21 @@
                           (:newline)))
                       (datafy-section rendered))))))))
 
+(deftest inspect-eduction-test
+  (testing "inspecting eduction shows its object fields"
+    (let [rendered (-> (eduction (range 10)) inspect render)]
+      (testing "renders the header section"
+        (is (match? '("Class"
+                      ": "
+                      (:value "clojure.core.Eduction" 0)
+                      (:newline)
+                      "Value"
+                      ": "
+                      (:value "\"(0 1 2 3 4 5 6 7 8 9)\"" 1)
+                      (:newline)
+                      (:newline))
+                    (header rendered)))))))
+
 (deftest tap-current-value
   (testing "tap> current value")
   (when tap?
