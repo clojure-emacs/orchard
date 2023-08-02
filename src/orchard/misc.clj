@@ -67,7 +67,7 @@
                   (symbol x))))
 
 (defn namespace-sym
-  "Return the namespace of a fully qualified symbol if possible.
+  "Return the namespace of a fully qualified symbol if possible, as a symbol.
 
   It leaves the symbol untouched if not."
   [sym]
@@ -76,7 +76,7 @@
     sym))
 
 (defn name-sym
-  "Return the name of a fully qualified symbol if possible.
+  "Return the name of a fully qualified symbol if possible, as a symbol.
 
   It leaves the symbol untouched if not."
   [sym]

@@ -3,8 +3,10 @@
   {:author "Gary Trakhman"
    :added "0.5"}
   (:require
-   [orchard.cljs.analysis :as a #?@(:cljs [:include-macros true])]
-   [orchard.misc :as misc #?@(:cljs [:include-macros true])]
+   #?(:clj  [orchard.cljs.analysis :as a]
+      :cljs [orchard.cljs.analysis :as a :include-macros true])
+   #?(:clj  [orchard.misc :as misc]
+      :cljs [orchard.misc :as misc :include-macros true])
    [orchard.namespace :as ns]))
 
 (defn normalize-ns-file

@@ -13,6 +13,8 @@ curl -o $@ https://github.com/clojure-emacs/clojuredocs-export-edn/raw/master/ex
 test: clean spec-2 .EXPORT_ALL_VARIABLES
 	lein with-profile -user,-dev,+$(VERSION),$(TEST_PROFILES) test
 
+quick-test: test
+
 eastwood:
 	lein with-profile -user,-dev,+$(VERSION),+eastwood,+deploy,$(TEST_PROFILES) eastwood
 
@@ -30,11 +32,6 @@ deploy: check-env clean
 # Usage: PROJECT_VERSION=0.13.0 make install
 install: clean check-install-env
 	lein with-profile -user,-dev,+$(VERSION),-provided install
-
-check-install-env:
-ifndef PROJECT_VERSION
-	$(error Please set PROJECT_VERSION as an env var beforehand.)
-endif
 
 clean:
 	lein with-profile -user,-dev clean

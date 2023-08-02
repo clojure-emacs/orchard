@@ -1,8 +1,9 @@
 (ns ^{:doc "A test namespace"} orchard.test-ns
-  (:refer-clojure :exclude [unchecked-byte while replace])
-  (:require [clojure.string :refer [replace]]
-            [orchard.test-ns-dep :as test-dep :refer [foo-in-dep]]
-            [orchard.test-no-defs :as no-defs])
+  (:refer-clojure :exclude [replace unchecked-byte while])
+  (:require
+   [clojure.string :as string :refer [replace]]
+   [orchard.test-no-defs :as no-defs]
+   [orchard.test-ns-dep :as test-dep :refer [foo-in-dep]])
   #?(:cljs (:require-macros [orchard.test-macros :as test-macros :refer [my-add]])
      :clj  (:require [orchard.test-macros :as test-macros :refer [my-add]]))
   #?(:cljs (:import [goog.ui IdGenerator])))
@@ -23,3 +24,20 @@
 (defn- test-private-fn
   []
   (inc (test-public-fn)))
+
+(defn proxied
+  "Docstring"
+  ([])
+  ([a b c]))
+
+(def proxy1
+  proxied)
+
+(def proxy2
+  replace)
+
+(def proxy3
+  string/capitalize)
+
+(def proxy4
+  clojure.string/includes?)

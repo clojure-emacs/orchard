@@ -98,13 +98,16 @@
      ;; a special symbol - always use :unqualified-sym
      (some-> (cljs-ana/special-meta env unqualified-sym)
              (cljs-meta/normalize-var-meta))
-     ;; an NS
+
+     ;; a NS
      (some->> (cljs-ana/find-ns env sym)
               (cljs-meta/normalize-ns-meta))
+
      ;; ns alias
      (some->> (cljs-ana/ns-alias env sym context-ns)
               (cljs-ana/find-ns env)
               (cljs-meta/normalize-ns-meta))
+
      ;; macro ns
      (some->> (find-ns unqualified-sym)
               (cljs-meta/normalize-macro-ns env))
@@ -112,23 +115,30 @@
      ;; macro ns alias
      (some->> (cljs-meta/aliased-macro-var env sym context-ns)
               (cljs-meta/normalize-macro-ns env))
+
      ;; referred var
      (some->> (get (cljs-ana/referred-vars env context-ns) sym)
               (cljs-ana/find-symbol-meta env)
               (cljs-meta/normalize-var-meta))
+
      ;; referred macro
      (some->> (cljs-meta/referred-macro-meta env sym context-ns)
               (cljs-meta/normalize-macro-meta))
+
      ;; scoped var
      (some->> (cljs-meta/scoped-var-meta env sym context-ns)
+              (m/merge-meta-from-proxied-var-cljs env)
               (cljs-meta/normalize-var-meta))
+
      ;; scoped macro
      (some->> (cljs-meta/scoped-macro-meta env sym context-ns)
               (cljs-meta/normalize-macro-meta))
+
      ;; var in cljs.core
      (some->> (get (cljs-ana/core-vars env context-ns) sym)
               (cljs-ana/var-meta)
               (cljs-meta/normalize-var-meta))
+
      ;; macro in cljs.core
      (some->> (cljs-meta/scoped-macro-meta env sym 'cljs.core)
               (cljs-meta/normalize-macro-meta)))))

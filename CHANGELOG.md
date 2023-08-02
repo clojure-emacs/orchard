@@ -2,9 +2,11 @@
 
 ## master (unreleased)
 
+- [cider-nrepl #788](https://github.com/clojure-emacs/cider-nrepl/issues/788): Infer var metadata for 'proxy' vars.
 - [#170](https://github.com/clojure-emacs/orchard/pull/170): Fix exception thrown when inspecting short Eduction.
 
 ## 0.13.0 (2023-07-21)
+
 - [cider-nrepl #777](https://github.com/clojure-emacs/cider-nrepl/issues/777): Introduce `orchard.indent` ns / functionality.
 
 ## 0.12.0 (2023-06-24)

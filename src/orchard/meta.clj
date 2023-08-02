@@ -5,12 +5,13 @@
    [clojure.pprint :as pprint]
    [clojure.string :as str]
    [clojure.walk :as walk]
+   [orchard.cljs.analysis :as cljs-ana]
    [orchard.clojuredocs :as cljdocs]
    [orchard.misc :as misc]
    [orchard.namespace :as ns]
    [orchard.spec :as spec])
   (:import
-   [clojure.lang LineNumberingPushbackReader]))
+   (clojure.lang LineNumberingPushbackReader Namespace Var)))
 
 ;;; ## Extractors
 
@@ -41,7 +42,7 @@
 (defn- maybe-add-spec
   "If the var `v` has a spec has associated with it, assoc that into meta-map.
   The spec is formatted to avoid processing in the client (e.g. CIDER)."
-  [v meta-map]
+  [meta-map v]
   (if-let [spec (when v (spec/spec-form (var-name v)))]
     (merge meta-map {:spec spec})
     meta-map))
@@ -71,7 +72,7 @@
 
 (defn- maybe-add-see-also
   "If the var `v` has a see-also has associated with it, assoc that into meta-map."
-  [v meta-map]
+  [meta-map v]
   (if-let [see-also (try
                       (cljdocs/see-also (var-name v))
                       ;; Skip merging see-also if exception is thrown.
@@ -159,9 +160,76 @@
                              (catch Exception _ nil)))
           maybe-add-url))))
 
+(declare var-code)
+
+(defn- merge-meta-from-proxied-var*
+  [target-map var-ref var-meta-fn cljs-env]
+  (let [clj? (not cljs-env)
+        original-meta (var-meta-fn var-ref)
+        interesting-meta-keys [:doc :arglists :style/indent :indent]
+        original-has-interesting-meta? (seq (select-keys original-meta interesting-meta-keys))
+        proxied-var-ref-from-value (delay
+                                     (when clj?
+                                       (let [v @var-ref]
+                                         (when (var? v)
+                                           v))))
+        var-ns (:ns original-meta)
+        var-ns (if clj?
+                 (if (instance? Namespace var-ns)
+                   var-ns
+                   (some-> var-ns :ns find-ns))
+                 var-ns)
+        proxied-var-ref-from-reader (delay
+                                      (try
+                                        (let [{:keys [form]} (var-code var-ref :var-meta-fn var-meta-fn)]
+                                          (when (seq? form)
+                                            (let [proxied-var-as-symbol (last form)]
+                                              (when (symbol? proxied-var-as-symbol)
+                                                (if clj?
+                                                  (ns-resolve var-ns proxied-var-as-symbol)
+                                                  (cljs-ana/ns-resolve cljs-env var-ns proxied-var-as-symbol))))))
+                                        (catch Exception _
+                                          ;; IO might have failed in the `var-code` call
+                                          nil)))
+        proxied-var (when-not original-has-interesting-meta?
+                      (or @proxied-var-ref-from-value
+                          @proxied-var-ref-from-reader))]
+    (or (when proxied-var
+          (when-let [copy (not-empty (select-keys (var-meta-fn proxied-var)
+                                                  (into []
+                                                        (remove (fn [k]
+                                                                  (contains? original-meta k)))
+                                                        interesting-meta-keys)))]
+            (merge target-map copy)))
+        target-map)))
+
+(defn merge-meta-from-proxied-var-clj
+  "If `var-ref` is var that proxies another var (expressed as a var, or as a symbol denoting a var),
+  and `var-ref` lacks metadata that is present in its proxied var,
+  copies metadata from the praxied var to `var-ref`.
+
+  This is useful for when Clojure users code e.g. `(def foo bar)`, where `bar` has a docstring,
+  and for whatever reason, they do not wish to keep in sync the docstring from #'bar to #'foo manually.
+
+  Only important, safe-to-copy metadata is possibly copied: `:doc`, `:arglists`, `:style/indent`..."
+  [target-map ^Var var-ref]
+  (merge-meta-from-proxied-var* target-map var-ref meta nil))
+
+(defn merge-meta-from-proxied-var-cljs
+  "If `var-map` describes a var that proxies another var (expressed as a symbol denoting a var),
+  and `var-map` lacks metadata that is present in its proxied var,
+  copies metadata from the praxied var to `var-map`.
+
+  This is useful for when Clojure users code e.g. `(def foo bar)`, where `bar` has a docstring,
+  and for whatever reason, they do not wish to keep in sync the docstring from #'bar to #'foo manually.
+
+  Only important, safe-to-copy metadata is possibly copied: `:doc`, `:arglists`, `:style/indent`..."
+  [cljs-env var-map]
+  (merge-meta-from-proxied-var* var-map var-map identity cljs-env))
+
 (def var-meta-whitelist
   [:ns :name :doc :file :arglists :forms :macro :special-form
-   :protocol :line :column :static :added :deprecated :resource])
+   :protocol :line :column :static :added :deprecated :resource :style/indent :indent])
 
 ;; TODO: Split the responsibility of finding meta and normalizing the meta map.
 (defn var-meta
@@ -170,16 +238,17 @@
   ([v] (var-meta v var-meta-whitelist))
   ([v whitelist]
    (when (var? v)
-     (let [meta-map (-> (meta v)
-                        maybe-protocol
-                        (select-keys (or whitelist var-meta-whitelist))
-                        map-seq
-                        maybe-add-file
-                        maybe-add-url
-                        (update :ns ns-name))]
-       (->> meta-map
-            (maybe-add-spec v)
-            (maybe-add-see-also v))))))
+     (-> v
+         meta
+         maybe-protocol
+         (select-keys (or whitelist var-meta-whitelist))
+         map-seq
+         maybe-add-file
+         maybe-add-url
+         (update :ns ns-name)
+         (maybe-add-spec v)
+         (maybe-add-see-also v)
+         (merge-meta-from-proxied-var-clj v)))))
 
 (defn meta+
   "Return special form or var's meta."
@@ -214,8 +283,9 @@
     - :form : The form, as read by `clojure.core/read`, and
     - :code : The source code of the form
   Return nil if the source of the var cannot be found."
-  [v]
-  (when-let [{:keys [file line column] :as var-meta} (var-meta v)]
+  [v & {:keys [var-meta-fn]
+        :or {var-meta-fn var-meta}}]
+  (when-let [{:keys [file line column] :as var-meta} (var-meta-fn v)]
     ;; file can be either absolute (eg: functions that have been eval-ed with
     ;; C-M-x), or relative to some path on the classpath.
     (when-let [res (or (io/resource file)
