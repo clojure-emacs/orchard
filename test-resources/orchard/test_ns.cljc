@@ -25,19 +25,19 @@
   []
   (inc (test-public-fn)))
 
-(defn proxied
+(defn source
   "Docstring"
   ([])
   ([a b c]))
 
-(def proxy1
-  proxied)
+(def indirect1
+  source)
 
-(def proxy2
+(def indirect2
   replace)
 
-(def proxy3
+(def indirect3
   string/capitalize)
 
-(def proxy4
+(def indirect4
   clojure.string/includes?)

@@ -162,40 +162,40 @@
 
 (declare var-code)
 
-(defn- merge-meta-from-proxied-var*
+(defn- merge-meta-for-indirect-var*
   [target-map var-ref var-meta-fn cljs-env]
   (let [clj? (not cljs-env)
         original-meta (var-meta-fn var-ref)
         interesting-meta-keys [:doc :arglists :style/indent :indent]
         original-has-interesting-meta? (seq (select-keys original-meta interesting-meta-keys))
-        proxied-var-ref-from-value (delay
-                                     (when clj?
-                                       (let [v @var-ref]
-                                         (when (var? v)
-                                           v))))
+        source-var-ref-from-value (delay
+                                    (when clj?
+                                      (let [v @var-ref]
+                                        (when (var? v)
+                                          v))))
         var-ns (:ns original-meta)
         var-ns (if clj?
                  (if (instance? Namespace var-ns)
                    var-ns
                    (some-> var-ns :ns find-ns))
                  var-ns)
-        proxied-var-ref-from-reader (delay
-                                      (try
-                                        (let [{:keys [form]} (var-code var-ref :var-meta-fn var-meta-fn)]
-                                          (when (seq? form)
-                                            (let [proxied-var-as-symbol (last form)]
-                                              (when (symbol? proxied-var-as-symbol)
-                                                (if clj?
-                                                  (ns-resolve var-ns proxied-var-as-symbol)
-                                                  (cljs-ana/ns-resolve cljs-env var-ns proxied-var-as-symbol))))))
-                                        (catch Exception _
-                                          ;; IO might have failed in the `var-code` call
-                                          nil)))
-        proxied-var (when-not original-has-interesting-meta?
-                      (or @proxied-var-ref-from-value
-                          @proxied-var-ref-from-reader))]
-    (or (when proxied-var
-          (when-let [copy (not-empty (select-keys (var-meta-fn proxied-var)
+        source-var-ref-from-reader (delay
+                                     (try
+                                       (let [{:keys [form]} (var-code var-ref :var-meta-fn var-meta-fn)]
+                                         (when (seq? form)
+                                           (let [indirect-var-as-symbol (last form)]
+                                             (when (symbol? indirect-var-as-symbol)
+                                               (if clj?
+                                                 (ns-resolve var-ns indirect-var-as-symbol)
+                                                 (cljs-ana/ns-resolve cljs-env var-ns indirect-var-as-symbol))))))
+                                       (catch Exception _
+                                         ;; IO might have failed in the `var-code` call
+                                         nil)))
+        source-var (when-not original-has-interesting-meta?
+                     (or @source-var-ref-from-value
+                         @source-var-ref-from-reader))]
+    (or (when source-var
+          (when-let [copy (not-empty (select-keys (var-meta-fn source-var)
                                                   (into []
                                                         (remove (fn [k]
                                                                   (contains? original-meta k)))
@@ -203,29 +203,29 @@
             (merge target-map copy)))
         target-map)))
 
-(defn merge-meta-from-proxied-var-clj
-  "If `var-ref` is var that proxies another var (expressed as a var, or as a symbol denoting a var),
-  and `var-ref` lacks metadata that is present in its proxied var,
-  copies metadata from the praxied var to `var-ref`.
+(defn merge-meta-for-indirect-var-clj
+  "If `var-ref` is a var that proxies another var (expressed as a var, or as a symbol denoting a var),
+  and `var-ref` lacks metadata that is present in its proxy var,
+  copies metadata from the proxied var to `var-ref`.
 
   This is useful for when Clojure users code e.g. `(def foo bar)`, where `bar` has a docstring,
   and for whatever reason, they do not wish to keep in sync the docstring from #'bar to #'foo manually.
 
   Only important, safe-to-copy metadata is possibly copied: `:doc`, `:arglists`, `:style/indent`..."
   [target-map ^Var var-ref]
-  (merge-meta-from-proxied-var* target-map var-ref meta nil))
+  (merge-meta-for-indirect-var* target-map var-ref meta nil))
 
-(defn merge-meta-from-proxied-var-cljs
+(defn merge-meta-for-indirect-var-cljs
   "If `var-map` describes a var that proxies another var (expressed as a symbol denoting a var),
-  and `var-map` lacks metadata that is present in its proxied var,
-  copies metadata from the praxied var to `var-map`.
+  and `var-map` lacks metadata that is present in its indirect var,
+  copies metadata from the proxied var to `var-map`.
 
   This is useful for when Clojure users code e.g. `(def foo bar)`, where `bar` has a docstring,
   and for whatever reason, they do not wish to keep in sync the docstring from #'bar to #'foo manually.
 
   Only important, safe-to-copy metadata is possibly copied: `:doc`, `:arglists`, `:style/indent`..."
   [cljs-env var-map]
-  (merge-meta-from-proxied-var* var-map var-map identity cljs-env))
+  (merge-meta-for-indirect-var* var-map var-map identity cljs-env))
 
 (def var-meta-whitelist
   [:ns :name :doc :file :arglists :forms :macro :special-form
@@ -248,7 +248,7 @@
          (update :ns ns-name)
          (maybe-add-spec v)
          (maybe-add-see-also v)
-         (merge-meta-from-proxied-var-clj v)))))
+         (merge-meta-for-indirect-var-clj v)))))
 
 (defn meta+
   "Return special form or var's meta."

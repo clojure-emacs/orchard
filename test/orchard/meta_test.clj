@@ -77,15 +77,15 @@
       (is (empty? (:see-also (sut/special-sym-meta 'if)))))))
 
 #_{:clj-kondo/ignore [:unused-binding]}
-(defn proxied
+(defn source
   "Docstring"
   {:style/indent 1}
   ([])
   ([a b c]))
 
-(def proxy-by-var-quote #'proxied)
+(def indirect-by-var-quote #'source)
 
-(def proxy-by-var-symbol proxied)
+(def indirect-by-var-symbol source)
 
 (deftest var-meta-test
   ;; Test files can't be found on the class path.
@@ -103,32 +103,32 @@
                             (eval '(do (in-ns 'clojure.string)
                                        (def pok 10))))))))
 
-  (testing "Uses logic from `merge-meta-from-proxied-var-clj`"
+  (testing "Uses logic from `merge-meta-for-indirect-var-clj`"
     (is (= {:doc "Docstring"
             :arglists '([] [a b c])
             :style/indent 1}
-           (select-keys (sut/var-meta #'proxy-by-var-quote)
+           (select-keys (sut/var-meta #'indirect-by-var-quote)
                         [:doc :arglists :style/indent])))
     (is (= {:doc "Docstring"
             :arglists '([] [a b c])
             :style/indent 1}
-           (select-keys (sut/var-meta #'proxy-by-var-symbol)
+           (select-keys (sut/var-meta #'indirect-by-var-symbol)
                         [:doc :arglists :style/indent])))))
 
-(deftest merge-meta-from-proxied-var-clj-test
-  (testing "Copies `:doc`, `:style/indent` and `:arglist` metadata from the proxied var to the proxy var"
+(deftest merge-meta-for-indirect-var-clj-test
+  (testing "Copies `:doc`, `:style/indent` and `:arglist` metadata from the source var to the indirect var"
     (testing "For a var which value is var"
       (is (= {:doc "Docstring"
               :arglists '([] [a b c])
               :style/indent 1}
-             (select-keys (#'sut/merge-meta-from-proxied-var-clj (meta #'proxy-by-var-quote) #'proxy-by-var-quote)
+             (select-keys (#'sut/merge-meta-for-indirect-var-clj (meta #'indirect-by-var-quote) #'indirect-by-var-quote)
                           [:doc :arglists :style/indent]))))
 
     (testing "For a var which value is an object, which at read-time is expressed as a single symbol"
       (is (= {:doc "Docstring"
               :style/indent 1
               :arglists '([] [a b c])}
-             (select-keys (#'sut/merge-meta-from-proxied-var-clj (meta #'proxy-by-var-symbol) #'proxy-by-var-symbol)
+             (select-keys (#'sut/merge-meta-for-indirect-var-clj (meta #'indirect-by-var-symbol) #'indirect-by-var-symbol)
                           [:doc :arglists :style/indent]))))))
 
 (deftest var-meta-without-see-also-test

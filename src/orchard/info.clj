@@ -127,7 +127,7 @@
 
      ;; scoped var
      (some->> (cljs-meta/scoped-var-meta env sym context-ns)
-              (m/merge-meta-from-proxied-var-cljs env)
+              (m/merge-meta-for-indirect-var-cljs env)
               (cljs-meta/normalize-var-meta))
 
      ;; scoped macro

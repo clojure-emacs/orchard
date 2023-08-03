@@ -691,9 +691,9 @@
                  (info/info*)
                  (select-keys [:ns :name :file])))))))
 
-(deftest proxy-cljs
+(deftest indirect-cljs
   (when cljs-available?
-    (testing "Uses logic from `merge-meta-from-proxied-var-cljs`"
+    (testing "Uses logic from `merge-meta-for-indirect-var-cljs`"
       (are [input expected] (testing input
                               (is (= expected
                                      (-> @*cljs-params*
@@ -704,9 +704,9 @@
                                          (update :doc (fn [s]
                                                         (-> s string/split-lines first))))))
                               true)
-        'proxy1 '{:arglists ([] [a b c]), :doc "Docstring"}
-        'proxy2 '{:arglists ([s match replacement]),
-                  :doc "Replaces all instance of match with replacement in s."}
-        'proxy3 '{:arglists ([s]),
-                  :doc "Converts first character of the string to upper-case, all other"}
-        'proxy4 '{:arglists ([s substr]), :doc "True if s includes substr."}))))
+        'indirect1 '{:arglists ([] [a b c]), :doc "Docstring"}
+        'indirect2 '{:arglists ([s match replacement]),
+                     :doc "Replaces all instance of match with replacement in s."}
+        'indirect3 '{:arglists ([s]),
+                     :doc "Converts first character of the string to upper-case, all other"}
+        'indirect4 '{:arglists ([s substr]), :doc "True if s includes substr."}))))
