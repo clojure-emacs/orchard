@@ -691,7 +691,7 @@
                  (info/info*)
                  (select-keys [:ns :name :file])))))))
 
-(deftest indirect-cljs
+(deftest indirect-vars-cljs
   (when cljs-available?
     (testing "Uses logic from `merge-meta-for-indirect-var-cljs`"
       (are [input expected] (testing input
@@ -702,11 +702,13 @@
                                          info/info*
                                          (select-keys [:arglists :doc])
                                          (update :doc (fn [s]
-                                                        (-> s string/split-lines first))))))
+                                                        (some-> s string/split-lines first))))))
                               true)
         'indirect1 '{:arglists ([] [a b c]), :doc "Docstring"}
         'indirect2 '{:arglists ([s match replacement]),
-                     :doc "Replaces all instance of match with replacement in s."}
+                     :doc      "Replaces all instance of match with replacement in s."}
         'indirect3 '{:arglists ([s]),
-                     :doc "Converts first character of the string to upper-case, all other"}
-        'indirect4 '{:arglists ([s substr]), :doc "True if s includes substr."}))))
+                     :doc      "Converts first character of the string to upper-case, all other"}
+        'indirect4 '{:arglists ([s substr]), :doc "True if s includes substr."}
+        'referred  '{:arglists ([s])
+                     :doc      "Removes whitespace from both ends of string."}))))

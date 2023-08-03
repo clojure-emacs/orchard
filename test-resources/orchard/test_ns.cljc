@@ -3,9 +3,9 @@
   (:require
    [clojure.string :as string :refer [replace]]
    [orchard.test-no-defs :as no-defs]
-   [orchard.test-ns-dep :as test-dep :refer [foo-in-dep]])
-  #?(:cljs (:require-macros [orchard.test-macros :as test-macros :refer [my-add]])
-     :clj  (:require [orchard.test-macros :as test-macros :refer [my-add]]))
+   [orchard.test-ns-dep :as test-dep :refer [foo-in-dep referred]])
+  #?(:clj  (:require [orchard.test-macros :as test-macros :refer [my-add]])
+     :cljs (:require-macros [orchard.test-macros :as test-macros :refer [my-add]]))
   #?(:cljs (:import [goog.ui IdGenerator])))
 
 (defrecord TestRecord [a b c])

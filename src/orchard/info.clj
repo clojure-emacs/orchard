@@ -119,6 +119,7 @@
      ;; referred var
      (some->> (get (cljs-ana/referred-vars env context-ns) sym)
               (cljs-ana/find-symbol-meta env)
+              (m/merge-meta-for-indirect-var-cljs env)
               (cljs-meta/normalize-var-meta))
 
      ;; referred macro
