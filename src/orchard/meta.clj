@@ -3,7 +3,7 @@
   (:require
    [clojure.java.io :as io]
    [clojure.pprint :as pprint]
-   [clojure.string :as str]
+   [clojure.string :as string]
    [clojure.walk :as walk]
    [orchard.cljs.analysis :as cljs-ana]
    [orchard.clojuredocs :as cljdocs]
@@ -21,13 +21,13 @@
   (if (seq? description)
     (str "(" (->> description
                   (map #(with-out-str (pprint/pprint %)))
-                  str/join
-                  str/trim-newline)
+                  string/join
+                  string/trim-newline)
          ")")
     (->>  description
           pprint/pprint
           with-out-str
-          str/trim-newline)))
+          string/trim-newline)))
 
 (defn format-spec
   "Return sequence of [role spec-description] pairs."
@@ -52,7 +52,7 @@
   entry pointing to https://clojure.org/..."
   [info]
   (if-let [url (cond
-                 (not (str/blank? (:url info)))
+                 (not (string/blank? (:url info)))
                  (str "https://clojure.org/" (:url info))
 
                  (:special-form info)
@@ -272,10 +272,10 @@
        "(not documented)"))
   ([n v]
    (->> (-> (var-doc v)
-            (str/replace #"\s+" " ") ; normalize whitespace
-            (str/split #"(?<=\.) ")) ; split sentences
+            (string/replace #"\s+" " ") ; normalize whitespace
+            (string/split #"(?<=\.) ")) ; split sentences
         (take n)
-        (str/join " "))))
+        (string/join " "))))
 
 (defn var-code
   "Find the source of the var `v`.

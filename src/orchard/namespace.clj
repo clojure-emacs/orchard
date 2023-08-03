@@ -7,7 +7,7 @@
    :added "0.5"}
   (:require
    [clojure.java.io :as io]
-   [clojure.string :as str]
+   [clojure.string :as string]
    [orchard.java.classpath :as cp]
    [orchard.misc :as misc])
   (:import
@@ -41,8 +41,8 @@
   according to the canonical naming convention, if present on the classpath."
   ^URL [ns]
   (let [path (-> (str ns)
-                 (str/replace "-" "_")
-                 (str/replace "." "/"))]
+                 (string/replace "-" "_")
+                 (string/replace "." "/"))]
     (or (io/resource (str path ".clj"))
         (io/resource (str path ".cljc"))
         (io/resource (str path ".cljs")))))
@@ -69,7 +69,7 @@
 (defn in-project?
   "Whether the URL is in the current project's directory."
   [url]
-  (let [path (if (misc/os-windows?) (comp str/lower-case str) str)]
+  (let [path (if (misc/os-windows?) (comp string/lower-case str) str)]
     (.startsWith ^String (path url) (path project-root))))
 
 (defn inlined-dependency?

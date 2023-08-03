@@ -6,7 +6,7 @@
    [clojure.java.io :as io]
    [clojure.java.shell :as shell]
    [clojure.pprint :as pprint]
-   [clojure.string :as str]
+   [clojure.string :as string]
    [clojure.test :as t :refer [deftest is are testing]]
    [orchard.inspect :as inspect]
    [orchard.misc :refer [datafy? tap? java-api-version]]
@@ -14,7 +14,7 @@
   (:import java.io.File))
 
 (defn- demunge-str [s]
-  (str/replace s #"(?i)\$([a-z-]+)__([0-9]+)(@[a-f0-9]+)?" "\\$$1"))
+  (string/replace s #"(?i)\$([a-z-]+)__([0-9]+)(@[a-f0-9]+)?" "\\$$1"))
 
 (defn- demunge
   ([rendered]
@@ -31,9 +31,9 @@
         (let [[type value & args] x]
           (case type
             :newline "\n"
-            :value (format "%s <%s>" value (str/join "," args))))
+            :value (format "%s <%s>" value (string/join "," args))))
         (seq? x)
-        (str/join "" (map render-plain x))
+        (string/join "" (map render-plain x))
         :else (str x)))
 
 (defn- diff-text [expected actual]
@@ -61,7 +61,7 @@
     (with-out-str
       (println (format "Inspect test failed" (when msg (str ": " msg))))
       (let [diff (diff-text expected actual)]
-        (when-not (str/blank? diff)
+        (when-not (string/blank? diff)
           (println)
           (println "=== Text Diff ===\n")
           (println diff)))

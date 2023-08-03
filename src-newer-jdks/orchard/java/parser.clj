@@ -4,7 +4,7 @@
   (:refer-clojure :exclude [resolve])
   (:require
    [clojure.java.io :as io]
-   [clojure.string :as str])
+   [clojure.string :as string])
   (:import
    (java.io StringReader StringWriter)
    (javax.lang.model.element Element ElementKind ExecutableElement TypeElement VariableElement)
@@ -183,8 +183,8 @@
 
     (.parse parser sr handler false)
     (-> (str sb)
-        (str/replace #"\n{3,}" "\n\n") ; normalize whitespace
-        (str/replace #" +```" "```"))))
+        (string/replace #"\n{3,}" "\n\n") ; normalize whitespace
+        (string/replace #" +```" "```"))))
 
 (defn docstring
   "Get parsed docstring text of `Element` e using source information in env"
@@ -205,12 +205,12 @@
   "Using parse tree info, return the type's name equivalently to the `typesym`
   function in `orchard.java`."
   ([n ^DocletEnvironment env]
-   (let [t (str/replace (str n) #"<.*>" "") ; drop generics
+   (let [t (string/replace (str n) #"<.*>" "") ; drop generics
          util (.getElementUtils env)]
      (if-let [c (.getTypeElement util t)]
        (let [pkg (str (.getPackageOf util c) ".")
-             cls (-> (str/replace-first t pkg "")
-                     (str/replace "." "$"))]
+             cls (-> (string/replace-first t pkg "")
+                     (string/replace "." "$"))]
          (symbol (str pkg cls))) ; classes
        (symbol t)))))            ; primitives
 
@@ -283,8 +283,8 @@
   [klass]
   (when-let [^Class cls (resolve klass)]
     (let [path (-> (.getName cls)
-                   (str/replace #"\$.*" "")
-                   (str/replace "." "/")
+                   (string/replace #"\$.*" "")
+                   (string/replace "." "/")
                    (str ".java"))]
       (if-let [module (-> cls .getModule .getName)]
         (str module "/" path)

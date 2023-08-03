@@ -1,12 +1,12 @@
 (ns deploy-release
   (:require
    [clojure.java.shell :refer [sh]]
-   [clojure.string :as str]))
+   [clojure.string :as string]))
 
 (def release-marker "v")
 
 (defn make-version [tag]
-  (str/replace-first tag release-marker ""))
+  (string/replace-first tag release-marker ""))
 
 (defn log-result [m]
   (println m)

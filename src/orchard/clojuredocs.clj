@@ -5,7 +5,7 @@
   (:require
    [clojure.edn :as edn]
    [clojure.java.io :as io]
-   [clojure.string :as str]
+   [clojure.string :as string]
    [orchard.util.os :as os])
   (:import
    (java.io IOException)
@@ -16,10 +16,10 @@
 (def default-edn-file-url
   "https://github.com/clojure-emacs/clojuredocs-export-edn/raw/master/exports/export.compact.edn")
 (def cache-file-name
-  (str/join os/file-separator [(os/cache-dir)
-                               "orchard"
-                               "clojuredocs"
-                               "export.edn"]))
+  (string/join os/file-separator [(os/cache-dir)
+                                  "orchard"
+                                  "clojuredocs"
+                                  "export.edn"]))
 
 (def connect-timeout
   "Timeout value for checking connection. Unit is millisecond."

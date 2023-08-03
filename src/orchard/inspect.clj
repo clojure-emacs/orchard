@@ -9,10 +9,10 @@
 
   Pretty wild, right?"
   (:require
-   [clojure.string :as s]
+   [clojure.string :as string]
    [orchard.misc :as misc])
   (:import
-   clojure.lang.Seqable
+   (clojure.lang Seqable)
    (java.lang.reflect Constructor Field Method Modifier)
    (java.util List Map)))
 
@@ -194,7 +194,7 @@
    (safe-pr-seq value " " fmt))
   ([value sep fmt]
    (->> (map inspect-value value)
-        (s/join sep)
+        (string/join sep)
         (format fmt))))
 
 (def ^:private ^:dynamic *max-atom-length* 150)
@@ -548,7 +548,7 @@
 (defn- render-indent-str-lines [inspector s]
   (reduce #(-> (render-indent %1 (str %2))
                (render-ln))
-          inspector (s/split-lines s)))
+          inspector (string/split-lines s)))
 
 (defmethod inspect :string [inspector ^java.lang.String obj]
   (-> (render-class-name inspector obj)
@@ -696,7 +696,7 @@
     (if (and (seq path) (not-any? #(= % '<unknown>) path))
       (-> (render-section-header inspector "Path")
           (indent)
-          (render-indent (s/join " " (:path inspector)))
+          (render-indent (string/join " " (:path inspector)))
           (unindent))
       inspector)))
 

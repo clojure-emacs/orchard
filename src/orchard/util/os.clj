@@ -5,14 +5,14 @@
   {:author "Masashi Iizuka"
    :added "0.5"}
   (:require [clojure.java.io :as io]
-            [clojure.string :as str])
+            [clojure.string :as string])
   (:import (java.io BufferedReader)))
 
 (def os-name
-  (str/lower-case (System/getProperty "os.name")))
+  (string/lower-case (System/getProperty "os.name")))
 
 (def os-type
-  (condp #(str/includes? %2 %1) os-name
+  (condp #(string/includes? %2 %1) os-name
     "linux" ::linux
     "mac" ::mac
     "windows" ::windows
@@ -53,7 +53,7 @@
                           "\\\"@"]
                          (map #(str "[Dir]::GetKnownFolderPath(\\\"" %  "\\\")") guids)
                          ["}"])]
-    (run-commands (count guids) ["powershell.exe" "-Command" (str/join "\n" commands)])))
+    (run-commands (count guids) ["powershell.exe" "-Command" (string/join "\n" commands)])))
 
 (defn cache-dir
   "Returns the path to the user's cache directory.
@@ -65,9 +65,9 @@
   []
   (case os-type
     ::mac
-    (str/join file-separator [(System/getProperty "user.home")
-                              "Library"
-                              "Caches"])
+    (string/join file-separator [(System/getProperty "user.home")
+                                 "Library"
+                                 "Caches"])
 
     ::windows
     (-> ["F1B32785-6FBA-4FCF-9D55-7B8E7F157091"]
@@ -75,6 +75,6 @@
         first)
 
     (let [cache-home (System/getenv "XDG_CACHE_HOME")]
-      (if (str/blank? cache-home)
+      (if (string/blank? cache-home)
         (str (System/getProperty "user.home") file-separator ".cache")
         cache-home))))
