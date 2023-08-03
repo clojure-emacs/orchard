@@ -2,6 +2,7 @@
           :exclude-files ["analysis.cljc" "meta.cljc" "inspect_test.clj"]}
  :linters {:unused-private-var {:level :warning
                                 :exclude [orchard.query-test/a-private orchard.query-test/docd-fn]}
+           :consistent-alias {:aliases {clojure.string string}}
            ;; Enable this opt-in linter:
            :unsorted-required-namespaces
            {:level :warning}}}

@@ -3,7 +3,7 @@
   (:refer-clojure :exclude [update-keys update-vals])
   (:require
    [clojure.java.io :as io]
-   [clojure.string :as str]
+   [clojure.string :as string]
    [orchard.util.io :as util.io]))
 
 (require 'clojure.core.protocols)
@@ -67,7 +67,7 @@
                   (symbol x))))
 
 (defn namespace-sym
-  "Return the namespace of a fully qualified symbol if possible.
+  "Return the namespace of a fully qualified symbol if possible, as a symbol.
 
   It leaves the symbol untouched if not."
   [sym]
@@ -76,7 +76,7 @@
     sym))
 
 (defn name-sym
-  "Return the name of a fully qualified symbol if possible.
+  "Return the name of a fully qualified symbol if possible, as a symbol.
 
   It leaves the symbol untouched if not."
   [sym]
@@ -113,8 +113,8 @@
   (try
     ;; the no-opt split is because a java version string can end with
     ;; an optional string consisting of a hyphen followed by other characters
-    (let [[no-opt _] (str/split java-ver #"-")
-          [major minor _] (str/split no-opt #"\.")
+    (let [[no-opt _] (string/split java-ver #"-")
+          [major minor _] (string/split no-opt #"\.")
           major (Integer/parseInt major)]
       (if (> major 1)
         major
@@ -138,7 +138,7 @@
   [sym]
   (some-> sym
           str
-          (str/replace #"\$macros" "")
+          (string/replace #"\$macros" "")
           symbol))
 
 (defn ns-obj?

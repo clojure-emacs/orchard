@@ -2,9 +2,10 @@
   "ClojureScript analysis functions."
   {:author "Gary Trakhman"
    :added "0.5"}
+  (:refer-clojure :exclude [all-ns find-ns find-var ns-aliases ns-resolve])
   (:require
-   [orchard.misc :as misc])
-  (:refer-clojure :exclude [find-ns find-var all-ns ns-aliases]))
+   [clojure.string :as string]
+   [orchard.misc :as misc]))
 
 (defn all-ns [{namespaces :cljs.analyzer/namespaces}]
   (into {}
@@ -186,13 +187,36 @@
                         (update :name misc/remove-macros))])))
 
 (defn find-symbol-meta
-  "Given a namespace-qualified var name, gets the analyzer metadata for that
-  var."
-  [env sym]
-  (let [ns (find-ns env (misc/namespace-sym sym))]
-    (some-> (:defs ns)
-            (get (misc/name-sym sym))
-            var-meta)))
+  "Given a `sym`, gets the analyzer metadata for that var."
+  ([env sym]
+   (find-symbol-meta env
+                     (misc/namespace-sym sym)
+                     (misc/name-sym sym)))
+
+  ([env ns sym]
+   (let [ns (find-ns env ns)]
+     (some-> ns
+             :defs
+             (get sym)
+             var-meta))))
+
+(defn ns-resolve
+  "Obtains info for a `sym` that may refer to:
+
+  * a var within the same ns;
+  * a var referred from another ns; or
+  * a var that is alias-qualified e.g. `foo/bar`."
+  [env ns sym]
+  (let [[referred-var-ns referred-var-symbol :as referred]
+        (some-> env (referred-vars ns) (get sym) (str) (string/split #"/") (->> (map symbol)))]
+    (if referred
+      (find-symbol-meta env referred-var-ns referred-var-symbol)
+      (let [sym-ns (some-> sym namespace symbol)
+            ns (if-not sym-ns
+                 ns
+                 (let [aliases (ns-aliases env ns)]
+                   (get aliases sym-ns sym-ns)))]
+        (find-symbol-meta env ns (misc/name-sym sym))))))
 
 (defn special-meta
   "Given a special symbol, gets the analyzer metadata."

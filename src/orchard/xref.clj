@@ -5,7 +5,7 @@
   (:require
    [clojure.repl :as repl]
    [clojure.set :as set]
-   [clojure.string :as str]
+   [clojure.string :as string]
    [orchard.query :as q]))
 
 (defn- to-fn

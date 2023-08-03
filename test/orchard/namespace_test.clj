@@ -1,7 +1,7 @@
 (ns orchard.namespace-test
   (:require
    [clojure.java.io :as io]
-   [clojure.string :as str]
+   [clojure.string :as string]
    [clojure.test :refer [are deftest is testing]]
    [orchard.misc :as misc]
    [orchard.namespace :as sut]))
@@ -22,8 +22,8 @@
   tests that follows"
   [url]
   (let [string (str url)
-        upper (str/upper-case string)
-        lower (str/lower-case string)]
+        upper (string/upper-case string)
+        lower (string/lower-case string)]
     (io/as-url
      (if (= string lower) upper lower))))
 

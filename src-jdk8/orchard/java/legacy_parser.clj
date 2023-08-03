@@ -5,7 +5,7 @@
    :no-doc true}
   (:require
    [clojure.java.io :as io]
-   [clojure.string :as str])
+   [clojure.string :as string])
   (:import
    (com.sun.javadoc ClassDoc ConstructorDoc Doc FieldDoc MethodDoc
                     Parameter RootDoc Tag Type)
@@ -181,8 +181,8 @@
 
     (.parse parser sr handler false)
     (-> (str sb)
-        (str/replace #"\n{3,}" "\n\n") ; normalize whitespace
-        (str/replace #" +```" "```"))))
+        (string/replace #"\n{3,}" "\n\n") ; normalize whitespace
+        (string/replace #" +```" "```"))))
 
 ;; Note that @link and @linkplain are also of 'kind' @see.
 (defn docstring
@@ -210,7 +210,7 @@
   (symbol
    (str (when-let [c (.asClassDoc t)] ; when not a primitive
           (str (-> c .containingPackage .name) "."))
-        (-> t .typeName (str/replace "." "$"))
+        (-> t .typeName (string/replace "." "$"))
         (.dimension t))))
 
 (defprotocol Parsed
@@ -257,9 +257,9 @@
   "Return the relative `.java` source path for the top-level class."
   [klass]
   (-> (str klass)
-      (str/replace #"^class " "")
-      (str/replace #"\$.*" "")
-      (str/replace "." "/")
+      (string/replace #"^class " "")
+      (string/replace #"\$.*" "")
+      (string/replace "." "/")
       (str ".java")))
 
 (defn source-info

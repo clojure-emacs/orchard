@@ -1,7 +1,7 @@
 (ns orchard.apropos-test
   (:require
    [clojure.repl :as repl]
-   [clojure.string :as str]
+   [clojure.string :as string]
    [clojure.test :refer [are deftest is testing]]
    [orchard.apropos :as sut :refer [find-symbols]]
    [orchard.meta :refer [var-name var-doc]]))
@@ -58,8 +58,7 @@
    (apropos-first v nil))
   ([v search-ns]
    (->> (find-symbols
-         (cond->
-          {:var-query {:search (re-pattern (str/escape v {\* "\\*"}))}}
+         (cond-> {:var-query {:search (re-pattern (string/escape v {\* "\\*"}))}}
            search-ns
            (assoc-in [:var-query :ns-query :exactly] [search-ns])))
         (filter #(= (:name %) (if search-ns (format "%s/%s" search-ns v) v)))

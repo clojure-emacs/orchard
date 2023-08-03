@@ -6,7 +6,7 @@
   classpath manipulation magic, performed by the Boot build tool."
   (:require
    [clojure.java.io :as io]
-   [clojure.string :as str]
+   [clojure.string :as string]
    [orchard.misc :as misc])
   (:import
    (java.io File)
@@ -102,7 +102,7 @@
   []
   (let [class-path (System/getProperty "fake.class.path")
         dir-separator (System/getProperty "file.separator")
-        paths (str/split class-path (re-pattern (System/getProperty "path.separator")))
+        paths (string/split class-path (re-pattern (System/getProperty "path.separator")))
         urls (map
               (fn [path]
                 (let [url (if (re-find #".jar$" path)

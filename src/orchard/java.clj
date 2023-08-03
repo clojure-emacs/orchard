@@ -5,7 +5,7 @@
    [clojure.java.io :as io]
    [clojure.java.javadoc :as javadoc]
    [clojure.reflect :as r]
-   [clojure.string :as str]
+   [clojure.string :as string]
    [orchard.java.resource :as resource]
    [orchard.misc :as misc]
    [orchard.util.io :as util.io])
@@ -74,15 +74,15 @@
    (let [maybe-module (when (>= misc/java-api-version 11)
                         (some-> (module-name class) (str "/")))]
      (str maybe-module
-          (-> (str/replace (str class) "." "/")
-              (str/replace "$" "."))
+          (-> (string/replace (str class) "." "/")
+              (string/replace "$" "."))
           ".html")))
   ([class member argtypes]
    (str (javadoc-url class) "#" member
         (when argtypes
           (if (<= misc/java-api-version 9) ; argtypes were munged before Java 10
-            (str "-" (str/join "-" (map #(str/replace % #"\[\]" ":A") argtypes)) "-")
-            (str "(" (str/join "," argtypes) ")"))))))
+            (str "-" (string/join "-" (map #(string/replace % #"\[\]" ":A") argtypes)) "-")
+            (str "(" (string/join "," argtypes) ")"))))))
 
 ;;; ## Source Analysis
 ;;
@@ -316,7 +316,7 @@
 
 (defn trim-one-dot
   [s]
-  (str/replace s #"^\.|\.$" ""))
+  (string/replace s #"^\.|\.$" ""))
 
 (defn resolve-symbol
   "Return the info map for a Java member symbol.
@@ -330,7 +330,7 @@
   {:pre [(every? symbol? [ns sym])]}
   (let [sym (-> sym str trim-one-dot)
         sym* (symbol sym)
-        [class static-member] (->> (str/split sym #"/" 2)
+        [class static-member] (->> (string/split sym #"/" 2)
                                    (map #(when % (symbol %))))]
     (if-let [c (resolve-class ns class)]
       (when static-member
@@ -344,7 +344,7 @@
   "Return type info, for a Java class, interface or record."
   [ns sym]
   (let [sym (-> sym str trim-one-dot)
-        sym-split (->> (str/split sym #"/" 2)
+        sym-split (->> (string/split sym #"/" 2)
                        (map #(when % (symbol %))))]
     (some->> (first sym-split)
              (resolve-class ns)
