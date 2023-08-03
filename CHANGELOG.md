@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+## 0.14.0 (2023-08-03)
+
 - [cider-nrepl #788](https://github.com/clojure-emacs/cider-nrepl/issues/788): Infer var metadata for 'indirect' vars.
 - [#170](https://github.com/clojure-emacs/orchard/pull/170): Fix exception thrown when inspecting short Eduction.
 
