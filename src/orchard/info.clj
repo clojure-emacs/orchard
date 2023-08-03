@@ -99,7 +99,7 @@
      (some-> (cljs-ana/special-meta env unqualified-sym)
              (cljs-meta/normalize-var-meta))
 
-     ;; a NS
+     ;; a namespace
      (some->> (cljs-ana/find-ns env sym)
               (cljs-meta/normalize-ns-meta))
 
