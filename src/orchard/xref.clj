@@ -65,9 +65,12 @@
     (let [f-class-name (-> v .getClass .getName)
           ;; this uses the implementation detail that the clojure compiler always
           ;; prefixes names of lambdas with the name of its surrounding function class
-          deps (into #{} (comp (filter (fn [[k _v]] (clojure.string/includes? k f-class-name)))
-                               (map (fn [[_k value]] (.get ^java.lang.ref.Reference value)))
-                               (mapcat fn-deps-class))
+          deps (into #{}
+                     (comp (filter (fn [[k _v]]
+                                     (clojure.string/includes? k f-class-name)))
+                           (map (fn [[_k value]]
+                                  (.get ^java.lang.ref.Reference value)))
+                           (mapcat fn-deps-class))
                      class-cache)]
       ;; if there's no deps the class is most likely AoT compiled,
       ;; try to access it directly
