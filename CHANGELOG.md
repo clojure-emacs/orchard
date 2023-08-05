@@ -2,6 +2,10 @@
 
 ## master (unreleased)
 
+### Changes
+
+- [#173](https://github.com/clojure-emacs/orchard/issues/173): Parallelize `orchard.xref/fn-refs` 
+
 ## 0.14.0 (2023-08-03)
 
 - [cider-nrepl #788](https://github.com/clojure-emacs/cider-nrepl/issues/788): Infer var metadata for 'indirect' vars.

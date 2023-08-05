@@ -19,6 +19,10 @@
 (defn- fn-name [^java.lang.Class f]
   (-> f .getName repl/demunge symbol))
 
+(def eval-lock
+  "We don't want parallel evaluation - easily dangerous."
+  (Object.))
+
 (defn fn-deps-class
   "Returns a set with all the functions invoked by `v`.
   `v` can be a function class or a symbol."
@@ -26,7 +30,8 @@
   [v]
   (let [^java.lang.Class v (if (class? v)
                              v
-                             (eval v))]
+                             (locking eval-lock
+                               (eval v)))]
     (into #{} (keep (fn [^java.lang.reflect.Field f]
                       (or (and (identical? clojure.lang.Var (.getType f))
                                (java.lang.reflect.Modifier/isPublic (.getModifiers f))
@@ -107,7 +112,7 @@
   [v]
   (let [var (as-var v)
         all-vars (q/vars {:ns-query {:project? true} :private? true})
-        deps-map (zipmap all-vars (map fn-deps all-vars))]
+        deps-map (zipmap all-vars (pmap fn-deps all-vars))]
     (map first (filter (fn [[_k v]] (contains? v var)) deps-map))))
 
 (comment
