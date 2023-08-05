@@ -116,7 +116,11 @@
   (let [var (as-var v)
         all-vars (q/vars {:ns-query {:project? true} :private? true})
         deps-map (zipmap all-vars (pmap fn-deps all-vars))]
-    (map first (filter (fn [[_k v]] (contains? v var)) deps-map))))
+    (into []
+          (comp (filter (fn [[_k v]]
+                          (contains? v var)))
+                (map first))
+          deps-map)))
 
 (comment
   ;; this can be used to blow up memory, which will clear the class cache of old references
