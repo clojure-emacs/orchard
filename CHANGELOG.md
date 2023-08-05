@@ -2,9 +2,11 @@
 
 ## master (unreleased)
 
+## 0.14.1 (2023-08-05)
+
 ### Changes
 
-- [#173](https://github.com/clojure-emacs/orchard/issues/173): Parallelize `orchard.xref/fn-refs` 
+- [#173](https://github.com/clojure-emacs/orchard/issues/173): Parallelize `orchard.xref/fn-refs`. 
 
 ## 0.14.0 (2023-08-03)
 
