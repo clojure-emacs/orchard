@@ -8,12 +8,26 @@
    [clojure.string :as string]
    [orchard.query :as q]))
 
+(defn- var->symbol
+  "Normally one could just use `(symbol var-ref)`,
+  but that doesn't work in older Clojures."
+  [var-ref]
+  (let [{:keys [ns name]} (meta var-ref)]
+    (symbol (str (ns-name ns))
+            (str name))))
+
+(defn var->fn [var-ref]
+  (let [{:keys [test]} (meta var-ref)]
+    (if (fn? test)
+      test ;; for deftests, :test metadata contains the actual test implementation, with all the interesting contents.
+      (var-get var-ref))))
+
 (defn- to-fn
   "Convert `thing` to a function value."
   [thing]
   (cond
-    (var? thing) (var-get thing)
-    (symbol? thing) (var-get (find-var thing))
+    (var? thing) (var->fn thing)
+    (symbol? thing) (var->fn (find-var thing))
     (fn? thing) thing))
 
 (defn- fn-name [^java.lang.Class f]
@@ -71,12 +85,19 @@
                            (map (fn [[_k value]]
                                   (.get ^java.lang.ref.Reference value)))
                            (mapcat fn-deps-class))
-                     class-cache)]
-      ;; if there's no deps the class is most likely AoT compiled,
-      ;; try to access it directly
-      (if (empty? deps)
-        (-> v .getClass fn-deps-class)
-        deps))))
+                     class-cache)
+          result
+          ;; if there's no deps the class is most likely AoT compiled,
+          ;; try to access it directly
+          (if (empty? deps)
+            (-> v .getClass fn-deps-class)
+            deps)]
+      (into #{}
+            (map resolve) ;; choose the freshest one
+            ;; group duplicates. This is important
+            ;; because there can be two seemingly equal #'foo.bar/baz var objects in the result.
+            ;; That can happen as one re-evaluates code and the old var hasn't been GC'd yet.
+            (keys (group-by var->symbol result))))))
 
 (defn fn-transitive-deps
   "Returns a set with all the functions invoked inside `v` or inside those functions.

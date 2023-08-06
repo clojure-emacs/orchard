@@ -2,6 +2,11 @@
 
 ## master (unreleased)
 
+### Changes
+
+- [#176](https://github.com/clojure-emacs/orchard/issues/176): `orchard.xref`: include info for test vars.
+- `orchard.xref`: avoid duplicate vars that might appear following REPL re-evaluation.
+
 ## 0.14.1 (2023-08-05)
 
 ### Changes
