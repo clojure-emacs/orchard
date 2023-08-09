@@ -9,6 +9,7 @@
    [orchard.query :as q]))
 
 (defn- var->symbol
+  ;; TODO: use `symbol` once we start targeting Clojure >= 1.10 after CIDER 1.8 is released.
   "Normally one could just use `(symbol var-ref)`,
   but that doesn't work in older Clojures."
   [var-ref]
@@ -16,7 +17,7 @@
     (symbol (str (ns-name ns))
             (str name))))
 
-(defn var->fn [var-ref]
+(defn- var->fn [var-ref]
   (let [{:keys [test]} (meta var-ref)]
     (if (fn? test)
       test ;; for deftests, :test metadata contains the actual test implementation, with all the interesting contents.
