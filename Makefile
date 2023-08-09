@@ -29,7 +29,7 @@ kondo:
 deploy: check-env clean
 	lein with-profile -user,-dev,+$(VERSION),-provided deploy clojars
 
-# Usage: PROJECT_VERSION=0.14.1 make install
+# Usage: PROJECT_VERSION=0.14.2 make install
 install: clean check-install-env
 	lein with-profile -user,-dev,+$(VERSION),-provided install
 

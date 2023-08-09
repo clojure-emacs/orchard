@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+## 0.14.2 (2023-08-09)
+
 ### Changes
 
 - [#176](https://github.com/clojure-emacs/orchard/issues/176): `orchard.xref`: include info for test vars.
