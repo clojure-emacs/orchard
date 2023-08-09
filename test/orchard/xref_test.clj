@@ -12,19 +12,38 @@
 (defn- dummy-fn [_x]
   (map #(fn-dep % 2) (filter even? (range 1 10))))
 
+;; Supports #'fn-deps-test
+(deftest sample-test
+  (is (some? xref/eval-lock))
+  (is (some? (xref/fn-refs #'dummy-fn))))
+
 (deftest fn-deps-test
   (testing "with a fn value"
-    (is (= (xref/fn-deps dummy-fn)
-           #{#'clojure.core/map #'clojure.core/filter
-             #'clojure.core/even? #'clojure.core/range #'orchard.xref-test/fn-dep})))
+    (is (= #{#'clojure.core/map #'clojure.core/filter
+             #'clojure.core/even? #'clojure.core/range #'orchard.xref-test/fn-dep}
+           (xref/fn-deps dummy-fn))))
+
   (testing "with a var"
-    (is (= (xref/fn-deps #'dummy-fn)
-           #{#'clojure.core/map #'clojure.core/filter
-             #'clojure.core/even? #'clojure.core/range #'orchard.xref-test/fn-dep})))
+    (is (= #{#'clojure.core/map #'clojure.core/filter
+             #'clojure.core/even? #'clojure.core/range #'orchard.xref-test/fn-dep}
+           (xref/fn-deps #'dummy-fn))))
+
+  (testing "with a var that backs a deftest"
+    (is (= #{#'orchard.xref-test/dummy-fn
+             #'orchard.xref/eval-lock
+             #'clojure.test/do-report
+             #'clojure.core/cons
+             #'clojure.core/some?
+             #'clojure.core/apply
+             #'orchard.xref/fn-refs
+             #'clojure.core/list}
+           (xref/fn-deps #'sample-test))))
+
   (testing "with a symbol"
-    (is (= (xref/fn-deps 'orchard.xref-test/dummy-fn)
-           #{#'clojure.core/map #'clojure.core/filter
-             #'clojure.core/even? #'clojure.core/range #'orchard.xref-test/fn-dep})))
+    (is (= #{#'clojure.core/map #'clojure.core/filter
+             #'clojure.core/even? #'clojure.core/range #'orchard.xref-test/fn-dep}
+           (xref/fn-deps 'orchard.xref-test/dummy-fn))))
+
   (testing "AoT compiled functions return deps"
     (is (= #{#'clojure.core/conj}
            (xref/fn-deps reverse)))))
@@ -38,19 +57,6 @@
 (def yyy (symbol (str (gensym))
                  (str (gensym))))
 
-(deftest fn-refs-test
-  (testing "with a fn value"
-    (is (= (xref/fn-refs dummy-fn) '()))
-    (is (contains? (into #{} (xref/fn-refs #'map)) #'orchard.xref-test/dummy-fn)))
-  (testing "with a var"
-    (is (= (xref/fn-refs #'dummy-fn) '()))
-    (is (contains? (into #{} (xref/fn-refs #'map)) #'orchard.xref-test/dummy-fn)))
-  (testing "with a symbol"
-    (is (= (xref/fn-refs 'orchard.xref-test/dummy-fn) '()))
-    (is (contains? (into #{} (xref/fn-refs #'map)) #'orchard.xref-test/dummy-fn)))
-  (testing "that usage from inside an anonymous function is found"
-    (is (contains? (into #{} (xref/fn-refs #'fn-dep)) #'orchard.xref-test/dummy-fn))))
-
 (deftest fn-transitive-deps-test
   (testing "basics"
     (let [expected #{#'orchard.xref-test/fn-deps-test #'orchard.xref-test/fn-dep #'clojure.core/even?
@@ -59,8 +65,36 @@
       (is (contains? expected #'orchard.xref-test/fn-transitive-dep)
           "Specifically includes `#'fn-transitive-dep`, which is a transitive dep of `#'dummy-fn` (via `#'fn-dep`)")
       (is (contains? expected #'clojure.core/inc')
-          "Specifically includes `#'clojure.core/inc'`, which is a transitive dep of `#'dummy-fn` 
-           (via `#'clojure.core/range'`). Unlike other AoT compiled core transitive dependancies 
+          "Specifically includes `#'clojure.core/inc'`, which is a transitive dep of `#'dummy-fn`
+           (via `#'clojure.core/range'`). Unlike other AoT compiled core transitive dependancies
            it gets found because its a non `:static` dependancy.")
       (is (= expected
              (xref/fn-transitive-deps dummy-fn))))))
+
+(deftest fn-refs-test
+  (testing "with a fn value"
+    (is (= #{#'orchard.xref-test/fn-deps-test
+             #'orchard.xref-test/fn-transitive-deps-test
+             #'orchard.xref-test/sample-test
+             #'orchard.xref-test/fn-refs-test}
+           (set (xref/fn-refs dummy-fn))))
+    (is (contains? (into #{} (xref/fn-refs #'map)) #'orchard.xref-test/dummy-fn)))
+
+  (testing "with a var"
+    (is (= #{#'orchard.xref-test/fn-deps-test
+             #'orchard.xref-test/fn-transitive-deps-test
+             #'orchard.xref-test/sample-test
+             #'orchard.xref-test/fn-refs-test}
+           (set (xref/fn-refs #'dummy-fn))))
+    (is (contains? (into #{} (xref/fn-refs #'map)) #'orchard.xref-test/dummy-fn)))
+
+  (testing "with a symbol"
+    (is (= #{#'orchard.xref-test/fn-deps-test
+             #'orchard.xref-test/fn-transitive-deps-test
+             #'orchard.xref-test/sample-test
+             #'orchard.xref-test/fn-refs-test}
+           (set (xref/fn-refs 'orchard.xref-test/dummy-fn))))
+    (is (contains? (into #{} (xref/fn-refs #'map)) #'orchard.xref-test/dummy-fn)))
+
+  (testing "that usage from inside an anonymous function is found"
+    (is (contains? (into #{} (xref/fn-refs #'fn-dep)) #'orchard.xref-test/dummy-fn))))
