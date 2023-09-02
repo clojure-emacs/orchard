@@ -60,12 +60,16 @@
                                "-Dorchard.internal.has-enriched-classpath=false"]
                     :source-paths ["test" "src-spec-alpha-2/src/main/clojure"]}
 
-             :enrich-classpath {:plugins [[mx.cider/enrich-classpath "1.9.0"]]
+             :enrich-classpath {:plugins [[mx.cider/enrich-classpath "1.16.0"]]
                                 :middleware [cider.enrich-classpath/middleware]
-                                :jvm-opts ["-Dorchard.internal.has-enriched-classpath=true"]}
+                                :jvm-opts ["-Dorchard.internal.has-enriched-classpath=true"]
+                                :enrich-classpath {:shorten true}}
 
              ;; Development tools
-             :dev {:dependencies [[org.clojure/tools.namespace "1.4.4"]]
+             :dev {:plugins [[cider/cider-nrepl "0.37.0"]
+                             [refactor-nrepl "3.9.0"]]
+                   :dependencies [[nrepl/nrepl "1.0.0"]
+                                  [org.clojure/tools.namespace "1.4.4"]]
                    :source-paths ["dev" "src-spec-alpha-2/src/main/clojure"]
                    :resource-paths ["test-resources"]}
 
