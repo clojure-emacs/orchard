@@ -60,7 +60,10 @@
 (deftest file-ext?
   (is (misc/file-ext? (java.net.URL. "file:/tmp/foo.jar") ".jar"))
   (is (not (misc/file-ext? (java.net.URL. "file:/tmp/foo.war") ".jar")))
-  (is (not (misc/file-ext? (java.net.URL. "jar:file:/tmp/foo.jar!/BOOT-INF/lib/test.jar") ".jar"))))
+  (is (not (misc/file-ext? (java.net.URL. "jar:file:/tmp/foo.jar!/BOOT-INF/lib/test.jar") ".jar")))
+  (is (not (misc/file-ext? (java.net.URL. (format "file:/%s.jar" (str (java.util.UUID/randomUUID))))
+                           ".jar"))
+      "Files that don't exist are not .jars"))
 
 (deftest directory?
   (is (misc/directory? (.toURL (.toURI (java.io.File. ""))))))

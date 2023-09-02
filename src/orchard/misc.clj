@@ -42,16 +42,18 @@
   "Whether the argument's path ends in one of the specified case-insensitive
   file extensions"
   [f & exts]
-  (when-let [file (if (url? f)
-                    (when (util.io/direct-url-to-file? f)
-                      (io/as-file f))
-                    (io/as-file f))]
-    (and
-     ;; Check for file-ness because having a specific extension implies we assume `f` is a file:
-     (not (directory? f))
-     (some (fn [ext]
-             (.endsWith (.. file getName toLowerCase) ext))
-           exts))))
+  (boolean (when-let [^java.io.File
+                      file (if (url? f)
+                             (when (util.io/direct-url-to-file? f)
+                               (io/as-file f))
+                             (io/as-file f))]
+             (and
+              (.exists file)
+              ;; Check for file-ness because having a specific extension implies we assume `f` is a file:
+              (not (directory? f))
+              (some (fn [ext]
+                      (.endsWith (.. file getName toLowerCase) ext))
+                    exts)))))
 
 (defn clj-file?  [f] (file-ext? f ".clj" ".cljc"))
 (defn java-file? [f] (file-ext? f ".java"))
