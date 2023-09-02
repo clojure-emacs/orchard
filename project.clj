@@ -75,8 +75,7 @@
                                          merge-meta [[:inner 0]]
                                          letfn [[:block 1] [:inner 2]]}}}
 
-             :clj-kondo [:test
-                         {:dependencies [[clj-kondo "2023.07.13"]]}]
+             :clj-kondo {:plugins [[com.github.clj-kondo/lein-clj-kondo "2023.07.13"]]}
 
              :eastwood  {:plugins  [[jonase/eastwood "1.4.0"]]
                          :eastwood {:exclude-namespaces ~(cond-> '[clojure.alpha.spec

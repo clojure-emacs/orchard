@@ -1,4 +1,4 @@
-.PHONY: test docs eastwood cljfmt deploy clean .EXPORT_ALL_VARIABLES
+.PHONY: test quick-test docs eastwood cljfmt kondo install deploy clean .EXPORT_ALL_VARIABLES
 
 VERSION ?= 1.11
 
@@ -21,8 +21,12 @@ eastwood:
 cljfmt:
 	lein with-profile -user,-dev,+$(VERSION),+deploy,+cljfmt cljfmt check
 
-kondo:
-	lein with-profile -user,-dev,+clj-kondo run -m clj-kondo.main --lint src test src-jdk8 src-newer-jdks test-newer-jdks test-cljs .circleci/deploy
+# Note that -dev is necessary for not hitting OOM errors in CircleCI
+.make_kondo_prep: project.clj .clj-kondo/config.edn
+	lein with-profile -dev,+test,+clj-kondo,+deploy clj-kondo --copy-configs --dependencies --parallel --lint '$$classpath' > $@
+
+kondo: .make_kondo_prep
+	lein with-profile -dev,+test,+clj-kondo,+deploy clj-kondo
 
 # Deployment is performed via CI by creating a git tag prefixed with "v".
 # Please do not deploy locally as it skips various measures.
