@@ -2,6 +2,10 @@
 
 ## master (unreleased)
 
+### Bugs fixed
+
+* [#182](https://github.com/clojure-emacs/orchard/issues/182): `info` on ClojureScript: don't mistakenly prioritize special form names over var names.
+
 ## 0.14.2 (2023-08-09)
 
 ### Changes
@@ -44,7 +48,7 @@
 
 ### Bugs fixed
 
-* [#158](https://github.com/clojure-emacs/orchard/issues/158): Make classpath-namespaces resilient to faulty ns declarations.
+* [#158](https://github.com/clojure-emacs/orchard/issues/158): Make `classpath-namespaces` resilient to faulty ns declarations.
 
 ### Changes
 
