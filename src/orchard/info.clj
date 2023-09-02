@@ -95,10 +95,6 @@
   {:pre [(= dialect :cljs)]}
   (let [context-ns (or context-ns ns)]
     (or
-     ;; a special symbol - always use :unqualified-sym
-     (some-> (cljs-ana/special-meta env unqualified-sym)
-             (cljs-meta/normalize-var-meta))
-
      ;; a namespace
      (some->> (cljs-ana/find-ns env sym)
               (cljs-meta/normalize-ns-meta))
@@ -142,7 +138,12 @@
 
      ;; macro in cljs.core
      (some->> (cljs-meta/scoped-macro-meta env sym 'cljs.core)
-              (cljs-meta/normalize-macro-meta)))))
+              (cljs-meta/normalize-macro-meta))
+
+     ;; a special symbol. Takes the last priority, because nothing prevents e.g. `def` (a special symbol in cljs)
+     ;; from being used as a var name, ns name, alias name, etc.
+     (some-> (cljs-ana/special-meta env unqualified-sym)
+             (cljs-meta/normalize-var-meta)))))
 
 (defn info*
   "Provide the info map for the input ns and sym.

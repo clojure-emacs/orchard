@@ -1,6 +1,7 @@
 (ns orchard.info-test
   (:require
    [clojure.java.io :as io]
+   [clojure.set :as set]
    [clojure.string :as string :refer [replace-first]]
    [clojure.test :refer [are deftest is testing use-fixtures]]
    [orchard.info :as info]
@@ -99,24 +100,30 @@
     (let [target-ns 'orchard.info
           ns-syms (keys (ns-map target-ns))
           info-specials (fn [info-params]
-                          (as-> (map info/info* info-params) it
-                            (group-by :special-form it)
-                            (get it true)
-                            (map :name it)
-                            (set it)))]
+                          (let [{specials true} (->> info-params
+                                                     (map info/info*)
+                                                     (group-by :special-form))]
+                            (into #{}
+                                  (map :name)
+                                  specials)))]
       (when cljs-available?
         (testing "- :cljs"
           (let [special-doc-map (misc/require-and-resolve 'cljs.repl/special-doc-map)
-                special-syms (into '#{in-ns load load-file} (keys special-doc-map))]
-            (is (= special-syms (->> (into special-syms ns-syms)
-                                     (map #(merge @*cljs-params* {:ns target-ns :sym %}))
-                                     (info-specials)))))))
+                special-syms (into '#{in-ns load} (keys special-doc-map))
+                actual (->> (into special-syms ns-syms)
+                            (map #(merge @*cljs-params* {:ns target-ns :sym %}))
+                            (info-specials))]
+            (is (= special-syms actual)
+                (pr-str [:difference (set/difference special-syms actual)])))))
+
       (testing "- :clj"
         (let [special-doc-map (misc/require-and-resolve 'clojure.repl/special-doc-map)
-              special-syms (into '#{letfn let loop fn} (keys special-doc-map))]
-          (is (= special-syms (->> (into special-syms ns-syms)
-                                   (map #(hash-map :ns target-ns :sym %))
-                                   (info-specials)))))))))
+              special-syms (into '#{letfn let loop fn} (keys special-doc-map))
+              actual (->> (into special-syms ns-syms)
+                          (map #(hash-map :ns target-ns :sym %))
+                          (info-specials))]
+          (is (= special-syms actual)
+              (pr-str [:difference (set/difference special-syms actual)])))))))
 
 (deftest info-var-alias-test
   (testing "Aliased var"
@@ -463,6 +470,41 @@
 
       (testing "- :clj"
         (is (-> params info/info* ^String (:file) (.endsWith f)))))))
+
+;; https://github.com/clojure-emacs/orchard/issues/182
+(deftest cljs-var-over-special-form-precedence-test
+  (testing "a var name takes precedence over a special form name"
+    (when cljs-available?
+      (is (= '{:arglists ([k spec-form]),
+               :doc
+               "Given a namespace-qualified keyword or resolveable symbol k, and a
+  spec, spec-name, predicate or regex-op makes an entry in the
+  registry mapping k to the spec. Use nil to remove an entry in
+  the registry for k.",
+               :line     68,
+               :column   1,
+               :file     "cljs/spec/alpha.cljc",
+               :name     def,
+               :ns       cljs.spec.alpha,
+               :macro    true}
+             (info/info* (merge @*cljs-params*
+                                '{:ns  cljs.spec.alpha
+                                  :sym def}))))
+
+      (is (= '{:name         def,
+               :ns           cljs.core,
+               :special-form true,
+               :forms        [(def symbol doc-string? init?)],
+               :doc
+               "Creates and interns a global var with the name
+  of symbol in the current namespace (*ns*) or locates such a var if
+  it already exists.  If init is supplied, it is evaluated, and the
+  root binding of the var is set to the resulting value.  If init is
+  not supplied, the root binding of the var is unaffected.",
+               :arglists     nil}
+             (info/info* (merge @*cljs-params*
+                                '{:ns  XXX.YYY
+                                  :sym def})))))))
 
 ;;;;;;;;;;;;;;;;;;
 ;; Clojure Only ;;
