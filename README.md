@@ -144,7 +144,7 @@ clients can make of use of the general functionality contained in
 
 ### Development
 
-enrich-classpath is important for development of Java-related features in Orchard.
+enrich-classpath is important for development of Java-related features in Orchard, since it makes the Java sources available. Certain features parse those Java sources as a source of information.
 
 You can fire up a repl (and nrepl server) that uses cider-nrepl and enrich-classpath like so:
 
