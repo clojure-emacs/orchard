@@ -1,5 +1,5 @@
-.PHONY: test quick-test docs eastwood cljfmt kondo install deploy clean lein-repl .EXPORT_ALL_VARIABLES
-.DEFAULT_GOAL := lein-repl
+.PHONY: test quick-test docs eastwood cljfmt kondo install deploy clean lein-repl repl .EXPORT_ALL_VARIABLES
+.DEFAULT_GOAL := install
 
 HOME=$(shell echo $$HOME)
 VERSION ?= 1.11
@@ -54,9 +54,13 @@ clean:
 $(SPEC2_SOURCE_DIR):
 	@if [ ! -d "$(SPEC2_SOURCE_DIR)" ]; then git clone https://github.com/clojure/spec-alpha2.git $(SPEC2_SOURCE_DIR) --depth=1; fi
 
+.javac: $(wildcard test-java/orchard/*.clj)
+	lein with-profile +test javac
+	touch $@
+
 # Create and cache a `java` command. project.clj is mandatory; the others are optional but are taken into account for cache recomputation.
 # It's important not to silence with step with @ syntax, so that Enrich progress can be seen as it resolves dependencies.
-.enrich-classpath-lein-repl: $(SPEC2_SOURCE_DIR) Makefile project.clj $(wildcard checkouts/*/project.clj) $(wildcard deps.edn) $(wildcard $(HOME)/.clojure/deps.edn) $(wildcard profiles.clj) $(wildcard $(HOME)/.lein/profiles.clj) $(wildcard $(HOME)/.lein/profiles.d) $(wildcard /etc/leiningen/profiles.clj)
+.enrich-classpath-lein-repl: .javac $(SPEC2_SOURCE_DIR) Makefile project.clj $(wildcard checkouts/*/project.clj) $(wildcard deps.edn) $(wildcard $(HOME)/.clojure/deps.edn) $(wildcard profiles.clj) $(wildcard $(HOME)/.lein/profiles.clj) $(wildcard $(HOME)/.lein/profiles.d) $(wildcard /etc/leiningen/profiles.clj)
 	bash 'lein' 'update-in' ':plugins' 'conj' "[mx.cider/lein-enrich-classpath \"$(ENRICH_CLASSPATH_VERSION)\"]" '--' 'with-profile' $(LEIN_PROFILES) 'update-in' ':middleware' 'conj' 'cider.enrich-classpath.plugin-v2/middleware' '--' 'repl' | grep " -cp " > $@
 
 # Launches a repl, falling back to vanilla lein repl if something went wrong during classpath calculation.
@@ -67,6 +71,8 @@ lein-repl: .enrich-classpath-lein-repl
 		echo "Falling back to lein repl... (you can avoid further falling back by removing .enrich-classpath-lein-repl)"; \
 		lein with-profiles $(LEIN_PROFILES) repl; \
 	fi
+
+repl: lein-repl
 
 check-env:
 ifndef CLOJARS_USERNAME

@@ -150,7 +150,7 @@ You can fire up a repl (and nrepl server) that uses cider-nrepl and enrich-class
 
 ```bash
 # or `make lein-repl`
-make
+make repl
 ```
 
 You can install Orchard locally like this:
