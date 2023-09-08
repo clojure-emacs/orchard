@@ -60,12 +60,16 @@
                                "-Dorchard.internal.has-enriched-classpath=false"]
                     :source-paths ["test" "src-spec-alpha-2/src/main/clojure"]}
 
-             :enrich-classpath {:plugins [[mx.cider/enrich-classpath "1.9.0"]]
+             :enrich-classpath {:plugins [[mx.cider/enrich-classpath "1.16.0"]]
                                 :middleware [cider.enrich-classpath/middleware]
-                                :jvm-opts ["-Dorchard.internal.has-enriched-classpath=true"]}
+                                :jvm-opts ["-Dorchard.internal.has-enriched-classpath=true"]
+                                :enrich-classpath {:shorten true}}
 
              ;; Development tools
-             :dev {:dependencies [[org.clojure/tools.namespace "1.4.4"]]
+             :dev {:plugins [[cider/cider-nrepl "0.37.1"]
+                             [refactor-nrepl "3.9.0"]]
+                   :dependencies [[nrepl/nrepl "1.0.0"]
+                                  [org.clojure/tools.namespace "1.4.4"]]
                    :source-paths ["dev" "src-spec-alpha-2/src/main/clojure"]
                    :resource-paths ["test-resources"]}
 
@@ -75,8 +79,7 @@
                                          merge-meta [[:inner 0]]
                                          letfn [[:block 1] [:inner 2]]}}}
 
-             :clj-kondo [:test
-                         {:dependencies [[clj-kondo "2023.07.13"]]}]
+             :clj-kondo {:plugins [[com.github.clj-kondo/lein-clj-kondo "2023.07.13"]]}
 
              :eastwood  {:plugins  [[jonase/eastwood "1.4.0"]]
                          :eastwood {:exclude-namespaces ~(cond-> '[clojure.alpha.spec

@@ -1,4 +1,6 @@
 (ns user
+  {:clj-kondo/config '{:linters {:unused-namespace {:level :off}
+                                 :unused-referred-var {:level :off}}}}
   (:require
    [clojure.java.javadoc :refer [javadoc]]
    [clojure.pprint :refer [pprint]]

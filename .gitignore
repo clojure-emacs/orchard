@@ -3,6 +3,8 @@
 /checkouts
 /src-spec-alpha-2
 /classes
+.javac
+.enrich-classpath-lein-repl
 /gh-pages
 /unzipped-jdk-source
 /target
