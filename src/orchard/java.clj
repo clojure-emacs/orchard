@@ -95,11 +95,26 @@
 (def source-info*
   "When a Java parser is available, return class info from its parsed source;
   otherwise return nil."
-  (if (>= misc/java-api-version 9)
-    (do (require '[orchard.java.parser :as src])
-        (resolve 'src/source-info))
-    (if-not jdk-tools
+  (let [modern-java? (>= misc/java-api-version 9)]
+    (cond
+      (and modern-java?
+           (try
+             ;; indicates that we have added the opens:
+             (Class/forName "com.sun.tools.javac.tree.DCTree$DCBlockTag")
+             true
+             (catch Throwable _
+               false)))
+      (do (require '[orchard.java.parser-next :as src])
+          (resolve 'src/source-info))
+
+      modern-java?
+      (do (require '[orchard.java.parser :as src])
+          (resolve 'src/source-info))
+
+      (not jdk-tools)
       (constantly nil)
+
+      :else
       (do
         (require '[orchard.java.legacy-parser :as src])
         (resolve 'src/source-info)))))

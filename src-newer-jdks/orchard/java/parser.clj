@@ -290,6 +290,8 @@
         (str module "/" path)
         path))))
 
+(def lock (Object.))
+
 (defn source-info
   "If the source for the Java class is available on the classpath, parse it
   and return info to supplement reflection. Specifically, this includes source
@@ -297,24 +299,25 @@
   same structure as that of `orchard.java/reflect-info`."
   [klass]
   {:pre [(symbol? klass)]}
-  (try
-    (when-let [path (source-path klass)]
-      (when-let [^DocletEnvironment root (parse-java path (module-name klass))]
-        (try
-          (let [path-resource (io/resource path)]
-            (assoc (->> (.getIncludedElements root)
-                        (filter #(#{ElementKind/CLASS
-                                    ElementKind/INTERFACE
-                                    ElementKind/ENUM}
-                                  (.getKind ^Element %)))
-                        (map #(parse-info % root))
-                        (filter #(= klass (:class %)))
-                        (first))
-                   ;; relative path on the classpath
-                   :file path
-                   ;; Legacy key. Please do not remove - we don't do breaking changes!
-                   :path (.getPath path-resource)
-                   ;; Full URL, e.g. file:.. or jar:...
-                   :resource-url path-resource))
-          (finally (.close (.getJavaFileManager root))))))
-    (catch Throwable _)))
+  (locking lock ;; the jdk.javadoc.doclet classes aren't meant for concurrent modification/access.
+    (try
+      (when-let [path (source-path klass)]
+        (when-let [^DocletEnvironment root (parse-java path (module-name klass))]
+          (try
+            (let [path-resource (io/resource path)]
+              (assoc (->> (.getIncludedElements root)
+                          (filter #(#{ElementKind/CLASS
+                                      ElementKind/INTERFACE
+                                      ElementKind/ENUM}
+                                    (.getKind ^Element %)))
+                          (map #(parse-info % root))
+                          (filter #(= klass (:class %)))
+                          (first))
+                     ;; relative path on the classpath
+                     :file path
+                     ;; Legacy key. Please do not remove - we don't do breaking changes!
+                     :path (.getPath path-resource)
+                     ;; Full URL, e.g. file:.. or jar:...
+                     :resource-url path-resource))
+            (finally (.close (.getJavaFileManager root))))))
+      (catch Throwable _))))

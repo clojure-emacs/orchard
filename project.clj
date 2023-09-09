@@ -23,7 +23,9 @@
                                     :password :env/clojars_password
                                     :sign-releases false}]]
 
-  :jvm-opts ["-Dclojure.main.report=stderr"]
+  :jvm-opts ["-Dclojure.main.report=stderr"
+             "--add-opens"
+             "jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED"]
 
   :source-paths ["src" "src-jdk8" "src-newer-jdks"]
   :test-paths ~(cond-> ["test"]
