@@ -1,8 +1,10 @@
-{:output {:progress true
-          :exclude-files ["analysis.cljc" "meta.cljc" "inspect_test.clj"]}
- :linters {:unused-private-var {:level :warning
-                                :exclude [orchard.query-test/a-private orchard.query-test/docd-fn]}
-           :consistent-alias {:aliases {clojure.string string}}
-           ;; Enable this opt-in linter:
-           :unsorted-required-namespaces
-           {:level :warning}}}
+{:output            {:progress      true
+                     :exclude-files ["analysis.cljc" "meta.cljc" "inspect_test.clj"]}
+ :config-in-comment {:linters {:unused-value         {:level :off}
+                               :unresolved-namespace {:level :off}}}
+ :linters           {:unused-private-var {:level   :warning
+                                          :exclude [orchard.query-test/a-private orchard.query-test/docd-fn]}
+                     :consistent-alias   {:aliases {clojure.string string}}
+                     ;; Enable this opt-in linter:
+                     :unsorted-required-namespaces
+                     {:level :warning}}}

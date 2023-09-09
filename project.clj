@@ -23,9 +23,9 @@
                                     :password :env/clojars_password
                                     :sign-releases false}]]
 
-  :jvm-opts ["-Dclojure.main.report=stderr"
-             "--add-opens"
-             "jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED"]
+  :jvm-opts ~(cond-> ["-Dclojure.main.report=stderr"]
+               (not jdk8?) (conj "--add-opens"
+                                 "jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED"))
 
   :source-paths ["src" "src-jdk8" "src-newer-jdks"]
   :test-paths ~(cond-> ["test"]
@@ -84,12 +84,18 @@
              :clj-kondo {:plugins [[com.github.clj-kondo/lein-clj-kondo "2023.07.13"]]}
 
              :eastwood  {:plugins  [[jonase/eastwood "1.4.0"]]
-                         :eastwood {:exclude-namespaces ~(cond-> '[clojure.alpha.spec
+                         :eastwood {:ignored-faults {:unused-ret-vals-in-try {orchard.java {:line 84}
+                                                                              orchard.java.parser-next-test true}}
+                                    :exclude-namespaces ~(cond-> '[clojure.alpha.spec
                                                                    clojure.alpha.spec.gen
                                                                    clojure.alpha.spec.impl
                                                                    clojure.alpha.spec.test]
                                                            jdk8?
-                                                           (conj 'orchard.java.parser)
+                                                           (conj 'orchard.java.parser
+                                                                 'orchard.java.parser-test
+                                                                 'orchard.java.parser-utils
+                                                                 'orchard.java.parser-next
+                                                                 'orchard.java.parser-next-test)
 
                                                            (or (not jdk8?)
                                                                (not (-> "TEST_PROFILES"

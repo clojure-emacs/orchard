@@ -35,7 +35,7 @@ cljfmt:
 .make_kondo_prep: project.clj .clj-kondo/config.edn
 	lein with-profile -dev,+test,+clj-kondo,+deploy clj-kondo --copy-configs --dependencies --parallel --lint '$$classpath' > $@
 
-kondo: .make_kondo_prep
+kondo: .make_kondo_prep clean
 	lein with-profile -dev,+test,+clj-kondo,+deploy clj-kondo
 
 # Deployment is performed via CI by creating a git tag prefixed with "v".

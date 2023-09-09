@@ -4,7 +4,7 @@
   (:require
    [clojure.java.io :as io]
    [clojure.java.javadoc :as javadoc]
-   [clojure.reflect :as r]
+   [clojure.reflect :as reflect]
    [clojure.string :as string]
    [orchard.java.resource :as resource]
    [orchard.misc :as misc]
@@ -65,25 +65,6 @@
 ;; just a URL fragment, the javadoc link will simply navigate to the parent
 ;; class in these cases.
 
-;; As of Java 11, Javadoc URLs begin with the module name.
-(declare module-name)
-
-(defn javadoc-url
-  "Return the relative `.html` javadoc path and member fragment."
-  ([class]
-   (let [maybe-module (when (>= misc/java-api-version 11)
-                        (some-> (module-name class) (str "/")))]
-     (str maybe-module
-          (-> (string/replace (str class) "." "/")
-              (string/replace "$" "."))
-          ".html")))
-  ([class member argtypes]
-   (str (javadoc-url class) "#" member
-        (when argtypes
-          (if (<= misc/java-api-version 9) ; argtypes were munged before Java 10
-            (str "-" (string/join "-" (map #(string/replace % #"\[\]" ":A") argtypes)) "-")
-            (str "(" (string/join "," argtypes) ")"))))))
-
 ;;; ## Source Analysis
 ;;
 ;; Java parser support is available for JDK9+ and JDK8 and below via separate
@@ -125,13 +106,30 @@
   [class]
   (source-info* class))
 
+;; As of Java 11, Javadoc URLs begin with the module name.
 (def module-name
   "On JDK9+, return module name from the class if present; otherwise return nil"
   ;; NOTE This function exists in the parser namespace for conditional
   ;; loading on JDK9+; it does not require parsing.
   (if (>= misc/java-api-version 9)
-    (resolve 'src/module-name)
+    (misc/require-and-resolve 'orchard.java.parser-utils/module-name)
     (constantly nil)))
+
+(defn javadoc-url
+  "Return the relative `.html` javadoc path and member fragment."
+  ([class]
+   (let [maybe-module (when (>= misc/java-api-version 11)
+                        (some-> (module-name class) (str "/")))]
+     (str maybe-module
+          (-> (string/replace (str class) "." "/")
+              (string/replace "$" "."))
+          ".html")))
+  ([class member argtypes]
+   (str (javadoc-url class) "#" member
+        (when argtypes
+          (if (<= misc/java-api-version 9) ; argtypes were munged before Java 10
+            (str "-" (string/join "-" (map #(string/replace % #"\[\]" ":A") argtypes)) "-")
+            (str "(" (string/join "," argtypes) ")"))))))
 
 ;;; ## Class Metadata Assembly
 ;;
@@ -144,7 +142,7 @@
 
 (defn typesym
   [o]
-  (when o (symbol (r/typename o))))
+  (when o (symbol (reflect/typename o))))
 
 (defprotocol Reflected
   (reflect-info [o]))
@@ -201,7 +199,7 @@
                            (catch Exception _)
                            (catch LinkageError _))]
     (let [r (JavaReflector. (.getClassLoader c))] ; for dynamically loaded classes
-      (misc/deep-merge (reflect-info (r/reflect c :reflector r))
+      (misc/deep-merge (reflect-info (reflect/reflect c :reflector r))
                        (source-info class)
                        {:name       (-> c .getSimpleName symbol)
                         :class      (-> c .getName symbol)

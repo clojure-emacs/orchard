@@ -1,71 +1,17 @@
 (ns orchard.java.parser-next
   "Source and docstring info for Java classes and members"
-  (:refer-clojure :exclude [resolve])
   (:require
    [clojure.java.io :as io]
-   [clojure.string :as string])
+   [clojure.string :as string]
+   [orchard.java.parser-utils :refer [Parsed module-name parse-info* parse-java position source-path typesym]])
   (:import
-   (java.io StringReader StringWriter)
-   (javax.lang.model.element Element ElementKind ExecutableElement TypeElement VariableElement)
-   (javax.swing.text.html HTML$Tag HTMLEditorKit$ParserCallback)
-   (javax.swing.text.html.parser ParserDelegator)
-   (javax.tools ToolProvider)
-   (jdk.javadoc.doclet Doclet DocletEnvironment)
-   com.sun.source.doctree.DocCommentTree))
+   (com.sun.source.doctree DocCommentTree)
+   (javax.lang.model.element Element ElementKind TypeElement)
+   (jdk.javadoc.doclet DocletEnvironment)))
 
-;; XXX extract utils
 ;; XXX remove third+ newlines/ws
 
-;; XXX global
-(def result (atom nil))
-
-(defn parse-java
-  "Load and parse the resource path, returning a `DocletEnvironment` object."
-  [path module]
-  (when-let [res (io/resource path)]
-    (let [tmpdir   (System/getProperty "java.io.tmpdir")
-          tmpfile  (io/file tmpdir (.getName (io/file path)))
-          compiler (ToolProvider/getSystemDocumentationTool)
-          sources  (-> (.getStandardFileManager compiler nil nil nil)
-                       (.getJavaFileObjectsFromFiles [tmpfile]))
-          doclet   (class (reify Doclet
-                            (init [_this _ _]
-                              (reset! result nil))
-
-                            (run [_this root]
-                              (reset! result root)
-                              true)
-
-                            (getSupportedOptions [_this]
-                              #{})))
-          out      (StringWriter.) ; discard compiler messages
-          opts     (apply conj ["--show-members" "private"
-                                "--show-types" "private"
-                                "--show-packages" "all"
-                                "--show-module-contents" "all"
-                                "-quiet"]
-                          (when module
-                            ["--patch-module" (str module "=" tmpdir)]))]
-      (spit tmpfile (slurp res))
-      (.call (.getTask compiler out nil nil doclet opts sources))
-      (.delete tmpfile)
-      @result)))
-
-;;; ## Docstring Parsing
-;;
-
-(def the-block-class ;; XXX try/catch
-  com.sun.tools.javac.tree.DCTree$DCBlockTag)
-
-;; The HTML parser and DTD classes are in the `javax.swing` package, and have
-;; internal references to the `sun.awt.AppContext` class. On Mac OS X, any use
-;; of this class causes a stray GUI window to pop up. Setting the system
-;; property below prevents this. We only set the property if it
-;; hasn't already been explicitly set.
-(when (nil? (System/getProperty "apple.awt.UIElement"))
-  (System/setProperty "apple.awt.UIElement" "true"))
-
-(defn dispatch [node stack]
+(defn dispatch [node _stack]
   (cond
     (-> node class .getName (= "com.sun.tools.javac.tree.DCTree$DCParam"))
     ::param
@@ -76,7 +22,7 @@
     (-> node class .getName (= "com.sun.tools.javac.tree.DCTree$DCReturn"))
     ::return
 
-    (->> node class ancestors (filter class?) (map (fn [c]
+    (->> node class ancestors (filter class?) (map (fn [^Class c]
                                                      (.getName c)))
          (some #{"com.sun.tools.javac.tree.DCTree$DCBlockTag"}))
     ::block-tag
@@ -93,18 +39,10 @@
 (def node-reducer-init {:stack []
                         :result []})
 
-(def zz (atom []))
-
 (defmethod process-node ::default [node stack]
-  (swap! zz conj node)
   [stack
    [{:type "html"
      :content (str node)}]])
-
-(comment
-  (-> @params first .getDescription))
-
-(def KO (atom nil))
 
 (def newline-fragment
   "A newline intended to separate html fragments.
@@ -116,56 +54,39 @@
 (def nbsp "&nbsp;")
 
 (defmethod process-node ::param [^com.sun.tools.javac.tree.DCTree$DCParam node stack]
-  ;; (swap! paramsR conj)
-  (let [{:keys [stack result] :as x} (reduce node-reducer
-                                             {:stack stack
-                                              :result []}
-                                             (.getDescription node))]
-    (when (seq result)
-      (reset! KO x))
-    [stack
-     (reduce into [[newline-fragment
-                    {:type "html"
-                     :content (format "<i>Param</i>%s<>%s</pre>:%s" nbsp (.getName node) nbsp)}]
-                   result])]))
-
-(def params (atom []))
-
-(defmethod process-node ::return [^com.sun.tools.javac.tree.DCTree$DCReturn node stack]
-  (swap! params conj node)
-  (let [{:keys [stack result] :as x} (reduce node-reducer
-                                             {:stack stack
-                                              :result []}
-                                             (.getDescription node))]
-    (when (seq result)
-      (reset! KO x))
-    [stack
-     (reduce into [[newline-fragment
-                    {:type "html"
-                     :content (format "<i>Returns</i>:%s" nbsp)}]
-                   result])]))
-
-(def throws (atom []))
-
-(def throwsR (atom []))
-
-(defmethod process-node ::throws [ ;; ^com.sun.tools.javac.tree.DCTree$DCBlockTag
-                                  node stack]
-  (swap! throws conj node)
   (let [{:keys [stack result]} (reduce node-reducer
                                        {:stack stack
                                         :result []}
                                        (.getDescription node))]
     [stack
-     (reduce into [[newline-fragment
-                    {:type "html"
-                     :content (format "<i>Throws</i>:%s<pre>%s</pre>:%s" nbsp (.getExceptionName node) nbsp)}]
-                   result])]))
+     (reduce into [] [[newline-fragment
+                       {:type "html"
+                        :content (format "<i>Param</i>%s<>%s</pre>:%s" nbsp (.getName node) nbsp)}]
+                      result])]))
 
-(def blocks (atom []))
-(defmethod process-node ::block-tag [ ;; ^com.sun.tools.javac.tree.DCTree$DCBlockTag
-                                     node stack]
-  (swap! blocks conj node)
+(defmethod process-node ::return [^com.sun.tools.javac.tree.DCTree$DCReturn node stack]
+  (let [{:keys [stack result]} (reduce node-reducer
+                                       {:stack stack
+                                        :result []}
+                                       (.getDescription node))]
+    [stack
+     (reduce into [] [[newline-fragment
+                       {:type "html"
+                        :content (format "<i>Returns</i>:%s" nbsp)}]
+                      result])]))
+
+(defmethod process-node ::throws [^com.sun.tools.javac.tree.DCTree$DCThrows node stack]
+  (let [{:keys [stack result]} (reduce node-reducer
+                                       {:stack stack
+                                        :result []}
+                                       (.getDescription node))]
+    [stack
+     (reduce into [] [[newline-fragment
+                       {:type "html"
+                        :content (format "<i>Throws</i>:%s<pre>%s</pre>:%s" nbsp (.getExceptionName node) nbsp)}]
+                      result])]))
+
+(defmethod process-node ::block-tag [^com.sun.tools.javac.tree.DCTree$DCBlockTag node stack]
   (let [tag-name (.getTagName node)]
     (if (.equals tag-name "author")
       ;; omit the tag - it makes the docstring larger on docstring UIs:
@@ -188,20 +109,17 @@
 ;; com.sun.tools.javac.tree.DCTree$DCUnknownInlineTag
 "{@jls 3.10.5}"
 
-(def aa (atom []))
-(defmethod process-node com.sun.tools.javac.tree.DCTree$DCLiteral [node stack]
-  (swap! aa conj node)
+(defmethod process-node com.sun.tools.javac.tree.DCTree$DCLiteral [^com.sun.tools.javac.tree.DCTree$DCLiteral node stack]
   [stack
    ;; if code:
    [{:type "html"
-     :content (format "<pre>%s</pre> "(-> node .getBody .getBody))}]
+     :content (format "<pre>%s</pre> " (-> node .getBody .getBody))}]
    ;; XXX
    ;; else, tag as <b>, content as text
    ])
 
-(def bb (atom []))
-(defmethod process-node com.sun.tools.javac.tree.DCTree$DCStartElement [node stack]
-  (swap! bb conj node)
+(defmethod process-node com.sun.tools.javac.tree.DCTree$DCStartElement [^com.sun.tools.javac.tree.DCTree$DCStartElement node
+                                                                        stack]
   (let [v (-> node .getName str)
         self-closing? (or (.isSelfClosing node)
                           ;; XXX only do this if no neighbor closing tag shares the same (-> node .getName str):
@@ -216,17 +134,13 @@
        [{:type "html"
          :content (str node)}])]))
 
-(def cc (atom []))
 (defmethod process-node com.sun.tools.javac.tree.DCTree$DCEndElement [node stack]
-  (swap! cc conj node)
   [(cond-> stack
      (seq stack) pop)
    [{:type "html"
      :content (str node)}]])
 
-(def dd (atom []))
 (defmethod process-node com.sun.tools.javac.tree.DCTree$DCText [node stack]
-  (swap! dd conj node)
   [stack (if (empty? stack)
            [{:type "text"
              :content (str node)}]
@@ -234,18 +148,14 @@
              :content (str node)
              :stack-here stack}])])
 
-(def ee (atom []))
-(defmethod process-node com.sun.tools.javac.tree.DCTree$DCLink [node stack]
-  (swap! ee conj node)
+(defmethod process-node com.sun.tools.javac.tree.DCTree$DCLink [^com.sun.tools.javac.tree.DCTree$DCLink node stack]
   [stack
    [{:type "html"
-     :content (format "<pre>%s</pre> "(-> node .getReference .getSignature))}]])
-
-(def C (atom nil))
+     :content (format "<pre>%s</pre> " (-> node .getReference .getSignature))}]])
 
 (defn coalesce [xs]
   (reduce (fn [acc {next-type :type next-content :content :as next-item}]
-            (let [{prev-type :type prev-content :content} (peek acc)]
+            (let [{prev-type :type} (peek acc)]
               (if (= prev-type next-type)
                 (update-in acc [(dec (count acc)) :content] str " " next-content)
                 (conj acc next-item))))
@@ -253,17 +163,6 @@
           (into []
                 (remove (comp empty? :content))
                 xs)))
-
-
-(def mkmk (atom []))
-
-(comment
-  (->> @mkmk
-       (filter (every-pred (comp seq :full-body) (comp seq :block-tags)))
-       last
-       vals
-       (apply into)
-       (coalesce)))
 
 (defn docstring
   "Get parsed docstring text of `e` using source information in env"
@@ -283,44 +182,9 @@
                                 .getFirstSentence
                                 (reduce node-reducer node-reducer-init)
                                 :result)]
-    (swap! mkmk conj {:full-body full-body :block-tags block-tags})
     {:doc (some-> env .getElementUtils (.getDocComment e))
      :doc-first-sentence-fragments (coalesce first-sentence)
      :doc-fragments (coalesce (into full-body block-tags))}))
-
-;;; ## Java Parse Tree Traversal
-;;
-;; From the parse tree returned by the compiler, create a nested map structure
-;; as produced by `orchard.java/reflect-info`: class members
-;; are indexed first by name, then argument types.
-
-(defn typesym
-  "Using parse tree info, return the type's name equivalently to the `typesym`
-  function in `orchard.java`."
-  ([n ^DocletEnvironment env]
-   (let [t (string/replace (str n) #"<.*>" "") ; drop generics
-         util (.getElementUtils env)]
-     (if-let [c (.getTypeElement util t)]
-       (let [pkg (str (.getPackageOf util c) ".")
-             cls (-> (string/replace-first t pkg "")
-                     (string/replace "." "$"))]
-         (symbol (str pkg cls))) ; classes
-       (symbol t)))))            ; primitives
-
-(defn position
-  "Get line and column of `Element` e using parsed source information in env"
-  [e ^DocletEnvironment env]
-  (let [trees (.getDocTrees env)]
-    (when-let [path (.getPath trees e)]
-      (let [file (.getCompilationUnit path)
-            lines (.getLineMap file)
-            pos (.getStartPosition (.getSourcePositions trees)
-                                   file (.getLeaf path))]
-        {:line (.getLineNumber lines pos)
-         :column (.getColumnNumber lines pos)}))))
-
-(defprotocol Parsed
-  (parse-info* [o env]))
 
 (defn parse-info
   [o env]
@@ -329,20 +193,6 @@
          (position o env)))
 
 (extend-protocol Parsed
-  ExecutableElement ; => method, constructor
-  (parse-info* [m env]
-    {:name (if (= (.getKind m) ElementKind/CONSTRUCTOR)
-             (-> m .getEnclosingElement (typesym env)) ; class name
-             (-> m .getSimpleName str symbol))         ; method name
-     :type (-> m .getReturnType (typesym env))
-     :argtypes (mapv #(-> ^VariableElement % .asType (typesym env)) (.getParameters m))
-     :argnames (mapv #(-> ^VariableElement % .getSimpleName str symbol) (.getParameters m))})
-
-  VariableElement ; => field, enum constant
-  (parse-info* [f env]
-    {:name (-> f .getSimpleName str symbol)
-     :type (-> f .asType (typesym env))})
-
   TypeElement ; => class, interface, enum
   (parse-info* [c env]
     {:class   (typesym c env)
@@ -358,30 +208,6 @@
                    (reduce (fn [ret [n ms]]
                              (assoc ret n (zipmap (map :argtypes ms) ms)))
                            {}))}))
-
-(defn- resolve
-  "Workaround for CLJ-1403, fixed in Clojure 1.10. Once 1.9 support is
-  discontinued, this function may simply be removed."
-  [sym]
-  (try (clojure.core/resolve sym)
-       (catch Exception _)))
-
-(defn module-name
-  "Return the module name, or nil if modular"
-  [klass]
-  (some-> klass ^Class resolve .getModule .getName))
-
-(defn source-path
-  "Return the relative `.java` source path for the top-level class."
-  [klass]
-  (when-let [^Class cls (resolve klass)]
-    (let [path (-> (.getName cls)
-                   (string/replace #"\$.*" "")
-                   (string/replace "." "/")
-                   (str ".java"))]
-      (if-let [module (-> cls .getModule .getName)]
-        (str module "/" path)
-        path))))
 
 (def lock (Object.))
 
@@ -413,16 +239,17 @@
                      ;; Full URL, e.g. file:.. or jar:...
                      :resource-url path-resource))
             (finally (.close (.getJavaFileManager root))))))
-      (catch Throwable _ (throw _)))))
+      (catch Throwable _
+        ;; for debugging for now
+        #_(throw _)))))
 
 (comment
-
   (do
     (source-info `String)
     Thread/sleep
     (-> (source-info `Thread)
         (get-in [:members 'sleep ['long] :doc-fragments])
-        (clojure.pprint/pprint ))
+        (clojure.pprint/pprint))
 
     ;; XXX
     Thread/sleep ;; has params, not rendered
