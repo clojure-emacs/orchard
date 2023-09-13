@@ -20,7 +20,7 @@
     (-> node class (= com.sun.tools.javac.tree.DCTree$DCReturn))
     ::return
 
-    (->> node class ancestors (= com.sun.tools.javac.tree.DCTree$DCBlockTag))
+    (->> node class ancestors (some #{com.sun.tools.javac.tree.DCTree$DCBlockTag}))
     ::block-tag
 
     :else (class node)))
@@ -142,8 +142,7 @@
            [{:type "text"
              :content (str node)}]
            [{:type "html"
-             :content (str node)
-             :stack-here stack}])])
+             :content (str node)}])])
 
 (defmethod process-node com.sun.tools.javac.tree.DCTree$DCLink [^com.sun.tools.javac.tree.DCTree$DCLink node stack]
   [stack

@@ -23,8 +23,7 @@
                :line 12,
                :class orchard.java.DummyClass,
                :doc-fragments
-               [{:content "Class level docstring.\n\n "
-                 :type "text"}
+               [{:content "Class level docstring.", :type "text"}
                 {:content "<pre> \n   DummyClass dc = new DummyClass();\n  </pre>",
                  :type "html"}],
                :members
@@ -32,29 +31,39 @@
                 {[]
                  {:name orchard.java.DummyClass,
                   :type void,
-                  :argtypes [],
-                  :argnames [],
-                  :doc nil,
+                  :doc-first-sentence-fragments [],
                   :column 8,
-                  :line 12}},
+                  :argtypes [],
+                  :line 12,
+                  :argnames [],
+                  :doc-fragments [],
+                  :doc nil}},
                 dummyMethod
                 {[]
                  {:name dummyMethod,
                   :type java.lang.String,
-                  :argtypes [],
-                  :argnames [],
-                  :doc "Method-level docstring. @returns the string \"hello\"",
+                  :doc-first-sentence-fragments
+                  [{:content "Method-level docstring.", :type "text"}],
                   :column 3,
-                  :line 18}}},
+                  :argtypes [],
+                  :line 18,
+                  :argnames [],
+                  :doc-fragments
+                  [{:content "Method-level docstring.", :type "text"}
+                   {:content "<i>returns</i>: <pre>the string \"hello\"</pre>",
+                    :type "html"}],
+                  :doc
+                  "Method-level docstring.
+
+ @returns the string \"hello\""}}},
                :doc
-               " Class level docstring.
+               "Class level docstring.
 
  <pre>
    DummyClass dc = new DummyClass();
  </pre>
 
- @author Arne Brasseur
-"}
+ @author Arne Brasseur"}
              (dissoc (sut/source-info 'orchard.java.DummyClass)
                      :path
                      :resource-url))))
