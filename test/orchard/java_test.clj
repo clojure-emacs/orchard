@@ -4,7 +4,7 @@
    [clojure.java.javadoc :as javadoc]
    [clojure.string :as string]
    [clojure.test :refer [are deftest is testing]]
-   [orchard.java :refer [cache class-info class-info* javadoc-url jdk-tools member-info resolve-class resolve-javadoc-path resolve-member resolve-symbol resolve-type source-info]]
+   [orchard.java :as sut :refer [cache class-info class-info* javadoc-url jdk-tools member-info resolve-class resolve-javadoc-path resolve-member resolve-symbol resolve-type source-info]]
    [orchard.misc :as misc]
    [orchard.test.util :as util]))
 
@@ -80,7 +80,8 @@
   (deftest class-info-test
     (let [c1 (class-info 'clojure.lang.Agent)
           c2 (class-info 'clojure.lang.Range$BoundsCheck)
-          c3 (class-info 'not.actually.AClass)]
+          c3 (class-info 'not.actually.AClass)
+          thread-class-info (class-info `Thread)]
       (testing "Class"
         (testing "source file"
           (is (string? (:file c1)))
@@ -100,7 +101,11 @@
                 sym (symbol (.getName (class reified)))]
             (is (class-info sym))))
         (testing "that doesn't exist"
-          (is (nil? c3)))))))
+          (is (nil? c3))))
+      (when sut/parser-next-available?
+        (testing "Doc fragments"
+          (is (seq (:doc-fragments thread-class-info)))
+          (is (seq (:doc-first-sentence-fragments thread-class-info))))))))
 
 (when util/has-enriched-classpath?
   (deftest member-info-test
@@ -132,8 +137,18 @@
           (is (not= 'java.lang.Object (:class m6))))
         (testing "implemented on ancestor superclass"
           (is (not= 'java.lang.Object (:class m7)))
-          (is (-> m6 :doc (string/starts-with? "Called by the garbage collector on an object when garbage collection "))
-              "Contains doc that is clearly defined in Object (the superclass)"))))))
+          (testing (-> m6 :doc pr-str)
+            (is (-> m6 :doc (string/starts-with? "Called by the garbage collector on an object when garbage collection "))
+                "Contains doc that is clearly defined in Object (the superclass)")))
+        (when sut/parser-next-available?
+          (testing "Doc fragments"
+            (testing "For a field"
+              (is (seq (:doc-fragments m4)))
+              (is (seq (:doc-first-sentence-fragments m4))))
+
+            (testing "For a method"
+              (is (seq (:doc-fragments m7)))
+              (is (seq (:doc-first-sentence-fragments m7))))))))))
 
 (deftest arglists-test
   (let [+this (comp #{'this} first)]
