@@ -60,6 +60,8 @@
                                "-Dorchard.internal.has-enriched-classpath=false"]
                     :source-paths ["test" "src-spec-alpha-2/src/main/clojure"]}
 
+             :mark-enriched-classpath {:jvm-opts ["-Dorchard.internal.has-enriched-classpath=true"]}
+
              :enrich-classpath {:plugins [[mx.cider/enrich-classpath "1.17.0"]]
                                 :middleware [cider.enrich-classpath/middleware]
                                 :jvm-opts ["-Dorchard.internal.has-enriched-classpath=true"]
