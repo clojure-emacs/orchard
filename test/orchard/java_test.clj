@@ -115,7 +115,8 @@
           m4 (member-info 'java.awt.Point 'x)
           m5 (member-info 'java.lang.Class 'forName)
           m6 (member-info 'java.util.AbstractMap 'finalize)
-          m7 (member-info 'java.util.HashMap 'finalize)]
+          m7 (member-info 'java.util.HashMap 'finalize)
+          m8 (member-info `Thread 'resume)]
       (testing "Member"
         (testing "source file"
           (is (string? (:file m1)))
@@ -138,7 +139,7 @@
         (testing "implemented on ancestor superclass"
           (is (not= 'java.lang.Object (:class m7)))
           (testing (-> m6 :doc pr-str)
-            (is (-> m6 :doc (string/starts-with? "Called by the garbage collector on an object when garbage collection "))
+            (is (-> m6 :doc (string/starts-with? "Called by the garbage collector on an object when garbage collection"))
                 "Contains doc that is clearly defined in Object (the superclass)")))
         (when sut/parser-next-available?
           (testing "Doc fragments"
@@ -147,8 +148,8 @@
               (is (seq (:doc-first-sentence-fragments m4))))
 
             (testing "For a method"
-              (is (seq (:doc-fragments m7)))
-              (is (seq (:doc-first-sentence-fragments m7))))))))))
+              (is (seq (:doc-fragments m8)))
+              (is (seq (:doc-first-sentence-fragments m8))))))))))
 
 (deftest arglists-test
   (let [+this (comp #{'this} first)]

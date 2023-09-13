@@ -9,8 +9,6 @@
    (javax.lang.model.element Element ElementKind TypeElement)
    (jdk.javadoc.doclet DocletEnvironment)))
 
-;; XXX remove third+ newlines/ws
-
 (defn dispatch [node _stack]
   (cond
     (-> node class (= com.sun.tools.javac.tree.DCTree$DCParam))
@@ -160,8 +158,16 @@
                 (conj acc next-item))))
           []
           (into []
-                (remove (comp empty? :content))
+                (remove (comp string/blank? :content))
                 xs)))
+
+(defn cleanup-whitespace [fragments]
+  (into []
+        (map (fn [{:keys [content] :as x}]
+               (assoc x :content (-> content
+                                     string/trim
+                                     (string/replace #"\s*\n+\s*\n+\s*" "\n\n")))))
+        fragments))
 
 (defn docstring
   "Get parsed docstring text of `e` using source information in env"
@@ -181,9 +187,11 @@
                                 .getFirstSentence
                                 (reduce node-reducer node-reducer-init)
                                 :result)]
-    {:doc (some-> env .getElementUtils (.getDocComment e))
-     :doc-first-sentence-fragments (coalesce first-sentence)
-     :doc-fragments (coalesce (into full-body block-tags))}))
+    {:doc (some-> env .getElementUtils (.getDocComment e) string/trim)
+     :doc-first-sentence-fragments (-> first-sentence coalesce cleanup-whitespace)
+     :doc-fragments (-> (into full-body block-tags)
+                        coalesce
+                        cleanup-whitespace)}))
 
 (defn parse-info
   [o env]
