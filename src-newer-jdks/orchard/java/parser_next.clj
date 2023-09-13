@@ -1,5 +1,12 @@
 (ns orchard.java.parser-next
-  "Source and docstring info for Java classes and members"
+  "Source and docstring info for Java classes and members.
+
+  Leaves `:doc` untouched.
+
+  Adds `:doc-fragments` and `:doc-first-sentence-fragments` attributes.
+  Both represent sequences of 'fragments', which can be of text or html type.
+  Clients are expected them to render the html fragments using a client-specific method,
+  and then join the client-processed by a newline."
   (:require
    [clojure.java.io :as io]
    [clojure.string :as string]

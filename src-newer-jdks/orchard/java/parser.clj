@@ -1,5 +1,9 @@
 (ns orchard.java.parser
-  "Source and docstring info for Java classes and members"
+  "Source and docstring info for Java classes and members.
+
+  Parses `:doc`s using Markdown.
+
+  This ns is automatically discarded if `orchard.java.parser-next` can be loaded."
   {:author "Jeff Valk"}
   (:require
    [clojure.java.io :as io]
