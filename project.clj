@@ -23,9 +23,7 @@
                                     :password :env/clojars_password
                                     :sign-releases false}]]
 
-  :jvm-opts ~(cond-> ["-Dclojure.main.report=stderr"]
-               (not jdk8?) (conj "--add-opens"
-                                 "jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED"))
+  :jvm-opts ["-Dclojure.main.report=stderr"]
 
   :source-paths ["src" "src-jdk8" "src-newer-jdks"]
   :test-paths ~(cond-> ["test"]
@@ -62,7 +60,7 @@
                                "-Dorchard.internal.has-enriched-classpath=false"]
                     :source-paths ["test" "src-spec-alpha-2/src/main/clojure"]}
 
-             :enrich-classpath {:plugins [[mx.cider/enrich-classpath "1.16.0"]]
+             :enrich-classpath {:plugins [[mx.cider/enrich-classpath "1.17.0"]]
                                 :middleware [cider.enrich-classpath/middleware]
                                 :jvm-opts ["-Dorchard.internal.has-enriched-classpath=true"]
                                 :enrich-classpath {:shorten true}}

@@ -14,7 +14,7 @@ LEIN_PROFILES ?= "+dev,+test,+1.11"
 
 # The enrich-classpath version to be injected.
 # Feel free to upgrade this.
-ENRICH_CLASSPATH_VERSION="1.16.0"
+ENRICH_CLASSPATH_VERSION="1.17.0"
 
 resources/clojuredocs/export.edn:
 curl -o $@ https://github.com/clojure-emacs/clojuredocs-export-edn/raw/master/exports/export.compact.edn
