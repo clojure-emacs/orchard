@@ -57,17 +57,13 @@
                     ;; Initialize the cache verbosely, as usual, so that possible issues can be more easily diagnosed:
                     :jvm-opts
                     ~(cond-> ["-Dorchard.initialize-cache.silent=false"
-                              "-Dorchard.internal.test-suite-running=true"
-                              "-Dorchard.internal.has-enriched-classpath=false"]
+                              "-Dorchard.internal.test-suite-running=true"]
                        (not jdk8?) (conj "--add-opens=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED"))
 
                     :source-paths ["test" "src-spec-alpha-2/src/main/clojure"]}
 
-             :mark-enriched-classpath {:jvm-opts ["-Dorchard.internal.has-enriched-classpath=true"]}
-
              :enrich-classpath {:plugins [[mx.cider/enrich-classpath "1.17.0"]]
                                 :middleware [cider.enrich-classpath/middleware]
-                                :jvm-opts ["-Dorchard.internal.has-enriched-classpath=true"]
                                 :enrich-classpath {:shorten true}}
 
              ;; Development tools

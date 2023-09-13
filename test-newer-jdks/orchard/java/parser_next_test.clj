@@ -1,17 +1,14 @@
 (ns orchard.java.parser-next-test
   (:require
    [clojure.test :refer [deftest is testing]]
+   [orchard.java :as java]
    [orchard.java.parser-next :as sut]
    [orchard.test.util :as util])
   (:import
    (orchard.java DummyClass)))
 
 (when (and util/has-enriched-classpath?
-           (try
-             (Class/forName "com.sun.tools.javac.tree.DCTree$DCBlockTag")
-             true
-             (catch Throwable _
-               false)))
+           java/parser-next-available?)
   (deftest source-info-test
     (is (class? DummyClass))
 

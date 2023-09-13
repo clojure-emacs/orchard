@@ -10,7 +10,7 @@ SPEC2_SOURCE_DIR = src-spec-alpha-2
 # Feel free to upgrade this, or to override it with an env var named LEIN_PROFILES.
 # Expected format: "+dev,+test"
 # Don't use spaces here.
-LEIN_PROFILES ?= "+dev,+test,+1.11,+mark-enriched-classpath"
+LEIN_PROFILES ?= "+dev,+test,+1.11"
 
 # The enrich-classpath version to be injected.
 # Feel free to upgrade this.
