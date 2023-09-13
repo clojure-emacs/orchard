@@ -46,7 +46,7 @@
   "The `tools.jar` path, for JDK8 and earlier. If found on the existing
   classpath, this is the corresponding classpath entry. Otherwise, if available,
   this is added to the classpath."
-  (when (<= misc/java-api-version 8)
+  (when-not (>= misc/java-api-version 9)
     (some-> (io/resource "com/sun/javadoc/Doc.class")
             ^JarURLConnection (. openConnection)
             (. getJarFileURL))))
@@ -73,32 +73,37 @@
 ;; internal APIs out of necessity. Once this project discontinues support for
 ;; JDK8, the legacy parser may be removed.
 
+(def parser-next-available?
+  (and (>= misc/java-api-version 9)
+       (try
+         (and
+          ;; indicates that the necessary `add-opens=...` JVM flag is in place:
+          (Class/forName "com.sun.tools.javac.tree.DCTree$DCBlockTag")
+          ;; require the whole namespace in case there's some other source of problems (e.g. some other missing opene)
+          (require '[orchard.java.parser-next]))
+         true
+         (catch Throwable _
+           false))))
+
 (def source-info*
   "When a Java parser is available, return class info from its parsed source;
   otherwise return nil."
-  (let [modern-java? (>= misc/java-api-version 9)]
-    (cond
-      (and modern-java?
-           (try
-             ;; indicates that we have added the opens:
-             (Class/forName "com.sun.tools.javac.tree.DCTree$DCBlockTag")
-             true
-             (catch Throwable _
-               false)))
-      (do (require '[orchard.java.parser-next :as src])
-          (resolve 'src/source-info))
+  (cond
+    parser-next-available?
+    (do (require '[orchard.java.parser-next :as src])
+        (resolve 'src/source-info))
 
-      modern-java?
-      (do (require '[orchard.java.parser :as src])
-          (resolve 'src/source-info))
+    (>= misc/java-api-version 9)
+    (do (require '[orchard.java.parser :as src])
+        (resolve 'src/source-info))
 
-      (not jdk-tools)
-      (constantly nil)
+    (not jdk-tools)
+    (constantly nil)
 
-      :else
-      (do
-        (require '[orchard.java.legacy-parser :as src])
-        (resolve 'src/source-info)))))
+    :else
+    (do
+      (require '[orchard.java.legacy-parser :as src])
+      (resolve 'src/source-info))))
 
 (defn source-info
   "Ensure that JDK sources are visible on the classpath if present, and return

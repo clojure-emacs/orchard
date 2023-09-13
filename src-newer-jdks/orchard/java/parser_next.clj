@@ -13,19 +13,18 @@
 
 (defn dispatch [node _stack]
   (cond
-    (-> node class .getName (= "com.sun.tools.javac.tree.DCTree$DCParam"))
+    (-> node class (= com.sun.tools.javac.tree.DCTree$DCParam))
     ::param
 
-    (-> node class .getName (= "com.sun.tools.javac.tree.DCTree$DCThrows"))
+    (-> node class (= com.sun.tools.javac.tree.DCTree$DCThrows))
     ::throws
 
-    (-> node class .getName (= "com.sun.tools.javac.tree.DCTree$DCReturn"))
+    (-> node class (= com.sun.tools.javac.tree.DCTree$DCReturn))
     ::return
 
-    (->> node class ancestors (filter class?) (map (fn [^Class c]
-                                                     (.getName c)))
-         (some #{"com.sun.tools.javac.tree.DCTree$DCBlockTag"}))
+    (->> node class ancestors (= com.sun.tools.javac.tree.DCTree$DCBlockTag))
     ::block-tag
+
     :else (class node)))
 
 (defmulti process-node #'dispatch
@@ -239,9 +238,9 @@
                      ;; Full URL, e.g. file:.. or jar:...
                      :resource-url path-resource))
             (finally (.close (.getJavaFileManager root))))))
-      (catch Throwable _
-        ;; for debugging for now
-        #_(throw _)))))
+      (catch Throwable e
+        (when (= "true" (System/getProperty "orchard.internal.test-suite-running"))
+          (throw e))))))
 
 (comment
   (do
