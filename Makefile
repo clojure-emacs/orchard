@@ -1,4 +1,4 @@
-.PHONY: test quick-test docs eastwood cljfmt kondo install deploy clean lein-repl repl .EXPORT_ALL_VARIABLES
+.PHONY: test quick-test docs eastwood cljfmt kondo install deploy clean lein-repl repl lint .EXPORT_ALL_VARIABLES
 .DEFAULT_GOAL := install
 
 HOME=$(shell echo $$HOME)
@@ -37,6 +37,8 @@ cljfmt:
 
 kondo: .make_kondo_prep clean
 	lein with-profile -dev,+test,+clj-kondo,+deploy clj-kondo
+
+lint: kondo cljfmt eastwood
 
 # Deployment is performed via CI by creating a git tag prefixed with "v".
 # Please do not deploy locally as it skips various measures.
