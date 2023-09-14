@@ -1,5 +1,6 @@
 (ns orchard.java.parser-next-test
   (:require
+   [clojure.string :as string]
    [clojure.test :refer [deftest is testing]]
    [orchard.java :as java]
    [orchard.java.parser-next :as sut]
@@ -89,7 +90,27 @@
            (-> `Thread
                sut/source-info
                (get-in [:members 'holdsLock '[java.lang.Object] :doc-fragments 5])))
-        "Formats params correctly")))
+        "Formats params correctly")
+
+    (is (= {:content "<i>Param</i>&nbsp;<pre>obj</pre>:&nbsp;", :type "html"}
+           (-> `Thread
+               sut/source-info
+               (get-in [:members 'holdsLock '[java.lang.Object] :doc-fragments 5])))
+        "Formats params correctly")
+
+    (let [fragments (-> `String
+                        sut/source-info
+                        (get-in [:members
+                                 'format
+                                 ['java.util.Locale 'java.lang.String (symbol "java.lang.Object[]")]
+                                 :doc-fragments])
+                        (->> (map :content)))
+          s (string/join fragments)]
+      (assert (seq fragments))
+      (testing "Flattens links, since they can't be clicked from most Orchard clients"
+        (testing s
+          (is (not (string/includes? s "<a")))
+          (is (not (string/includes? s "<a href"))))))))
 
 (when (and util/has-enriched-classpath?
            java/parser-next-available?)

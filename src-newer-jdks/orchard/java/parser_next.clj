@@ -137,18 +137,30 @@
     [(cond-> stack
        (not self-closing?)
        (conj v))
-     (if (and (= v "p")
-              self-closing?)
+     (cond
+       (and (= v "p")
+            self-closing?)
        [{:type "text"
          :content "\n"}]
+
+       (= v "a") ;; turn links into code
+       [{:type "html"
+         :content "<pre>"}]
+
+       :else
        [{:type "html"
          :content (str node)}])]))
 
-(defmethod process-node com.sun.tools.javac.tree.DCTree$DCEndElement [node stack _]
+(defmethod process-node com.sun.tools.javac.tree.DCTree$DCEndElement [^com.sun.tools.javac.tree.DCTree$DCEndElement node
+                                                                      stack
+                                                                      _]
   [(cond-> stack
      (seq stack) pop)
-   [{:type "html"
-     :content (str node)}]])
+   [(if (= (-> node .getName str (.equals "a")))
+      {:type "html"
+       :content "</a>"}
+      {:type "html"
+       :content (str node)})]])
 
 (defmethod process-node com.sun.tools.javac.tree.DCTree$DCText [node stack _]
   [stack (if (empty? stack)
