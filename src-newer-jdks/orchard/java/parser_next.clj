@@ -16,7 +16,7 @@
    (javax.lang.model.element Element ElementKind ExecutableElement TypeElement VariableElement)
    (jdk.javadoc.doclet DocletEnvironment)))
 
-(defn dispatch [node _stack]
+(defn dispatch [node _stack _found-closing-tags-types]
   (cond
     (-> node class (= com.sun.tools.javac.tree.DCTree$DCParam))
     ::param
@@ -35,15 +35,18 @@
 (defmulti process-node #'dispatch
   :default ::default)
 
-(defn node-reducer [{:keys [stack result]} node]
-  (let [[new-stack m] (process-node node stack)]
+(defn node-reducer [{:keys [stack result found-closing-tags-types] :as m}
+                    node]
+  {:pre [(contains? m :found-closing-tags-types)]}
+  (let [[new-stack m] (process-node node stack found-closing-tags-types)]
     {:stack new-stack
-     :result (into result m)}))
+     :result (into result m)
+     :found-closing-tags-types found-closing-tags-types}))
 
 (def node-reducer-init {:stack []
                         :result []})
 
-(defmethod process-node ::default [node stack]
+(defmethod process-node ::default [node stack _]
   [stack
    [{:type "html"
      :content (str node)}]])
@@ -57,10 +60,11 @@
 
 (def nbsp "&nbsp;")
 
-(defmethod process-node ::param [^com.sun.tools.javac.tree.DCTree$DCParam node stack]
+(defmethod process-node ::param [^com.sun.tools.javac.tree.DCTree$DCParam node stack found-closing-tags-types]
   (let [{:keys [stack result]} (reduce node-reducer
                                        {:stack stack
-                                        :result []}
+                                        :result []
+                                        :found-closing-tags-types found-closing-tags-types}
                                        (.getDescription node))]
     [stack
      (reduce into [] [[newline-fragment
@@ -68,10 +72,11 @@
                         :content (format "<i>Param</i>%s<>%s</pre>:%s" nbsp (.getName node) nbsp)}]
                       result])]))
 
-(defmethod process-node ::return [^com.sun.tools.javac.tree.DCTree$DCReturn node stack]
+(defmethod process-node ::return [^com.sun.tools.javac.tree.DCTree$DCReturn node stack found-closing-tags-types]
   (let [{:keys [stack result]} (reduce node-reducer
                                        {:stack stack
-                                        :result []}
+                                        :result []
+                                        :found-closing-tags-types found-closing-tags-types}
                                        (.getDescription node))]
     [stack
      (reduce into [] [[newline-fragment
@@ -79,10 +84,11 @@
                         :content (format "<i>Returns</i>:%s" nbsp)}]
                       result])]))
 
-(defmethod process-node ::throws [^com.sun.tools.javac.tree.DCTree$DCThrows node stack]
+(defmethod process-node ::throws [^com.sun.tools.javac.tree.DCTree$DCThrows node stack found-closing-tags-types]
   (let [{:keys [stack result]} (reduce node-reducer
                                        {:stack stack
-                                        :result []}
+                                        :result []
+                                        :found-closing-tags-types found-closing-tags-types}
                                        (.getDescription node))]
     [stack
      (reduce into [] [[newline-fragment
@@ -90,7 +96,7 @@
                         :content (format "<i>Throws</i>:%s<pre>%s</pre>:%s" nbsp (.getExceptionName node) nbsp)}]
                       result])]))
 
-(defmethod process-node ::block-tag [^com.sun.tools.javac.tree.DCTree$DCBlockTag node stack]
+(defmethod process-node ::block-tag [^com.sun.tools.javac.tree.DCTree$DCBlockTag node stack _]
   (let [tag-name (.getTagName node)]
     (if (.equals tag-name "author")
       ;; omit the tag - it makes the docstring larger on docstring UIs:
@@ -110,7 +116,7 @@
              :content content}]
            [])]))))
 
-(defmethod process-node com.sun.tools.javac.tree.DCTree$DCLiteral [^com.sun.tools.javac.tree.DCTree$DCLiteral node stack]
+(defmethod process-node com.sun.tools.javac.tree.DCTree$DCLiteral [^com.sun.tools.javac.tree.DCTree$DCLiteral node stack _]
   (let [^String tag-name (-> node .getKind .tagName)
         body (-> node .getBody .getBody)]
     [stack
@@ -121,11 +127,12 @@
          :content body}])]))
 
 (defmethod process-node com.sun.tools.javac.tree.DCTree$DCStartElement [^com.sun.tools.javac.tree.DCTree$DCStartElement node
-                                                                        stack]
+                                                                        stack
+                                                                        found-closing-tags-types]
   (let [v (-> node .getName str)
         self-closing? (or (.isSelfClosing node)
-                          ;; XXX only do this if no neighbor closing tag shares the same (-> node .getName str):
-                          (#{"p" "hr" "li"} v))]
+                          (and (#{"p" "hr" "li"} v)
+                               (not (contains? found-closing-tags-types v))))]
     [(cond-> stack
        (not self-closing?)
        (conj v))
@@ -136,20 +143,20 @@
        [{:type "html"
          :content (str node)}])]))
 
-(defmethod process-node com.sun.tools.javac.tree.DCTree$DCEndElement [node stack]
+(defmethod process-node com.sun.tools.javac.tree.DCTree$DCEndElement [node stack _]
   [(cond-> stack
      (seq stack) pop)
    [{:type "html"
      :content (str node)}]])
 
-(defmethod process-node com.sun.tools.javac.tree.DCTree$DCText [node stack]
+(defmethod process-node com.sun.tools.javac.tree.DCTree$DCText [node stack _]
   [stack (if (empty? stack)
            [{:type "text"
              :content (str node)}]
            [{:type "html"
              :content (str node)}])])
 
-(defmethod process-node com.sun.tools.javac.tree.DCTree$DCLink [^com.sun.tools.javac.tree.DCTree$DCLink node stack]
+(defmethod process-node com.sun.tools.javac.tree.DCTree$DCLink [^com.sun.tools.javac.tree.DCTree$DCLink node stack _]
   [stack
    [{:type "html"
      :content (format "<pre>%s</pre> " (-> node .getReference .getSignature))}]])
@@ -179,17 +186,25 @@
   (let [^DocCommentTree comment-tree (some-> env
                                              .getDocTrees
                                              (.getDocCommentTree e))
-        full-body (some->> comment-tree
-                           .getFullBody
-                           (reduce node-reducer node-reducer-init)
+        full-body-raw (some->> comment-tree .getFullBody)
+        block-tags-raw (some->> comment-tree .getBlockTags)
+        found-closing-tags-types (into #{}
+                                       (comp (filter (comp #{com.sun.tools.javac.tree.DCTree$DCEndElement} class))
+                                             (map (fn [^com.sun.tools.javac.tree.DCTree$DCEndElement e]
+                                                    (-> e .getName str))))
+                                       (into (vec full-body-raw)
+                                             (vec block-tags-raw)))
+        full-body (some->> full-body-raw
+                           (reduce node-reducer (assoc node-reducer-init :found-closing-tags-types found-closing-tags-types))
                            :result)
-        block-tags (some->> comment-tree
-                            .getBlockTags
-                            (reduce node-reducer node-reducer-init)
+        block-tags (some->> block-tags-raw
+                            (reduce node-reducer (assoc node-reducer-init :found-closing-tags-types found-closing-tags-types))
                             :result)
         first-sentence (some->> comment-tree
                                 .getFirstSentence
-                                (reduce node-reducer node-reducer-init)
+                                (reduce node-reducer (assoc node-reducer-init
+                                                            :found-closing-tags-types
+                                                            found-closing-tags-types))
                                 :result)]
     {:doc (some-> env .getElementUtils (.getDocComment e) string/trim)
      :doc-first-sentence-fragments (-> first-sentence coalesce cleanup-whitespace)
