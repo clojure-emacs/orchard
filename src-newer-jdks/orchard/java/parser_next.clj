@@ -156,7 +156,7 @@
                                                                       _]
   [(cond-> stack
      (seq stack) pop)
-   [(if (= (-> node .getName str (.equals "a")))
+   [(if (-> node .getName str (.equals "a"))
       {:type "html"
        :content "</a>"}
       {:type "html"

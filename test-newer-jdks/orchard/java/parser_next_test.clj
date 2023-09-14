@@ -16,14 +16,17 @@
     (testing "file on the filesystem"
       (is (= '{:file "orchard/java/DummyClass.java",
                :doc-first-sentence-fragments
-               [{:content "Class level docstring.", :type "text"}],
+               [{:type "text", :content "Class level docstring."}],
                :column 1,
                :line 12,
                :class orchard.java.DummyClass,
                :doc-fragments
-               [{:content "Class level docstring.", :type "text"}
-                {:content "<pre> \n   DummyClass dc = new DummyClass();\n  </pre>",
-                 :type "html"}],
+               [{:type "text", :content "Class level docstring.
+
+"}
+                {:type "html",
+                 :content
+                 "<pre> \n   DummyClass dc = new DummyClass();\n  </pre>"}],
                :members
                {orchard.java.DummyClass
                 {[]
@@ -41,15 +44,17 @@
                  {:name dummyMethod,
                   :type java.lang.String,
                   :doc-first-sentence-fragments
-                  [{:content "Method-level docstring.", :type "text"}],
+                  [{:type "text", :content "Method-level docstring."}],
                   :column 3,
                   :argtypes [],
                   :line 18,
                   :argnames [],
                   :doc-fragments
-                  [{:content "Method-level docstring.", :type "text"}
-                   {:content "<i>returns</i>: <pre>the string \"hello\"</pre>",
-                    :type "html"}],
+                  [{:type "text", :content "Method-level docstring.
+
+"}
+                   {:type "html",
+                    :content "<i>returns</i>: <pre>the string \"hello\"</pre>"}],
                   :doc
                   "Method-level docstring.
 
