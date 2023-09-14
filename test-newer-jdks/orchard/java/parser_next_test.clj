@@ -83,7 +83,13 @@
            (-> `Thread
                sut/source-info
                (get-in [:members 'activeCount [] :doc-fragments])))
-        "Returns a data structure with carefully managed whitespace location")))
+        "Returns a data structure with carefully managed whitespace location")
+
+    (is (= {:content "<i>Param</i>&nbsp;<pre>obj</pre>:&nbsp;", :type "html"}
+           (-> `Thread
+               sut/source-info
+               (get-in [:members 'holdsLock '[java.lang.Object] :doc-fragments 5])))
+        "Formats params correctly")))
 
 (when (and util/has-enriched-classpath?
            java/parser-next-available?)

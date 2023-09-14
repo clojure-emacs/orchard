@@ -69,7 +69,7 @@
     [stack
      (reduce into [] [[newline-fragment
                        {:type "html"
-                        :content (format "<i>Param</i>%s<>%s</pre>:%s" nbsp (.getName node) nbsp)}]
+                        :content (format "<i>Param</i>%s<pre>%s</pre>:%s" nbsp (.getName node) nbsp)}]
                       result])]))
 
 (defmethod process-node ::return [^com.sun.tools.javac.tree.DCTree$DCReturn node stack found-closing-tags-types]
