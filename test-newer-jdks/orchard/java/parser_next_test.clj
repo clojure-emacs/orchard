@@ -10,7 +10,7 @@
 (when (and util/has-enriched-classpath?
            java/parser-next-available?)
   (deftest source-info-test
-    (assert (class? DummyClass))
+    (is (class? DummyClass))
 
     (testing "file on the filesystem"
       (is (= '{:file "orchard/java/DummyClass.java",
