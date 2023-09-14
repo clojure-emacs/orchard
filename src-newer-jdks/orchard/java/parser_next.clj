@@ -98,7 +98,9 @@
 
 (defmethod process-node ::block-tag [^com.sun.tools.javac.tree.DCTree$DCBlockTag node stack _]
   (let [tag-name (.getTagName node)]
-    (if (.equals tag-name "author")
+    (if (or (.equals tag-name "author")
+            (.equals tag-name "since")
+            (.equals tag-name "see"))
       ;; omit the tag - it makes the docstring larger on docstring UIs:
       [stack []]
       (let [tag-name (.getTagName node)
