@@ -110,17 +110,15 @@
              :content content}]
            [])]))))
 
-;; com.sun.tools.javac.tree.DCTree$DCUnknownInlineTag
-"{@jls 3.10.5}"
-
 (defmethod process-node com.sun.tools.javac.tree.DCTree$DCLiteral [^com.sun.tools.javac.tree.DCTree$DCLiteral node stack]
-  [stack
-   ;; if code:
-   [{:type "html"
-     :content (format "<pre>%s</pre> " (-> node .getBody .getBody))}]
-   ;; XXX
-   ;; else, tag as <b>, content as text
-   ])
+  (let [^String tag-name (-> node .getKind .tagName)
+        body (-> node .getBody .getBody)]
+    [stack
+     (if (-> tag-name (.equals "code"))
+       [{:type "html"
+         :content (format "<pre>%s</pre> " body)}]
+       [{:type "text"
+         :content body}])]))
 
 (defmethod process-node com.sun.tools.javac.tree.DCTree$DCStartElement [^com.sun.tools.javac.tree.DCTree$DCStartElement node
                                                                         stack]
