@@ -10,10 +10,10 @@
   (:require
    [clojure.java.io :as io]
    [clojure.string :as string]
-   [orchard.java.parser-utils :refer [Parsed module-name parse-info* parse-java position source-path typesym]])
+   [orchard.java.parser-utils :refer [module-name parse-executable-element parse-java parse-variable-element position source-path typesym]])
   (:import
    (com.sun.source.doctree DocCommentTree)
-   (javax.lang.model.element Element ElementKind TypeElement)
+   (javax.lang.model.element Element ElementKind ExecutableElement TypeElement VariableElement)
    (jdk.javadoc.doclet DocletEnvironment)))
 
 (defn dispatch [node _stack]
@@ -199,6 +199,9 @@
                         coalesce
                         cleanup-whitespace)}))
 
+(defprotocol Parsed
+  (parse-info* [o env]))
+
 (defn parse-info
   [o env]
   (merge (parse-info* o env)
@@ -220,7 +223,15 @@
                    (group-by :name)
                    (reduce (fn [ret [n ms]]
                              (assoc ret n (zipmap (map :argtypes ms) ms)))
-                           {}))}))
+                           {}))})
+
+  ExecutableElement ;; => method, constructor
+  (parse-info* [o env]
+    (parse-executable-element o env))
+
+  VariableElement ;; => field, enum constant
+  (parse-info* [o env]
+    (parse-variable-element o env)))
 
 (def lock (Object.))
 

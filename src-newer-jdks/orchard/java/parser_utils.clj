@@ -74,30 +74,26 @@
         {:line (.getLineNumber lines pos)
          :column (.getColumnNumber lines pos)}))))
 
-(defprotocol Parsed
-  (parse-info* [o env]))
+(defn parse-executable-element [^ExecutableElement m env]
+  {:name (if (= (.getKind m) ElementKind/CONSTRUCTOR)
+           (-> m .getEnclosingElement (typesym env)) ; class name
+           (-> m .getSimpleName str symbol)) ; method name
+   :type (-> m .getReturnType (typesym env))
+   :argtypes (mapv #(-> ^VariableElement % .asType (typesym env)) (.getParameters m))
+   :argnames (mapv #(-> ^VariableElement % .getSimpleName str symbol) (.getParameters m))})
 
-(extend-protocol Parsed
-  ExecutableElement ; => method, constructor
-  (parse-info* [m env]
-    {:name (if (= (.getKind m) ElementKind/CONSTRUCTOR)
-             (-> m .getEnclosingElement (typesym env)) ; class name
-             (-> m .getSimpleName str symbol))         ; method name
-     :type (-> m .getReturnType (typesym env))
-     :argtypes (mapv #(-> ^VariableElement % .asType (typesym env)) (.getParameters m))
-     :argnames (mapv #(-> ^VariableElement % .getSimpleName str symbol) (.getParameters m))})
-
-  VariableElement ; => field, enum constant
-  (parse-info* [f env]
-    {:name (-> f .getSimpleName str symbol)
-     :type (-> f .asType (typesym env))}))
+(defn parse-variable-element [^VariableElement f env]
+  {:name (-> f .getSimpleName str symbol)
+   :type (-> f .asType (typesym env))})
 
 (defn- resolve
   "Workaround for CLJ-1403, fixed in Clojure 1.10. Once 1.9 support is
   discontinued, this function may simply be removed."
   [sym]
-  (try (clojure.core/resolve sym)
-       (catch Exception _)))
+  (try
+    (clojure.core/resolve sym)
+    (catch Exception _
+      nil)))
 
 (defn module-name
   "Return the module name, or nil if modular"

@@ -8,10 +8,10 @@
   (:require
    [clojure.java.io :as io]
    [clojure.string :as string]
-   [orchard.java.parser-utils :refer [Parsed module-name parse-info* parse-java position source-path typesym]])
+   [orchard.java.parser-utils :refer [module-name parse-executable-element parse-java parse-variable-element position source-path typesym]])
   (:import
    (java.io StringReader)
-   (javax.lang.model.element Element ElementKind TypeElement)
+   (javax.lang.model.element Element ElementKind ExecutableElement TypeElement VariableElement)
    (javax.swing.text.html HTML$Tag HTMLEditorKit$ParserCallback)
    (javax.swing.text.html.parser ParserDelegator)
    (jdk.javadoc.doclet DocletEnvironment)))
@@ -170,6 +170,9 @@
 ;; as produced by `orchard.java/reflect-info`: class members
 ;; are indexed first by name, then argument types.
 
+(defprotocol Parsed
+  (parse-info* [o env]))
+
 (defn parse-info
   [o env]
   (merge (parse-info* o env)
@@ -177,7 +180,7 @@
          (position o env)))
 
 (extend-protocol Parsed
-  TypeElement ; => class, interface, enum
+  TypeElement ;; => class, interface, enum
   (parse-info* [c env]
     {:class   (typesym c env)
      :members (->> (.getEnclosedElements c)
@@ -191,7 +194,15 @@
                    (group-by :name)
                    (reduce (fn [ret [n ms]]
                              (assoc ret n (zipmap (map :argtypes ms) ms)))
-                           {}))}))
+                           {}))})
+
+  ExecutableElement ;; => method, constructor
+  (parse-info* [o env]
+    (parse-executable-element o env))
+
+  VariableElement ;; => field, enum constant
+  (parse-info* [o env]
+    (parse-variable-element o env)))
 
 (def lock (Object.))
 
