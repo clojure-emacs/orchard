@@ -74,6 +74,19 @@
 
 (when (and util/has-enriched-classpath?
            java/parser-next-available?)
+  (deftest doc-fragments-test
+    (is (= [{:content "Returns an estimate of the number of active threads in the current\n thread's ", :type "text"}
+            {:content "<pre>java.lang.ThreadGroup</pre> ", :type "html"}
+            {:content " and its\n subgroups. Recursively iterates over all subgroups in the current\n thread's thread group.\n\nThe value returned is only an estimate because the number of\n threads may change dynamically while this method traverses internal\n data structures, and might be affected by the presence of certain\n system threads. This method is intended primarily for debugging\n and monitoring purposes.\n\n", :type "text"}
+            {:content "<i>Returns</i>:&nbsp;", :type "html"}
+            {:content "an estimate of the number of active threads in the current\n          thread's thread group and in any other thread group that\n          has the current thread's thread group as an ancestor", :type "text"}]
+           (-> `Thread
+               sut/source-info
+               (get-in [:members 'activeCount [] :doc-fragments])))
+        "Returns a data structure with carefully managed whitespace location")))
+
+(when (and util/has-enriched-classpath?
+           java/parser-next-available?)
   (deftest smoke-test
     (let [annotations #{'java.lang.Override
                         'java.lang.Deprecated

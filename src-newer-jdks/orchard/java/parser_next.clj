@@ -104,11 +104,10 @@
       (let [tag-name (.getTagName node)
             s (string/replace (str node) #"^@" "")
             [_ b] (string/split s (re-pattern tag-name))
-            content (when b
-                      (let [bt (string/trim b)]
-                        (case tag-name
-                          ("implNote" "jls") (format "<i>%s</i>: %s" tag-name bt)
-                          (format "<i>%s</i>: <pre>%s</pre>" tag-name bt))))]
+            content (when-let [bt (some-> b string/trim)]
+                      (case tag-name
+                        ("implNote" "jls") (format "<i>%s</i>: %s" tag-name bt)
+                        (format "<i>%s</i>: <pre>%s</pre>" tag-name bt)))]
         [stack
          (if content
            [newline-fragment
@@ -165,18 +164,23 @@
   (reduce (fn [acc {next-type :type next-content :content :as next-item}]
             (let [{prev-type :type} (peek acc)]
               (if (= prev-type next-type)
-                (update-in acc [(dec (count acc)) :content] str " " next-content)
+                (update-in acc
+                           [(dec (count acc)) :content]
+                           str
+                           (if (= prev-type "text")
+                             "\n\n"
+                             " ")
+                           next-content)
                 (conj acc next-item))))
           []
-          (into []
-                (remove (comp string/blank? :content))
-                xs)))
+          xs))
 
 (defn cleanup-whitespace [fragments]
   (into []
         (map (fn [{:keys [content] :as x}]
                (assoc x :content (-> content
-                                     string/trim
+                                     (string/replace #"^  +" " ")
+                                     (string/replace #"  +$" " ")
                                      (string/replace #"\s*\n+\s*\n+\s*" "\n\n")))))
         fragments))
 
