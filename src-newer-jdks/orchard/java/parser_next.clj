@@ -266,18 +266,3 @@
       (catch Throwable e
         (when (= "true" (System/getProperty "orchard.internal.test-suite-running"))
           (throw e))))))
-
-(comment
-  (do
-    (source-info `String)
-    Thread/sleep
-    (-> (source-info `Thread)
-        (get-in [:members 'sleep ['long] :doc-fragments])
-        (clojure.pprint/pprint))
-
-    ;; XXX
-    Thread/sleep ;; has params, not rendered
-    Thread/onSpinWait ;; has @code inside <pre>, should be unwrapped
-    nil))
-
-;; a good unit test: every present doc for string and thread has doc-fragments counterpart

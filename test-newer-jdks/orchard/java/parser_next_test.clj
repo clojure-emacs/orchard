@@ -71,3 +71,34 @@
                (select-keys rt-info [:file])))
         (is (re-find #"jar:file:/.*/.m2/repository/org/clojure/clojure/.*/clojure-.*-sources.jar!/clojure/lang/RT.java"
                      (str (:resource-url rt-info))))))))
+
+(when (and util/has-enriched-classpath?
+           java/parser-next-available?)
+  (deftest smoke-test
+    (let [annotations #{'java.lang.Override
+                        'java.lang.Deprecated
+                        'java.lang.SuppressWarnings}
+          imported-classes #'java/imported-classes
+          corpus (->> ::_
+                      namespace
+                      symbol
+                      imported-classes
+                      (remove annotations)
+                      (into ['java.io.File]))]
+      (assert (> (count corpus)
+                 50))
+      (doseq [class-sym corpus
+              :let [{:keys [members] :as info} (sut/source-info class-sym)]]
+        (testing class-sym
+          (is (contains? info :doc))
+          (is (contains? info :doc-fragments))
+          (is (contains? info :doc-first-sentence-fragments))
+          (assert (contains? info :members))
+          (let [v (mapcat vals (vals members))]
+            (when-not (#{`Cloneable} class-sym)
+              (assert (seq v)
+                      (pr-str class-sym)))
+            (doseq [m v]
+              (is (contains? m :doc))
+              (is (contains? m :doc-fragments))
+              (is (contains? m :doc-first-sentence-fragments)))))))))

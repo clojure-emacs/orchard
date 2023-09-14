@@ -403,9 +403,12 @@
                                       (javadoc-base-urls 11))))))
       path))
 
+(defn- imported-classes [ns-sym]
+  (->> (ns-imports ns-sym)
+       (map #(-> % ^Class val .getName symbol))))
+
 (defn- initialize-cache!* []
-  (doseq [class (->> (ns-imports 'clojure.core)
-                     (map #(-> % ^Class val .getName symbol)))]
+  (doseq [class (imported-classes (symbol (namespace ::_)))]
     (class-info class)))
 
 (def initialize-cache-silently?
