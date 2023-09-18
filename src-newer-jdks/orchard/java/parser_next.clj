@@ -18,13 +18,13 @@
 
 (defn dispatch [node _stack _found-closing-tags-types]
   (cond
-    (-> node class (= com.sun.tools.javac.tree.DCTree$DCParam))
+    (instance? com.sun.tools.javac.tree.DCTree$DCParam node)
     ::param
 
-    (-> node class (= com.sun.tools.javac.tree.DCTree$DCThrows))
+    (instance? com.sun.tools.javac.tree.DCTree$DCThrows node)
     ::throws
 
-    (-> node class (= com.sun.tools.javac.tree.DCTree$DCReturn))
+    (instance? com.sun.tools.javac.tree.DCTree$DCReturn node)
     ::return
 
     (->> node class ancestors (some #{com.sun.tools.javac.tree.DCTree$DCBlockTag}))
