@@ -12,7 +12,9 @@
   (:import
    (clojure.lang IPersistentMap)
    (clojure.reflect Constructor Field JavaReflector Method)
-   (java.net JarURLConnection)))
+   (java.net JarURLConnection)
+   (java.util Map)
+   (mx.cider.orchard LruMap)))
 
 ;;; ## Java Class/Member Info
 ;;
@@ -223,14 +225,14 @@
 ;; and recompiled, we cache such classes with last-modified property, so that we
 ;; know when to purge those classes from cache.
 
-(def cache (atom {}))
+(def ^Map cache (LruMap. 25))
 
 (defn class-info
   "For the class symbol, return (possibly cached) Java class and member info.
   Members are indexed first by name, and then by argument types to list all
   overloads."
   [class]
-  (let [cached (@cache class)
+  (let [cached (.get cache class)
         info (if cached
                (:info cached)
                (class-info* class))
@@ -246,7 +248,7 @@
                (class-info* class)
                info)]
     (when (or (not cached) stale)
-      (swap! cache assoc class {:info info, :last-modified last-modified}))
+      (.put cache class {:info info, :last-modified last-modified}))
     info))
 
 ;;; ## Class/Member Info
@@ -402,26 +404,3 @@
                           (repeat (or (javadoc-base-urls misc/java-api-version)
                                       (javadoc-base-urls 11))))))
       path))
-
-(defn- imported-classes [ns-sym]
-  (->> (ns-imports ns-sym)
-       (map #(-> % ^Class val .getName symbol))))
-
-(defn- initialize-cache!* []
-  (doseq [class (imported-classes (symbol (namespace ::_)))]
-    (class-info class)))
-
-(def initialize-cache-silently?
-  "Should `#'cache-initializer` refrain from printing to `System/out`?"
-  (= "true" (System/getProperty "orchard.initialize-cache.silent" "true")))
-
-(def ^:private initialize-cache!
-  (cond-> initialize-cache!*
-    initialize-cache-silently? util.io/wrap-silently))
-
-(def cache-initializer
-  "On startup, cache info for the most commonly referenced classes.
-
-  This is a def for allowing others to wait for this workload to complete (can be useful sometimes)."
-  (future
-    (initialize-cache!)))

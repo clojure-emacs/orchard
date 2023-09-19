@@ -1,11 +1,7 @@
 (ns orchard.java.classpath-test.third-party-compat-test
   (:require
    [clojure.java.classpath]
-   [clojure.test :refer [deftest is]]
-   [orchard.java]))
-
-;; make this namespace's tests deterministic:
-@orchard.java/cache-initializer
+   [clojure.test :refer [deftest is]]))
 
 (deftest works
   (is (seq (clojure.java.classpath/classpath-directories))

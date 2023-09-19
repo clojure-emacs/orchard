@@ -29,6 +29,10 @@
   :test-paths ~(cond-> ["test"]
                  (not jdk8?)
                  (conj "test-newer-jdks"))
+  :java-source-paths ["java"]
+
+  :javac-options ["-Xlint:unchecked"]
+
 
   :profiles {
              ;; Clojure versions matrix
@@ -56,8 +60,7 @@
                     :java-source-paths ["test-java"]
                     ;; Initialize the cache verbosely, as usual, so that possible issues can be more easily diagnosed:
                     :jvm-opts
-                    ~(cond-> ["-Dorchard.initialize-cache.silent=false"
-                              "-Dorchard.internal.test-suite-running=true"]
+                    ~(cond-> ["-Dorchard.internal.test-suite-running=true"]
                        (not jdk8?) (conj "--add-opens=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED"))
 
                     :source-paths ["test" "src-spec-alpha-2/src/main/clojure"]}
