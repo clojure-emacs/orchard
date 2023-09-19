@@ -225,6 +225,8 @@
 ;; and recompiled, we cache such classes with last-modified property, so that we
 ;; know when to purge those classes from cache.
 
+;; 250 is large enough to be useful (and hold a few key classes, like Object),
+;; and small enough to not incur into OOMs.
 (def ^Map cache (LruMap. 250))
 
 (defn class-info
@@ -418,7 +420,8 @@
     initialize-cache-silently? util.io/wrap-silently))
 
 (def cache-initializer
-  "On startup, cache info for the most commonly referenced classes.
+  "On startup, cache info for a few classes.
+  This also warms up the cache for some underlying, commonly neeed classes (e.g. `Object`).
 
   This is a def for allowing others to wait for this workload to complete (can be useful sometimes)."
   (future
