@@ -225,7 +225,7 @@
 ;; and recompiled, we cache such classes with last-modified property, so that we
 ;; know when to purge those classes from cache.
 
-(def ^Map cache (LruMap. 25))
+(def ^Map cache (LruMap. 250))
 
 (defn class-info
   "For the class symbol, return (possibly cached) Java class and member info.
@@ -404,3 +404,22 @@
                           (repeat (or (javadoc-base-urls misc/java-api-version)
                                       (javadoc-base-urls 11))))))
       path))
+
+(defn- initialize-cache!* []
+  (doseq [class [`Thread `String 'java.io.File]]
+    (class-info class)))
+
+(def initialize-cache-silently?
+  "Should `#'cache-initializer` refrain from printing to `System/out`?"
+  (= "true" (System/getProperty "orchard.initialize-cache.silent" "true")))
+
+(def ^:private initialize-cache!
+  (cond-> initialize-cache!*
+    initialize-cache-silently? util.io/wrap-silently))
+
+(def cache-initializer
+  "On startup, cache info for the most commonly referenced classes.
+
+  This is a def for allowing others to wait for this workload to complete (can be useful sometimes)."
+  (future
+    (initialize-cache!)))
