@@ -3,10 +3,21 @@
 
   Leaves `:doc` untouched.
 
-  Adds `:doc-fragments` and `:doc-first-sentence-fragments` attributes.
-  Both represent sequences of 'fragments', which can be of text or html type.
+  Adds `:doc-fragments`, `:doc-first-sentence-fragments`, and `:doc-block-tags-fragments` attributes.
+  These represent sequences of 'fragments', which can be of text or html type:
+
+  * `:doc-fragments` represents the body of the comment, including the first sentence and excluding any block tags
+  * `:doc-first-sentence-fragments` represents the first sentence of the doc comment.
+  * `:doc-block-tags-fragments` represent the 'param', 'returns' and 'throws' documentation.
+
   Clients are expected them to render the html fragments using a client-specific method,
-  and then join the client-processed by a newline."
+  and then join the client-processed strings into a single string.
+
+  Fragments of \"html\" type may have leading/trailing whitespace, which is to be ignored
+  (since an HTML parser would ignored it anyway).
+
+  Fragments of \"text\" type have significant, carefully processed leading/trailing whitespace
+  such that when joining all fragments, things will look correct without having to add any extra whitespace."
   (:require
    [clojure.java.io :as io]
    [clojure.string :as string]
@@ -189,13 +200,31 @@
           []
           xs))
 
+(defn remove-left-margin [s]
+  (->> (string/split s #"\r?\n" -1) ;; split-lines without losing trailing newlines
+       (map-indexed (fn [i s]
+                      (let [first? (zero? i)
+                            blank? (string/blank? s)]
+                        (cond-> s
+                          (and (not first?)
+                               (not blank?))
+                          (string/replace #"^ +" "")))))
+       (string/join "\n")))
+
 (defn cleanup-whitespace [fragments]
   (into []
-        (map (fn [{:keys [content] :as x}]
-               (assoc x :content (-> content
-                                     (string/replace #"^  +" " ")
-                                     (string/replace #"  +$" " ")
-                                     (string/replace #"\s*\n+\s*\n+\s*" "\n\n")))))
+        (map (fn [{:keys [content]
+                   content-type :type
+                   :as x}]
+               (let [text? (= content-type "text")]
+                 (assoc x :content (-> content
+                                       (string/replace #"^  +" " ")
+                                       (string/replace #"  +$" " ")
+                                       (string/replace #"\s*\n+\s*\n+\s*" "\n\n")
+                                       (string/replace #"\n +$" "\n")
+                                       (cond-> text? remove-left-margin
+                                               text? (string/replace #"^ +\." ".")
+                                               text? (string/replace #"^ +," ",")))))))
         fragments))
 
 (defn docstring
@@ -226,9 +255,8 @@
                                 :result)]
     {:doc (some-> env .getElementUtils (.getDocComment e) string/trim)
      :doc-first-sentence-fragments (-> first-sentence coalesce cleanup-whitespace)
-     :doc-fragments (-> (into full-body block-tags)
-                        coalesce
-                        cleanup-whitespace)}))
+     :doc-fragments (-> full-body coalesce cleanup-whitespace)
+     :doc-block-tags-fragments (-> block-tags coalesce cleanup-whitespace)}))
 
 (defprotocol Parsed
   (parse-info* [o env]))

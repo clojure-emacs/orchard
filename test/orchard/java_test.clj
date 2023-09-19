@@ -55,7 +55,7 @@
 
 (deftest map-structure-test
   (testing "Parsed map structure = reflected map structure"
-    (let [cols #{:file :line :column :doc :argnames :doc-first-sentence-fragments :doc-fragments :argtypes :path :resource-url}
+    (let [cols #{:file :line :column :doc :argnames :doc-first-sentence-fragments :doc-fragments :doc-block-tags-fragments :argtypes :path :resource-url}
           keys= #(= (set (keys (apply dissoc %1 cols)))
                     (set (keys %2)))
           c1 (class-info* 'clojure.lang.Compiler)
