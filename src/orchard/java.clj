@@ -4,7 +4,7 @@
   (:require
    [clojure.java.io :as io]
    [clojure.java.javadoc :as javadoc]
-   [clojure.reflect :as r]
+   [clojure.reflect :as reflect]
    [clojure.string :as string]
    [orchard.java.resource :as resource]
    [orchard.misc :as misc]
@@ -46,7 +46,7 @@
   "The `tools.jar` path, for JDK8 and earlier. If found on the existing
   classpath, this is the corresponding classpath entry. Otherwise, if available,
   this is added to the classpath."
-  (when (<= misc/java-api-version 8)
+  (when-not (>= misc/java-api-version 9)
     (some-> (io/resource "com/sun/javadoc/Doc.class")
             ^JarURLConnection (. openConnection)
             (. getJarFileURL))))
@@ -65,8 +65,60 @@
 ;; just a URL fragment, the javadoc link will simply navigate to the parent
 ;; class in these cases.
 
+;;; ## Source Analysis
+;;
+;; Java parser support is available for JDK9+ and JDK8 and below via separate
+;; namespaces, `java.parser` and `java.legacy-parser`. The former uses only
+;; external JDK APIs and supports modular (Jigsaw) sources. The latter uses
+;; internal APIs out of necessity. Once this project discontinues support for
+;; JDK8, the legacy parser may be removed.
+
+(def parser-next-available?
+  (and (>= misc/java-api-version 9)
+       (try
+         (and
+          ;; indicates that the necessary `add-opens=...` JVM flag is in place:
+          (Class/forName "com.sun.tools.javac.tree.DCTree$DCBlockTag")
+          ;; require the whole namespace in case there's some other source of problems (e.g. some other missing opene)
+          (require '[orchard.java.parser-next]))
+         true
+         (catch Throwable _
+           false))))
+
+(def source-info*
+  "When a Java parser is available, return class info from its parsed source;
+  otherwise return nil."
+  (cond
+    parser-next-available?
+    (do (require '[orchard.java.parser-next :as src])
+        (resolve 'src/source-info))
+
+    (>= misc/java-api-version 9)
+    (do (require '[orchard.java.parser :as src])
+        (resolve 'src/source-info))
+
+    (not jdk-tools)
+    (constantly nil)
+
+    :else
+    (do
+      (require '[orchard.java.legacy-parser :as src])
+      (resolve 'src/source-info))))
+
+(defn source-info
+  "Ensure that JDK sources are visible on the classpath if present, and return
+  class info from its parsed source if available."
+  [class]
+  (source-info* class))
+
 ;; As of Java 11, Javadoc URLs begin with the module name.
-(declare module-name)
+(def module-name
+  "On JDK9+, return module name from the class if present; otherwise return nil"
+  ;; NOTE This function exists in the parser namespace for conditional
+  ;; loading on JDK9+; it does not require parsing.
+  (if (>= misc/java-api-version 9)
+    (misc/require-and-resolve 'orchard.java.parser-utils/module-name)
+    (constantly nil)))
 
 (defn javadoc-url
   "Return the relative `.html` javadoc path and member fragment."
@@ -84,40 +136,6 @@
             (str "-" (string/join "-" (map #(string/replace % #"\[\]" ":A") argtypes)) "-")
             (str "(" (string/join "," argtypes) ")"))))))
 
-;;; ## Source Analysis
-;;
-;; Java parser support is available for JDK9+ and JDK8 and below via separate
-;; namespaces, `java.parser` and `java.legacy-parser`. The former uses only
-;; external JDK APIs and supports modular (Jigsaw) sources. The latter uses
-;; internal APIs out of necessity. Once this project discontinues support for
-;; JDK8, the legacy parser may be removed.
-
-(def source-info*
-  "When a Java parser is available, return class info from its parsed source;
-  otherwise return nil."
-  (if (>= misc/java-api-version 9)
-    (do (require '[orchard.java.parser :as src])
-        (resolve 'src/source-info))
-    (if-not jdk-tools
-      (constantly nil)
-      (do
-        (require '[orchard.java.legacy-parser :as src])
-        (resolve 'src/source-info)))))
-
-(defn source-info
-  "Ensure that JDK sources are visible on the classpath if present, and return
-  class info from its parsed source if available."
-  [class]
-  (source-info* class))
-
-(def module-name
-  "On JDK9+, return module name from the class if present; otherwise return nil"
-  ;; NOTE This function exists in the parser namespace for conditional
-  ;; loading on JDK9+; it does not require parsing.
-  (if (>= misc/java-api-version 9)
-    (resolve 'src/module-name)
-    (constantly nil)))
-
 ;;; ## Class Metadata Assembly
 ;;
 ;; We construct metadata at the class level, first using `reflect-info` to
@@ -129,7 +147,7 @@
 
 (defn typesym
   [o]
-  (when o (symbol (r/typename o))))
+  (when o (symbol (reflect/typename o))))
 
 (defprotocol Reflected
   (reflect-info [o]))
@@ -186,7 +204,7 @@
                            (catch Exception _)
                            (catch LinkageError _))]
     (let [r (JavaReflector. (.getClassLoader c))] ; for dynamically loaded classes
-      (misc/deep-merge (reflect-info (r/reflect c :reflector r))
+      (misc/deep-merge (reflect-info (reflect/reflect c :reflector r))
                        (source-info class)
                        {:name       (-> c .getSimpleName symbol)
                         :class      (-> c .getName symbol)
@@ -385,9 +403,12 @@
                                       (javadoc-base-urls 11))))))
       path))
 
+(defn- imported-classes [ns-sym]
+  (->> (ns-imports ns-sym)
+       (map #(-> % ^Class val .getName symbol))))
+
 (defn- initialize-cache!* []
-  (doseq [class (->> (ns-imports 'clojure.core)
-                     (map #(-> % ^Class val .getName symbol)))]
+  (doseq [class (imported-classes (symbol (namespace ::_)))]
     (class-info class)))
 
 (def initialize-cache-silently?

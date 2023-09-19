@@ -1,6 +1,6 @@
-(ns orchard.test.util)
+(ns orchard.test.util
+  (:require [clojure.java.io :as io]))
 
 (def has-enriched-classpath?
-  (let [v (System/getProperty "orchard.internal.has-enriched-classpath")]
-    (assert (#{"true" "false"} v))
-    (= "true" v)))
+  (boolean (or (io/resource "java/lang/Thread.java")
+               (io/resource "java.base/java/lang/Thread.java"))))

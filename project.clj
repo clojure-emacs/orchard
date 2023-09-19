@@ -55,14 +55,15 @@
                                      "does-not-exist.jar"]
                     :java-source-paths ["test-java"]
                     ;; Initialize the cache verbosely, as usual, so that possible issues can be more easily diagnosed:
-                    :jvm-opts ["-Dorchard.initialize-cache.silent=false"
-                               "-Dorchard.internal.test-suite-running=true"
-                               "-Dorchard.internal.has-enriched-classpath=false"]
+                    :jvm-opts
+                    ~(cond-> ["-Dorchard.initialize-cache.silent=false"
+                              "-Dorchard.internal.test-suite-running=true"]
+                       (not jdk8?) (conj "--add-opens=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED"))
+
                     :source-paths ["test" "src-spec-alpha-2/src/main/clojure"]}
 
-             :enrich-classpath {:plugins [[mx.cider/enrich-classpath "1.16.0"]]
+             :enrich-classpath {:plugins [[mx.cider/enrich-classpath "1.17.0"]]
                                 :middleware [cider.enrich-classpath/middleware]
-                                :jvm-opts ["-Dorchard.internal.has-enriched-classpath=true"]
                                 :enrich-classpath {:shorten true}}
 
              ;; Development tools
@@ -82,12 +83,18 @@
              :clj-kondo {:plugins [[com.github.clj-kondo/lein-clj-kondo "2023.07.13"]]}
 
              :eastwood  {:plugins  [[jonase/eastwood "1.4.0"]]
-                         :eastwood {:exclude-namespaces ~(cond-> '[clojure.alpha.spec
+                         :eastwood {:ignored-faults {:unused-ret-vals-in-try {orchard.java {:line 84}
+                                                                              orchard.java.parser-next-test true}}
+                                    :exclude-namespaces ~(cond-> '[clojure.alpha.spec
                                                                    clojure.alpha.spec.gen
                                                                    clojure.alpha.spec.impl
                                                                    clojure.alpha.spec.test]
                                                            jdk8?
-                                                           (conj 'orchard.java.parser)
+                                                           (conj 'orchard.java.parser
+                                                                 'orchard.java.parser-test
+                                                                 'orchard.java.parser-utils
+                                                                 'orchard.java.parser-next
+                                                                 'orchard.java.parser-next-test)
 
                                                            (or (not jdk8?)
                                                                (not (-> "TEST_PROFILES"

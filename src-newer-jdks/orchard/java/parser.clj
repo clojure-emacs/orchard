@@ -1,17 +1,20 @@
 (ns orchard.java.parser
-  "Source and docstring info for Java classes and members"
+  "Source and docstring info for Java classes and members.
+
+  Parses `:doc`s using Markdown.
+
+  This ns is automatically discarded if `orchard.java.parser-next` can be loaded."
   {:author "Jeff Valk"}
-  (:refer-clojure :exclude [resolve])
   (:require
    [clojure.java.io :as io]
-   [clojure.string :as string])
+   [clojure.string :as string]
+   [orchard.java.parser-utils :refer [module-name parse-executable-element parse-java parse-variable-element position source-path typesym]])
   (:import
-   (java.io StringReader StringWriter)
+   (java.io StringReader)
    (javax.lang.model.element Element ElementKind ExecutableElement TypeElement VariableElement)
    (javax.swing.text.html HTML$Tag HTMLEditorKit$ParserCallback)
    (javax.swing.text.html.parser ParserDelegator)
-   (javax.tools ToolProvider)
-   (jdk.javadoc.doclet Doclet DocletEnvironment)))
+   (jdk.javadoc.doclet DocletEnvironment)))
 
 ;;; ## JDK Compatibility
 ;;
@@ -55,40 +58,6 @@
 ;;    "--patch-module" option. To accommodate this, the jar file entry is
 ;;    written to a temp file and passed to the compiler from disk. Design-wise,
 ;;    this is admittedly imperfect, but the performance cost is low and it works.
-
-(def result (atom nil))
-
-(defn parse-java
-  "Load and parse the resource path, returning a `DocletEnvironment` object."
-  [path module]
-  (when-let [res (io/resource path)]
-    (let [tmpdir   (System/getProperty "java.io.tmpdir")
-          tmpfile  (io/file tmpdir (.getName (io/file path)))
-          compiler (ToolProvider/getSystemDocumentationTool)
-          sources  (-> (.getStandardFileManager compiler nil nil nil)
-                       (.getJavaFileObjectsFromFiles [tmpfile]))
-          doclet   (class (reify Doclet
-                            (init [_this _ _]
-                              (reset! result nil))
-
-                            (run [_this root]
-                              (reset! result root)
-                              true)
-
-                            (getSupportedOptions [_this]
-                              #{})))
-          out      (StringWriter.) ; discard compiler messages
-          opts     (apply conj ["--show-members" "private"
-                                "--show-types" "private"
-                                "--show-packages" "all"
-                                "--show-module-contents" "all"
-                                "-quiet"]
-                          (when module
-                            ["--patch-module" (str module "=" tmpdir)]))]
-      (spit tmpfile (slurp res))
-      (.call (.getTask compiler out nil nil doclet opts sources))
-      (.delete tmpfile)
-      @result)))
 
 ;;; ## Docstring Parsing
 ;;
@@ -201,31 +170,6 @@
 ;; as produced by `orchard.java/reflect-info`: class members
 ;; are indexed first by name, then argument types.
 
-(defn typesym
-  "Using parse tree info, return the type's name equivalently to the `typesym`
-  function in `orchard.java`."
-  ([n ^DocletEnvironment env]
-   (let [t (string/replace (str n) #"<.*>" "") ; drop generics
-         util (.getElementUtils env)]
-     (if-let [c (.getTypeElement util t)]
-       (let [pkg (str (.getPackageOf util c) ".")
-             cls (-> (string/replace-first t pkg "")
-                     (string/replace "." "$"))]
-         (symbol (str pkg cls))) ; classes
-       (symbol t)))))            ; primitives
-
-(defn position
-  "Get line and column of `Element` e using parsed source information in env"
-  [e ^DocletEnvironment env]
-  (let [trees (.getDocTrees env)]
-    (when-let [path (.getPath trees e)]
-      (let [file (.getCompilationUnit path)
-            lines (.getLineMap file)
-            pos (.getStartPosition (.getSourcePositions trees)
-                                   file (.getLeaf path))]
-        {:line (.getLineNumber lines pos)
-         :column (.getColumnNumber lines pos)}))))
-
 (defprotocol Parsed
   (parse-info* [o env]))
 
@@ -236,21 +180,7 @@
          (position o env)))
 
 (extend-protocol Parsed
-  ExecutableElement ; => method, constructor
-  (parse-info* [m env]
-    {:name (if (= (.getKind m) ElementKind/CONSTRUCTOR)
-             (-> m .getEnclosingElement (typesym env)) ; class name
-             (-> m .getSimpleName str symbol))         ; method name
-     :type (-> m .getReturnType (typesym env))
-     :argtypes (mapv #(-> ^VariableElement % .asType (typesym env)) (.getParameters m))
-     :argnames (mapv #(-> ^VariableElement % .getSimpleName str symbol) (.getParameters m))})
-
-  VariableElement ; => field, enum constant
-  (parse-info* [f env]
-    {:name (-> f .getSimpleName str symbol)
-     :type (-> f .asType (typesym env))})
-
-  TypeElement ; => class, interface, enum
+  TypeElement ;; => class, interface, enum
   (parse-info* [c env]
     {:class   (typesym c env)
      :members (->> (.getEnclosedElements c)
@@ -264,31 +194,17 @@
                    (group-by :name)
                    (reduce (fn [ret [n ms]]
                              (assoc ret n (zipmap (map :argtypes ms) ms)))
-                           {}))}))
+                           {}))})
 
-(defn- resolve
-  "Workaround for CLJ-1403, fixed in Clojure 1.10. Once 1.9 support is
-  discontinued, this function may simply be removed."
-  [sym]
-  (try (clojure.core/resolve sym)
-       (catch Exception _)))
+  ExecutableElement ;; => method, constructor
+  (parse-info* [o env]
+    (parse-executable-element o env))
 
-(defn module-name
-  "Return the module name, or nil if modular"
-  [klass]
-  (some-> klass ^Class resolve .getModule .getName))
+  VariableElement ;; => field, enum constant
+  (parse-info* [o env]
+    (parse-variable-element o env)))
 
-(defn source-path
-  "Return the relative `.java` source path for the top-level class."
-  [klass]
-  (when-let [^Class cls (resolve klass)]
-    (let [path (-> (.getName cls)
-                   (string/replace #"\$.*" "")
-                   (string/replace "." "/")
-                   (str ".java"))]
-      (if-let [module (-> cls .getModule .getName)]
-        (str module "/" path)
-        path))))
+(def lock (Object.))
 
 (defn source-info
   "If the source for the Java class is available on the classpath, parse it
@@ -297,24 +213,25 @@
   same structure as that of `orchard.java/reflect-info`."
   [klass]
   {:pre [(symbol? klass)]}
-  (try
-    (when-let [path (source-path klass)]
-      (when-let [^DocletEnvironment root (parse-java path (module-name klass))]
-        (try
-          (let [path-resource (io/resource path)]
-            (assoc (->> (.getIncludedElements root)
-                        (filter #(#{ElementKind/CLASS
-                                    ElementKind/INTERFACE
-                                    ElementKind/ENUM}
-                                  (.getKind ^Element %)))
-                        (map #(parse-info % root))
-                        (filter #(= klass (:class %)))
-                        (first))
-                   ;; relative path on the classpath
-                   :file path
-                   ;; Legacy key. Please do not remove - we don't do breaking changes!
-                   :path (.getPath path-resource)
-                   ;; Full URL, e.g. file:.. or jar:...
-                   :resource-url path-resource))
-          (finally (.close (.getJavaFileManager root))))))
-    (catch Throwable _)))
+  (locking lock ;; the jdk.javadoc.doclet classes aren't meant for concurrent modification/access.
+    (try
+      (when-let [path (source-path klass)]
+        (when-let [^DocletEnvironment root (parse-java path (module-name klass))]
+          (try
+            (let [path-resource (io/resource path)]
+              (assoc (->> (.getIncludedElements root)
+                          (filter #(#{ElementKind/CLASS
+                                      ElementKind/INTERFACE
+                                      ElementKind/ENUM}
+                                    (.getKind ^Element %)))
+                          (map #(parse-info % root))
+                          (filter #(= klass (:class %)))
+                          (first))
+                     ;; relative path on the classpath
+                     :file path
+                     ;; Legacy key. Please do not remove - we don't do breaking changes!
+                     :path (.getPath path-resource)
+                     ;; Full URL, e.g. file:.. or jar:...
+                     :resource-url path-resource))
+            (finally (.close (.getJavaFileManager root))))))
+      (catch Throwable _))))

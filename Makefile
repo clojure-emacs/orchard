@@ -1,4 +1,4 @@
-.PHONY: test quick-test docs eastwood cljfmt kondo install deploy clean lein-repl repl .EXPORT_ALL_VARIABLES
+.PHONY: test quick-test docs eastwood cljfmt kondo install deploy clean lein-repl repl lint .EXPORT_ALL_VARIABLES
 .DEFAULT_GOAL := install
 
 HOME=$(shell echo $$HOME)
@@ -14,7 +14,7 @@ LEIN_PROFILES ?= "+dev,+test,+1.11"
 
 # The enrich-classpath version to be injected.
 # Feel free to upgrade this.
-ENRICH_CLASSPATH_VERSION="1.16.0"
+ENRICH_CLASSPATH_VERSION="1.17.0"
 
 resources/clojuredocs/export.edn:
 curl -o $@ https://github.com/clojure-emacs/clojuredocs-export-edn/raw/master/exports/export.compact.edn
@@ -35,8 +35,10 @@ cljfmt:
 .make_kondo_prep: project.clj .clj-kondo/config.edn
 	lein with-profile -dev,+test,+clj-kondo,+deploy clj-kondo --copy-configs --dependencies --parallel --lint '$$classpath' > $@
 
-kondo: .make_kondo_prep
+kondo: .make_kondo_prep clean
 	lein with-profile -dev,+test,+clj-kondo,+deploy clj-kondo
+
+lint: kondo cljfmt eastwood
 
 # Deployment is performed via CI by creating a git tag prefixed with "v".
 # Please do not deploy locally as it skips various measures.

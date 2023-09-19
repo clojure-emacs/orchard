@@ -2,6 +2,12 @@
 
 ## master (unreleased)
 
+### Changes
+
+* [#189](https://github.com/clojure-emacs/orchard/issues/179): `info` for Java: return extra `:doc`-related attributes, as reflected in the new `orchard.java.parser-next` namespace, allowing clients to render HTML and non-HTML fragments with precision.
+  * This namespace needs the `--add-opens=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED` JVM flag to be present, otherwise a fallback will be used.
+  * ([enrich-classpath](https://github.com/clojure-emacs/enrich-classpath) adds that flag when suitable)
+
 ### Bugs fixed
 
 * [#182](https://github.com/clojure-emacs/orchard/issues/182): `info` on ClojureScript: don't mistakenly prioritize special form names over var names.
