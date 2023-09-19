@@ -1,4 +1,6 @@
 (ns orchard.java.parser-utils
+  "The common parts to the `parser` and `parser-next` namespaces."
+  {:added "0.15.0"}
   (:refer-clojure :exclude [resolve])
   (:require
    [clojure.java.io :as io]

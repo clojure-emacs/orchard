@@ -18,6 +18,7 @@
 
   Fragments of \"text\" type have significant, carefully processed leading/trailing whitespace
   such that when joining all fragments, things will look correct without having to add any extra whitespace."
+  {:added "0.15.0"}
   (:require
    [clojure.java.io :as io]
    [clojure.string :as string]
