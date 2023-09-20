@@ -8,8 +8,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.concurrent.locks.ReadWriteLock;
 
 /**
- * A <code>java.util.Map</code> with a capacity expressed as <code>max_size</code>
+ * A <code>java.util.Map</code> with a capacity expressed as <code>max_size</code>.
  *
+ * It's meant to be used as a cache with Least Recently Used eviction policy:
  * When new <code>.put</code>s would surpass the capacity, older entries are discarded.
  *
  * This class is thread-safe.

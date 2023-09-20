@@ -224,8 +224,11 @@
 ;; To support mixed Clojure/Java projects where `.java` files are being updated
 ;; and recompiled, we cache such classes with last-modified property, so that we
 ;; know when to purge those classes from cache.
-
-;; 250 is large enough to be useful (and hold a few key classes, like Object),
+;;
+;; We chose to implement the custom `LruMap` mechanism so that
+;; Orchard can remain a dependency-free project.
+;;
+;; The cache size of 250 is large enough to be useful (and hold a few key classes, like Object),
 ;; and small enough to not incur into OOMs.
 (def ^Map cache (LruMap. 250))
 
