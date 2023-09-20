@@ -29,6 +29,10 @@
   :test-paths ~(cond-> ["test"]
                  (not jdk8?)
                  (conj "test-newer-jdks"))
+  :java-source-paths ["java"]
+
+  :javac-options ["-Xlint:unchecked"]
+
 
   :profiles {
              ;; Clojure versions matrix

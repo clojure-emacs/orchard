@@ -6,7 +6,9 @@
    [clojure.test :refer [are deftest is testing]]
    [orchard.java :as sut :refer [cache class-info class-info* javadoc-url jdk-tools member-info resolve-class resolve-javadoc-path resolve-member resolve-symbol resolve-type source-info]]
    [orchard.misc :as misc]
-   [orchard.test.util :as util]))
+   [orchard.test.util :as util])
+  (:import
+   (mx.cider.orchard LruMap)))
 
 (def jdk-parser? (or (>= misc/java-api-version 9) jdk-tools))
 
@@ -168,7 +170,7 @@
   (testing "Javadoc URL"
     (testing "for Java < 11" ; JDK8 - JDK11
       (with-redefs [misc/java-api-version 8
-                    cache (atom {})]
+                    cache (LruMap. 100)]
         (testing "of a class"
           (is (= (:javadoc (class-info 'java.lang.String))
                  "java/lang/String.html")))
@@ -205,7 +207,7 @@
     (when (>= misc/java-api-version 9)
       (testing "for Java 11+"
         (with-redefs [misc/java-api-version 11
-                      cache (atom {})]
+                      cache (LruMap. 100)]
           (testing "of a class"
             (is (= (:javadoc (class-info 'java.lang.String))
                    "java.base/java/lang/String.html")))
@@ -242,7 +244,7 @@
   (let [get-url (comp resolve-javadoc-path (partial apply javadoc-url))]
     (testing "Java 8 javadocs resolve to the correct urls"
       (with-redefs [misc/java-api-version 8
-                    cache (atom {})]
+                    cache (LruMap. 100)]
         (are [class url] (= url (get-url class))
           ['java.lang.String]
           "https://docs.oracle.com/javase/8/docs/api/java/lang/String.html"
@@ -256,7 +258,7 @@
     (when (>= misc/java-api-version 9)
       (testing "Java 9 javadocs resolve to the correct urls"
         (with-redefs [misc/java-api-version 9
-                      cache (atom {})]
+                      cache (LruMap. 100)]
           (testing "java.base modules resolve correctly"
             (are [class url] (= url (get-url class))
               ['java.lang.String]
@@ -272,7 +274,7 @@
     (when (= 11 misc/java-api-version)
       (testing "Java 11 javadocs resolve to the correct urls"
         (with-redefs [misc/java-api-version 11
-                      cache (atom {})]
+                      cache (LruMap. 100)]
           (testing "java.base modules resolve correctly"
             (are [class url] (= url (get-url class))
               ['java.lang.String]
@@ -296,7 +298,7 @@
               "https://docs.oracle.com/en/java/javase/11/docs/api/java.net.http/java/net/http/HttpRequest.html#newBuilder(java.net.URI)")))))
 
     (testing "Allows for added javadocs"
-      (with-redefs [cache (atom {})]
+      (with-redefs [cache (LruMap. 100)]
         (is (= "http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/lambda/AWSLambdaClient.html"
                (get-url ['com.amazonaws.services.lambda.AWSLambdaClient])))
         (is (= "https://kafka.apache.org/090/javadoc/org/apache/kafka/clients/consumer/ConsumerConfig.html"
@@ -304,7 +306,7 @@
     (when (>= misc/java-api-version 11)
       (testing "Unrecognized java version doesn't blank out the javadocs"
         (with-redefs [misc/java-api-version 12345
-                      cache (atom {})]
+                      cache (LruMap. 100)]
           (is (= "https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/String.html"
                  (get-url ['java.lang.String]))))))))
 

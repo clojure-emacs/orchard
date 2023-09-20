@@ -12,7 +12,9 @@
   (:import
    (clojure.lang IPersistentMap)
    (clojure.reflect Constructor Field JavaReflector Method)
-   (java.net JarURLConnection)))
+   (java.net JarURLConnection)
+   (java.util Map)
+   (mx.cider.orchard LruMap)))
 
 ;;; ## Java Class/Member Info
 ;;
@@ -222,15 +224,20 @@
 ;; To support mixed Clojure/Java projects where `.java` files are being updated
 ;; and recompiled, we cache such classes with last-modified property, so that we
 ;; know when to purge those classes from cache.
-
-(def cache (atom {}))
+;;
+;; We chose to implement the custom `LruMap` mechanism so that
+;; Orchard can remain a dependency-free project.
+;;
+;; The cache size of 250 is large enough to be useful (and hold a few key classes, like Object),
+;; and small enough to not incur into OOMs.
+(def ^Map cache (LruMap. 250))
 
 (defn class-info
   "For the class symbol, return (possibly cached) Java class and member info.
   Members are indexed first by name, and then by argument types to list all
   overloads."
   [class]
-  (let [cached (@cache class)
+  (let [cached (.get cache class)
         info (if cached
                (:info cached)
                (class-info* class))
@@ -246,7 +253,7 @@
                (class-info* class)
                info)]
     (when (or (not cached) stale)
-      (swap! cache assoc class {:info info, :last-modified last-modified}))
+      (.put cache class {:info info, :last-modified last-modified}))
     info))
 
 ;;; ## Class/Member Info
@@ -403,12 +410,8 @@
                                       (javadoc-base-urls 11))))))
       path))
 
-(defn- imported-classes [ns-sym]
-  (->> (ns-imports ns-sym)
-       (map #(-> % ^Class val .getName symbol))))
-
 (defn- initialize-cache!* []
-  (doseq [class (imported-classes (symbol (namespace ::_)))]
+  (doseq [class [`Thread `String 'java.io.File]]
     (class-info class)))
 
 (def initialize-cache-silently?
@@ -420,7 +423,8 @@
     initialize-cache-silently? util.io/wrap-silently))
 
 (def cache-initializer
-  "On startup, cache info for the most commonly referenced classes.
+  "On startup, cache info for a few classes.
+  This also warms up the cache for some underlying, commonly neeed classes (e.g. `Object`).
 
   This is a def for allowing others to wait for this workload to complete (can be useful sometimes)."
   (future

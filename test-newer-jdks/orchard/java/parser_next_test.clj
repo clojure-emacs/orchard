@@ -111,13 +111,16 @@
           (is (not (string/includes? s "<a")))
           (is (not (string/includes? s "<a href"))))))))
 
+(defn imported-classes [ns-sym]
+  (->> (ns-imports ns-sym)
+       (map #(-> % ^Class val .getName symbol))))
+
 (when (and util/has-enriched-classpath?
            java/parser-next-available?)
   (deftest smoke-test
     (let [annotations #{'java.lang.Override
                         'java.lang.Deprecated
                         'java.lang.SuppressWarnings}
-          imported-classes #'java/imported-classes
           corpus (->> ::_
                       namespace
                       symbol
