@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+## 0.15.0 (2023-09-20)
+
 ### Changes
 
 * [#189](https://github.com/clojure-emacs/orchard/issues/179): `info` for Java: return extra `:doc`-related attributes, as reflected in the new `orchard.java.parser-next` namespace, allowing clients to render HTML and non-HTML fragments with precision.
