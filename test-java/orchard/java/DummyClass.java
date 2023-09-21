@@ -10,12 +10,12 @@ package orchard.java;
  * @author Arne Brasseur
  */
 public class DummyClass {
-  /**
-   * Method-level docstring.
-   *
-   * @returns the string "hello"
-   */
-  public String dummyMethod() {
-    return "hello";
-  }
+    /**
+     * Method-level docstring.
+     *
+     * @return the string "hello"
+     */
+    public String dummyMethod() {
+        return "hello";
+    }
 }

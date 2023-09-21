@@ -2,6 +2,11 @@
 
 ## master (unreleased)
 
+## Changes
+
+* `:doc-block-tags-fragments`: exclude tags other than `Returns`, `Throws` and `Param`.
+  * This helps keeping the rendered docstrings concise, and predictably formatted.
+
 ## 0.15.0 (2023-09-20)
 
 ### Changes

@@ -28,9 +28,9 @@
                   :type java.lang.String,
                   :argtypes [],
                   :argnames [],
-                  :doc "Method-level docstring. @returns the string \"hello\"",
+                  :doc "Method-level docstring. @return the string \"hello\"",
                   :line 18,
-                  :column 3}}},
+                  :column 5}}},
               :doc
               "Class level docstring.\n\n```\n   DummyClass dc = new DummyClass();\n```\n\n@author Arne Brasseur",
               :line 12,
