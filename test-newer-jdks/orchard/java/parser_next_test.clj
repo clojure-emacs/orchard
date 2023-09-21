@@ -44,18 +44,18 @@
                   :type java.lang.String,
                   :doc-first-sentence-fragments
                   [{:type "text", :content "Method-level docstring."}],
-                  :column 3,
+                  :column 5,
                   :argtypes [],
                   :line 18,
                   :argnames [],
                   :doc-fragments
                   [{:type "text", :content "Method-level docstring."}],
                   :doc-block-tags-fragments
-                  [{:type "text", :content "\n"}
-                   {:type "html",
-                    :content "<i>returns</i>: <pre>the string \"hello\"</pre>"}],
+                  [{:content "\n", :type "text"}
+                   {:content "<i>Returns</i>:&nbsp;", :type "html"}
+                   {:content "the string \"hello\"", :type "text"}],
                   :doc
-                  "Method-level docstring.\n\n @returns the string \"hello\""}}},
+                  "Method-level docstring.\n\n @return the string \"hello\""}}},
                :doc-block-tags-fragments [],
                :doc
                "Class level docstring.\n\n <pre>\n   DummyClass dc = new DummyClass();\n </pre>\n\n @author Arne Brasseur"}

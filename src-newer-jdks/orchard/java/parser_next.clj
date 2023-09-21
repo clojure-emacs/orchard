@@ -40,7 +40,7 @@
     ::return
 
     (->> node class ancestors (some #{com.sun.tools.javac.tree.DCTree$DCBlockTag}))
-    ::block-tag
+    ::discard
 
     :else (class node)))
 
@@ -108,26 +108,9 @@
                         :content (format "<i>Throws</i>:%s<pre>%s</pre>:%s" nbsp (.getExceptionName node) nbsp)}]
                       result])]))
 
-(defmethod process-node ::block-tag [^com.sun.tools.javac.tree.DCTree$DCBlockTag node stack _]
-  (let [tag-name (.getTagName node)]
-    (if (or (.equals tag-name "author")
-            (.equals tag-name "since")
-            (.equals tag-name "see"))
-      ;; omit the tag - it makes the docstring larger on docstring UIs:
-      [stack []]
-      (let [tag-name (.getTagName node)
-            s (string/replace (str node) #"^@" "")
-            [_ b] (string/split s (re-pattern tag-name))
-            content (when-let [bt (some-> b string/trim)]
-                      (case tag-name
-                        ("implNote" "jls") (format "<i>%s</i>: %s" tag-name bt)
-                        (format "<i>%s</i>: <pre>%s</pre>" tag-name bt)))]
-        [stack
-         (if content
-           [newline-fragment
-            {:type "html"
-             :content content}]
-           [])]))))
+(defmethod process-node ::discard [_node stack _]
+  ;; omit the tag - it makes the docstring larger on docstring UIs:
+  [stack []])
 
 (defmethod process-node com.sun.tools.javac.tree.DCTree$DCLiteral [^com.sun.tools.javac.tree.DCTree$DCLiteral node stack _]
   (let [^String tag-name (-> node .getKind .tagName)
