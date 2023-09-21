@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+## 0.15.1 (2023-09-21)
+
 ## Changes
 
 * `:doc-block-tags-fragments`: exclude tags other than `Returns`, `Throws` and `Param`.
