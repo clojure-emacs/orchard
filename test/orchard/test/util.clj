@@ -4,3 +4,8 @@
 (def has-enriched-classpath?
   (boolean (or (io/resource "java/lang/Thread.java")
                (io/resource "java.base/java/lang/Thread.java"))))
+
+(defn imported-classes [ns-sym]
+  {:post [(seq %)]}
+  (->> (ns-imports ns-sym)
+       (map #(-> % ^Class val .getName symbol))))

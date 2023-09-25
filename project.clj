@@ -23,7 +23,8 @@
                                     :password :env/clojars_password
                                     :sign-releases false}]]
 
-  :jvm-opts ["-Dclojure.main.report=stderr"]
+  :jvm-opts ~(cond-> '["-Dclojure.main.report=stderr"]
+               (not jdk8?) (conj "--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED"))
 
   :source-paths ["src" "src-jdk8" "src-newer-jdks"]
   :test-paths ~(cond-> ["test"]
@@ -71,7 +72,7 @@
                                 :enrich-classpath {:shorten true}}
 
              ;; Development tools
-             :dev {:plugins [[cider/cider-nrepl "0.38.0"]
+             :dev {:plugins [[cider/cider-nrepl "0.38.1"]
                              [refactor-nrepl "3.9.0"]]
                    :dependencies [[nrepl/nrepl "1.0.0"]
                                   [org.clojure/tools.namespace "1.4.4"]]

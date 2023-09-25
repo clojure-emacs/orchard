@@ -385,3 +385,104 @@
       (is (= 'java.lang.String (:class (resolve-type (ns-name *ns*) 'String)))))
     (testing "of deftype in clojure.core"
       (is (= 'clojure.core.Eduction (:class (resolve-type 'clojure.core 'Eduction)))))))
+
+(defn- replace-last-dot [^String s]
+  (if (re-find #"(.*\.)" s)
+    (str (second (re-matches #"(.*)(\..*)" s))
+         "$"
+         (subs s (inc (.lastIndexOf s "."))))
+    s))
+
+(defn class-corpus []
+  {:post [(> (count %)
+             50)]}
+  (->> (util/imported-classes 'clojure.core)
+       (into ['java.util.Map 'java.io.File])
+       (into (util/imported-classes (-> ::_ namespace symbol)))
+       ;; Remove classes without methods:
+       (remove (some-fn
+                #{`ThreadDeath
+                  `Void
+                  `RuntimePermission
+                  'clojure.core.Vec
+                  'clojure.core.VecNode
+                  'clojure.core.VecSeq
+                  'clojure.core.ArrayChunk
+                  'clojure.core.Eduction}
+                (fn [s]
+                  (-> s str Class/forName .isInterface))
+                (fn [s]
+                  (->> s str (re-find #"(Exception|Error)$")))))))
+
+(defn extract-method-arities [info]
+  (->> (-> info
+           :members
+           vals)
+       (map vals)
+       (reduce into)
+       ;; Only methods (and not fields) have arglists:
+       (filter :returns)))
+
+(when util/has-enriched-classpath?
+  (deftest reflect-and-source-info-match
+    (testing "reflect and source info structurally match, allowing a meaningful deep-merge of both"
+      (let [extract-arities (fn [info]
+                              (->> info :members vals (map keys) (reduce into)
+                                   (remove nil?) ;; fields
+                                   (sort-by pr-str)))]
+        (doseq [class-symbol (class-corpus)
+                :let [source-info (sut/source-info class-symbol)
+                      reflect-info (sut/reflect-info (#'sut/reflection-for (eval class-symbol)))
+                      arities-from-source (extract-arities source-info)
+                      arities-from-reflector (extract-arities reflect-info)]]
+          (testing class-symbol
+            (assert (= (count arities-from-source)
+                       (count arities-from-reflector))
+                    [class-symbol
+                     (count arities-from-source)
+                     (count arities-from-reflector)])
+            (assert (or (pos? (count arities-from-source))
+                        (pos? (count arities-from-reflector)))
+                    class-symbol)
+            (doall (map-indexed (fn [i x]
+                                  (is (= x
+                                         (nth arities-from-reflector i)))
+                                  (doseq [s x
+                                          :let [s (-> s str (string/replace "[]" ""))]]
+                                    (assert (is (or (#{"byte" "short" "int" "long" "float" "double" "char" "boolean" "void"}
+                                                     s)
+                                                    (try
+                                                      (Class/forName s)
+                                                      (catch Exception _
+                                                        (Class/forName (replace-last-dot s)))))
+                                                "The "))))
+                                arities-from-source))
+            (assert (is (= arities-from-source
+                           arities-from-reflector)))
+
+            (let [arities-data (extract-method-arities (misc/deep-merge reflect-info source-info))
+                  all-argnames (map :argnames arities-data)]
+              (assert (pos? (count all-argnames)))
+              (is (not-any? nil? all-argnames)
+                  "The deep-merge went ok"))))))))
+
+(when util/has-enriched-classpath?
+  (deftest formatted-arglists-test
+    (doseq [class-symbol (class-corpus)
+            :let [info (sut/class-info* class-symbol)
+                  arities (extract-method-arities info)
+                  all-formatted-arglists (map :formatted-arglists arities)]]
+      (testing class-symbol
+        (assert (pos? (count all-formatted-arglists))
+                class-symbol)
+        (doseq [s all-formatted-arglists]
+          (assert (is (string? s)))
+          (testing s
+            (is (re-find #"\^.*\[" s))
+            ;; Assert that the format doesn't include past bugs:
+            (is (not (string/includes? s "<")))
+            (is (not (string/includes? s "^Object java.lang.Object")))
+            (is (not (string/includes? s "^Object Object")))
+            (is (not (string/includes? s "^function.Function java.util.function.Function")))
+            (is (not (string/includes? s "^java.util.function.Function java.util.function.Function")))
+            (is (not (string/includes? s "java.lang")))))))))
