@@ -8,7 +8,7 @@
   (:require
    [clojure.java.io :as io]
    [clojure.string :as string]
-   [orchard.java.parser-utils :refer [module-name parse-executable-element parse-java parse-variable-element position source-path typesym]])
+   [orchard.java.parser-utils :refer [module-name parse-java parse-variable-element position source-path typesym]])
   (:import
    (java.io StringReader)
    (javax.lang.model.element Element ElementKind ExecutableElement TypeElement VariableElement)
@@ -178,6 +178,14 @@
   (merge (parse-info* o env)
          (docstring o env)
          (position o env)))
+
+(defn parse-executable-element [^ExecutableElement m env]
+  {:name (if (= (.getKind m) ElementKind/CONSTRUCTOR)
+           (-> m .getEnclosingElement (typesym env)) ; class name
+           (-> m .getSimpleName str symbol))         ; method name
+   :type (-> m .getReturnType (typesym env))
+   :argtypes (mapv #(-> ^VariableElement % .asType (typesym env)) (.getParameters m))
+   :argnames (mapv #(-> ^VariableElement % .getSimpleName str symbol) (.getParameters m))})
 
 (extend-protocol Parsed
   TypeElement ;; => class, interface, enum

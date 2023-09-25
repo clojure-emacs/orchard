@@ -158,13 +158,24 @@
   Constructor
   (reflect-info [c]
     {:argtypes (mapv typesym (:parameter-types c))
-     :throws (map typesym (:exception-types c))})
+     :throws (mapv typesym (:exception-types c))})
 
   Method
   (reflect-info [m]
-    {:argtypes (mapv typesym (:parameter-types m))
-     :throws (map typesym (:exception-types m))
-     :returns (typesym (:return-type m))})
+    (let [pts (:parameter-types m)
+          argtypes (mapv typesym pts)]
+      {:argtypes argtypes
+       :non-generic-argtypes (->> argtypes
+                                  (mapv (fn [s]
+                                          ;; make the format match with that of `parser-next`:
+                                          (some-> s
+                                                  str
+                                                  (string/replace "$" ".")
+                                                  (string/replace #"\[.*" "")
+                                                  symbol))))
+       :parameter-types pts
+       :throws (mapv typesym (:exception-types m))
+       :returns (typesym (:return-type m))}))
 
   Field
   (reflect-info [f]
@@ -172,19 +183,34 @@
 
   IPersistentMap ; => Class
   (reflect-info [c]
-    {:name (:name c)
-     :modifiers (:flags c)
-     :members (->> (:members c)
-                   ;; Merge type-specific attributes with common ones.
-                   (map (fn [m]
-                          (merge {:name (:name m)
-                                  :modifiers (:flags m)}
-                                 (reflect-info m))))
-                   ;; Index by name, argtypes. Args for fields are nil.
-                   (group-by :name)
-                   (reduce (fn [ret [n ms]]
-                             (assoc ret n (zipmap (map :argtypes ms) ms)))
-                           {}))}))
+    (let [map-members (->> c
+                           :members
+                           ;; removes:
+                           ;; * compareTo from the interface (only the one from the class itself is relevant)
+                           ;; * lambda$indent$0 (lambda stuff)
+                           (remove (some-fn (comp (partial some #{:synthetic}) :flags)
+                                            (fn [{member-name :name}]
+                                              ;; Removes $$YJP$$sleep (yourkit stuff)
+                                              (some-> member-name str (.contains "$$YJP$$"))))))
+          members (->> map-members
+                       ;; Merge type-specific attributes with common ones.
+                       (map (fn [m]
+                              (merge {:name (:name m)
+                                      :modifiers (:flags m)}
+                                     (reflect-info m))))
+                       ;; Index by name, argtypes. Args for fields are nil.
+                       (group-by :name)
+                       (reduce (fn [ret [n ms]]
+                                 (assoc ret n (zipmap (map :non-generic-argtypes ms) ms)))
+                               {}))
+          class-name (or (:name c)
+                         (some :declaring-class map-members))
+          class-name (if (some-> class-name class?)
+                       (-> ^Class class-name .getName symbol)
+                       class-name)]
+      {:name class-name
+       :modifiers (:flags c)
+       :members (dissoc members class-name)})))
 
 (defn- package
   "An alternative to .getPackage, which works for classes defined with deftype and defrecord.
@@ -198,6 +224,63 @@
       (when (pos? idx)
         (subs kls 0 idx)))))
 
+(defn +this [xs]
+  (into ['this] xs))
+
+(defn extract-arglist [static? xs]
+  ((if static? identity +this)
+   (or (:argnames xs) (:argtypes xs))))
+
+(defn extract-parameter-type [static? xs]
+  ((if static? identity +this)
+   (or (:non-generic-argtypes xs)
+       (:parameter-types xs))))
+
+(defn extract-formatted-arglists [static? package {:keys [returns] :as x}]
+  (let [arglist (extract-arglist static? x)
+        parameter-type (extract-parameter-type static? x)
+        sb (StringBuilder.)
+        package-re (re-pattern (str "^"
+                                    (string/replace package "." "\\.")
+                                    "\\."))
+        shorten (fn [s]
+                  (-> s
+                      (string/replace package-re "")
+                      (string/replace #"^java\.lang\." "")))
+        fill-arglist!
+        (fn []
+          (into []
+                (map-indexed (fn [n i]
+                               (when-not (zero? n)
+                                 (.append sb \,)
+                                 (.append sb \space))
+                               (let [i-str (str i)]
+                                 (when-not (.equals i-str "this")
+                                   (when-let [m (some-> parameter-type
+                                                        (get n) ;; can occasionally return nil
+                                                        str
+                                                        shorten)]
+                                     (.append sb \^)
+                                     (.append sb m)
+                                     (.append sb \space)))
+                                 (.append sb i-str))))
+                arglist))]
+    (when-let [m (some-> returns
+                         str
+                         shorten)]
+      (.append sb \^)
+      (.append sb m)
+      (.append sb \space))
+    (.append sb \[)
+    (fill-arglist!)
+    (.append sb \])
+    (str sb)))
+
+(defn- reflection-for [^Class c]
+  (reflect/reflect c
+                   ;; for dynamically loaded classes:
+                   :reflector (JavaReflector. (.getClassLoader c))))
+
 (defn class-info*
   "For the class symbol, return Java class and member info. Members are indexed
   first by name, and then by argument types to list all overloads."
@@ -205,15 +288,27 @@
   (when-let [^Class c (try (Class/forName (str class))
                            (catch Exception _)
                            (catch LinkageError _))]
-    (let [r (JavaReflector. (.getClassLoader c))] ; for dynamically loaded classes
-      (misc/deep-merge (reflect-info (reflect/reflect c :reflector r))
-                       (source-info class)
-                       {:name       (-> c .getSimpleName symbol)
-                        :class      (-> c .getName symbol)
-                        :package    (some-> c package symbol)
-                        :super      (-> c .getSuperclass typesym)
-                        :interfaces (map typesym (.getInterfaces c))
-                        :javadoc    (javadoc-url class)}))))
+    (let [package (some-> c package symbol)
+          {:keys [members] :as result} (misc/deep-merge (reflect-info (reflection-for c))
+                                                        (source-info class)
+                                                        {:name       (-> c .getSimpleName symbol)
+                                                         :class      (-> c .getName symbol)
+                                                         :package    package
+                                                         :super      (-> c .getSuperclass typesym)
+                                                         :interfaces (map typesym (.getInterfaces c))
+                                                         :javadoc    (javadoc-url class)})]
+      (assoc result
+             :members (into {}
+                            (map (fn [[method arities]]
+                                   [method (into {}
+                                                 (map (fn [[k arity]]
+                                                        [k (let [static? (:static (:modifiers arity))]
+                                                             (-> arity
+                                                                 (assoc :formatted-arglists
+                                                                        (extract-formatted-arglists static? package arity))
+                                                                 (dissoc :non-generic-argtypes)))]))
+                                                 arities)]))
+                            members)))))
 
 ;;; ## Class Metadata Caching
 ;;
@@ -295,14 +390,13 @@
               :else (recur super))))]
     (when-let [m (get-in c [:members member])]
       (let [m* (first (sort-by :line (vals m)))
-            static? (or (:static (:modifiers m*)) (= class member))
-            +this   (comp vec (partial cons 'this))]
+            static? (or (:static (:modifiers m*))
+                        (= class member))]
         (-> (dissoc m* :name :argnames)
             (assoc :class class
                    :member member
                    :file (:file c)
-                   :arglists (map #((if static? identity +this)
-                                    (or (:argnames %) (:argtypes %)))
+                   :arglists (map (partial extract-arglist static?)
                                   (vals m))
                    :javadoc (javadoc-url class member
                                          (:argtypes m*))))))))

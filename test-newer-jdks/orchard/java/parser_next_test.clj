@@ -26,19 +26,7 @@
                  :content
                  "<pre> \n   DummyClass dc = new DummyClass();\n  </pre>"}],
                :members
-               {orchard.java.DummyClass
-                {[]
-                 {:name orchard.java.DummyClass,
-                  :type void,
-                  :doc-first-sentence-fragments [],
-                  :column 8,
-                  :argtypes [],
-                  :line 12,
-                  :argnames [],
-                  :doc-fragments [],
-                  :doc-block-tags-fragments [],
-                  :doc nil}},
-                dummyMethod
+               {dummyMethod
                 {[]
                  {:name dummyMethod,
                   :type java.lang.String,
@@ -46,6 +34,7 @@
                   [{:type "text", :content "Method-level docstring."}],
                   :column 5,
                   :argtypes [],
+                  :non-generic-argtypes []
                   :line 18,
                   :argnames [],
                   :doc-fragments
@@ -101,7 +90,7 @@
                         sut/source-info
                         (get-in [:members
                                  'format
-                                 ['java.util.Locale 'java.lang.String (symbol "java.lang.Object[]")]
+                                 ['java.util.Locale 'java.lang.String 'java.lang.Object]
                                  :doc-fragments])
                         (->> (map :content)))
           s (string/join fragments)]
@@ -110,10 +99,6 @@
         (testing s
           (is (not (string/includes? s "<a")))
           (is (not (string/includes? s "<a href"))))))))
-
-(defn imported-classes [ns-sym]
-  (->> (ns-imports ns-sym)
-       (map #(-> % ^Class val .getName symbol))))
 
 (when (and util/has-enriched-classpath?
            java/parser-next-available?)
@@ -124,7 +109,7 @@
           corpus (->> ::_
                       namespace
                       symbol
-                      imported-classes
+                      util/imported-classes
                       (remove annotations)
                       (into ['java.io.File]))]
       (assert (> (count corpus)

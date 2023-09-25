@@ -22,7 +22,7 @@
   (:require
    [clojure.java.io :as io]
    [clojure.string :as string]
-   [orchard.java.parser-utils :refer [module-name parse-executable-element parse-java parse-variable-element position source-path typesym]])
+   [orchard.java.parser-utils :refer [module-name parse-java parse-variable-element position source-path typesym]])
   (:import
    (com.sun.source.doctree DocCommentTree)
    (javax.lang.model.element Element ElementKind ExecutableElement TypeElement VariableElement)
@@ -251,12 +251,48 @@
          (docstring o env)
          (position o env)))
 
+(defn remove-type-param [s]
+  (-> s
+      (string/replace #"<.*" "")
+      (string/replace #"\[.*" "")))
+
+(defn parse-executable-element [^ExecutableElement m env]
+  (let [parameters (.getParameters m)
+        type->sym #(-> ^VariableElement % .asType (typesym env))]
+    {:name (if (= (.getKind m) ElementKind/CONSTRUCTOR)
+             (-> m .getEnclosingElement (typesym env)) ; class name
+             (-> m .getSimpleName str symbol))         ; method name
+     :type (-> m .getReturnType (typesym env))
+     :argtypes (mapv type->sym parameters)
+     :non-generic-argtypes (mapv (fn [^com.sun.tools.javac.code.Symbol element]
+                                   (let [ast (-> element .asType)
+                                         ast-str (-> ast .getKind str)
+                                         best (when (or (.equals ast-str "TYPEVAR")
+                                                        (.equals ast-str "ARRAY"))
+                                                (some-> (or (when (instance? com.sun.tools.javac.code.Type$ArrayType
+                                                                             ast)
+                                                              (-> ^com.sun.tools.javac.code.Type$ArrayType ast
+                                                                  .getComponentType
+                                                                  .getUpperBound))
+                                                            (some-> ast .getUpperBound)
+                                                            (some-> ast .getOriginalType))
+                                                        str
+                                                        remove-type-param
+                                                        symbol))]
+                                     (some-> (or best
+                                                 (type->sym element))
+                                             str
+                                             (string/replace "$" ".")
+                                             symbol)))
+                                 parameters)
+     :argnames (mapv #(-> ^VariableElement % .getSimpleName str symbol) (.getParameters m))}))
+
 (extend-protocol Parsed
   TypeElement ; => class, interface, enum
   (parse-info* [c env]
     {:class   (typesym c env)
      :members (->> (.getEnclosedElements c)
-                   (filter #(#{ElementKind/CONSTRUCTOR
+                   (filter #(#{#_ElementKind/CONSTRUCTOR ;; will be enabled when it's also properly implemented at reflector level
                                ElementKind/METHOD
                                ElementKind/FIELD
                                ElementKind/ENUM_CONSTANT}
@@ -265,7 +301,7 @@
                    ;; Index by name, argtypes. Args for fields are nil.
                    (group-by :name)
                    (reduce (fn [ret [n ms]]
-                             (assoc ret n (zipmap (map :argtypes ms) ms)))
+                             (assoc ret n (zipmap (map :non-generic-argtypes ms) ms)))
                            {}))})
 
   ExecutableElement ;; => method, constructor
