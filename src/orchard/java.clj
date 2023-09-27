@@ -76,36 +76,54 @@
 ;; JDK8, the legacy parser may be removed.
 
 (def parser-next-available?
-  (and (>= misc/java-api-version 9)
-       (try
-         (and
-          ;; indicates that the necessary `add-opens=...` JVM flag is in place:
-          (Class/forName "com.sun.tools.javac.tree.DCTree$DCBlockTag")
-          ;; require the whole namespace in case there's some other source of problems (e.g. some other missing opene)
-          (require '[orchard.java.parser-next]))
-         true
-         (catch Throwable _
-           false))))
+  (delay ;; avoid the side-effects at compile-time
+    (atom ;; make the result mutable - this is helpful in case the detection below wasn't sufficient
+     (and (>= misc/java-api-version 9)
+          (try
+            ;; indicates that the classes are available
+            ;; however it does not indicate if necessary `add-opens=...` JVM flag is in place:
+            (and
+             (Class/forName "com.sun.tools.javac.tree.DCTree$DCBlockTag")
+             (Class/forName "com.sun.tools.javac.code.Type$ArrayType")
+             (do
+               ;; require the whole namespace in case there's some other source of problems (e.g. some other missing opene)
+               (require '[orchard.java.parser-next])
+               ((resolve 'orchard.java.parser-next/source-info) `String :throw))
+             true)
+            (catch Throwable _
+              false))))))
 
-(def source-info*
+(defn source-info*
   "When a Java parser is available, return class info from its parsed source;
   otherwise return nil."
-  (cond
-    parser-next-available?
-    (do (require '[orchard.java.parser-next :as src])
-        (resolve 'src/source-info))
+  [& args]
+  (let [choose (fn []
+                 (cond
+                   @@parser-next-available?
+                   (do (require '[orchard.java.parser-next])
+                       (resolve 'orchard.java.parser-next/source-info))
 
-    (>= misc/java-api-version 9)
-    (do (require '[orchard.java.parser :as src])
-        (resolve 'src/source-info))
+                   (>= misc/java-api-version 9)
+                   (do (require '[orchard.java.parser])
+                       (resolve 'orchard.java.parser/source-info))
 
-    (not jdk-tools)
-    (constantly nil)
+                   (not jdk-tools)
+                   (constantly nil)
 
-    :else
-    (do
-      (require '[orchard.java.legacy-parser :as src])
-      (resolve 'src/source-info))))
+                   :else
+                   (do
+                     (require '[orchard.java.legacy-parser])
+                     (resolve 'orchard.java.legacy-parser/source-info))))]
+    (try
+      (apply (choose) args)
+      (catch IllegalAccessError e
+        (if-not @@parser-next-available?
+          (throw e)
+          (do
+            ;; if there was an IllegalAccessError, the parser was mistakenly detected as available,
+            ;; so we update the detection and retry:
+            (reset! @parser-next-available? false)
+            (apply (choose) args)))))))
 
 (defn source-info
   "Ensure that JDK sources are visible on the classpath if present, and return

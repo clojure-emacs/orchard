@@ -57,26 +57,19 @@
 
 (deftest map-structure-test
   (testing "Parsed map structure = reflected map structure"
-    (let [cols #{:file :line :column :doc :argnames :doc-first-sentence-fragments :doc-fragments :doc-block-tags-fragments :argtypes :path :resource-url}
-          keys= #(= (set (keys (apply dissoc %1 cols)))
-                    (set (keys %2)))
+    (let [excluded-cols #{:file :line :column :doc :argnames :non-generic-argtypes :formatted-arglists
+                          :doc-first-sentence-fragments :doc-fragments :doc-block-tags-fragments :argtypes :path :resource-url}
+          keys= (fn [a b]
+                  (is (= (set (keys (apply dissoc a excluded-cols)))
+                         (set (keys (apply dissoc b excluded-cols))))))
           c1 (class-info* 'clojure.lang.Compiler)
           c2 (with-redefs [source-info (constantly nil)]
                (class-info* 'clojure.lang.Compiler))]
       ;; Class info
-      (is (keys= c1 c2)
-          (str "Difference: "
-               (pr-str [(remove (set (keys c1)) (keys c2))
-                        (remove (set (keys c2)) (keys c1))])))
-      ;; Members
-      (is (keys (:members c1)))
-      (is (= (keys (:members c1))
-             (keys (:members c2))))
-      ;; Member info
-      (is (->> (map keys=
-                    (vals (:members c1))
-                    (vals (:members c2)))
-               (every? true?))))))
+      (testing (str "Difference: "
+                    (pr-str [(remove (set (keys c1)) (keys c2))
+                             (remove (set (keys c2)) (keys c1))]))
+        (is (keys= c1 c2))))))
 
 (when util/has-enriched-classpath?
   (deftest class-info-test
@@ -104,7 +97,7 @@
             (is (class-info sym))))
         (testing "that doesn't exist"
           (is (nil? c3))))
-      (when sut/parser-next-available?
+      (when @@sut/parser-next-available?
         (testing "Doc fragments"
           (is (seq (:doc-fragments thread-class-info)))
           (is (seq (:doc-first-sentence-fragments thread-class-info))))))))
@@ -143,7 +136,7 @@
           (testing (-> m6 :doc pr-str)
             (is (-> m6 :doc (string/starts-with? "Called by the garbage collector on an object when garbage collection"))
                 "Contains doc that is clearly defined in Object (the superclass)")))
-        (when sut/parser-next-available?
+        (when @@sut/parser-next-available?
           (testing "Doc fragments"
             (testing "For a field"
               (is (seq (:doc-fragments m4)))

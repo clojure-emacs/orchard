@@ -3,8 +3,9 @@
 
 HOME=$(shell echo $$HOME)
 VERSION ?= 1.11
-TEST_PROFILES ?= +test
+TEST_PROFILES ?= "-user,-dev,+test"
 SPEC2_SOURCE_DIR = src-spec-alpha-2
+TEST_RUNNER_SOURCE_DIR = test-runner
 
 # The Lein profiles that will be selected for `lein-repl`.
 # Feel free to upgrade this, or to override it with an env var named LEIN_PROFILES.
@@ -14,14 +15,21 @@ LEIN_PROFILES ?= "+dev,+test,+1.11"
 
 # The enrich-classpath version to be injected.
 # Feel free to upgrade this.
-ENRICH_CLASSPATH_VERSION="1.17.2"
+ENRICH_CLASSPATH_VERSION="1.18.0"
 
 resources/clojuredocs/export.edn:
 curl -o $@ https://github.com/clojure-emacs/clojuredocs-export-edn/raw/master/exports/export.compact.edn
 
 # .EXPORT_ALL_VARIABLES passes TEST_PROFILES to Lein so that it can inspect the active profiles, which is needed for a complete Eastwood setup:
-test: clean $(SPEC2_SOURCE_DIR) .EXPORT_ALL_VARIABLES
-	lein with-profile -user,-dev,+$(VERSION),$(TEST_PROFILES) test
+test: clean $(SPEC2_SOURCE_DIR) $(TEST_RUNNER_SOURCE_DIR) .EXPORT_ALL_VARIABLES
+	@if [ "$$ENRICH_CLASSPATH" == "true" ] ; then \
+		bash 'lein' 'update-in' ':plugins' 'conj' "[mx.cider/lein-enrich-classpath \"$(ENRICH_CLASSPATH_VERSION)\"]" '--' 'with-profile' $(TEST_PROFILES) 'update-in' ':middleware' 'conj' 'cider.enrich-classpath.plugin-v2/middleware' '--' 'repl' | grep " -cp " > .test-classpath; \
+		cat .test-classpath; \
+		eval "$$(cat .test-classpath)"; \
+		rm .test-classpath; \
+	else \
+		lein with-profile -user,-dev,+$(VERSION),$(TEST_PROFILES) test; \
+	fi
 
 quick-test: test
 
@@ -36,9 +44,12 @@ cljfmt:
 	lein with-profile -dev,+test,+clj-kondo,+deploy clj-kondo --copy-configs --dependencies --parallel --lint '$$classpath' > $@
 
 kondo: .make_kondo_prep clean
+	rm -rf $(TEST_RUNNER_SOURCE_DIR)
 	lein with-profile -dev,+test,+clj-kondo,+deploy clj-kondo
+	rm -rf $(TEST_RUNNER_SOURCE_DIR)
 
 lint: kondo cljfmt eastwood
+	rm -rf $(TEST_RUNNER_SOURCE_DIR)
 
 # Deployment is performed via CI by creating a git tag prefixed with "v".
 # Please do not deploy locally as it skips various measures.
@@ -55,6 +66,9 @@ clean:
 
 $(SPEC2_SOURCE_DIR):
 	@if [ ! -d "$(SPEC2_SOURCE_DIR)" ]; then git clone https://github.com/clojure/spec-alpha2.git $(SPEC2_SOURCE_DIR) --depth=1; fi
+
+$(TEST_RUNNER_SOURCE_DIR):
+	@if [ ! -d "$(TEST_RUNNER_SOURCE_DIR)" ]; then git clone https://github.com/cognitect-labs/test-runner.git $(TEST_RUNNER_SOURCE_DIR) --depth=1; fi
 
 .javac: $(wildcard test-java/orchard/*.clj)
 	lein with-profile +test javac
