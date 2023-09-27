@@ -77,6 +77,9 @@ commands:
       clojure_version:
         description: Will be used as part of the cache key. Especially important for unzipped-jdk-source
         type: string
+      enrich_classpath:
+        description: Whether the enrich-classpath will be applied.
+        type: string
       files:
         description: Files to consider when creating the cache key
         type: string
@@ -128,6 +131,7 @@ jobs:
     steps:
       - checkout
       - with_cache:
+          enrich_classpath: "false"
           cache_version: "util-job-v1"
           jdk_version: << parameters.jdk_version >>
           clojure_version: "1.11"
@@ -155,6 +159,9 @@ jobs:
       test_profiles:
         description: Maps directly to the TEST_PROFILES var in Makefile
         type: string
+      enrich_classpath:
+        description: Whether the enrich-classpath will be applied.
+        type: string
     executor: << parameters.jdk_version >>
     environment:
       VERSION: << parameters.clojure_version >>
@@ -164,11 +171,12 @@ jobs:
       - with_cache:
           jdk_version: << parameters.jdk_version >>
           clojure_version: << parameters.clojure_version >>
+          enrich_classpath: << parameters.enrich_classpath >>
           cache_version: "test_code-v2"
           steps:
             - run:
                 name: Running tests
-                command: make test
+                command: ENRICH_CLASSPATH=<< parameters.enrich_classpath >> make test
             # Eastwood is run for every item in the CI matrix, because its results are sensitive to the code in the runtime,
             # so we make the most out of this linter by exercising all profiles, JDK versions, etc.
             - run:
@@ -198,7 +206,8 @@ workflows:
             parameters:
               jdk_version: [openjdk8, openjdk11, openjdk16, openjdk17]
               clojure_version: ["1.8", "1.9", "1.10", "1.11", "master"]
-              test_profiles: ["+test,-provided", "+test,+provided", "+test,+provided,+enrich-classpath"]
+              test_profiles: ["+test,-provided", "+test,+provided"]
+              enrich_classpath: ["true", "false"]
           filters:
             branches:
               only: /.*/

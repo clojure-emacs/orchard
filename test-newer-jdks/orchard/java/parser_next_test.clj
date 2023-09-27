@@ -9,7 +9,7 @@
    (orchard.java DummyClass)))
 
 (when (and util/has-enriched-classpath?
-           java/parser-next-available?)
+           @@java/parser-next-available?)
   (deftest source-info-test
     (is (class? DummyClass))
 
@@ -60,7 +60,7 @@
                      (str (:resource-url rt-info))))))))
 
 (when (and util/has-enriched-classpath?
-           java/parser-next-available?)
+           @@java/parser-next-available?)
   (deftest doc-fragments-test
     (is (= [{:type "text",
              :content
@@ -101,7 +101,7 @@
           (is (not (string/includes? s "<a href"))))))))
 
 (when (and util/has-enriched-classpath?
-           java/parser-next-available?)
+           @java/parser-next-available?)
   (deftest smoke-test
     (let [annotations #{'java.lang.Override
                         'java.lang.Deprecated

@@ -292,16 +292,16 @@
   (parse-info* [c env]
     {:class   (typesym c env)
      :members (->> (.getEnclosedElements c)
-                   (filter #(#{#_ElementKind/CONSTRUCTOR ;; will be enabled when it's also properly implemented at reflector level
-                               ElementKind/METHOD
-                               ElementKind/FIELD
-                               ElementKind/ENUM_CONSTANT}
-                             (.getKind ^Element %)))
-                   (map #(parse-info % env))
+                   (filterv #(#{#_ElementKind/CONSTRUCTOR ;; will be enabled when it's also properly implemented at reflector level
+                                ElementKind/METHOD
+                                ElementKind/FIELD
+                                ElementKind/ENUM_CONSTANT}
+                              (.getKind ^Element %)))
+                   (mapv #(parse-info % env))
                    ;; Index by name, argtypes. Args for fields are nil.
                    (group-by :name)
                    (reduce (fn [ret [n ms]]
-                             (assoc ret n (zipmap (map :non-generic-argtypes ms) ms)))
+                             (assoc ret n (zipmap (mapv :non-generic-argtypes ms) ms)))
                            {}))})
 
   ExecutableElement ;; => method, constructor
@@ -319,7 +319,7 @@
   and return info to supplement reflection. Specifically, this includes source
   file and position, docstring, and argument name info. Info returned has the
   same structure as that of `orchard.java/reflect-info`."
-  [klass]
+  [klass & [throw?]]
   {:pre [(symbol? klass)]}
   (locking lock ;; the jdk.javadoc.doclet classes aren't meant for concurrent modification/access.
     (try
@@ -328,12 +328,12 @@
           (try
             (let [path-resource (io/resource path)]
               (assoc (->> (.getIncludedElements root)
-                          (filter #(#{ElementKind/CLASS
-                                      ElementKind/INTERFACE
-                                      ElementKind/ENUM}
-                                    (.getKind ^Element %)))
-                          (map #(parse-info % root))
-                          (filter #(= klass (:class %)))
+                          (filterv #(#{ElementKind/CLASS
+                                       ElementKind/INTERFACE
+                                       ElementKind/ENUM}
+                                     (.getKind ^Element %)))
+                          (mapv #(parse-info % root))
+                          (filterv #(= klass (:class %)))
                           (first))
                      ;; relative path on the classpath
                      :file path
@@ -343,5 +343,6 @@
                      :resource-url path-resource))
             (finally (.close (.getJavaFileManager root))))))
       (catch Throwable e
-        (when (= "true" (System/getProperty "orchard.internal.test-suite-running"))
+        (when (or throw?
+                  (= "true" (System/getProperty "orchard.internal.test-suite-running")))
           (throw e))))))
