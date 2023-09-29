@@ -19,6 +19,7 @@
         fuzzy (extract-keys sut/clojure-mode-indents-fuzzy)]
     (assert (contains? exact 'clojure.test/are))
     (assert (contains? exact 'catch))
+    (assert (contains? exact 'clojure.core/->))
     (assert (contains? fuzzy 'clojure.core/defprotocol))
     (assert (contains? fuzzy 'finally))
     (testing "There are no indents defined twice"
@@ -83,6 +84,10 @@
     ;; un-inferrable:
     'anything    '[[a b body]
                    [a b C body]]         nil
-    'sdfds    '[[condition
-                 then
-                 else]]                  1))
+    'sdfds       '[[condition
+                    then
+                    else]]               1
+
+    ;; Threading forms:
+    '->          '[[x & forms]]           nil
+    '->>         '[[x & forms]]           nil))

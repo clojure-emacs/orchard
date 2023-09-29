@@ -2,6 +2,10 @@
 
 ## master (unreleased)
 
+### Bugs fixed
+
+* Correctly infer indentation for `->`-like macros.
+
 ## 0.15.1 (2023-09-21)
 
 ## Changes
