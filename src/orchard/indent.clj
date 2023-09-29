@@ -18,7 +18,9 @@
 
   e.g. `are` can be part of `compare`, so `are` should only be looked for exact matches,
   not for fuzzy matches."
-  (index-by-name '{clojure.test/are          2
+  (index-by-name '{clojure.core/->           nil
+                   clojure.core/->>          nil
+                   clojure.test/are          2
                    clojure.core/binding      1
                    clojure.core/case         1
                    catch                     2
@@ -105,14 +107,14 @@
             (structure= candidate-arglists (-> resolved meta :arglists))))))
 
 (defn- compute-style-indent [^String macro-name [^List arglist :as arglists]]
-  (let [[exact-clojure-core-symbol exact-indentation :as exact-match] (get clojure-mode-indents-exact macro-name)
-        [fuzzy-clojure-core-symbol fuzzy-indentation :as fuzzy-match] (or
-                                                                       ;; an exact match, when available, is of course faster and more desirable:
-                                                                       (get clojure-mode-indents-fuzzy macro-name)
-                                                                       (->> clojure-mode-indents-fuzzy
-                                                                            (some (fn [[k v]]
-                                                                                    (when (string/includes? macro-name k)
-                                                                                      v)))))
+  (let [[_ [exact-clojure-core-symbol exact-indentation] :as exact-match] (find clojure-mode-indents-exact macro-name)
+        [_ [fuzzy-clojure-core-symbol fuzzy-indentation] :as fuzzy-match] (or
+                                                                           ;; an exact match, when available, is of course faster and more desirable:
+                                                                           (find clojure-mode-indents-fuzzy macro-name)
+                                                                           (->> clojure-mode-indents-fuzzy
+                                                                                (some (fn [[k _v :as entry]]
+                                                                                        (when (string/includes? macro-name k)
+                                                                                          entry)))))
         one-arglist? (-> arglists count (= 1))
         result (cond
                  exact-match
