@@ -20,8 +20,6 @@
   not for fuzzy matches."
   (index-by-name '{clojure.core/->           nil
                    clojure.core/->>          nil
-                   clojure.core/some->       nil
-                   clojure.core/some->>      nil
                    clojure.test/are          2
                    clojure.core/binding      1
                    clojure.core/case         1
@@ -78,6 +76,8 @@
                    clojure.core/if-not          1
                    clojure.core/if-some         1
                    clojure.core/letfn           [1 [[:defn]] nil]
+                   clojure.core/some->          nil
+                   clojure.core/some->>         nil
                    clojure.test/use-fixtures    :defn
                    clojure.core/when-first      1
                    clojure.core/when-let        1
