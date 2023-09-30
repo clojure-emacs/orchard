@@ -254,7 +254,7 @@
    (or (:non-generic-argtypes xs)
        (:parameter-types xs))))
 
-(defn extract-formatted-arglists [static? package {:keys [returns] :as x}]
+(defn extract-annotated-arglists [static? package {:keys [returns] :as x}]
   (let [arglist (extract-arglist static? x)
         parameter-type (extract-parameter-type static? x)
         sb (StringBuilder.)
@@ -322,8 +322,8 @@
                                                  (map (fn [[k arity]]
                                                         [k (let [static? (:static (:modifiers arity))]
                                                              (-> arity
-                                                                 (assoc :formatted-arglists
-                                                                        (extract-formatted-arglists static? package arity))
+                                                                 (assoc :annotated-arglists
+                                                                        (extract-annotated-arglists static? package arity))
                                                                  (dissoc :non-generic-argtypes)))]))
                                                  arities)]))
                             members)))))

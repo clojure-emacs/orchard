@@ -57,7 +57,7 @@
 
 (deftest map-structure-test
   (testing "Parsed map structure = reflected map structure"
-    (let [excluded-cols #{:file :line :column :doc :argnames :non-generic-argtypes :formatted-arglists
+    (let [excluded-cols #{:file :line :column :doc :argnames :non-generic-argtypes :annotated-arglists
                           :doc-first-sentence-fragments :doc-fragments :doc-block-tags-fragments :argtypes :path :resource-url}
           keys= (fn [a b]
                   (is (= (set (keys (apply dissoc a excluded-cols)))
@@ -460,15 +460,15 @@
                   "The deep-merge went ok"))))))))
 
 (when util/has-enriched-classpath?
-  (deftest formatted-arglists-test
+  (deftest annotated-arglists-test
     (doseq [class-symbol (class-corpus)
             :let [info (sut/class-info* class-symbol)
                   arities (extract-method-arities info)
-                  all-formatted-arglists (map :formatted-arglists arities)]]
+                  all-annotated-arglists (map :annotated-arglists arities)]]
       (testing class-symbol
-        (assert (pos? (count all-formatted-arglists))
+        (assert (pos? (count all-annotated-arglists))
                 class-symbol)
-        (doseq [s all-formatted-arglists]
+        (doseq [s all-annotated-arglists]
           (assert (is (string? s)))
           (testing s
             (is (re-find #"\^.*\[" s))
