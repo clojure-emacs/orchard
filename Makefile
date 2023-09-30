@@ -29,7 +29,6 @@ test: clean $(SPEC2_SOURCE_DIR) $(TEST_RUNNER_SOURCE_DIR) .EXPORT_ALL_VARIABLES
 		bash 'lein' 'update-in' ':plugins' 'conj' "[mx.cider/lein-enrich-classpath \"$(ENRICH_CLASSPATH_VERSION)\"]" '--' 'with-profile' $(TEST_PROFILES),+cognitest,+$(VERSION) 'update-in' ':middleware' 'conj' 'cider.enrich-classpath.plugin-v2/middleware' '--' 'repl' | grep " -cp " > .test-classpath; \
 		cat .test-classpath; \
 		eval "$$(cat .test-classpath)"; \
-		rm .test-classpath; \
 	else \
 		lein with-profile -user,-dev,+$(VERSION),$(TEST_PROFILES) test; \
 	fi
