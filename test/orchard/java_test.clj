@@ -10,7 +10,9 @@
   (:import
    (mx.cider.orchard LruMap)))
 
-(def jdk-parser? (or (>= misc/java-api-version 9) jdk-tools))
+(def modern-java? (>= misc/java-api-version 9))
+
+(def jdk-parser? (or modern-java? jdk-tools))
 
 (javadoc/add-remote-javadoc "com.amazonaws." "http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/")
 (javadoc/add-remote-javadoc "org.apache.kafka." "https://kafka.apache.org/090/javadoc/")
@@ -71,7 +73,8 @@
                              (remove (set (keys c2)) (keys c1))]))
         (is (keys= c1 c2))))))
 
-(when util/has-enriched-classpath?
+(when (and util/has-enriched-classpath?
+           modern-java?)
   (deftest class-info-test
     (let [c1 (class-info 'clojure.lang.Agent)
           c2 (class-info 'clojure.lang.Range$BoundsCheck)
@@ -421,7 +424,8 @@
        ;; Only methods (and not fields) have arglists:
        (filter :returns)))
 
-(when util/has-enriched-classpath?
+(when (and util/has-enriched-classpath?
+           modern-java?)
   (deftest reflect-and-source-info-match
     (testing "reflect and source info structurally match, allowing a meaningful deep-merge of both"
       (let [extract-arities (fn [info]
@@ -468,7 +472,8 @@
               (is (not-any? nil? all-argnames)
                   "The deep-merge went ok"))))))))
 
-(when util/has-enriched-classpath?
+(when (and util/has-enriched-classpath?
+           modern-java?)
   (deftest annotated-arglists-test
     (doseq [class-symbol (class-corpus)
             :let [info (sut/class-info* class-symbol)
