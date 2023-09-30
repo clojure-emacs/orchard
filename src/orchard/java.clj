@@ -541,9 +541,9 @@
     initialize-cache-silently? util.io/wrap-silently))
 
 (def cache-initializer
-  "On startup, cache info for a few classes.
+  "Cache info for a few classes.
   This also warms up the cache for some underlying, commonly neeed classes (e.g. `Object`).
 
   This is a def for allowing others to wait for this workload to complete (can be useful sometimes)."
-  (future
+  (delay ;; NOTE: this used to be a `future`, but that can cause odd issues.
     (initialize-cache!)))
