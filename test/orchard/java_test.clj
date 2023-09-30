@@ -428,8 +428,9 @@
                               (->> info :members vals (map keys) (reduce into)
                                    (remove nil?) ;; fields
                                    (sort-by pr-str)))]
+        (require 'orchard.java.parser-next)
         (doseq [class-symbol (class-corpus)
-                :let [f @(requiring-resolve 'orchard.java.parser-next/source-info)
+                :let [f @(resolve 'orchard.java.parser-next/source-info)
                       source-info (f class-symbol)
                       reflect-info (sut/reflect-info (#'sut/reflection-for (eval class-symbol)))
                       arities-from-source (extract-arities source-info)
