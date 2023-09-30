@@ -176,7 +176,7 @@ jobs:
           steps:
             - run:
                 name: Running tests
-                command: ENRICH_CLASSPATH=<< parameters.enrich_classpath >> make --stop test
+                command: ENRICH_CLASSPATH=<< parameters.enrich_classpath >> make test
             # Eastwood is run for every item in the CI matrix, because its results are sensitive to the code in the runtime,
             # so we make the most out of this linter by exercising all profiles, JDK versions, etc.
             - run:

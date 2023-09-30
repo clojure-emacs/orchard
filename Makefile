@@ -1,8 +1,9 @@
 .PHONY: test quick-test docs eastwood cljfmt kondo install deploy clean lein-repl repl lint .EXPORT_ALL_VARIABLES
 .DEFAULT_GOAL := install
 
-# For the @if [[ conditions:
-SHELL = /bin/bash
+# Set bash instead of sh for the @if [[ conditions,
+# and use the usual safety flags:
+SHELL = /bin/bash -Eeu
 
 HOME=$(shell echo $$HOME)
 VERSION ?= 1.11
