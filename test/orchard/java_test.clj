@@ -427,7 +427,8 @@
                                    (remove nil?) ;; fields
                                    (sort-by pr-str)))]
         (doseq [class-symbol (class-corpus)
-                :let [source-info (sut/source-info class-symbol)
+                :let [f @(requiring-resolve 'orchard.java.parser-next/source-info)
+                      source-info (f class-symbol)
                       reflect-info (sut/reflect-info (#'sut/reflection-for (eval class-symbol)))
                       arities-from-source (extract-arities source-info)
                       arities-from-reflector (extract-arities reflect-info)]]
@@ -436,7 +437,9 @@
                        (count arities-from-reflector))
                     [class-symbol
                      (count arities-from-source)
-                     (count arities-from-reflector)])
+                     (count arities-from-reflector)
+                     :source (sort-by pr-str arities-from-source)
+                     :reflector (sort-by pr-str arities-from-reflector)])
             (assert (or (pos? (count arities-from-source))
                         (pos? (count arities-from-reflector)))
                     class-symbol)
