@@ -34,10 +34,14 @@ test: clean $(SPEC2_SOURCE_DIR) $(TEST_RUNNER_SOURCE_DIR) .EXPORT_ALL_VARIABLES
 quick-test: test
 
 eastwood:
+	rm -rf $(TEST_RUNNER_SOURCE_DIR)
 	lein with-profile -user,-dev,+$(VERSION),+eastwood,+deploy,$(TEST_PROFILES) eastwood
+	rm -rf $(TEST_RUNNER_SOURCE_DIR)
 
 cljfmt:
+	rm -rf $(TEST_RUNNER_SOURCE_DIR)
 	lein with-profile -user,-dev,+$(VERSION),+deploy,+cljfmt cljfmt check
+	rm -rf $(TEST_RUNNER_SOURCE_DIR)
 
 # Note that -dev is necessary for not hitting OOM errors in CircleCI
 .make_kondo_prep: project.clj .clj-kondo/config.edn
