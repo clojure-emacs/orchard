@@ -89,5 +89,7 @@
                     else]]               1
 
     ;; Threading forms:
-    '->          '[[x & forms]]           nil
-    '->>         '[[x & forms]]           nil))
+    '->          '[[x & forms]]          nil
+    '->>         '[[x & forms]]          nil
+    'some->      '[[x & forms]]          nil
+    'some->>     '[[x & forms]]          nil))

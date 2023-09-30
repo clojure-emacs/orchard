@@ -20,6 +20,8 @@
   not for fuzzy matches."
   (index-by-name '{clojure.core/->           nil
                    clojure.core/->>          nil
+                   clojure.core/some->       nil
+                   clojure.core/some->>      nil
                    clojure.test/are          2
                    clojure.core/binding      1
                    clojure.core/case         1
