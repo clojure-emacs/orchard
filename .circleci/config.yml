@@ -78,7 +78,7 @@ commands:
         description: Will be used as part of the cache key. Especially important for unzipped-jdk-source
         type: string
       enrich_classpath:
-        description: Whether the enrich-classpath will be applied.
+        description: Whether enrich-classpath will be applied.
         type: string
       files:
         description: Files to consider when creating the cache key
@@ -160,7 +160,7 @@ jobs:
         description: Maps directly to the TEST_PROFILES var in Makefile
         type: string
       enrich_classpath:
-        description: Whether the enrich-classpath will be applied.
+        description: Whether enrich-classpath will be applied.
         type: string
     executor: << parameters.jdk_version >>
     environment:
