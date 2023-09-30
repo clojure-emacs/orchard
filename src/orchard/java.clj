@@ -75,6 +75,10 @@
 ;; internal APIs out of necessity. Once this project discontinues support for
 ;; JDK8, the legacy parser may be removed.
 
+(def parser-available-exception
+  "The exception found, if any, while trying to load `orchard.java.parser-next`."
+  (atom nil))
+
 (def parser-next-available?
   (delay ;; avoid the side-effects at compile-time
     (atom ;; make the result mutable - this is helpful in case the detection below wasn't sufficient
@@ -87,10 +91,11 @@
              (Class/forName "com.sun.tools.javac.code.Type$ArrayType")
              (do
                ;; require the whole namespace in case there's some other source of problems (e.g. some other missing `opens`)
-               (require '[orchard.java.parser-next])
+               (require 'orchard.java.parser-next)
                ((resolve 'orchard.java.parser-next/source-info) `String :throw))
              true)
-            (catch Throwable _
+            (catch Throwable e
+              (reset! parser-available-exception e)
               false))))))
 
 (defn source-info*
@@ -123,6 +128,7 @@
             ;; if there was an IllegalAccessError, the parser was mistakenly detected as available,
             ;; so we update the detection and retry:
             (reset! @parser-next-available? false)
+            (reset! parser-available-exception e)
             (apply (choose) args)))))))
 
 (defn source-info

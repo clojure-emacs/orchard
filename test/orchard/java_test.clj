@@ -77,6 +77,8 @@
           c2 (class-info 'clojure.lang.Range$BoundsCheck)
           c3 (class-info 'not.actually.AClass)
           thread-class-info (class-info `Thread)]
+      (when-not @@sut/parser-next-available?
+        (throw @sut/parser-available-exception))
       (testing "Class"
         (testing "source file"
           (is (string? (:file c1)))
