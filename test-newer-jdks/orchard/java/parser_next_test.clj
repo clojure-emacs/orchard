@@ -9,7 +9,7 @@
    (orchard.java DummyClass)))
 
 (when (System/getenv "CI")
-  (println "has-enriched-classpath?" (pr-str (util/has-enriched-classpath?))))
+  (println "has-enriched-classpath?" (pr-str util/has-enriched-classpath?)))
 
 (when (and util/has-enriched-classpath?
            @@java/parser-next-available?)
