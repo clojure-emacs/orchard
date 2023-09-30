@@ -87,8 +87,11 @@
         (testing "member info"
           (is (map? (:members c1)))
           (is (every? map? (vals (:members c1))))
-          (is (apply (every-pred :name :modifiers)
-                     (mapcat vals (vals (:members c1))))))
+          (let [members (mapcat vals (vals (:members c1)))]
+            (assert (seq members))
+            (doseq [m members]
+              (is (contains? m :name))
+              (assert (is (contains? m :modifiers))))))
         (testing "doesn't throw on classes without dots in classname"
           (let [reified (binding [*ns* (create-ns 'foo)]
                           (clojure.core/eval
@@ -478,4 +481,4 @@
             (is (not (string/includes? s "^Object Object")))
             (is (not (string/includes? s "^function.Function java.util.function.Function")))
             (is (not (string/includes? s "^java.util.function.Function java.util.function.Function")))
-            (is (not (string/includes? s "java.lang")))))))))
+            (assert (is (not (string/includes? s "java.lang"))))))))))
