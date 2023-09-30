@@ -50,30 +50,36 @@
                       :dependencies [[org.clojure/clojure "1.12.0-master-SNAPSHOT"]
                                      [org.clojure/clojure "1.12.0-master-SNAPSHOT" :classifier "sources"]]}
 
-             :test {:dependencies [[org.clojure/tools.namespace "1.4.4"] ;; for cognitect.test-runner
-                                   [org.clojure/tools.cli "1.0.206"] ;; for cognitect.test-runner
-                                   [org.clojure/java.classpath "1.0.0"]]
+
+             :test {:dependencies [[org.clojure/java.classpath "1.0.0"]]
                     :resource-paths ["test-resources"
                                      "not-a.jar"
                                      "does-not-exist.jar"]
                     :java-source-paths ["test-java"]
-                    :middleware [~(do
-                                    (defn add-cognitest [{:keys [test-paths] :as project}]
-                                      (assert (seq test-paths))
-                                      (let [cmd (reduce into [["cognitect.test-runner"]
-                                                              (vec
-                                                               (interleave (take (count test-paths)
-                                                                                 (repeat "--dir"))
-                                                                           test-paths))
-                                                              ["--namespace-regex" (pr-str ".*")]])]
-                                        (assoc-in project [:enrich-classpath :main] (clojure.string/join " " cmd))))
-                                    `add-cognitest)]
                     ;; Initialize the cache verbosely, as usual, so that possible issues can be more easily diagnosed:
                     :jvm-opts
                     ["-Dorchard.initialize-cache.silent=false"
                      "-Dorchard.internal.test-suite-running=true"]
                     :test-paths ["test"]
-                    :source-paths ["src-spec-alpha-2/src/main/clojure" "test-runner/src"]}
+                    :source-paths ["test-runner/src"]}
+
+             ;; Running the tests with enrich-classpath doing its thing isn't compatible with `lein test`,
+             ;; So we use cognitect.test-runner instead.
+             :cognitest {:dependencies [[org.clojure/tools.namespace "1.4.4"]
+                                        [org.clojure/tools.cli "1.0.206"]]
+                         :source-paths ["test-runner/src"]
+                         ;; This piece of middleware dynamically adds the test paths to a cognitect.test-runner main invocation.
+                         :middleware [~(do
+                                         (defn add-cognitest [{:keys [test-paths] :as project}]
+                                           (assert (seq test-paths))
+                                           (let [cmd (reduce into [["cognitect.test-runner"]
+                                                                   (vec
+                                                                    (interleave (take (count test-paths)
+                                                                                      (repeat "--dir"))
+                                                                                test-paths))
+                                                                   ["--namespace-regex" (pr-str ".*")]])]
+                                             (assoc-in project [:enrich-classpath :main] (clojure.string/join " " cmd))))
+                                         `add-cognitest)]}
 
              ;; Development tools
              :dev {:plugins [[cider/cider-nrepl "0.38.1"]
