@@ -86,7 +86,7 @@
              (Class/forName "com.sun.tools.javac.tree.DCTree$DCBlockTag")
              (Class/forName "com.sun.tools.javac.code.Type$ArrayType")
              (do
-               ;; require the whole namespace in case there's some other source of problems (e.g. some other missing opene)
+               ;; require the whole namespace in case there's some other source of problems (e.g. some other missing `opens`)
                (require '[orchard.java.parser-next])
                ((resolve 'orchard.java.parser-next/source-info) `String :throw))
              true)
