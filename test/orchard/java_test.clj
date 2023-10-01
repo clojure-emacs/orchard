@@ -449,7 +449,7 @@
        (filter :returns)))
 
 (when (and util/has-enriched-classpath?
-           modern-java?)
+           @@sut/parser-next-available?)
   (deftest reflect-and-source-info-match
     (testing "reflect and source info structurally match, allowing a meaningful deep-merge of both"
       (let [extract-arities (fn [info]
@@ -497,7 +497,7 @@
                   "The deep-merge went ok"))))))))
 
 (when (and util/has-enriched-classpath?
-           modern-java?)
+           @@sut/parser-next-available?)
   (deftest annotated-arglists-test
     (doseq [class-symbol (class-corpus)
             :let [info (sut/class-info* class-symbol)
