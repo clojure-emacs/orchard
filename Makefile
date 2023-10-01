@@ -90,6 +90,7 @@ $(TEST_RUNNER_SOURCE_DIR):
 # Launches a repl, falling back to vanilla lein repl if something went wrong during classpath calculation.
 lein-repl: .enrich-classpath-lein-repl
 	@if grep --silent " -cp " .enrich-classpath-lein-repl; then \
+		export YOURKIT_SESSION_NAME="$(basename $(PWD))"; \
 		eval "$$(cat .enrich-classpath-lein-repl) --interactive"; \
 	else \
 		echo "Falling back to lein repl... (you can avoid further falling back by removing .enrich-classpath-lein-repl)"; \
