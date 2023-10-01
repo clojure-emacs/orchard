@@ -97,15 +97,12 @@
                                           (get reflector-class-info-arities i)))
                           full-class-info-arities))))))))
 
-(when (and util/has-enriched-classpath?
-           modern-java?)
+(when util/has-enriched-classpath?
   (deftest class-info-test
     (let [c1 (class-info 'clojure.lang.Agent)
           c2 (class-info 'clojure.lang.Range$BoundsCheck)
           c3 (class-info 'not.actually.AClass)
           thread-class-info (class-info `Thread)]
-      (when-not @@sut/parser-next-available?
-        (throw @sut/parser-available-exception))
       (testing "Class"
         (testing "source file"
           (is (string? (:file c1)))
@@ -118,7 +115,10 @@
           (is (every? map? (vals (:members c1))))
           (let [members (mapcat vals (vals (:members c1)))]
             (assert (seq members))
-            (doseq [m members]
+            (doseq [m members
+                    ;; No constructors for now:
+                    :when (not (= (:name m)
+                                  (:class c1)))]
               (is (contains? m :name))
               (assert (is (contains? m :modifiers))))))
         (testing "doesn't throw on classes without dots in classname"

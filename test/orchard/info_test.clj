@@ -538,14 +538,14 @@
   (deftest info-java-member-precedence-test
     (testing "Integer/max - issue #86"
       (let [i (info/info* {:ns 'user :sym 'Integer/max})]
-        (is (= (select-keys i [:class :member :modifiers :throws :argtypes :arglists :returns])
-               '{:throws ()
+        (is (= '{:throws ()
                  :argtypes [int int]
                  :member max
                  :modifiers #{:public :static}
                  :class java.lang.Integer
                  :arglists ([a b])
-                 :returns int}))
+                 :returns int}
+               (select-keys i [:class :member :modifiers :throws :argtypes :arglists :returns])))
         (is (re-find #"Returns the greater of two" (:doc i)))))))
 
 (def some-var nil)
