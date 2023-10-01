@@ -77,8 +77,8 @@ commands:
       clojure_version:
         description: Will be used as part of the cache key. Especially important for unzipped-jdk-source
         type: string
-      enrich_classpath:
-        description: Whether enrich-classpath will be applied.
+      parser_target:
+        description: The Java parser to be exercised
         type: string
       files:
         description: Files to consider when creating the cache key
@@ -131,7 +131,7 @@ jobs:
     steps:
       - checkout
       - with_cache:
-          enrich_classpath: "false"
+          parser_target: "parser"
           cache_version: "util-job-v1"
           jdk_version: << parameters.jdk_version >>
           clojure_version: "1.11"
@@ -159,8 +159,8 @@ jobs:
       test_profiles:
         description: Maps directly to the TEST_PROFILES var in Makefile
         type: string
-      enrich_classpath:
-        description: Whether enrich-classpath will be applied.
+      parser_target:
+        description: The Java parser to be exercised
         type: string
     executor: << parameters.jdk_version >>
     environment:
@@ -171,12 +171,12 @@ jobs:
       - with_cache:
           jdk_version: << parameters.jdk_version >>
           clojure_version: << parameters.clojure_version >>
-          enrich_classpath: << parameters.enrich_classpath >>
+          parser_target: << parameters.parser_target >>
           cache_version: "test_code-v2"
           steps:
             - run:
                 name: Running tests
-                command: ENRICH_CLASSPATH=<< parameters.enrich_classpath >> make test
+                command: PARSER_TARGET=<< parameters.parser_target >> make test
             # Eastwood is run for every item in the CI matrix, because its results are sensitive to the code in the runtime,
             # so we make the most out of this linter by exercising all profiles, JDK versions, etc.
             - run:
@@ -207,7 +207,7 @@ workflows:
               jdk_version: [openjdk8, openjdk11, openjdk16, openjdk17]
               clojure_version: ["1.8", "1.9", "1.10", "1.11", "master"]
               test_profiles: ["-user,-dev,+test,-provided", "-user,-dev,+test,+provided"]
-              enrich_classpath: ["true", "false"]
+              parser_target: ["parser-next", "parser", "legacy-parser"]
           filters:
             branches:
               only: /.*/
