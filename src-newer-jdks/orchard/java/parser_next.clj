@@ -22,7 +22,8 @@
   (:require
    [clojure.java.io :as io]
    [clojure.string :as string]
-   [orchard.java.parser-utils :refer [module-name parse-java parse-variable-element position source-path typesym]])
+   [orchard.java.parser-utils :refer [module-name parse-java parse-variable-element position source-path typesym]]
+   [orchard.misc :as misc])
   (:import
    (com.sun.source.doctree DocCommentTree)
    (javax.lang.model.element Element ElementKind ExecutableElement TypeElement VariableElement)
@@ -251,11 +252,6 @@
          (docstring o env)
          (position o env)))
 
-(defn remove-type-param [s]
-  (-> s
-      (string/replace #"<.*" "")
-      (string/replace #"\[.*" "")))
-
 (defn parse-executable-element [^ExecutableElement m env]
   (let [parameters (.getParameters m)
         type->sym #(-> ^VariableElement % .asType (typesym env))]
@@ -277,7 +273,7 @@
                                                             (some-> ast .getUpperBound)
                                                             (some-> ast .getOriginalType))
                                                         str
-                                                        remove-type-param
+                                                        misc/remove-type-param
                                                         symbol))]
                                      (some-> (or best
                                                  (type->sym element))

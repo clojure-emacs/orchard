@@ -264,13 +264,14 @@
   (let [arglist (extract-arglist static? x)
         parameter-type (extract-parameter-type static? x)
         sb (StringBuilder.)
-        package-re (re-pattern (str "^"
-                                    (string/replace package "." "\\.")
-                                    "\\."))
+        package-re (when package
+                     (re-pattern (str "^"
+                                      (string/replace package "." "\\.")
+                                      "\\.")))
         shorten (fn [s]
-                  (-> s
-                      (string/replace package-re "")
-                      (string/replace #"^java\.lang\." "")))
+                  (cond-> s
+                    package (string/replace package-re "")
+                    true (string/replace #"^java\.lang\." "")))
         fill-arglist!
         (fn []
           (into []

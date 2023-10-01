@@ -18,6 +18,7 @@
                  {:name orchard.java.DummyClass,
                   :type void,
                   :argtypes [],
+                  :non-generic-argtypes []
                   :argnames [],
                   :doc nil,
                   :line 12,
@@ -28,6 +29,7 @@
                   :type java.lang.String,
                   :argtypes [],
                   :argnames [],
+                  :non-generic-argtypes []
                   :doc "Method-level docstring. @return the string \"hello\"",
                   :line 18,
                   :column 5}}},
