@@ -59,19 +59,43 @@
 
 (deftest map-structure-test
   (testing "Parsed map structure = reflected map structure"
-    (let [excluded-cols #{:file :line :column :doc :argnames :non-generic-argtypes :annotated-arglists
+    (let [class-sym 'clojure.lang.Compiler ;; XXX more
+          excluded-cols #{:file :line :column :doc :argnames :non-generic-argtypes :annotated-arglists
                           :doc-first-sentence-fragments :doc-fragments :doc-block-tags-fragments :argtypes :path :resource-url}
-          keys= (fn [a b]
-                  (is (= (set (keys (apply dissoc a excluded-cols)))
-                         (set (keys (apply dissoc b excluded-cols))))))
-          c1 (class-info* 'clojure.lang.Compiler)
-          c2 (with-redefs [source-info (constantly nil)]
-               (class-info* 'clojure.lang.Compiler))]
-      ;; Class info
-      (testing (str "Difference: "
-                    (pr-str [(remove (set (keys c1)) (keys c2))
-                             (remove (set (keys c2)) (keys c1))]))
-        (is (keys= c1 c2))))))
+          extract-keys (fn [x]
+                         (->> excluded-cols
+                              (apply dissoc x)
+                              (keys)
+                              (set)
+                              (sort-by pr-str)))
+          assert-keys= (fn [a b]
+                         (let [aa (extract-keys a)
+                               bb (extract-keys b)]
+                           (testing (pr-str {:only-in-reflector (remove (set aa) bb)
+                                             :only-in-full (remove (set bb) aa)})
+                             (doall
+                              (map-indexed (fn [i _]
+                                             (is (= (get aa i)
+                                                    (get bb i))))
+                                           aa)))))
+          full-class-info (class-info* 'clojure.lang.Compiler)
+          reflector-class-info (with-redefs [source-info (constantly nil)]
+                                 (class-info* class-sym))]
+      (testing class-sym
+        (testing "Class info"
+          (assert-keys= full-class-info reflector-class-info))
+        (testing "Members info"
+          (is (keys (:members full-class-info)))
+          (assert-keys= (:members full-class-info)
+                        (:members reflector-class-info)))
+        (testing "Arities info"
+          (let [full-class-info-arities (-> full-class-info :members vals vec)
+                reflector-class-info-arities (-> reflector-class-info :members vals vec)]
+            (doall
+             (map-indexed (fn [i _]
+                            (assert-keys= (get full-class-info-arities i)
+                                          (get reflector-class-info-arities i)))
+                          full-class-info-arities))))))))
 
 (when (and util/has-enriched-classpath?
            modern-java?)
