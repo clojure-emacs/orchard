@@ -13,21 +13,13 @@
     (testing "file on the filesystem"
       (is (= {:class 'orchard.java.DummyClass,
               :members
-              '{orchard.java.DummyClass
-                {[]
-                 {:name orchard.java.DummyClass,
-                  :type void,
-                  :argtypes [],
-                  :argnames [],
-                  :doc nil,
-                  :line 12,
-                  :column 8}},
-                dummyMethod
+              '{dummyMethod
                 {[]
                  {:name dummyMethod,
                   :type java.lang.String,
                   :argtypes [],
                   :argnames [],
+                  :non-generic-argtypes []
                   :doc "Method-level docstring. @return the string \"hello\"",
                   :line 18,
                   :column 5}}},

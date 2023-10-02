@@ -193,3 +193,11 @@
   [x]
   (when (and (coll? x) (not (lazy-seq? x)))
     (count x)))
+
+(defn normalize-subclass [s]
+  (string/replace s "$" "."))
+
+(defn remove-type-param [s]
+  (-> s
+      (string/replace #"<.*" "")
+      (string/replace #"\[.*" "")))

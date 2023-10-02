@@ -10,7 +10,9 @@
   (:import
    (mx.cider.orchard LruMap)))
 
-(def jdk-parser? (or (>= misc/java-api-version 9) jdk-tools))
+(def modern-java? (>= misc/java-api-version 9))
+
+(def jdk-parser? (or modern-java? jdk-tools))
 
 (javadoc/add-remote-javadoc "com.amazonaws." "http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/")
 (javadoc/add-remote-javadoc "org.apache.kafka." "https://kafka.apache.org/090/javadoc/")
@@ -57,26 +59,43 @@
 
 (deftest map-structure-test
   (testing "Parsed map structure = reflected map structure"
-    (let [cols #{:file :line :column :doc :argnames :doc-first-sentence-fragments :doc-fragments :doc-block-tags-fragments :argtypes :path :resource-url}
-          keys= #(= (set (keys (apply dissoc %1 cols)))
-                    (set (keys %2)))
-          c1 (class-info* 'clojure.lang.Compiler)
-          c2 (with-redefs [source-info (constantly nil)]
-               (class-info* 'clojure.lang.Compiler))]
-      ;; Class info
-      (is (keys= c1 c2)
-          (str "Difference: "
-               (pr-str [(remove (set (keys c1)) (keys c2))
-                        (remove (set (keys c2)) (keys c1))])))
-      ;; Members
-      (is (keys (:members c1)))
-      (is (= (keys (:members c1))
-             (keys (:members c2))))
-      ;; Member info
-      (is (->> (map keys=
-                    (vals (:members c1))
-                    (vals (:members c2)))
-               (every? true?))))))
+    (let [class-sym 'clojure.lang.Compiler ;; XXX more
+          excluded-cols #{:file :line :column :doc :argnames :non-generic-argtypes :annotated-arglists
+                          :doc-first-sentence-fragments :doc-fragments :doc-block-tags-fragments :argtypes :path :resource-url}
+          extract-keys (fn [x]
+                         (->> excluded-cols
+                              (apply dissoc x)
+                              (keys)
+                              (set)
+                              (sort-by pr-str)))
+          assert-keys= (fn [a b]
+                         (let [aa (extract-keys a)
+                               bb (extract-keys b)]
+                           (testing (pr-str {:only-in-reflector (remove (set aa) bb)
+                                             :only-in-full (remove (set bb) aa)})
+                             (doall
+                              (map-indexed (fn [i _]
+                                             (is (= (get aa i)
+                                                    (get bb i))))
+                                           aa)))))
+          full-class-info (class-info* 'clojure.lang.Compiler)
+          reflector-class-info (with-redefs [source-info (constantly nil)]
+                                 (class-info* class-sym))]
+      (testing class-sym
+        (testing "Class info"
+          (assert-keys= full-class-info reflector-class-info))
+        (testing "Members info"
+          (is (keys (:members full-class-info)))
+          (assert-keys= (:members full-class-info)
+                        (:members reflector-class-info)))
+        (testing "Arities info"
+          (let [full-class-info-arities (-> full-class-info :members vals vec)
+                reflector-class-info-arities (-> reflector-class-info :members vals vec)]
+            (doall
+             (map-indexed (fn [i _]
+                            (assert-keys= (get full-class-info-arities i)
+                                          (get reflector-class-info-arities i)))
+                          full-class-info-arities))))))))
 
 (when util/has-enriched-classpath?
   (deftest class-info-test
@@ -94,8 +113,14 @@
         (testing "member info"
           (is (map? (:members c1)))
           (is (every? map? (vals (:members c1))))
-          (is (apply (every-pred :name :modifiers)
-                     (mapcat vals (vals (:members c1))))))
+          (let [members (mapcat vals (vals (:members c1)))]
+            (assert (seq members))
+            (doseq [m members
+                    ;; No constructors for now:
+                    :when (not (= (:name m)
+                                  (:class c1)))]
+              (is (contains? m :name))
+              (assert (is (contains? m :modifiers))))))
         (testing "doesn't throw on classes without dots in classname"
           (let [reified (binding [*ns* (create-ns 'foo)]
                           (clojure.core/eval
@@ -104,7 +129,7 @@
             (is (class-info sym))))
         (testing "that doesn't exist"
           (is (nil? c3))))
-      (when sut/parser-next-available?
+      (when @@sut/parser-next-available?
         (testing "Doc fragments"
           (is (seq (:doc-fragments thread-class-info)))
           (is (seq (:doc-first-sentence-fragments thread-class-info))))))))
@@ -143,7 +168,7 @@
           (testing (-> m6 :doc pr-str)
             (is (-> m6 :doc (string/starts-with? "Called by the garbage collector on an object when garbage collection"))
                 "Contains doc that is clearly defined in Object (the superclass)")))
-        (when sut/parser-next-available?
+        (when @@sut/parser-next-available?
           (testing "Doc fragments"
             (testing "For a field"
               (is (seq (:doc-fragments m4)))
@@ -385,3 +410,110 @@
       (is (= 'java.lang.String (:class (resolve-type (ns-name *ns*) 'String)))))
     (testing "of deftype in clojure.core"
       (is (= 'clojure.core.Eduction (:class (resolve-type 'clojure.core 'Eduction)))))))
+
+(defn- replace-last-dot [^String s]
+  (if (re-find #"(.*\.)" s)
+    (str (second (re-matches #"(.*)(\..*)" s))
+         "$"
+         (subs s (inc (.lastIndexOf s "."))))
+    s))
+
+(defn class-corpus []
+  {:post [(> (count %)
+             50)]}
+  (->> (util/imported-classes 'clojure.core)
+       (into ['java.util.Map 'java.io.File])
+       (into (util/imported-classes (-> ::_ namespace symbol)))
+       ;; Remove classes without methods:
+       (remove (some-fn
+                #{`ThreadDeath
+                  `Void
+                  `RuntimePermission
+                  'clojure.core.Vec
+                  'clojure.core.VecNode
+                  'clojure.core.VecSeq
+                  'clojure.core.ArrayChunk
+                  'clojure.core.Eduction}
+                (fn [s]
+                  (-> s str Class/forName .isInterface))
+                (fn [s]
+                  (->> s str (re-find #"(Exception|Error)$")))))))
+
+(defn extract-method-arities [info]
+  (->> (-> info
+           :members
+           vals)
+       (map vals)
+       (reduce into)
+       ;; Only methods (and not fields) have arglists:
+       (filter :returns)))
+
+(when (and util/has-enriched-classpath?
+           @@sut/parser-next-available?)
+  (deftest reflect-and-source-info-match
+    (testing "reflect and source info structurally match, allowing a meaningful deep-merge of both"
+      (let [extract-arities (fn [info]
+                              (->> info :members vals (map keys) (reduce into)
+                                   (remove nil?) ;; fields
+                                   (sort-by pr-str)))]
+        (require 'orchard.java.parser-next)
+        (doseq [class-symbol (class-corpus)
+                :let [f @(resolve 'orchard.java.parser-next/source-info)
+                      source-info (f class-symbol)
+                      reflect-info (sut/reflect-info (#'sut/reflection-for (eval class-symbol)))
+                      arities-from-source (extract-arities source-info)
+                      arities-from-reflector (extract-arities reflect-info)]]
+          (testing class-symbol
+            (assert (= (count arities-from-source)
+                       (count arities-from-reflector))
+                    [class-symbol
+                     (count arities-from-source)
+                     (count arities-from-reflector)
+                     :source (sort-by pr-str arities-from-source)
+                     :reflector (sort-by pr-str arities-from-reflector)])
+            (assert (or (pos? (count arities-from-source))
+                        (pos? (count arities-from-reflector)))
+                    class-symbol)
+            (doall (map-indexed (fn [i x]
+                                  (is (= x
+                                         (nth arities-from-reflector i)))
+                                  (doseq [s x
+                                          :let [s (-> s str (string/replace "[]" ""))]]
+                                    (assert (is (or (#{"byte" "short" "int" "long" "float" "double" "char" "boolean" "void"}
+                                                     s)
+                                                    (try
+                                                      (Class/forName s)
+                                                      (catch Exception _
+                                                        (Class/forName (replace-last-dot s)))))
+                                                "The "))))
+                                arities-from-source))
+            (assert (is (= arities-from-source
+                           arities-from-reflector)))
+
+            (let [arities-data (extract-method-arities (misc/deep-merge reflect-info source-info))
+                  all-argnames (map :argnames arities-data)]
+              (assert (pos? (count all-argnames)))
+              (is (not-any? nil? all-argnames)
+                  "The deep-merge went ok"))))))))
+
+(when (and util/has-enriched-classpath?
+           @@sut/parser-next-available?)
+  (deftest annotated-arglists-test
+    (doseq [class-symbol (class-corpus)
+            :let [info (sut/class-info* class-symbol)
+                  arities (extract-method-arities info)
+                  all-annotated-arglists (map :annotated-arglists arities)]]
+      (testing class-symbol
+        (assert (pos? (count all-annotated-arglists))
+                class-symbol)
+        (doseq [s all-annotated-arglists]
+          (assert (is (string? s)))
+          (testing s
+            (is (re-find #"\^.*\[" s))
+            ;; Assert that the format doesn't include past bugs:
+            (is (not (string/includes? s "<")))
+            (is (not (string/includes? s "^Object java.lang.Object")))
+            (is (not (string/includes? s "^Object Object")))
+            (is (not (string/includes? s "^function.Function java.util.function.Function")))
+            (is (not (string/includes? s "^java.util.function.Function java.util.function.Function")))
+            (assert (is (not (string/includes? s "java.lang"))))))))))

@@ -22,7 +22,8 @@
   (:require
    [clojure.java.io :as io]
    [clojure.string :as string]
-   [orchard.java.parser-utils :refer [module-name parse-executable-element parse-java parse-variable-element position source-path typesym]])
+   [orchard.java.parser-utils :refer [module-name parse-java parse-variable-element position source-path typesym]]
+   [orchard.misc :as misc])
   (:import
    (com.sun.source.doctree DocCommentTree)
    (javax.lang.model.element Element ElementKind ExecutableElement TypeElement VariableElement)
@@ -251,21 +252,52 @@
          (docstring o env)
          (position o env)))
 
+(defn parse-executable-element [^ExecutableElement m env]
+  (let [parameters (.getParameters m)
+        type->sym #(-> ^VariableElement % .asType (typesym env))]
+    {:name (if (= (.getKind m) ElementKind/CONSTRUCTOR)
+             (-> m .getEnclosingElement (typesym env)) ; class name
+             (-> m .getSimpleName str symbol))         ; method name
+     :type (-> m .getReturnType (typesym env))
+     :argtypes (mapv type->sym parameters)
+     :non-generic-argtypes (mapv (fn [^com.sun.tools.javac.code.Symbol element]
+                                   (let [ast (-> element .asType)
+                                         ast-str (-> ast .getKind str)
+                                         best (when (or (.equals ast-str "TYPEVAR")
+                                                        (.equals ast-str "ARRAY"))
+                                                (some-> (or (when (instance? com.sun.tools.javac.code.Type$ArrayType
+                                                                             ast)
+                                                              (-> ^com.sun.tools.javac.code.Type$ArrayType ast
+                                                                  .getComponentType
+                                                                  .getUpperBound))
+                                                            (some-> ast .getUpperBound)
+                                                            (some-> ast .getOriginalType))
+                                                        str
+                                                        misc/remove-type-param
+                                                        symbol))]
+                                     (some-> (or best
+                                                 (type->sym element))
+                                             str
+                                             (string/replace "$" ".")
+                                             symbol)))
+                                 parameters)
+     :argnames (mapv #(-> ^VariableElement % .getSimpleName str symbol) (.getParameters m))}))
+
 (extend-protocol Parsed
   TypeElement ; => class, interface, enum
   (parse-info* [c env]
     {:class   (typesym c env)
      :members (->> (.getEnclosedElements c)
-                   (filter #(#{ElementKind/CONSTRUCTOR
-                               ElementKind/METHOD
-                               ElementKind/FIELD
-                               ElementKind/ENUM_CONSTANT}
-                             (.getKind ^Element %)))
-                   (map #(parse-info % env))
+                   (filterv #(#{#_ElementKind/CONSTRUCTOR ;; will be enabled when it's also properly implemented at reflector level
+                                ElementKind/METHOD
+                                ElementKind/FIELD
+                                ElementKind/ENUM_CONSTANT}
+                              (.getKind ^Element %)))
+                   (mapv #(parse-info % env))
                    ;; Index by name, argtypes. Args for fields are nil.
                    (group-by :name)
                    (reduce (fn [ret [n ms]]
-                             (assoc ret n (zipmap (map :argtypes ms) ms)))
+                             (assoc ret n (zipmap (mapv :non-generic-argtypes ms) ms)))
                            {}))})
 
   ExecutableElement ;; => method, constructor
@@ -283,7 +315,7 @@
   and return info to supplement reflection. Specifically, this includes source
   file and position, docstring, and argument name info. Info returned has the
   same structure as that of `orchard.java/reflect-info`."
-  [klass]
+  [klass & [throw?]]
   {:pre [(symbol? klass)]}
   (locking lock ;; the jdk.javadoc.doclet classes aren't meant for concurrent modification/access.
     (try
@@ -292,12 +324,12 @@
           (try
             (let [path-resource (io/resource path)]
               (assoc (->> (.getIncludedElements root)
-                          (filter #(#{ElementKind/CLASS
-                                      ElementKind/INTERFACE
-                                      ElementKind/ENUM}
-                                    (.getKind ^Element %)))
-                          (map #(parse-info % root))
-                          (filter #(= klass (:class %)))
+                          (filterv #(#{ElementKind/CLASS
+                                       ElementKind/INTERFACE
+                                       ElementKind/ENUM}
+                                     (.getKind ^Element %)))
+                          (mapv #(parse-info % root))
+                          (filterv #(= klass (:class %)))
                           (first))
                      ;; relative path on the classpath
                      :file path
@@ -307,5 +339,6 @@
                      :resource-url path-resource))
             (finally (.close (.getJavaFileManager root))))))
       (catch Throwable e
-        (when (= "true" (System/getProperty "orchard.internal.test-suite-running"))
+        (when (or throw?
+                  (= "true" (System/getProperty "orchard.internal.test-suite-running")))
           (throw e))))))

@@ -33,10 +33,7 @@
 
   :javac-options ["-Xlint:unchecked"]
 
-
-  :profiles {
-             ;; Clojure versions matrix
-             :provided {:dependencies [[org.clojure/clojure "1.11.1"]
+  :profiles {:provided {:dependencies [[org.clojure/clojure "1.11.1"] ;; Clojure versions matrix
                                        [org.clojure/clojure "1.11.1" :classifier "sources"]
                                        [org.clojure/clojurescript "1.11.4"]]
                         :test-paths ["test-cljs"]}
@@ -53,6 +50,7 @@
                       :dependencies [[org.clojure/clojure "1.12.0-master-SNAPSHOT"]
                                      [org.clojure/clojure "1.12.0-master-SNAPSHOT" :classifier "sources"]]}
 
+
              :test {:dependencies [[org.clojure/java.classpath "1.0.0"]]
                     :resource-paths ["test-resources"
                                      "not-a.jar"
@@ -60,18 +58,31 @@
                     :java-source-paths ["test-java"]
                     ;; Initialize the cache verbosely, as usual, so that possible issues can be more easily diagnosed:
                     :jvm-opts
-                    ~(cond-> ["-Dorchard.initialize-cache.silent=false"
-                              "-Dorchard.internal.test-suite-running=true"]
-                       (not jdk8?) (conj "--add-opens=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED"))
+                    ["-Dorchard.initialize-cache.silent=false"
+                     "-Dorchard.internal.test-suite-running=true"]
+                    :test-paths ["test"]
+                    :source-paths ["test-runner/src"]}
 
-                    :source-paths ["test" "src-spec-alpha-2/src/main/clojure"]}
-
-             :enrich-classpath {:plugins [[mx.cider/enrich-classpath "1.17.0"]]
-                                :middleware [cider.enrich-classpath/middleware]
-                                :enrich-classpath {:shorten true}}
+             ;; Running the tests with enrich-classpath doing its thing isn't compatible with `lein test`,
+             ;; So we use cognitect.test-runner instead.
+             :cognitest {:dependencies [[org.clojure/tools.namespace "1.4.4"]
+                                        [org.clojure/tools.cli "1.0.206"]]
+                         :source-paths ["test-runner/src"]
+                         ;; This piece of middleware dynamically adds the test paths to a cognitect.test-runner main invocation.
+                         :middleware [~(do
+                                         (defn add-cognitest [{:keys [test-paths] :as project}]
+                                           (assert (seq test-paths))
+                                           (let [cmd (reduce into [["cognitect.test-runner"]
+                                                                   (vec
+                                                                    (interleave (take (count test-paths)
+                                                                                      (repeat "--dir"))
+                                                                                test-paths))
+                                                                   ["--namespace-regex" (pr-str ".*")]])]
+                                             (assoc-in project [:enrich-classpath :main] (clojure.string/join " " cmd))))
+                                         `add-cognitest)]}
 
              ;; Development tools
-             :dev {:plugins [[cider/cider-nrepl "0.38.0"]
+             :dev {:plugins [[cider/cider-nrepl "0.38.1"]
                              [refactor-nrepl "3.9.0"]]
                    :dependencies [[nrepl/nrepl "1.0.0"]
                                   [org.clojure/tools.namespace "1.4.4"]]
@@ -101,10 +112,8 @@
                                                                  'orchard.java.parser-next-test)
 
                                                            (or (not jdk8?)
-                                                               (not (-> "TEST_PROFILES"
-                                                                        System/getenv
-                                                                        (doto assert)
-                                                                        (.contains "enrich-classpath"))))
+                                                               (not= "true"
+                                                                     (System/getenv "ENRICH_CLASSPATH")))
                                                            (conj 'orchard.java.legacy-parser))}}
 
              :deploy {:source-paths [".circleci/deploy"]}})

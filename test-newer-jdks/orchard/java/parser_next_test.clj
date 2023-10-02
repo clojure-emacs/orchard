@@ -8,8 +8,11 @@
   (:import
    (orchard.java DummyClass)))
 
+(when (System/getenv "CI")
+  (println "has-enriched-classpath?" (pr-str util/has-enriched-classpath?)))
+
 (when (and util/has-enriched-classpath?
-           java/parser-next-available?)
+           @@java/parser-next-available?)
   (deftest source-info-test
     (is (class? DummyClass))
 
@@ -26,19 +29,7 @@
                  :content
                  "<pre> \n   DummyClass dc = new DummyClass();\n  </pre>"}],
                :members
-               {orchard.java.DummyClass
-                {[]
-                 {:name orchard.java.DummyClass,
-                  :type void,
-                  :doc-first-sentence-fragments [],
-                  :column 8,
-                  :argtypes [],
-                  :line 12,
-                  :argnames [],
-                  :doc-fragments [],
-                  :doc-block-tags-fragments [],
-                  :doc nil}},
-                dummyMethod
+               {dummyMethod
                 {[]
                  {:name dummyMethod,
                   :type java.lang.String,
@@ -46,6 +37,7 @@
                   [{:type "text", :content "Method-level docstring."}],
                   :column 5,
                   :argtypes [],
+                  :non-generic-argtypes []
                   :line 18,
                   :argnames [],
                   :doc-fragments
@@ -71,7 +63,7 @@
                      (str (:resource-url rt-info))))))))
 
 (when (and util/has-enriched-classpath?
-           java/parser-next-available?)
+           @@java/parser-next-available?)
   (deftest doc-fragments-test
     (is (= [{:type "text",
              :content
@@ -101,7 +93,7 @@
                         sut/source-info
                         (get-in [:members
                                  'format
-                                 ['java.util.Locale 'java.lang.String (symbol "java.lang.Object[]")]
+                                 ['java.util.Locale 'java.lang.String 'java.lang.Object]
                                  :doc-fragments])
                         (->> (map :content)))
           s (string/join fragments)]
@@ -111,12 +103,8 @@
           (is (not (string/includes? s "<a")))
           (is (not (string/includes? s "<a href"))))))))
 
-(defn imported-classes [ns-sym]
-  (->> (ns-imports ns-sym)
-       (map #(-> % ^Class val .getName symbol))))
-
 (when (and util/has-enriched-classpath?
-           java/parser-next-available?)
+           @@java/parser-next-available?)
   (deftest smoke-test
     (let [annotations #{'java.lang.Override
                         'java.lang.Deprecated
@@ -124,7 +112,7 @@
           corpus (->> ::_
                       namespace
                       symbol
-                      imported-classes
+                      util/imported-classes
                       (remove annotations)
                       (into ['java.io.File]))]
       (assert (> (count corpus)

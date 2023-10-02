@@ -7,7 +7,7 @@
    [clojure.string :as string])
   (:import
    (java.io StringWriter)
-   (javax.lang.model.element ElementKind ExecutableElement VariableElement)
+   (javax.lang.model.element VariableElement)
    (javax.tools ToolProvider)
    (jdk.javadoc.doclet Doclet DocletEnvironment)))
 
@@ -75,14 +75,6 @@
                                    file (.getLeaf path))]
         {:line (.getLineNumber lines pos)
          :column (.getColumnNumber lines pos)}))))
-
-(defn parse-executable-element [^ExecutableElement m env]
-  {:name (if (= (.getKind m) ElementKind/CONSTRUCTOR)
-           (-> m .getEnclosingElement (typesym env)) ; class name
-           (-> m .getSimpleName str symbol)) ; method name
-   :type (-> m .getReturnType (typesym env))
-   :argtypes (mapv #(-> ^VariableElement % .asType (typesym env)) (.getParameters m))
-   :argnames (mapv #(-> ^VariableElement % .getSimpleName str symbol) (.getParameters m))})
 
 (defn parse-variable-element [^VariableElement f env]
   {:name (-> f .getSimpleName str symbol)

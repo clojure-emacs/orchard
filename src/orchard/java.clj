@@ -75,37 +75,61 @@
 ;; internal APIs out of necessity. Once this project discontinues support for
 ;; JDK8, the legacy parser may be removed.
 
-(def parser-next-available?
-  (and (>= misc/java-api-version 9)
-       (try
-         (and
-          ;; indicates that the necessary `add-opens=...` JVM flag is in place:
-          (Class/forName "com.sun.tools.javac.tree.DCTree$DCBlockTag")
-          ;; require the whole namespace in case there's some other source of problems (e.g. some other missing opene)
-          (require '[orchard.java.parser-next]))
-         true
-         (catch Throwable _
-           false))))
+(def parser-available-exception
+  "The exception found, if any, while trying to load `orchard.java.parser-next`."
+  (atom nil))
 
-(def source-info*
+(def parser-next-available?
+  (delay ;; avoid the side-effects at compile-time
+    (atom ;; make the result mutable - this is helpful in case the detection below wasn't sufficient
+     (and (>= misc/java-api-version 9)
+          (try
+            ;; indicates that the classes are available
+            ;; however it does not indicate if necessary `add-opens=...` JVM flag is in place:
+            (and
+             (Class/forName "com.sun.tools.javac.tree.DCTree$DCBlockTag")
+             (Class/forName "com.sun.tools.javac.code.Type$ArrayType")
+             (do
+               ;; require the whole namespace in case there's some other source of problems (e.g. some other missing `opens`)
+               (require 'orchard.java.parser-next)
+               ((resolve 'orchard.java.parser-next/source-info) `String :throw))
+             true)
+            (catch Throwable e
+              (reset! parser-available-exception e)
+              false))))))
+
+(defn source-info*
   "When a Java parser is available, return class info from its parsed source;
   otherwise return nil."
-  (cond
-    parser-next-available?
-    (do (require '[orchard.java.parser-next :as src])
-        (resolve 'src/source-info))
+  [& args]
+  (let [choose (fn []
+                 (cond
+                   @@parser-next-available?
+                   (do (require '[orchard.java.parser-next])
+                       (resolve 'orchard.java.parser-next/source-info))
 
-    (>= misc/java-api-version 9)
-    (do (require '[orchard.java.parser :as src])
-        (resolve 'src/source-info))
+                   (>= misc/java-api-version 9)
+                   (do (require '[orchard.java.parser])
+                       (resolve 'orchard.java.parser/source-info))
 
-    (not jdk-tools)
-    (constantly nil)
+                   (not jdk-tools)
+                   (constantly nil)
 
-    :else
-    (do
-      (require '[orchard.java.legacy-parser :as src])
-      (resolve 'src/source-info))))
+                   :else
+                   (do
+                     (require '[orchard.java.legacy-parser])
+                     (resolve 'orchard.java.legacy-parser/source-info))))]
+    (try
+      (apply (choose) args)
+      (catch IllegalAccessError e
+        (if-not @@parser-next-available?
+          (throw e)
+          (do
+            ;; if there was an IllegalAccessError, the parser was mistakenly detected as available,
+            ;; so we update the detection and retry:
+            (reset! @parser-next-available? false)
+            (reset! parser-available-exception e)
+            (apply (choose) args)))))))
 
 (defn source-info
   "Ensure that JDK sources are visible on the classpath if present, and return
@@ -158,13 +182,24 @@
   Constructor
   (reflect-info [c]
     {:argtypes (mapv typesym (:parameter-types c))
-     :throws (map typesym (:exception-types c))})
+     :throws (mapv typesym (:exception-types c))})
 
   Method
   (reflect-info [m]
-    {:argtypes (mapv typesym (:parameter-types m))
-     :throws (map typesym (:exception-types m))
-     :returns (typesym (:return-type m))})
+    (let [pts (:parameter-types m)
+          argtypes (mapv typesym pts)]
+      {:argtypes argtypes
+       :non-generic-argtypes (->> argtypes
+                                  (mapv (fn [s]
+                                          ;; make the format match with that of `parser-next`:
+                                          (some-> s
+                                                  str
+                                                  (string/replace "$" ".")
+                                                  (string/replace #"\[.*" "")
+                                                  symbol))))
+       :parameter-types pts
+       :throws (mapv typesym (:exception-types m))
+       :returns (typesym (:return-type m))}))
 
   Field
   (reflect-info [f]
@@ -172,19 +207,34 @@
 
   IPersistentMap ; => Class
   (reflect-info [c]
-    {:name (:name c)
-     :modifiers (:flags c)
-     :members (->> (:members c)
-                   ;; Merge type-specific attributes with common ones.
-                   (map (fn [m]
-                          (merge {:name (:name m)
-                                  :modifiers (:flags m)}
-                                 (reflect-info m))))
-                   ;; Index by name, argtypes. Args for fields are nil.
-                   (group-by :name)
-                   (reduce (fn [ret [n ms]]
-                             (assoc ret n (zipmap (map :argtypes ms) ms)))
-                           {}))}))
+    (let [map-members (->> c
+                           :members
+                           ;; removes:
+                           ;; * compareTo from the interface (only the one from the class itself is relevant)
+                           ;; * lambda$indent$0 (lambda stuff)
+                           (remove (some-fn (comp (partial some #{:synthetic}) :flags)
+                                            (fn [{member-name :name}]
+                                              ;; Removes $$YJP$$sleep (yourkit stuff)
+                                              (some-> member-name str (.contains "$$YJP$$"))))))
+          members (->> map-members
+                       ;; Merge type-specific attributes with common ones.
+                       (map (fn [m]
+                              (merge {:name (:name m)
+                                      :modifiers (:flags m)}
+                                     (reflect-info m))))
+                       ;; Index by name, argtypes. Args for fields are nil.
+                       (group-by :name)
+                       (reduce (fn [ret [n ms]]
+                                 (assoc ret n (zipmap (map :non-generic-argtypes ms) ms)))
+                               {}))
+          class-name (or (:name c)
+                         (some :declaring-class map-members))
+          class-name (if (some-> class-name class?)
+                       (-> ^Class class-name .getName symbol)
+                       class-name)]
+      {:name class-name
+       :modifiers (:flags c)
+       :members (dissoc members class-name)})))
 
 (defn- package
   "An alternative to .getPackage, which works for classes defined with deftype and defrecord.
@@ -198,6 +248,64 @@
       (when (pos? idx)
         (subs kls 0 idx)))))
 
+(defn +this [xs]
+  (into ['this] xs))
+
+(defn extract-arglist [static? xs]
+  ((if static? identity +this)
+   (or (:argnames xs) (:argtypes xs))))
+
+(defn extract-parameter-type [static? xs]
+  ((if static? identity +this)
+   (or (:non-generic-argtypes xs)
+       (:parameter-types xs))))
+
+(defn extract-annotated-arglists [static? package {:keys [returns] :as x}]
+  (let [arglist (extract-arglist static? x)
+        parameter-type (extract-parameter-type static? x)
+        sb (StringBuilder.)
+        package-re (when package
+                     (re-pattern (str "^"
+                                      (string/replace package "." "\\.")
+                                      "\\.")))
+        shorten (fn [s]
+                  (cond-> s
+                    package (string/replace package-re "")
+                    true (string/replace #"^java\.lang\." "")))
+        fill-arglist!
+        (fn []
+          (into []
+                (map-indexed (fn [n i]
+                               (when-not (zero? n)
+                                 (.append sb \,)
+                                 (.append sb \space))
+                               (let [i-str (str i)]
+                                 (when-not (.equals i-str "this")
+                                   (when-let [m (some-> parameter-type
+                                                        (get n) ;; can occasionally return nil
+                                                        str
+                                                        shorten)]
+                                     (.append sb \^)
+                                     (.append sb m)
+                                     (.append sb \space)))
+                                 (.append sb i-str))))
+                arglist))]
+    (when-let [m (some-> returns
+                         str
+                         shorten)]
+      (.append sb \^)
+      (.append sb m)
+      (.append sb \space))
+    (.append sb \[)
+    (fill-arglist!)
+    (.append sb \])
+    (str sb)))
+
+(defn- reflection-for [^Class c]
+  (reflect/reflect c
+                   ;; for dynamically loaded classes:
+                   :reflector (JavaReflector. (.getClassLoader c))))
+
 (defn class-info*
   "For the class symbol, return Java class and member info. Members are indexed
   first by name, and then by argument types to list all overloads."
@@ -205,15 +313,27 @@
   (when-let [^Class c (try (Class/forName (str class))
                            (catch Exception _)
                            (catch LinkageError _))]
-    (let [r (JavaReflector. (.getClassLoader c))] ; for dynamically loaded classes
-      (misc/deep-merge (reflect-info (reflect/reflect c :reflector r))
-                       (source-info class)
-                       {:name       (-> c .getSimpleName symbol)
-                        :class      (-> c .getName symbol)
-                        :package    (some-> c package symbol)
-                        :super      (-> c .getSuperclass typesym)
-                        :interfaces (map typesym (.getInterfaces c))
-                        :javadoc    (javadoc-url class)}))))
+    (let [package (some-> c package symbol)
+          {:keys [members] :as result} (misc/deep-merge (reflect-info (reflection-for c))
+                                                        (source-info class)
+                                                        {:name       (-> c .getSimpleName symbol)
+                                                         :class      (-> c .getName symbol)
+                                                         :package    package
+                                                         :super      (-> c .getSuperclass typesym)
+                                                         :interfaces (map typesym (.getInterfaces c))
+                                                         :javadoc    (javadoc-url class)})]
+      (assoc result
+             :members (into {}
+                            (map (fn [[method arities]]
+                                   [method (into {}
+                                                 (map (fn [[k arity]]
+                                                        [k (let [static? (:static (:modifiers arity))]
+                                                             (-> arity
+                                                                 (assoc :annotated-arglists
+                                                                        (extract-annotated-arglists static? package arity))
+                                                                 (dissoc :non-generic-argtypes)))]))
+                                                 arities)]))
+                            members)))))
 
 ;;; ## Class Metadata Caching
 ;;
@@ -295,14 +415,13 @@
               :else (recur super))))]
     (when-let [m (get-in c [:members member])]
       (let [m* (first (sort-by :line (vals m)))
-            static? (or (:static (:modifiers m*)) (= class member))
-            +this   (comp vec (partial cons 'this))]
+            static? (or (:static (:modifiers m*))
+                        (= class member))]
         (-> (dissoc m* :name :argnames)
             (assoc :class class
                    :member member
                    :file (:file c)
-                   :arglists (map #((if static? identity +this)
-                                    (or (:argnames %) (:argtypes %)))
+                   :arglists (map (partial extract-arglist static?)
                                   (vals m))
                    :javadoc (javadoc-url class member
                                          (:argtypes m*))))))))
@@ -423,9 +542,9 @@
     initialize-cache-silently? util.io/wrap-silently))
 
 (def cache-initializer
-  "On startup, cache info for a few classes.
+  "Cache info for a few classes.
   This also warms up the cache for some underlying, commonly neeed classes (e.g. `Object`).
 
   This is a def for allowing others to wait for this workload to complete (can be useful sometimes)."
-  (future
+  (delay ;; NOTE: this used to be a `future`, but that can cause odd issues.
     (initialize-cache!)))

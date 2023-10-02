@@ -1,10 +1,15 @@
 .PHONY: test quick-test docs eastwood cljfmt kondo install deploy clean lein-repl repl lint .EXPORT_ALL_VARIABLES
 .DEFAULT_GOAL := install
 
+# Set bash instead of sh for the @if [[ conditions,
+# and use the usual safety flags:
+SHELL = /bin/bash -Eeu
+
 HOME=$(shell echo $$HOME)
 VERSION ?= 1.11
-TEST_PROFILES ?= +test
+TEST_PROFILES ?= "-user,-dev,+test"
 SPEC2_SOURCE_DIR = src-spec-alpha-2
+TEST_RUNNER_SOURCE_DIR = test-runner
 
 # The Lein profiles that will be selected for `lein-repl`.
 # Feel free to upgrade this, or to override it with an env var named LEIN_PROFILES.
@@ -14,31 +19,65 @@ LEIN_PROFILES ?= "+dev,+test,+1.11"
 
 # The enrich-classpath version to be injected.
 # Feel free to upgrade this.
-ENRICH_CLASSPATH_VERSION="1.17.0"
+ENRICH_CLASSPATH_VERSION="1.18.0"
 
 resources/clojuredocs/export.edn:
 curl -o $@ https://github.com/clojure-emacs/clojuredocs-export-edn/raw/master/exports/export.compact.edn
 
-# .EXPORT_ALL_VARIABLES passes TEST_PROFILES to Lein so that it can inspect the active profiles, which is needed for a complete Eastwood setup:
-test: clean $(SPEC2_SOURCE_DIR) .EXPORT_ALL_VARIABLES
-	lein with-profile -user,-dev,+$(VERSION),$(TEST_PROFILES) test
+OS := $(shell uname)
+
+ifeq ($(OS),Darwin) # macOS
+	SED_INPLACE = -i ''
+else
+	SED_INPLACE = -i
+endif
+
+# The enrich-classpath variant runs the suite twice: once with the add-opens (java.parser-next will be used),
+# one without (java.parser will be used).
+test: clean $(SPEC2_SOURCE_DIR) $(TEST_RUNNER_SOURCE_DIR) .EXPORT_ALL_VARIABLES
+	@if [[ "$$PARSER_TARGET" == "parser-next" ]] ; then \
+		bash 'lein' 'update-in' ':plugins' 'conj' "[mx.cider/lein-enrich-classpath \"$(ENRICH_CLASSPATH_VERSION)\"]" '--' 'with-profile' $(TEST_PROFILES),+cognitest,+$(VERSION) 'update-in' ':middleware' 'conj' 'cider.enrich-classpath.plugin-v2/middleware' '--' 'repl' | grep " -cp " > .test-classpath; \
+		cat .test-classpath; \
+		eval "$$(cat .test-classpath)"; \
+		rm .test-classpath; \
+	elif [[ "$$PARSER_TARGET" == "parser" ]] ; then \
+		bash 'lein' 'update-in' ':plugins' 'conj' "[mx.cider/lein-enrich-classpath \"$(ENRICH_CLASSPATH_VERSION)\"]" '--' 'with-profile' $(TEST_PROFILES),+cognitest,+$(VERSION) 'update-in' ':middleware' 'conj' 'cider.enrich-classpath.plugin-v2/middleware' '--' 'repl' | grep " -cp " > .test-classpath; \
+		cat .test-classpath; \
+		sed  $(SED_INPLACE) 's/--add-opens=jdk.compiler\/com.sun.tools.javac.code=ALL-UNNAMED//g' .test-classpath; \
+		sed  $(SED_INPLACE) 's/--add-opens=jdk.compiler\/com.sun.tools.javac.tree=ALL-UNNAMED//g' .test-classpath; \
+		cat .test-classpath; \
+		eval "$$(cat .test-classpath)"; \
+		rm .test-classpath; \
+	elif [[ "$$PARSER_TARGET" == "legacy-parser" ]] ; then \
+		lein with-profile -user,-dev,+$(VERSION),$(TEST_PROFILES) test; \
+	else \
+		echo "PARSER_TARGET unset!"; \
+		exit 1; \
+	fi
 
 quick-test: test
 
 eastwood:
+	rm -rf $(TEST_RUNNER_SOURCE_DIR)
 	lein with-profile -user,-dev,+$(VERSION),+eastwood,+deploy,$(TEST_PROFILES) eastwood
+	rm -rf $(TEST_RUNNER_SOURCE_DIR)
 
 cljfmt:
+	rm -rf $(TEST_RUNNER_SOURCE_DIR)
 	lein with-profile -user,-dev,+$(VERSION),+deploy,+cljfmt cljfmt check
+	rm -rf $(TEST_RUNNER_SOURCE_DIR)
 
 # Note that -dev is necessary for not hitting OOM errors in CircleCI
 .make_kondo_prep: project.clj .clj-kondo/config.edn
 	lein with-profile -dev,+test,+clj-kondo,+deploy clj-kondo --copy-configs --dependencies --parallel --lint '$$classpath' > $@
 
 kondo: .make_kondo_prep clean
+	rm -rf $(TEST_RUNNER_SOURCE_DIR)
 	lein with-profile -dev,+test,+clj-kondo,+deploy clj-kondo
+	rm -rf $(TEST_RUNNER_SOURCE_DIR)
 
 lint: kondo cljfmt eastwood
+	rm -rf $(TEST_RUNNER_SOURCE_DIR)
 
 # Deployment is performed via CI by creating a git tag prefixed with "v".
 # Please do not deploy locally as it skips various measures.
@@ -56,6 +95,9 @@ clean:
 $(SPEC2_SOURCE_DIR):
 	@if [ ! -d "$(SPEC2_SOURCE_DIR)" ]; then git clone https://github.com/clojure/spec-alpha2.git $(SPEC2_SOURCE_DIR) --depth=1; fi
 
+$(TEST_RUNNER_SOURCE_DIR):
+	@if [ ! -d "$(TEST_RUNNER_SOURCE_DIR)" ]; then git clone https://github.com/cognitect-labs/test-runner.git $(TEST_RUNNER_SOURCE_DIR) --depth=1; fi
+
 .javac: $(wildcard test-java/orchard/*.clj)
 	lein with-profile +test javac
 	touch $@
@@ -68,6 +110,7 @@ $(SPEC2_SOURCE_DIR):
 # Launches a repl, falling back to vanilla lein repl if something went wrong during classpath calculation.
 lein-repl: .enrich-classpath-lein-repl
 	@if grep --silent " -cp " .enrich-classpath-lein-repl; then \
+		export YOURKIT_SESSION_NAME="$(basename $(PWD))"; \
 		eval "$$(cat .enrich-classpath-lein-repl) --interactive"; \
 	else \
 		echo "Falling back to lein repl... (you can avoid further falling back by removing .enrich-classpath-lein-repl)"; \

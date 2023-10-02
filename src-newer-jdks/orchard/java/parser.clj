@@ -8,7 +8,8 @@
   (:require
    [clojure.java.io :as io]
    [clojure.string :as string]
-   [orchard.java.parser-utils :refer [module-name parse-executable-element parse-java parse-variable-element position source-path typesym]])
+   [orchard.java.parser-utils :refer [module-name parse-java parse-variable-element position source-path typesym]]
+   [orchard.misc :as misc])
   (:import
    (java.io StringReader)
    (javax.lang.model.element Element ElementKind ExecutableElement TypeElement VariableElement)
@@ -175,9 +176,22 @@
 
 (defn parse-info
   [o env]
-  (merge (parse-info* o env)
-         (docstring o env)
-         (position o env)))
+  (when-let [p (parse-info* o env)]
+    (merge p
+           (docstring o env)
+           (position o env))))
+
+(defn parse-executable-element [^ExecutableElement m env]
+  (let [a (mapv #(-> ^VariableElement % .asType (typesym env)) (.getParameters m))
+        constructor? (= (.getKind m) ElementKind/CONSTRUCTOR)]
+    (when-not constructor? ;; no constructors for now
+      {:name (if constructor?
+               (-> m .getEnclosingElement (typesym env)) ; class name
+               (-> m .getSimpleName str symbol))         ; method name
+       :type (-> m .getReturnType (typesym env))
+       :argtypes a
+       :non-generic-argtypes (->> a (mapv (comp symbol misc/normalize-subclass misc/remove-type-param str)))
+       :argnames (mapv #(-> ^VariableElement % .getSimpleName str symbol) (.getParameters m))})))
 
 (extend-protocol Parsed
   TypeElement ;; => class, interface, enum
@@ -189,11 +203,11 @@
                                ElementKind/FIELD
                                ElementKind/ENUM_CONSTANT}
                              (.getKind ^Element %)))
-                   (map #(parse-info % env))
+                   (keep #(parse-info % env))
                    ;; Index by name, argtypes. Args for fields are nil.
                    (group-by :name)
                    (reduce (fn [ret [n ms]]
-                             (assoc ret n (zipmap (map :argtypes ms) ms)))
+                             (assoc ret n (zipmap (map :non-generic-argtypes ms) ms)))
                            {}))})
 
   ExecutableElement ;; => method, constructor
@@ -224,7 +238,7 @@
                                       ElementKind/INTERFACE
                                       ElementKind/ENUM}
                                     (.getKind ^Element %)))
-                          (map #(parse-info % root))
+                          (keep #(parse-info % root))
                           (filter #(= klass (:class %)))
                           (first))
                      ;; relative path on the classpath

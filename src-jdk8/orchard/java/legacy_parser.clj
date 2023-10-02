@@ -5,7 +5,8 @@
    :no-doc true}
   (:require
    [clojure.java.io :as io]
-   [clojure.string :as string])
+   [clojure.string :as string]
+   [orchard.misc :as misc])
   (:import
    (com.sun.javadoc ClassDoc ConstructorDoc Doc FieldDoc MethodDoc
                     Parameter RootDoc Tag Type)
@@ -219,15 +220,19 @@
 (extend-protocol Parsed
   ConstructorDoc
   (parse-info [c]
-    {:name (-> c .qualifiedName symbol)
-     :argtypes (mapv #(-> ^Parameter % .type typesym) (.parameters c))
-     :argnames (mapv #(-> ^Parameter % .name symbol) (.parameters c))})
+    (let [a (mapv #(-> ^Parameter % .type typesym) (.parameters c))]
+      {:name (-> c .qualifiedName symbol)
+       :argtypes a
+       :non-generic-argtypes (->> a (mapv (comp symbol misc/normalize-subclass misc/remove-type-param str)))
+       :argnames (mapv #(-> ^Parameter % .name symbol) (.parameters c))}))
 
   MethodDoc
   (parse-info [m]
-    {:argtypes (mapv #(-> ^Parameter % .type typesym) (.parameters m))
-     :argnames (mapv #(-> ^Parameter % .name symbol) (.parameters m))
-     :type (str (.returnType m))})
+    (let [a (mapv #(-> ^Parameter % .type typesym) (.parameters m))]
+      {:argtypes a
+       :non-generic-argtypes (->> a (mapv (comp symbol misc/normalize-subclass misc/remove-type-param str)))
+       :argnames (mapv #(-> ^Parameter % .name symbol) (.parameters m))
+       :type (str (.returnType m))}))
 
   FieldDoc
   (parse-info [f]
@@ -250,7 +255,7 @@
                    ;; Index by name, argtypes. Args for fields are nil.
                    (group-by :name)
                    (reduce (fn [ret [n ms]]
-                             (assoc ret n (zipmap (map :argtypes ms) ms)))
+                             (assoc ret n (zipmap (mapv :non-generic-argtypes ms) ms)))
                            {}))}))
 
 (defn source-path
