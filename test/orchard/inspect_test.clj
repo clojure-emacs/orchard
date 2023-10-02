@@ -934,8 +934,6 @@
 
         ((misc/call-when-resolved 'clojure.core/add-tap) test-tap-handler)
 
-        (let [tries (atom 0)])
-
         (-> (inspect/fresh)
             (inspect/start {:a {:b 1}})
             (inspect/tap-current-value)
