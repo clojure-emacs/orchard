@@ -51,7 +51,7 @@ test: clean $(SPEC2_SOURCE_DIR) $(TEST_RUNNER_SOURCE_DIR) .EXPORT_ALL_VARIABLES
 	elif [[ "$$PARSER_TARGET" == "legacy-parser" ]] ; then \
 		lein with-profile -user,-dev,+$(VERSION),$(TEST_PROFILES) test; \
 	else \
-    echo "PARSER_TARGET unset!"; \
+		echo "PARSER_TARGET unset!"; \
 		exit 1; \
 	fi
 
