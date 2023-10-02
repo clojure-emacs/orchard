@@ -115,10 +115,7 @@
           (is (every? map? (vals (:members c1))))
           (let [members (mapcat vals (vals (:members c1)))]
             (assert (seq members))
-            (doseq [m members
-                    ;; No constructors for now:
-                    :when (not (= (:name m)
-                                  (:class c1)))]
+            (doseq [m members]
               (is (contains? m :name))
               (assert (is (contains? m :modifiers))))))
         (testing "doesn't throw on classes without dots in classname"

@@ -176,22 +176,19 @@
 
 (defn parse-info
   [o env]
-  (when-let [p (parse-info* o env)]
-    (merge p
-           (docstring o env)
-           (position o env))))
+  (merge (parse-info* o env)
+         (docstring o env)
+         (position o env)))
 
 (defn parse-executable-element [^ExecutableElement m env]
-  (let [a (mapv #(-> ^VariableElement % .asType (typesym env)) (.getParameters m))
-        constructor? (= (.getKind m) ElementKind/CONSTRUCTOR)]
-    (when-not constructor? ;; no constructors for now
-      {:name (if constructor?
-               (-> m .getEnclosingElement (typesym env)) ; class name
-               (-> m .getSimpleName str symbol))         ; method name
-       :type (-> m .getReturnType (typesym env))
-       :argtypes a
-       :non-generic-argtypes (->> a (mapv (comp symbol misc/normalize-subclass misc/remove-type-param str)))
-       :argnames (mapv #(-> ^VariableElement % .getSimpleName str symbol) (.getParameters m))})))
+  (let [a (mapv #(-> ^VariableElement % .asType (typesym env)) (.getParameters m))]
+    {:name (if (= (.getKind m) ElementKind/CONSTRUCTOR)
+             (-> m .getEnclosingElement (typesym env)) ; class name
+             (-> m .getSimpleName str symbol))         ; method name
+     :type (-> m .getReturnType (typesym env))
+     :argtypes a
+     :non-generic-argtypes (->> a (mapv (comp symbol misc/normalize-subclass misc/remove-type-param str)))
+     :argnames (mapv #(-> ^VariableElement % .getSimpleName str symbol) (.getParameters m))}))
 
 (extend-protocol Parsed
   TypeElement ;; => class, interface, enum
