@@ -220,17 +220,17 @@
 (extend-protocol Parsed
   ConstructorDoc
   (parse-info [c]
-    (let [a (mapv #(-> ^Parameter % .type typesym) (.parameters c))]
+    (let [argtypes (mapv #(-> ^Parameter % .type typesym) (.parameters c))]
       {:name (-> c .qualifiedName symbol)
-       :argtypes a
-       :non-generic-argtypes (->> a (mapv (comp symbol misc/normalize-subclass misc/remove-type-param str)))
+       :argtypes argtypes
+       :non-generic-argtypes (->> argtypes (mapv (comp symbol misc/normalize-subclass misc/remove-type-param str)))
        :argnames (mapv #(-> ^Parameter % .name symbol) (.parameters c))}))
 
   MethodDoc
   (parse-info [m]
-    (let [a (mapv #(-> ^Parameter % .type typesym) (.parameters m))]
-      {:argtypes a
-       :non-generic-argtypes (->> a (mapv (comp symbol misc/normalize-subclass misc/remove-type-param str)))
+    (let [argtypes (mapv #(-> ^Parameter % .type typesym) (.parameters m))]
+      {:argtypes argtypes
+       :non-generic-argtypes (->> argtypes (mapv (comp symbol misc/normalize-subclass misc/remove-type-param str)))
        :argnames (mapv #(-> ^Parameter % .name symbol) (.parameters m))
        :type (str (.returnType m))}))
 

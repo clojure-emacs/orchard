@@ -444,7 +444,7 @@
            vals)
        (map vals)
        (reduce into)
-       ;; Only methods (and not fields) have arglists:
+       ;; Only methods/constructors (and not fields) have arglists:
        (filter (fn [{:keys [returns] n :name}]
                  (or returns
                      (= n class-symbol))))))

@@ -288,7 +288,7 @@
   (parse-info* [c env]
     {:class   (typesym c env)
      :members (->> (.getEnclosedElements c)
-                   (filterv #(#{ElementKind/CONSTRUCTOR ;; will be enabled when it's also properly implemented at reflector level
+                   (filterv #(#{ElementKind/CONSTRUCTOR
                                 ElementKind/METHOD
                                 ElementKind/FIELD
                                 ElementKind/ENUM_CONSTANT}
