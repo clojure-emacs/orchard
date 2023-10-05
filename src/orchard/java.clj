@@ -419,15 +419,17 @@
               (not super) nil
               :else (recur super))))]
     (when-let [m (get-in c [:members member])]
-      (let [m* (first (sort-by :line (vals m)))
+      (let [siblings (sort-by :line (vals m))
+            m* (first siblings)
             static? (or (:static (:modifiers m*))
                         (= class member))]
         (-> (dissoc m* :name :argnames)
             (assoc :class class
                    :member member
                    :file (:file c)
-                   :arglists (map (partial extract-arglist static?)
-                                  (vals m))
+                   :annotated-arglists (mapv :annotated-arglists siblings)
+                   :arglists (mapv (partial extract-arglist static?)
+                                   siblings)
                    :javadoc (javadoc-url class member
                                          (:argtypes m*))))))))
 

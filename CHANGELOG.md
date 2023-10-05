@@ -2,6 +2,11 @@
 
 ## master (unreleased)
 
+## 0.16.0 (2023-10-05)
+
+* `class-info` and `member-info`: include `:annotated-arglists`.
+  * `:annotated-arglists` represents each arglist as a string with return and param type info, rendered as metadata.
+
 ## 0.15.2 (2023-10-05)
 
 ### Bugs fixed

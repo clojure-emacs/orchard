@@ -139,7 +139,8 @@
             (assert (seq members))
             (doseq [m members]
               (is (contains? m :name))
-              (assert (is (contains? m :modifiers))))))
+              (assert (is (contains? m :modifiers)))
+              (is (string? (:annotated-arglists m))))))
         (testing "doesn't throw on classes without dots in classname"
           (let [reified (binding [*ns* (create-ns 'foo)]
                           (clojure.core/eval
@@ -170,8 +171,11 @@
         (testing "line number"
           (is (number? (:line m1))))
         (testing "arglists"
-          (is (seq? (:arglists m1)))
+          (is (vector? (:arglists m1)))
           (is (every? vector? (:arglists m1))))
+        (testing "annotated arglists"
+          (is (vector? (:annotated-arglists m1)))
+          (is (every? string? (:annotated-arglists m1))))
         (testing "that doesn't exist"
           (is (nil? m2)))
         (testing "in a class that doesn't exist"
