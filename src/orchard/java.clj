@@ -178,25 +178,30 @@
 (defprotocol Reflected
   (reflect-info [o]))
 
+(defn- format-as-non-generic [argtypes]
+  (->> argtypes
+       (mapv (fn [s]
+               ;; make the format match with that of `parser-next`:
+               (some-> s
+                       str
+                       (string/replace "$" ".")
+                       (string/replace #"\[.*" "")
+                       symbol)))))
+
 (extend-protocol Reflected
   Constructor
   (reflect-info [c]
-    {:argtypes (mapv typesym (:parameter-types c))
-     :throws (mapv typesym (:exception-types c))})
+    (let [argtypes (mapv typesym (:parameter-types c))]
+      {:argtypes argtypes
+       :non-generic-argtypes (format-as-non-generic argtypes)
+       :throws (mapv typesym (:exception-types c))}))
 
   Method
   (reflect-info [m]
     (let [pts (:parameter-types m)
           argtypes (mapv typesym pts)]
       {:argtypes argtypes
-       :non-generic-argtypes (->> argtypes
-                                  (mapv (fn [s]
-                                          ;; make the format match with that of `parser-next`:
-                                          (some-> s
-                                                  str
-                                                  (string/replace "$" ".")
-                                                  (string/replace #"\[.*" "")
-                                                  symbol))))
+       :non-generic-argtypes (format-as-non-generic argtypes)
        :parameter-types pts
        :throws (mapv typesym (:exception-types m))
        :returns (typesym (:return-type m))}))
@@ -234,7 +239,7 @@
                        class-name)]
       {:name class-name
        :modifiers (:flags c)
-       :members (dissoc members class-name)})))
+       :members members})))
 
 (defn- package
   "An alternative to .getPackage, which works for classes defined with deftype and defrecord.

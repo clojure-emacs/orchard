@@ -57,45 +57,67 @@
                               [:members 'size])
                       first val :line)))))))
 
+(defn class-corpus []
+  {:post [(> (count %)
+             50)]}
+  (->> (util/imported-classes 'clojure.core)
+       (into ['java.util.Map 'java.io.File])
+       (into (util/imported-classes (-> ::_ namespace symbol)))
+       ;; Remove classes without methods:
+       (remove (some-fn
+                #{`ThreadDeath
+                  `Void
+                  `RuntimePermission
+                  'clojure.core.Vec
+                  'clojure.core.VecNode
+                  'clojure.core.VecSeq
+                  'clojure.core.ArrayChunk
+                  'clojure.core.Eduction}
+                (fn [s]
+                  (or (-> s str Class/forName .isInterface)
+                      (-> s str Class/forName .isEnum)))
+                (fn [s]
+                  (->> s str (re-find #"(Exception|Error)$")))))))
+
 (deftest map-structure-test
   (testing "Parsed map structure = reflected map structure"
-    (let [class-sym 'clojure.lang.Compiler ;; XXX more
-          excluded-cols #{:file :line :column :doc :argnames :non-generic-argtypes :annotated-arglists
-                          :doc-first-sentence-fragments :doc-fragments :doc-block-tags-fragments :argtypes :path :resource-url}
-          extract-keys (fn [x]
-                         (->> excluded-cols
-                              (apply dissoc x)
-                              (keys)
-                              (set)
-                              (sort-by pr-str)))
-          assert-keys= (fn [a b]
-                         (let [aa (extract-keys a)
-                               bb (extract-keys b)]
-                           (testing (pr-str {:only-in-reflector (remove (set aa) bb)
-                                             :only-in-full (remove (set bb) aa)})
-                             (doall
-                              (map-indexed (fn [i _]
-                                             (is (= (get aa i)
-                                                    (get bb i))))
-                                           aa)))))
-          full-class-info (class-info* 'clojure.lang.Compiler)
-          reflector-class-info (with-redefs [source-info (constantly nil)]
-                                 (class-info* class-sym))]
-      (testing class-sym
-        (testing "Class info"
-          (assert-keys= full-class-info reflector-class-info))
-        (testing "Members info"
-          (is (keys (:members full-class-info)))
-          (assert-keys= (:members full-class-info)
-                        (:members reflector-class-info)))
-        (testing "Arities info"
-          (let [full-class-info-arities (-> full-class-info :members vals vec)
-                reflector-class-info-arities (-> reflector-class-info :members vals vec)]
-            (doall
-             (map-indexed (fn [i _]
-                            (assert-keys= (get full-class-info-arities i)
-                                          (get reflector-class-info-arities i)))
-                          full-class-info-arities))))))))
+    (doseq [class-sym (conj (class-corpus) 'clojure.lang.Compiler)]
+      (let [excluded-cols #{:file :line :column :doc :argnames :non-generic-argtypes :annotated-arglists
+                            :doc-first-sentence-fragments :doc-fragments :doc-block-tags-fragments :argtypes :path :resource-url}
+            extract-keys (fn [x]
+                           (->> excluded-cols
+                                (apply dissoc x)
+                                (keys)
+                                (set)
+                                (sort-by pr-str)))
+            assert-keys= (fn [a b]
+                           (let [aa (extract-keys a)
+                                 bb (extract-keys b)]
+                             (testing (pr-str {:only-in-reflector (remove (set aa) bb)
+                                               :only-in-full (remove (set bb) aa)})
+                               (doall
+                                (map-indexed (fn [i _]
+                                               (is (= (get aa i)
+                                                      (get bb i))))
+                                             aa)))))
+            full-class-info (class-info* 'clojure.lang.Compiler)
+            reflector-class-info (with-redefs [source-info (constantly nil)]
+                                   (class-info* class-sym))]
+        (testing class-sym
+          (testing "Class info"
+            (assert-keys= full-class-info reflector-class-info))
+          (testing "Members info"
+            (is (keys (:members full-class-info)))
+            (assert-keys= (:members full-class-info)
+                          (:members reflector-class-info)))
+          (testing "Arities info"
+            (let [full-class-info-arities (-> full-class-info :members vals vec)
+                  reflector-class-info-arities (-> reflector-class-info :members vals vec)]
+              (doall
+               (map-indexed (fn [i _]
+                              (assert-keys= (get full-class-info-arities i)
+                                            (get reflector-class-info-arities i)))
+                            full-class-info-arities)))))))))
 
 (when util/has-enriched-classpath?
   (deftest class-info-test
@@ -115,10 +137,7 @@
           (is (every? map? (vals (:members c1))))
           (let [members (mapcat vals (vals (:members c1)))]
             (assert (seq members))
-            (doseq [m members
-                    ;; No constructors for now:
-                    :when (not (= (:name m)
-                                  (:class c1)))]
+            (doseq [m members]
               (is (contains? m :name))
               (assert (is (contains? m :modifiers))))))
         (testing "doesn't throw on classes without dots in classname"
@@ -418,35 +437,17 @@
          (subs s (inc (.lastIndexOf s "."))))
     s))
 
-(defn class-corpus []
-  {:post [(> (count %)
-             50)]}
-  (->> (util/imported-classes 'clojure.core)
-       (into ['java.util.Map 'java.io.File])
-       (into (util/imported-classes (-> ::_ namespace symbol)))
-       ;; Remove classes without methods:
-       (remove (some-fn
-                #{`ThreadDeath
-                  `Void
-                  `RuntimePermission
-                  'clojure.core.Vec
-                  'clojure.core.VecNode
-                  'clojure.core.VecSeq
-                  'clojure.core.ArrayChunk
-                  'clojure.core.Eduction}
-                (fn [s]
-                  (-> s str Class/forName .isInterface))
-                (fn [s]
-                  (->> s str (re-find #"(Exception|Error)$")))))))
-
-(defn extract-method-arities [info]
+(defn extract-method-arities [class-symbol info]
+  {:pre [(symbol? class-symbol)]}
   (->> (-> info
            :members
            vals)
        (map vals)
        (reduce into)
-       ;; Only methods (and not fields) have arglists:
-       (filter :returns)))
+       ;; Only methods/constructors (and not fields) have arglists:
+       (filter (fn [{:keys [returns] n :name}]
+                 (or returns
+                     (= n class-symbol))))))
 
 (when (and util/has-enriched-classpath?
            @@sut/parser-next-available?)
@@ -490,7 +491,7 @@
             (assert (is (= arities-from-source
                            arities-from-reflector)))
 
-            (let [arities-data (extract-method-arities (misc/deep-merge reflect-info source-info))
+            (let [arities-data (extract-method-arities class-symbol (misc/deep-merge reflect-info source-info))
                   all-argnames (map :argnames arities-data)]
               (assert (pos? (count all-argnames)))
               (is (not-any? nil? all-argnames)
@@ -501,15 +502,21 @@
   (deftest annotated-arglists-test
     (doseq [class-symbol (class-corpus)
             :let [info (sut/class-info* class-symbol)
-                  arities (extract-method-arities info)
-                  all-annotated-arglists (map :annotated-arglists arities)]]
+                  arities (extract-method-arities class-symbol info)
+                  all-annotated-arglists (->> arities
+                                              (map (fn [{:keys [annotated-arglists]
+                                                         n :name}]
+                                                     [annotated-arglists
+                                                      (= n class-symbol)])))]]
       (testing class-symbol
         (assert (pos? (count all-annotated-arglists))
                 class-symbol)
-        (doseq [s all-annotated-arglists]
+        (doseq [[s constructor?] all-annotated-arglists]
           (assert (is (string? s)))
           (testing s
-            (is (re-find #"\^.*\[" s))
+            (if constructor?
+              (is (re-find #"^\[" s))
+              (is (re-find #"\^.*\[" s)))
             ;; Assert that the format doesn't include past bugs:
             (is (not (string/includes? s "<")))
             (is (not (string/includes? s "^Object java.lang.Object")))
