@@ -120,7 +120,8 @@
                      (require '[orchard.java.legacy-parser])
                      (resolve 'orchard.java.legacy-parser/source-info))))]
     (try
-      (apply (choose) args)
+      (when-let [f (choose)] ;; `resolve` may return nil, for some reason
+        (apply f args))
       (catch IllegalAccessError e
         (if-not @@parser-next-available?
           (throw e)
