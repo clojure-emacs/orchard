@@ -118,6 +118,7 @@
                                                                                         (when (string/includes? macro-name k)
                                                                                           entry)))))
         one-arglist? (-> arglists count (= 1))
+        def-like? (re-find #"^def" macro-name)
         result (cond
                  exact-match
                  (when (acceptably-analog? arglists exact-clojure-core-symbol)
@@ -126,6 +127,10 @@
                  fuzzy-match
                  (when (acceptably-analog? arglists fuzzy-clojure-core-symbol)
                    fuzzy-indentation)
+
+                 ;; def-like macros get no inference - these tend to be risky to make any assumption about
+                 def-like?
+                 nil
 
                  (and one-arglist?
                       (->> arglists first (some #{'&})))

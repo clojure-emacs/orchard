@@ -5,6 +5,7 @@
 ### Bugs fixed
 
 * Correctly infer indentation for `->`-like macros.
+* Don't infer indentation for `def`-like macros.
 
 ## 0.15.1 (2023-09-21)
 
