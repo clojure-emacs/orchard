@@ -72,6 +72,11 @@
     'anything    '[[a {} & body]]        2
     'anything    '[[{} & body]]          1
     'anything    '[[{} a & body]]        2
+    ;; macros starting by 'def' get no inference:
+    'defanything '[[a & body]]           nil
+    'defanything '[[a {} & body]]        nil
+    'defanything '[[{} & body]]          nil
+    'defanything '[[{} a & body]]        nil
     ;; un-inferrable:
     'anything    '[[a & body], [& body]] nil
 
@@ -81,12 +86,21 @@
     'anything    '[[body]]               0
     'anything    '[[a body]]             1
     'anything    '[[a b body]]           2
+    ;; macros starting by 'def' get no inference:
+    'defanything '[[body]]               nil
+    'defanything '[[a body]]             nil
+    'defanything '[[a b body]]           nil
     ;; un-inferrable:
     'anything    '[[a b body]
                    [a b C body]]         nil
+    ;; condition-like macros get inference:
     'sdfds       '[[condition
                     then
                     else]]               1
+    ;; condition-like macros starting by 'def' get no inference:
+    'defnfoo     '[[condition
+                    then
+                    else]]               nil
 
     ;; Threading forms:
     '->          '[[x & forms]]          nil
