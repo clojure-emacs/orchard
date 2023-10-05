@@ -22,7 +22,17 @@
                   :non-generic-argtypes []
                   :doc "Method-level docstring. @return the string \"hello\"",
                   :line 18,
-                  :column 5}}},
+                  :column 5}}
+                orchard.java.DummyClass
+                {[]
+                 {:name orchard.java.DummyClass,
+                  :type void,
+                  :argtypes [],
+                  :non-generic-argtypes [],
+                  :argnames [],
+                  :doc nil,
+                  :line 12,
+                  :column 8}}},
               :doc
               "Class level docstring.\n\n```\n   DummyClass dc = new DummyClass();\n```\n\n@author Arne Brasseur",
               :line 12,

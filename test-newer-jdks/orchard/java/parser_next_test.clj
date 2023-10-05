@@ -47,7 +47,20 @@
                    {:content "<i>Returns</i>:&nbsp;", :type "html"}
                    {:content "the string \"hello\"", :type "text"}],
                   :doc
-                  "Method-level docstring.\n\n @return the string \"hello\""}}},
+                  "Method-level docstring.\n\n @return the string \"hello\""}}
+                orchard.java.DummyClass
+                {[]
+                 {:non-generic-argtypes [],
+                  :name orchard.java.DummyClass,
+                  :type void,
+                  :doc-first-sentence-fragments [],
+                  :column 8,
+                  :argtypes [],
+                  :line 12,
+                  :argnames [],
+                  :doc-fragments [],
+                  :doc-block-tags-fragments [],
+                  :doc nil}}},
                :doc-block-tags-fragments [],
                :doc
                "Class level docstring.\n\n <pre>\n   DummyClass dc = new DummyClass();\n </pre>\n\n @author Arne Brasseur"}
