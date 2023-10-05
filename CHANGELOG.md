@@ -2,6 +2,10 @@
 
 ## master (unreleased)
 
+## 0.16.1 (2023-10-05)
+
+* Make some internals safer.
+
 ## 0.16.0 (2023-10-05)
 
 * `class-info` and `member-info`: include `:annotated-arglists`.
