@@ -494,6 +494,14 @@
         "[ ( 1 1 1 1 1 1 ... ) ]" [(repeat 1)]
         "{ :a { ( 0 1 2 3 4 5 ... ) 1, 2 3, 4 5, 6 7, 8 9, 10 11 } }" {:a {(range 10) 1, 2 3, 4 5, 6 7, 8 9, 10 11}}))))
 
+(deftest inspect-value-test
+  (is (= "1" (inspect/inspect-value 1)))
+  (is (= ":a" (inspect/inspect-value :a)))
+  (is (= "a" (inspect/inspect-value 'a)))
+  (is (= "\"a\"" (inspect/inspect-value "a")))
+  (binding [inspect/*max-atom-length* 5]
+    (is (= "\"1..." (inspect/inspect-value "1234567890")))))
+
 (deftest inspect-class-fields-test
   (testing "inspecting a class with fields renders correctly"
     (is (match? (case java-api-version
