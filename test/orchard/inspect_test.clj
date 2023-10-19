@@ -1,17 +1,18 @@
 (ns orchard.inspect-test
   (:require
    [clojure.data :as data]
-   [clojure.walk :as walk]
    [clojure.edn :as edn]
    [clojure.java.io :as io]
    [clojure.java.shell :as shell]
    [clojure.pprint :as pprint]
    [clojure.string :as string]
-   [clojure.test :as t :refer [deftest is are testing]]
+   [clojure.test :as t :refer [are deftest is testing]]
+   [clojure.walk :as walk]
    [orchard.inspect :as inspect]
-   [orchard.misc :refer [datafy? tap? java-api-version]]
+   [orchard.misc :refer [datafy? java-api-version tap?]]
    [orchard.misc :as misc])
-  (:import java.io.File))
+  (:import
+   (java.io File)))
 
 (defn- demunge-str [s]
   (string/replace s #"(?i)\$([a-z-]+)__([0-9]+)(@[a-f0-9]+)?" "\\$$1"))
@@ -119,14 +120,6 @@
     (:newline)
     "  " (:value ":f" 7) " = " (:value "[ 2 3 ]" 8)
     (:newline)))
-
-(-> (inspect/fresh)
-    (inspect/start {:a {:b 1}}))
-
-(-> (inspect/fresh)
-    (inspect/start {:a {:b 1}})
-    (inspect/down 1)
-    (inspect/down 1))
 
 (def long-sequence (range 70))
 (def long-vector (vec (range 70)))
@@ -369,6 +362,70 @@
         (inspect/down 2)
         (inspect/def-current-value *ns* "--test-val--"))
     (is (= 1 @(resolve '--test-val--)))))
+
+(deftest sibling*-test
+  (is (= :c
+         (-> '{:foo [:a :b :c]}
+             inspect
+             (inspect/down 2)
+             (inspect/down 1)
+             (inspect/next-sibling)
+             (inspect/next-sibling)
+             :value)))
+  (is (= :b
+         (-> '{:foo [:a :b :c]}
+             inspect
+             (inspect/down 2)
+             (inspect/down 1)
+             (inspect/next-sibling)
+             (inspect/next-sibling)
+             (inspect/previous-sibling)
+             :value)))
+  (is (= :a
+         (-> '{:foo [:a :b :c]}
+             inspect
+             (inspect/down 2)
+             (inspect/down 1)
+             (inspect/previous-sibling)
+             (inspect/previous-sibling)
+             (inspect/previous-sibling)
+             (inspect/previous-sibling)
+             :value)))
+  (is (= :c
+         (-> '{:foo [:a :b :c]}
+             inspect
+             (inspect/down 2)
+             (inspect/down 1)
+             (inspect/next-sibling)
+             (inspect/next-sibling)
+             (inspect/next-sibling)
+             (inspect/next-sibling)
+             (inspect/next-sibling)
+             (inspect/next-sibling)
+             (inspect/next-sibling)
+             :value)))
+  (let [inspector-at-first-sibling (-> '{:foo [:a :b :c]}
+                                       inspect
+                                       (inspect/down 2)
+                                       (inspect/down 1))]
+    (is (= inspector-at-first-sibling
+           (-> inspector-at-first-sibling
+               inspect/previous-sibling
+               inspect/previous-sibling
+               inspect/previous-sibling
+               inspect/previous-sibling))))
+  (let [inspector-at-last-sibling (-> '{:foo [:a :b :c]}
+                                      inspect
+                                      (inspect/down 2)
+                                      (inspect/down 1)
+                                      (inspect/next-sibling)
+                                      (inspect/next-sibling))]
+    (is (= inspector-at-last-sibling
+           (-> inspector-at-last-sibling
+               inspect/next-sibling
+               inspect/next-sibling
+               inspect/next-sibling
+               inspect/next-sibling)))))
 
 (deftest path-test
   (testing "inspector tracks the path in the data structure"
