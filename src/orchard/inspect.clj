@@ -216,8 +216,8 @@
 ;;
 ;; Good for method extenders to use
 
-(defn- atom? [val]
-  (some #(% val) [number? string? symbol? keyword?]))
+(defn- scalar? [val]
+  (some #(% val) [number? symbol? keyword?]))
 
 (defn safe-pr-seq
   ([value fmt]
@@ -250,7 +250,8 @@
 (defn value-types [value]
   (cond
     (nil? value)                                   nil
-    (atom? value)                                  :atom
+    (string? value)                                :string
+    (scalar? value)                                :scalar
     (and (instance? Seqable value) (empty? value)) :seq-empty
     (and (map? value) (short? value))              :map
     (map-entry? value)                             :map-entry
@@ -276,7 +277,10 @@
 (defmethod inspect-value nil [_value]
   "nil")
 
-(defmethod inspect-value :atom [value]
+(defmethod inspect-value :scalar [value]
+  (pr-str value))
+
+(defmethod inspect-value :string [value]
   (truncate-string (pr-str value)))
 
 (defmethod inspect-value :map-entry [[k v]]
