@@ -120,6 +120,36 @@
         (assoc :path new-path)
         (inspect-render new))))
 
+(defn- sibling* [inspector offset pred]
+  (let [path (:path inspector)
+        last-item (peek path)]
+    (or (when (and (seq? last-item)
+                   (= 'nth (first last-item)))
+          (let [new-index (+ offset ;; for our purposes, +2 means inc, +1 nop, and +0 dec
+                             (second last-item))
+                top (up inspector)]
+            (when (pred new-index top)
+              (some-> top
+                      (down new-index)
+                      inspect-render))))
+        ;; if no changes were possible, return the inspector as-is so that the UI remains untouched:
+        inspector)))
+
+(defn previous-sibling
+  "Decrement the index of the last 'nth in the path by 1,
+  if applicable, and re-render the updated value."
+  [inspector]
+  (sibling* inspector 0 (fn [index _inspector]
+                          (pos? index))))
+
+(defn next-sibling
+  "Increment the index of the last 'nth in the path by 1,
+  if applicable, and re-render the updated value."
+  [inspector]
+  (sibling* inspector 2 (fn [index inspector]
+                          (< index
+                             (-> inspector :index count)))))
+
 (defn next-page
   "Jump to the next page when inspecting a paginated sequence/map. Does nothing
   if already on the last page."

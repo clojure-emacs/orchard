@@ -2,6 +2,11 @@
 
 ## master (unreleased)
 
+### New features
+
+* `orchard.inspect`: offer new `previous-sibling` and `next-sibling` functions.
+  * These help navigate sequential collections one item at a time, in a streamlined fashion.
+
 ## 0.16.1 (2023-10-05)
 
 * Make some internals safer.
