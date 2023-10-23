@@ -12,6 +12,11 @@
 * `orchard.inspect`: don't render keyword/symbol/number values as strings.
 * `orchard.inspect`: don't use `pr-str` over the main `Value: ` being inspected. 
   * All values are already formatted as strings, so this `pr-str` was redundant.
+* `orchard.inspect`: render non-accessible fields better.
+  * If a given field cannot be inspected (because it's private and the JDK module system prevents opening it), we return the fixed symbol `<non-inspectable value>` for representing its value, clients being free to elide its rendering.
+  * Now, for a given inspected Object (except Class objects), we return these sections, if present: `Instance fields`, `Static fields` ,`Private instance fields`, `Private static fields`.
+  * For Class objects, we keep grouping the fields under a single `Fields` section.
+* `orchard.inspect`: render field names as symbols, not strings.
 
 ## 0.16.1 (2023-10-05)
 

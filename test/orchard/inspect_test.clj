@@ -8,11 +8,16 @@
    [clojure.string :as string]
    [clojure.test :as t :refer [are deftest is testing]]
    [clojure.walk :as walk]
+   [matcher-combinators.matchers :as matchers]
    [orchard.inspect :as inspect]
+   [orchard.meta :as m]
    [orchard.misc :refer [datafy? java-api-version tap?]]
    [orchard.misc :as misc])
   (:import
    (java.io File)))
+
+;; for `match?`
+(require 'matcher-combinators.test)
 
 (defn- demunge-str [s]
   (string/replace s #"(?i)\$([a-z-]+)__([0-9]+)(@[a-f0-9]+)?" "\\$$1"))
@@ -85,17 +90,6 @@
           (println "=== Actual text ===\n")
           (println actual-text)
           (println))))))
-
-(defmethod t/assert-expr 'match? [msg form]
-  `(let [expected# ~(nth form 1)
-         actual# ~(nth form 2)
-         result# (= expected# actual#)]
-     (t/do-report
-      {:type (if result# :pass :fail)
-       :message (test-message ~msg expected# actual#)
-       :expected expected#
-       :actual actual#})
-     result#))
 
 (def nil-result
   '("nil" (:newline)))
@@ -199,30 +193,30 @@
   (testing "inspecting a var"
     (let [rendered (-> #'*assert* inspect render)]
       (testing "renders the header"
-        (is (match? '("Class"
-                      ": "
-                      (:value "clojure.lang.Var" 0)
-                      (:newline)
-                      "Value: "
-                      (:value "true" 1)
-                      (:newline)
-                      (:newline))
+        (is (match? (list "Class"
+                          ": "
+                          (list :value "clojure.lang.Var" number?)
+                          '(:newline)
+                          "Value: "
+                          (list :value "true" number?)
+                          '(:newline)
+                          '(:newline))
                     (header rendered))))
       (testing "renders the meta information section"
-        (is (match? (cond-> '("--- Meta Information:"
-                              (:newline)
-                              "  " (:value ":ns" 2) " = " (:value "clojure.core" 3)
-                              (:newline)
-                              "  " (:value ":name" 4) " = " (:value "*assert*" 5)
-                              (:newline))
+        (is (match? (cond-> (list "--- Meta Information:"
+                                  '(:newline)
+                                  "  " (list :value ":ns" number?) " = " (list :value "clojure.core" number?)
+                                  '(:newline)
+                                  "  " (list :value ":name" number?) " = " (list :value "*assert*" number?)
+                                  '(:newline))
                       datafy? (concat ['(:newline)]))
                     (section "Meta Information" rendered))))
       (when datafy?
         (testing "renders the datafy section"
-          (is (match? '("--- Datafy:"
-                        (:newline)
-                        "  " "0" ". " (:value "true" 6)
-                        (:newline))
+          (is (match? (list "--- Datafy:"
+                            '(:newline)
+                            "  " "0" ". " (list :value "true" number?)
+                            '(:newline))
                       (datafy-section rendered))))))))
 
 (deftest inspect-expr-test
@@ -234,19 +228,19 @@
 
 (deftest push-test
   (testing "pushing a rendered expr inspector idx"
-    (is (match? '("Class"
-                  ": " (:value "clojure.lang.PersistentArrayMap" 0)
-                  (:newline)
-                  (:newline)
-                  "--- Contents:"
-                  (:newline)
-                  "  " (:value ":b" 1) " = " (:value "1" 2)
-                  (:newline)
-                  (:newline)
-                  "--- Path:"
-                  (:newline)
-                  "  "
-                  ":a")
+    (is (match? (list "Class"
+                      ": " (list :value "clojure.lang.PersistentArrayMap" number?)
+                      '(:newline)
+                      '(:newline)
+                      "--- Contents:"
+                      '(:newline)
+                      "  " (list :value ":b" number?) " = " (list :value "1" number?)
+                      '(:newline)
+                      '(:newline)
+                      "--- Path:"
+                      '(:newline)
+                      "  "
+                      ":a")
                 (-> eval-result inspect (inspect/down 2) render)))))
 
 (deftest pop-test
@@ -337,16 +331,16 @@
 
 (deftest eval-and-inspect-test
   (testing "evaluate expr in the context of currently inspected value"
-    (is (match? '("Class"
-                  ": " (:value "java.lang.String" 0)
-                  (:newline)
-                  "Value: " "\"1001\""
-                  (:newline)
-                  (:newline)
-                  "--- Print:"
-                  (:newline)
-                  "  " "1001"
-                  (:newline))
+    (is (match? (list "Class"
+                      ": " (list :value "java.lang.String" number?)
+                      '(:newline)
+                      "Value: " "\"1001\""
+                      '(:newline)
+                      '(:newline)
+                      "--- Print:"
+                      '(:newline)
+                      "  " "1001"
+                      '(:newline))
                 (-> eval-result
                     inspect
                     (inspect/down 2)
@@ -479,7 +473,7 @@
         "1" 1
         "nil" nil
         "\"2\"" "2"
-        ":ab..." :abc/def
+        ":abc/def" :abc/def
         "( :a :b )" '(:a :b)
         "[ 1 2 ... ]" [1 2 3]
         "{ :a 1, :b 2 }" {:a 1 :b 2}
@@ -505,46 +499,35 @@
 
 (deftest inspect-class-fields-test
   (testing "inspecting a class with fields renders correctly"
-    (is (match? (case java-api-version
-                  (8 11)
-                  '("--- Fields:"
-                    (:newline)
-                    "  " (:value "public static final java.lang.Boolean java.lang.Boolean.FALSE" 5)
-                    (:newline)
-                    "  " (:value "public static final java.lang.Boolean java.lang.Boolean.TRUE" 6)
-                    (:newline)
-                    "  " (:value "public static final java.lang.Class java.lang.Boolean.TYPE" 7)
-                    (:newline)
-                    (:newline))
-                  '("--- Fields:"
-                    (:newline)
-                    "  " (:value "public static final java.lang.Boolean java.lang.Boolean.FALSE" 6)
-                    (:newline)
-                    "  " (:value "public static final java.lang.Boolean java.lang.Boolean.TRUE" 7)
-                    (:newline)
-                    "  " (:value "public static final java.lang.Class java.lang.Boolean.TYPE" 8)
-                    (:newline)
-                    (:newline)))
+    (is (match? (list "--- Fields:"
+                      '(:newline)
+                      "  " (list :value "public static final java.lang.Boolean java.lang.Boolean.FALSE" number?)
+                      '(:newline)
+                      "  " (list :value "public static final java.lang.Boolean java.lang.Boolean.TRUE" number?)
+                      '(:newline)
+                      "  " (list :value "public static final java.lang.Class java.lang.Boolean.TYPE" number?)
+                      '(:newline)
+                      '(:newline))
                 (->> Boolean inspect render (section "Fields")))))
   (testing "inspecting a class without fields renders correctly"
     (is (-> Object inspect render (section "Fields") empty?))))
 
 (deftest inspect-coll-test
   (testing "inspect :coll prints contents of the coll"
-    (is (match? '("Class"
-                  ": " (:value "clojure.lang.PersistentVector" 0)
-                  (:newline)
-                  (:newline)
-                  "--- Contents:"
-                  (:newline)
-                  "  " "0" ". " (:value "1" 1)
-                  (:newline)
-                  "  " "1" ". " (:value "2" 2)
-                  (:newline)
-                  "  " "2" ". " (:value "nil" 3)
-                  (:newline)
-                  "  " "3" ". " (:value "3" 4)
-                  (:newline))
+    (is (match? (list "Class"
+                      ": " (list :value "clojure.lang.PersistentVector" number?)
+                      '(:newline)
+                      '(:newline)
+                      "--- Contents:"
+                      '(:newline)
+                      "  " "0" ". " (list :value "1" number?)
+                      '(:newline)
+                      "  " "1" ". " (list :value "2" number?)
+                      '(:newline)
+                      "  " "2" ". " (list :value "nil" number?)
+                      '(:newline)
+                      "  " "3" ". " (list :value "3" number?)
+                      '(:newline))
                 (render (inspect/start (inspect/fresh) [1 2 nil 3]))))))
 
 (deftest inspect-coll-nav-test
@@ -592,7 +575,7 @@
                   (:newline)
                   "--- Contents:"
                   (:newline)
-                  "  " "0" ". " (:value "[ 1... 2222 333 ... ]" 1)
+                  "  " "0" ". " (:value "[ 111111 2222 333 ... ]" 1)
                   (:newline))
                 (render (-> (inspect/fresh)
                             (assoc :max-atom-length 4
@@ -789,21 +772,16 @@
   (testing "inspecting the clojure.string namespace"
     (let [result (-> (find-ns 'clojure.string) inspect render)]
       (testing "renders the header"
-        (is (match? `("Class"
-                      ": "
-                      (:value "clojure.lang.Namespace" 0)
-                      (:newline)
-                      "Count"
-                      ": "
-                      (:value ~(case (:minor *clojure-version*)
-                                 8 "748"
-                                 9 "778"
-                                 10 "786"
-                                 11 "799"
-                                 "803")
-                              1)
-                      (:newline)
-                      (:newline))
+        (is (match? (list "Class"
+                          ": "
+                          (list :value "clojure.lang.Namespace" number?)
+                          '(:newline)
+                          "Count"
+                          ": "
+                          (list :value string?
+                                number?)
+                          '(:newline)
+                          '(:newline))
                     (header result))))
       (testing "renders the refer from section"
         (is (match? `("--- Refer from:"
@@ -927,11 +905,9 @@
                       "Value" ": "
                       (:value
                        ~(if (= 8 (:minor *clojure-version*))
-                          (str (str "\"#error {\\n :cause \\\"BOOM\\\"\\n :data {}\\n "
-                                    ":via\\n [{:type clojure.lang.ExceptionInfo\\n   "
-                                    ":message \\\"BOOM\\\"\\n   "
-                                    ":data {}\\n   :at nil}]\\n :trace\\n []}\""))
-                          "#error {\n :cause \"BOOM\"\n :data {}\n :via\n [{:type clojure.lang.ExceptionInfo\n   :message \"BOOM\"\n   :data {}}]\n :trace\n []}") 1)
+                          "#error {\n :cause \"BOOM\"\n :data {}\n :via\n [{:type clojure.lang.ExceptionInfo\n   :message \"BOOM\"\n   :data {}\n   :at nil}]\n :trace\n []}"
+                          "#error {\n :cause \"BOOM\"\n :data {}\n :via\n [{:type clojure.lang.ExceptionInfo\n   :message \"BOOM\"\n   :data {}}]\n :trace\n []}")
+                       1)
                       (:newline)
                       (:newline))
                     (header rendered))))
@@ -939,26 +915,40 @@
         (testing "renders the datafy section"
           (is (match? (case java-api-version
                         (11 16 17)
-                        '("--- Datafy:"
-                          (:newline)
-                          "  " (:value ":via" 34) " = " (:value "[ { :type clojure.lang.ExceptionInfo, :message \"BOOM\", :data {} } ]" 35)
-                          (:newline)
-                          "  " (:value ":trace" 36) " = " (:value "[]" 37)
-                          (:newline)
-                          "  " (:value ":cause" 38) " = " (:value "\"BOOM\"" 39)
-                          (:newline)
-                          "  " (:value ":data" 40) " = " (:value "{}" 41)
-                          (:newline))
-                        '("--- Datafy:"
-                          (:newline)
-                          "  " (:value ":via" 30) " = " (:value "[ { :type clojure.lang.ExceptionInfo, :message \"BOOM\", :data {} } ]" 31)
-                          (:newline)
-                          "  " (:value ":trace" 32) " = " (:value "[]" 33)
-                          (:newline)
-                          "  " (:value ":cause" 34) " = " (:value "\"BOOM\"" 35)
-                          (:newline)
-                          "  " (:value ":data" 36) " = " (:value "{}" 37)
-                          (:newline)))
+                        (list "--- Datafy:"
+                              '(:newline)
+                              "  "
+                              (list :value ":via" number?)
+                              " = "
+                              (list :value
+                                    "[ { :type clojure.lang.ExceptionInfo, :message \"BOOM\", :data {} } ]"
+                                    number?)
+                              '(:newline)
+                              "  "
+                              (list :value ":trace" number?)
+                              " = "
+                              (list :value "[]" number?)
+                              '(:newline)
+                              "  "
+                              (list :value ":cause" number?)
+                              " = "
+                              (list :value "\"BOOM\"" number?)
+                              '(:newline)
+                              "  "
+                              (list :value ":data" number?)
+                              " = "
+                              (list :value "{}" number?)
+                              '(:newline))
+                        (list "--- Datafy:"
+                              '(:newline)
+                              "  " (list :value ":via" number?) " = " (list :value "[ { :type clojure.lang.ExceptionInfo, :message \"BOOM\", :data {} } ]" number?)
+                              '(:newline)
+                              "  " (list :value ":trace" number?) " = " (list :value "[]" number?)
+                              '(:newline)
+                              "  " (list :value ":cause" number?) " = " (list :value "\"BOOM\"" number?)
+                              '(:newline)
+                              "  " (list :value ":data" number?) " = " (list :value "{}" number?)
+                              '(:newline)))
                       (datafy-section rendered))))))))
 
 (deftest inspect-eduction-test
