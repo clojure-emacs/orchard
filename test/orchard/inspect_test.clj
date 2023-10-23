@@ -496,6 +496,7 @@
 
 (deftest inspect-value-test
   (is (= "1" (inspect/inspect-value 1)))
+  (is (= "(0 1 2 3 4 5 6 7 8 9)" (inspect/inspect-value (eduction (range 10)))))
   (is (= ":a" (inspect/inspect-value :a)))
   (is (= "a" (inspect/inspect-value 'a)))
   (is (= "\"a\"" (inspect/inspect-value "a")))
@@ -624,17 +625,17 @@
                   ": "
                   (:value "clojure.lang.TaggedLiteral" 0)
                   (:newline)
-                  "Value" ": " (:value "\"#foo ()\"" 1)
+                  "Value" ": " (:value "#foo ()" 1)
                   (:newline)
                   (:newline)
-                  "--- Fields:"
-                  (:newline) "  " (:value "\"form\"" 2) " = " (:value "()" 3)
-                  (:newline) "  " (:value "\"tag\"" 4) " = " (:value "foo" 5)
+                  "--- Instance fields:"
+                  (:newline) "  " (:value "form" 2) " = " (:value "()" 3)
+                  (:newline) "  " (:value "tag" 4) " = " (:value "foo" 5)
                   (:newline)
                   (:newline)
                   "--- Static fields:"
-                  (:newline) "  " (:value "\"FORM_KW\"" 6) " = " (:value ":form" 7)
-                  (:newline) "  " (:value "\"TAG_KW\"" 8) " = " (:value ":tag" 9)
+                  (:newline) "  " (:value "FORM_KW" 6) " = " (:value ":form" 7)
+                  (:newline) "  " (:value "TAG_KW" 8) " = " (:value ":tag" 9)
                   (:newline))
                 (render (inspect/start (inspect/fresh)
                                        (clojure.lang.TaggedLiteral/create 'foo ())))))))
@@ -930,9 +931,7 @@
                                     ":via\\n [{:type clojure.lang.ExceptionInfo\\n   "
                                     ":message \\\"BOOM\\\"\\n   "
                                     ":data {}\\n   :at nil}]\\n :trace\\n []}\""))
-                          (str "\"#error {\\n :cause \\\"BOOM\\\"\\n :data {}\\n :via\\n "
-                               "[{:type clojure.lang.ExceptionInfo\\n   "
-                               ":message \\\"BOOM\\\"\\n   :data {}}]\\n :trace\\n []}\"")) 1)
+                          "#error {\n :cause \"BOOM\"\n :data {}\n :via\n [{:type clojure.lang.ExceptionInfo\n   :message \"BOOM\"\n   :data {}}]\n :trace\n []}") 1)
                       (:newline)
                       (:newline))
                     (header rendered))))
@@ -972,7 +971,7 @@
                       (:newline)
                       "Value"
                       ": "
-                      (:value "\"(0 1 2 3 4 5 6 7 8 9)\"" 1)
+                      (:value "(0 1 2 3 4 5 6 7 8 9)" 1)
                       (:newline)
                       (:newline))
                     (header rendered)))))

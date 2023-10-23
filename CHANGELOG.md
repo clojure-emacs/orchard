@@ -10,6 +10,8 @@
 ### Changes
 
 * `orchard.inspect`: don't render keyword/symbol/number values as strings.
+* `orchard.inspect`: don't use `pr-str` over the main `Value: ` being inspected. 
+  * All values are already formatted as strings, so this `pr-str` was redundant.
 
 ## 0.16.1 (2023-10-05)
 
