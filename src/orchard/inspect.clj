@@ -269,6 +269,7 @@
     (instance? Map value)                          :map-long
     (and (.isArray (class value)) (short? value))  :array
     (.isArray (class value))                       :array-long
+    (instance? Throwable value)                    :throwable
     :else (or (:inspector-tag (meta value))
               (type value))))
 
@@ -327,7 +328,17 @@
 (defmethod inspect-value :array-long [value]
   (let [ct (.getName (or (.getComponentType (class value)) Object))]
     (safe-pr-seq (take *max-coll-size* value) ", " (str ct "[] { %s, ... }"))))
+
 (defmethod inspect-value java.lang.Class [value]
+  (pr-str value))
+
+(defmethod inspect-value clojure.core.Eduction [value]
+  (pr-str value))
+
+(defmethod inspect-value clojure.lang.TaggedLiteral [value]
+  (pr-str value))
+
+(defmethod inspect-value :throwable [value]
   (pr-str value))
 
 (defmethod inspect-value :default [value]
@@ -367,7 +378,11 @@
 
 (defn render-value [inspector value]
   (let [{:keys [counter]} inspector
-        expr `(:value ~(inspect-value value) ~counter)]
+        inspected-value (inspect-value value)
+        inspected-value (cond-> inspected-value
+                          ;; The contract of inspect-value is to return a string, however let's make sure:
+                          (not (string? inspected-value)) str)
+        expr `(:value ~inspected-value ~counter)]
     (-> inspector
         (update-in [:index] conj value)
         (update-in [:counter] inc)
@@ -633,7 +648,7 @@
                 inspector))]
       (-> inspector
           (render-labeled-value "Class" (class obj))
-          (render-labeled-value "Value" (pr-str obj))
+          (render-labeled-value "Value" obj)
           (render-fields "Fields" non-static)
           (render-fields "Static fields" static)
           (render-datafy obj)))))
