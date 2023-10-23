@@ -51,7 +51,8 @@
                                      [org.clojure/clojure "1.12.0-master-SNAPSHOT" :classifier "sources"]]}
 
 
-             :test {:dependencies [[org.clojure/java.classpath "1.0.0"]]
+             :test {:dependencies [[org.clojure/java.classpath "1.0.0"]
+                                   [nubank/matcher-combinators "3.8.8"]]
                     :resource-paths ["test-resources"
                                      "not-a.jar"
                                      "does-not-exist.jar"]
