@@ -608,50 +608,51 @@
       (render-indent-str-lines obj)
       (unindent)))
 
+(defn- field-val [^Field f, obj]
+  (try
+    (.get f obj)
+    (catch Exception _
+      ::access-denied)))
+
 (defmethod inspect :default [inspector obj]
   (let [class-chain (loop [c (class obj), res ()]
                       (if c
                         (recur (.getSuperclass c) (cons c res))
                         res))
+        memoized-field-val (memoize field-val)
         all-fields (mapcat #(.getDeclaredFields ^Class %) class-chain)
-
-        {static true, non-static false}
-        (group-by #(Modifier/isStatic (.getModifiers ^Field %)) all-fields)]
-    (letfn [(field-name [^Field f]
-              (.getName f))
-
-            (field-val [^Field f]
-              (let [^Exception e
-                    (try (.setAccessible f true)
-                         nil
-                         (catch Exception e
-                           ;; We want to handle specifically SecurityException
-                           ;; and j.l.r.InaccessibleObjectException, but the
-                           ;; latter only comes with Java9+, so let's just
-                           ;; catch everything instead.
-                           e))]
-                (try (.get f obj)
-                     (catch java.lang.IllegalAccessException _
-                       (symbol
-                        (format "<Access denied%s>"
-                                (when e (str " (" (.getName (.getClass e)) ")"))))))))
-
-            (render-fields [inspector section-name fields]
+        {static-accessible        [true true]
+         non-static-accessible    [false true]
+         static-nonaccessible     [true false]
+         non-static-nonaccessible [false false]}
+        (group-by (fn [^Field f]
+                    [(Modifier/isStatic (.getModifiers f))
+                     (not= ::access-denied (memoized-field-val f obj))])
+                  all-fields)]
+    (letfn [(render-fields [inspector section-name fields]
               (if (seq fields)
                 (-> inspector
                     (render-section-header section-name)
                     (indent)
                     (render-map-values (->> fields
-                                            (map (fn [f] [(field-name f) (field-val f)]))
+                                            (map (fn [^Field f]
+                                                   (let [v (memoized-field-val f obj)]
+                                                     [(-> f .getName symbol)
+                                                      (if (= v ::access-denied)
+                                                        ;; This is a special value that can be detected client-side:
+                                                        (symbol "<non-inspectable value>")
+                                                        v)])))
                                             (into (sorted-map))))
                     (unindent))
                 inspector))]
-      (-> inspector
-          (render-labeled-value "Class" (class obj))
-          (render-labeled-value "Value" obj)
-          (render-fields "Fields" non-static)
-          (render-fields "Static fields" static)
-          (render-datafy obj)))))
+      (cond-> inspector
+        true                           (render-labeled-value "Class" (class obj))
+        true                           (render-labeled-value "Value" obj)
+        (seq non-static-accessible)    (render-fields "Instance fields" non-static-accessible)
+        (seq static-accessible)        (render-fields "Static fields" static-accessible)
+        (seq non-static-nonaccessible) (render-fields "Private instance fields" non-static-nonaccessible)
+        (seq static-nonaccessible)     (render-fields "Private static fields" static-nonaccessible)
+        true                           (render-datafy obj)))))
 
 (defn- render-section [obj inspector [section sort-key-fn]]
   (let [method (symbol (str ".get" (name section)))
