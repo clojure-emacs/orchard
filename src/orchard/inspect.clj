@@ -420,13 +420,18 @@
               (next obj) (inc idx))
        ins))))
 
-(defn- last-page [{:keys [current-page page-size]} obj]
-  (cond (instance? clojure.lang.Counted obj) (quot (dec (count obj)) page-size)
-        ;; if there are no more items after the current page, we must have
-        ;; reached the end of the collection, so it's not infinite.
-        (empty? (drop (* (inc current-page) page-size) obj)) current-page
-        ;; possibly infinite
-        :else Integer/MAX_VALUE))
+(defn last-page [{:keys [current-page page-size]} obj]
+  (cond
+    (instance? clojure.lang.Counted obj)
+    (quot (dec (count obj)) page-size)
+
+    ;; if there are no more items after the current page, we must have
+    ;; reached the end of the collection, so it's not infinite.
+    (empty? (drop (* (inc current-page) page-size) obj))
+    current-page
+
+    ;; possibly infinite
+    :else Integer/MAX_VALUE))
 
 (declare known-types)
 
@@ -447,10 +452,16 @@
 
 (defn- current-page [{:keys [current-page] :as inspector} obj]
   (let [last-page (last-page inspector obj)]
-    ;; current-page might contain an incorrect value, fix that
-    (cond (< current-page 0) 0
-          (> current-page last-page) last-page
-          :else current-page)))
+    ;; current-page might contain an incorrect value, fix that:
+    (cond
+      (< current-page 0)
+      0
+
+      (> current-page last-page)
+      last-page
+
+      :else
+      current-page)))
 
 (defn- chunk-to-display [{:keys [page-size] :as inspector} obj]
   (let [start-idx (* (current-page inspector obj) page-size)]
@@ -481,9 +492,7 @@
             (render-ln))
         ins)
 
-      (if paginate?
-        (assoc ins :current-page current-page)
-        ins))))
+      (assoc ins :current-page current-page))))
 
 (defn render-meta-information [inspector obj]
   (if (seq (meta obj))

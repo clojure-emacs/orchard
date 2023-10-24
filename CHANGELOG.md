@@ -18,6 +18,10 @@
   * For Class objects, we keep grouping the fields under a single `Fields` section.
 * `orchard.inspect`: render field names as symbols, not strings.
 
+### Bugs fixed
+
+* [cider#3528](https://github.com/clojure-emacs/cider/issues/3528): `orchard.inspect`: don't navigate beyond the pagination boundaries.
+
 ## 0.16.1 (2023-10-05)
 
 * Make some internals safer.
