@@ -290,6 +290,26 @@
                :rendered
                last))))
   (testing "next-page and prev-page are bound to collection size"
+    (is (= 0
+           (-> []
+               inspect
+               inspect/next-page
+               inspect/next-page
+               inspect/next-page
+               inspect/next-page
+               inspect/next-page
+               inspect/next-page
+               :current-page)))
+    (is (= (-> []
+               inspect)
+           (-> []
+               inspect
+               inspect/next-page
+               inspect/next-page
+               inspect/next-page
+               inspect/next-page
+               inspect/next-page
+               inspect/next-page)))
     (is (= 2
            (-> long-vector
                inspect
