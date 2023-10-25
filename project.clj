@@ -83,7 +83,7 @@
                                          `add-cognitest)]}
 
              ;; Development tools
-             :dev {:plugins [[cider/cider-nrepl "0.40.0"]
+             :dev {:plugins [[cider/cider-nrepl "0.41.0"]
                              [refactor-nrepl "3.9.0"]]
                    :dependencies [[nrepl/nrepl "1.0.0"]
                                   [org.clojure/tools.namespace "1.4.4"]]

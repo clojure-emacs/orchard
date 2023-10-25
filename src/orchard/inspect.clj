@@ -502,13 +502,19 @@
         (unindent))
     inspector))
 
-(defn- nav-datafy-tx [obj]
-  (comp (map (fn [[k v]] (some->> (nav obj k v) datafy (vector k)))) (remove nil?)))
+(defn- nav-datafy-tx [obj remove-nil-valued-entries?]
+  (keep (fn [[k v]]
+          (or (some->> (nav obj k v)
+                       (datafy)
+                       (vector k))
+              (when (and (nil? v)
+                         (not remove-nil-valued-entries?))
+                [k v])))))
 
-(defn- nav-datafy [obj]
+(defn- nav-datafy [obj remove-nil-valued-entries?]
   (let [data (datafy obj)]
     (cond (map? data)
-          (into {} (nav-datafy-tx obj) data)
+          (into {} (nav-datafy-tx obj remove-nil-valued-entries?) data)
           (or (sequential? data) (set? data))
           (map datafy data))))
 
@@ -516,7 +522,7 @@
   (cond (not misc/datafy?)
         false
         (map? obj)
-        (not= obj (nav-datafy obj))
+        (not= obj (nav-datafy obj false))
         (or (sequential? obj) (set? obj))
         (not= (chunk-to-display inspector obj)
               (map datafy (chunk-to-display inspector obj)))
@@ -525,7 +531,7 @@
 (declare inspect)
 
 (defn- render-datafy-content [inspector obj]
-  (let [contents (nav-datafy obj)]
+  (let [contents (nav-datafy obj true)]
     (cond (map? contents)
           (render-collection-paged inspector contents)
           (sequential? contents)
