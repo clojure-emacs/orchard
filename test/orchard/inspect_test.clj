@@ -129,7 +129,8 @@
   (->> rendered
        (drop-while #(not (section? name %)))
        (take-while #(or (section? name %)
-                        (not (section? ".*" %))))))
+                        (not (section? ".*" %))))
+       (not-empty)))
 
 (defn- datafy-section [rendered]
   (section "Datafy" rendered))
@@ -988,8 +989,7 @@
 
     (let [rendered (-> (eduction (range 100)) inspect render)]
       (testing "doesn't render page info section"
-        (is (match? '()
-                    (section "Page Info" rendered)))))))
+        (is (nil? (section "Page Info" rendered)))))))
 
 (deftest tap-current-value
   (testing "tap> current value"
@@ -1029,3 +1029,10 @@
           (is (= expected @proof)))
 
         ((misc/call-when-resolved 'clojure.core/remove-tap) test-tap-handler)))))
+
+(deftest datafy-test
+  (testing "When `(datafy x)` is identical to `x`, no Datafy section is included"
+    (let [rendered (-> {:foo :bar} inspect render)]
+      (is (nil? (datafy-section rendered))))
+    (let [rendered (-> {:foo :bar :nilable nil} inspect render)]
+      (is (nil? (datafy-section rendered))))))
