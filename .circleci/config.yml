@@ -18,7 +18,7 @@ jdk8_env_defaults: &jdk8_env_defaults
   JVM_OPTS: -Xmx3200m -Dclojure.main.report=stderr
 
 newer_jdk_env_defaults: &newer_jdk_env_defaults
-  JVM_OPTS: -Xmx3200m --illegal-access=deny -Dclojure.main.report=stderr
+  JVM_OPTS: -Xmx3200m -Dclojure.main.report=stderr
 
 # Runners for OpenJDK 8 and 11
 
