@@ -159,9 +159,6 @@ You can install Orchard locally like this:
 PROJECT_VERSION=0.17.0 make install
 ```
 
-...note that projects such as cider-nrepl or refactor-nrepl use copies of Orchard that are inlined with [mranderson](https://github.com/benedekfazekas/mranderson),
-so a local Orchard install won't automatically update those.
-
 For releasing to [Clojars](https://clojars.org/):
 
 ```
