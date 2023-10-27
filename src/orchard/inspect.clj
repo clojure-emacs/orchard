@@ -626,7 +626,11 @@
   (try
     (.get f obj)
     (catch Exception _
-      ::access-denied)))
+      (try
+        (.setAccessible f true)
+        (.get f obj)
+        (catch Exception _
+          ::access-denied)))))
 
 (defmethod inspect :default [inspector obj]
   (let [class-chain (loop [c (class obj), res ()]

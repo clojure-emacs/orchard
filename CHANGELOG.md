@@ -5,6 +5,8 @@
 ### Bugs fixed
 
 * `orchard.inspect`: don't render `Datafy` sections identical to the data they refer to, for nil-valued maps.
+* `orchard.inspect`: access private fields again.
+  * This feature was accidentally dropped in the previous release.
 
 ## 0.17.0 (2023-10-24)
 

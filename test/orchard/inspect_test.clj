@@ -14,7 +14,8 @@
    [orchard.misc :refer [datafy? java-api-version tap?]]
    [orchard.misc :as misc])
   (:import
-   (java.io File)))
+   (java.io File)
+   (orchard.java PrivateFieldClass)))
 
 ;; for `match?`
 (require 'matcher-combinators.test)
@@ -1036,3 +1037,32 @@
       (is (nil? (datafy-section rendered))))
     (let [rendered (-> {:foo :bar :nilable nil} inspect render)]
       (is (nil? (datafy-section rendered))))))
+
+(deftest private-field-access-test
+  (testing "Inspection of private fields is attempted (may fail depending on the JDK and the module of the given class)"
+    (if (< java-api-version 16)
+      (do
+        (is (nil? (->> 2 inspect render (section "Private static fields"))))
+        (is (match? (matchers/embeds [(list :value "serialVersionUID" number?)])
+                    (->> 2 inspect render (section "Static fields")))))
+
+      (let [rendered (->> 2 inspect render (section "Private static fields"))]
+        (is (match? (list "--- Private static fields:"
+                          '(:newline)
+                          "  "
+                          (list :value "serialVersionUID" number?)
+                          " = "
+                          (list :value "<non-inspectable value>" number?)
+                          '(:newline))
+                    rendered))))
+
+    (let [rendered (->> (PrivateFieldClass. 42) inspect render (section "Instance fields"))]
+      (is (match? (list "--- Instance fields:"
+                        '(:newline)
+                        "  "
+                        (list :value "age" number?)
+                        " = "
+                        (list :value "42" number?)
+                        '(:newline))
+                  rendered)
+          "Fully inspects private fields for a class that is module-accessible"))))
