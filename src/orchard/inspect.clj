@@ -409,16 +409,22 @@
           mappable))
 
 (defn render-indexed-values
-  ([inspector obj] (render-indexed-values inspector obj 0))
-  ([inspector obj idx-starts-from]
-   (loop [ins inspector, obj (seq obj), idx idx-starts-from]
-     (if obj
-       (recur (-> ins
-                  (render-indent (str idx) ". ")
-                  (render-value (first obj))
-                  (render-ln))
-              (next obj) (inc idx))
-       ins))))
+  "Render an indexed collection of values. Renders all values in `chunk`, so
+  `chunk` must be finite."
+  ([inspector chunk] (render-indexed-values inspector chunk 0))
+  ([inspector chunk idx-starts-from]
+   (let [n (count chunk)
+         last-idx (+ idx-starts-from n -1)
+         last-idx-len (count (str last-idx))
+         idx-fmt (str "%" last-idx-len "s")]
+     (loop [ins inspector, chunk (seq chunk), idx idx-starts-from]
+       (if chunk
+         (recur (-> ins
+                    (render-indent (format idx-fmt idx) ". ")
+                    (render-value (first chunk))
+                    (render-ln))
+                (next chunk) (inc idx))
+         ins)))))
 
 (defn last-page [{:keys [current-page page-size]} obj]
   (cond
