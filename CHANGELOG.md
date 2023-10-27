@@ -2,6 +2,10 @@
 
 ## master (unreleased)
 
+### Changes
+
+* [#202](https://github.com/clojure-emacs/orchard/issues/202): `orchard.inspect`: right-align indices when rendering indexed collections.
+
 ### Bugs fixed
 
 * `orchard.inspect`: don't render `Datafy` sections identical to the data they refer to, for nil-valued maps.

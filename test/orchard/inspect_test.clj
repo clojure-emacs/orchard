@@ -550,7 +550,59 @@
                       '(:newline)
                       "  " "3" ". " (list :value "3" number?)
                       '(:newline))
-                (render (inspect/start (inspect/fresh) [1 2 nil 3]))))))
+                (render (inspect/start (inspect/fresh) [1 2 nil 3])))))
+
+  (testing "inspect :coll aligns index numbers so that values appear aligned"
+    (is (match? (list "Class"
+                      ": " (list :value "clojure.lang.PersistentVector" number?)
+                      '(:newline)
+                      '(:newline)
+                      "--- Contents:"
+                      '(:newline)
+                      "  " " 0" ". " (list :value "0" number?)
+                      '(:newline)
+                      "  " " 1" ". " (list :value "1" number?)
+                      '(:newline)
+                      "  " " 2" ". " (list :value "2" number?)
+                      '(:newline)
+                      "  " " 3" ". " (list :value "3" number?)
+                      '(:newline)
+                      "  " " 4" ". " (list :value "4" number?)
+                      '(:newline)
+                      "  " " 5" ". " (list :value "5" number?)
+                      '(:newline)
+                      "  " " 6" ". " (list :value "6" number?)
+                      '(:newline)
+                      "  " " 7" ". " (list :value "7" number?)
+                      '(:newline)
+                      "  " " 8" ". " (list :value "8" number?)
+                      '(:newline)
+                      "  " " 9" ". " (list :value "9" number?)
+                      ;; Numbers above have padding, "10" below doesn't.
+                      '(:newline)
+                      "  " "10" ". " (list :value "10" number?)
+                      '(:newline))
+                (render (inspect/start (inspect/fresh) (vec (range 11)))))))
+
+  (testing "inspect :coll aligns index numbers correctly for page size > 100"
+    (let [rendered (-> (inspect/fresh)
+                       (inspect/start (vec (range 101)))
+                       (inspect/set-page-size 200)
+                       render)
+          head (take 11 rendered)
+          tail (take-last 5 rendered)]
+      (is (match? (list "Class"
+                        ": " (list :value "clojure.lang.PersistentVector" number?)
+                        '(:newline)
+                        '(:newline)
+                        "--- Contents:"
+                        '(:newline)
+                        "  " "  0" ". " (list :value "0" number?))
+                  head))
+      ;; "  0" has two spaces of padding, "100" below has none.
+      (is (match? (list "  " "100" ". " (list :value "100" number?)
+                        '(:newline))
+                  tail)))))
 
 (deftest inspect-coll-nav-test
   (testing "inspecting a collection extended with the Datafiable and Navigable protocols"
