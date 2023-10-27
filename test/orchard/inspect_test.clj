@@ -1040,14 +1040,12 @@
 
 (deftest private-field-access-test
   (testing "Inspection of private fields is attempted (may fail depending on the JDK and the module of the given class)"
-    (cond
-      (< java-api-version 16)
+    (if (< java-api-version 16)
       (do
         (is (nil? (->> 2 inspect render (section "Private static fields"))))
         (is (match? (matchers/embeds [(list :value "serialVersionUID" number?)])
                     (->> 2 inspect render (section "Static fields")))))
 
-      :else
       (let [rendered (->> 2 inspect render (section "Private static fields"))]
         (is (match? (list "--- Private static fields:"
                           '(:newline)
