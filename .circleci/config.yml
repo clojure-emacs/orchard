@@ -14,13 +14,10 @@ defaults: &defaults
 env_defaults: &env_defaults
   LEIN_ROOT: "true"   # we intended to run lein as root
 
-jdk8_env_defaults: &jdk8_env_defaults
+jdk_env_defaults: &jdk_env_defaults
   JVM_OPTS: -Xmx3200m -Dclojure.main.report=stderr
 
-newer_jdk_env_defaults: &newer_jdk_env_defaults
-  JVM_OPTS: -Xmx3200m -Dclojure.main.report=stderr
-
-# Runners for OpenJDK 8 and 11
+# Runners for each major OpenJDK
 
 executors:
   openjdk8:
@@ -28,28 +25,28 @@ executors:
       - image: circleci/clojure:openjdk-8-lein-2.9.1
     environment:
       <<: *env_defaults
-      <<: *jdk8_env_defaults
+      <<: *jdk_env_defaults
     <<: *defaults
   openjdk11:
     docker:
       - image: circleci/clojure:openjdk-11-lein-2.9.1
     environment:
       <<: *env_defaults
-      <<: *newer_jdk_env_defaults
+      <<: *jdk_env_defaults
     <<: *defaults
   openjdk16:
     docker:
       - image: circleci/clojure:openjdk-16-lein-2.9.5-buster
     environment:
       <<: *env_defaults
-      <<: *newer_jdk_env_defaults
+      <<: *jdk_env_defaults
     <<: *defaults
   openjdk17:
     docker:
       - image: circleci/clojure:openjdk-17-lein-2.9.5-buster
     environment:
       <<: *env_defaults
-      <<: *newer_jdk_env_defaults
+      <<: *jdk_env_defaults
     <<: *defaults
 
 # Runs a given set of steps, with some standard pre- and post-
