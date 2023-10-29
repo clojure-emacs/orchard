@@ -4,12 +4,23 @@
    [clojure.test :refer [deftest is testing]]
    [orchard.java :as java]
    [orchard.java.parser-next :as sut]
+   [orchard.java.parser-utils :as parser-utils]
    [orchard.test.util :as util])
   (:import
    (orchard.java DummyClass)))
 
 (when (System/getenv "CI")
   (println "has-enriched-classpath?" (pr-str util/has-enriched-classpath?)))
+
+(when @@java/parser-next-available?
+  (deftest parse-java-test
+    (testing "Throws an informative exception on invalid code"
+      (try
+        (parser-utils/parse-java "orchard/java/UnderscoreClass.java"
+                                 nil)
+        (assert false)
+        (catch Exception e
+          (is (-> e ex-data :out (string/includes? "'_' is a keyword, and may not be used as an identifier"))))))))
 
 (when (and util/has-enriched-classpath?
            @@java/parser-next-available?)

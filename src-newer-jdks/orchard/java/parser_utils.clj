@@ -8,7 +8,7 @@
   (:import
    (java.io StringWriter)
    (javax.lang.model.element VariableElement)
-   (javax.tools ToolProvider)
+   (javax.tools DocumentationTool DocumentationTool$DocumentationTask ToolProvider)
    (jdk.javadoc.doclet Doclet DocletEnvironment)))
 
 (def result (atom nil))
@@ -19,7 +19,7 @@
   (when-let [res (io/resource path)]
     (let [tmpdir   (System/getProperty "java.io.tmpdir")
           tmpfile  (io/file tmpdir (.getName (io/file path)))
-          compiler (ToolProvider/getSystemDocumentationTool)
+          ^DocumentationTool compiler (ToolProvider/getSystemDocumentationTool)
           sources  (-> (.getStandardFileManager compiler nil nil nil)
                        (.getJavaFileObjectsFromFiles [tmpfile]))
           doclet   (class (reify Doclet
@@ -39,11 +39,19 @@
                                 "--show-module-contents" "all"
                                 "-quiet"]
                           (when module
-                            ["--patch-module" (str module "=" tmpdir)]))]
-      (spit tmpfile (slurp res))
-      (.call (.getTask compiler out nil nil doclet opts sources))
-      (.delete tmpfile)
-      @result)))
+                            ["--patch-module" (str module "=" tmpdir)]))
+          slurped (slurp res)
+          _ (spit tmpfile slurped)
+          ^DocumentationTool$DocumentationTask task (.getTask compiler out nil nil doclet opts sources)]
+      (try
+        (if (false? (.call task))
+          (throw (ex-info "Failed to parse Java source code"
+                          {:path path
+                           :module module
+                           :out (str out)}))
+          @result)
+        (finally
+          (.delete tmpfile))))))
 
 ;;; ## Java Parse Tree Traversal
 ;;
