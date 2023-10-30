@@ -55,6 +55,7 @@
                                    [nubank/matcher-combinators "3.8.8"]]
                     :resource-paths ["test-resources"
                                      "not-a.jar"
+                                     "test-java-invalid"
                                      "does-not-exist.jar"]
                     :java-source-paths ["test-java"]
                     ;; Initialize the cache verbosely, as usual, so that possible issues can be more easily diagnosed:
