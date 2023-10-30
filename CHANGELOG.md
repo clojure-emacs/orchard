@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+## 0.18.0 (2023-10-30)
+
 ### Changes
 
 * [#202](https://github.com/clojure-emacs/orchard/issues/202): `orchard.inspect`: right-align indices when rendering indexed collections.
