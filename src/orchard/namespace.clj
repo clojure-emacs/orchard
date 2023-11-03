@@ -16,9 +16,16 @@
 
 ;;; Namespace/source resolution
 
-(defn read-namespace
-  "Returns the namespace name from the first top-level `ns` form in the file."
-  [url]
+(defn- ns-form->ns-name [x]
+  (let [s (second x)]
+    (when (symbol? s)
+      s)))
+
+(defn- ns-form? [x]
+  (and (list? x)
+       (-> x first #{`ns 'ns})))
+
+(defn- read-ns [url pred extract]
   (with-open [r (PushbackReader. (io/reader url))]
     (loop []
       (let [found (try
@@ -29,12 +36,33 @@
                     (catch Exception _
                       ::fail))]
         (cond
-          (#{::eof ::fail} found) nil
-          (and (list? found)
-               (-> found first #{`ns 'ns})
-               (symbol? (second found)))
-          (second found)
-          :else (recur))))))
+          (#{::eof ::fail} found)
+          nil
+
+          (pred found)
+          (extract found)
+
+          :else
+          (recur))))))
+
+(defn read-ns-name
+  "Returns the namespace name from the first top-level `ns` form in the file."
+  [url]
+  (read-ns url
+           (every-pred ns-form? ns-form->ns-name)
+           ns-form->ns-name))
+
+(defn read-namespace
+  "Returns the namespace name from the first top-level `ns` form in the file."
+  {:deprecated "0.19"}
+  [url]
+  (read-ns-name url))
+
+(defn read-ns-form
+  "Returns the first top-level `ns` form in the file."
+  {:added "0.19"}
+  [url]
+  (read-ns url ns-form? identity))
 
 (defn canonical-source
   "Returns the URL of the source file for the namespace object or symbol,
@@ -104,29 +132,40 @@
 ;; These methods search sources on the classpath. Non-classpath source
 ;; files, documentation code, etc within the project directory are ignored.
 
-(defn jvm-clojure-resource-name->ns-name
-  "Given a .clj or .clj `resource-name`, returns its namespace name."
+(defn jvm-clojure-resource-name->ns-form
+  "Given a .clj or .cljc `resource-name`, returns its `ns` form."
   [resource-name]
   (when (misc/clj-file? resource-name)
     (some-> resource-name
             io/resource ;; can return nil for Emacs backup files, for example
-            read-namespace)))
+            read-ns-form)))
+
+(defn jvm-clojure-resource-name->ns-name
+  "Given a .clj or .cljc `resource-name`, returns its namespace name."
+  [resource-name]
+  (when (misc/clj-file? resource-name)
+    (some-> resource-name
+            io/resource ;; can return nil for Emacs backup files, for example
+            read-ns-name)))
 
 (defn classpath-namespaces
   "Returns all namespaces defined in sources on the classpath or the specified
   classpath URLs."
+  ([]
+   (classpath-namespaces (cp/classpath)))
+
   ([classpath-urls]
+   (sort (classpath-namespaces classpath-urls jvm-clojure-resource-name->ns-name)))
+
+  ([classpath-urls extract-fn]
    (->> classpath-urls
         (pmap cp/classpath-seq)
         (apply concat)
-        (pmap jvm-clojure-resource-name->ns-name)
-        (filter identity)
-        (sort)))
-  ([]
-   (classpath-namespaces (cp/classpath))))
+        (pmap extract-fn)
+        (filter identity))))
 
 (defn project-namespaces
-  "Returns all namespaces defined in sources within the current project."
+  "Returns all JVM Clojure namespaces defined in sources within the current project."
   []
   (->> (cp/classpath)
        (pmap (fn [x]
@@ -134,6 +173,48 @@
                  x)))
        (filter identity)
        (classpath-namespaces)))
+
+(defn project-ns-forms
+  "Returns all JVM Clojure `ns` forms defined in sources within the current project,
+  indexed by `ns-name`."
+  {:added "0.19"}
+  []
+  (let [resources (->> (cp/classpath)
+                       (pmap (fn [x]
+                               (when ((every-pred misc/directory? in-project?) x)
+                                 x)))
+                       (filter identity))]
+    (into {}
+          (map (fn [ns-form]
+                 [(ns-form->ns-name ns-form)
+                  ns-form]))
+          (classpath-namespaces resources jvm-clojure-resource-name->ns-form))))
+
+(defn ns-form-imports
+  "Given a `ns` form, returns its `:imports` as fully-qualified Java class names,
+  expressed as symbols.
+
+  Prefix notation is undone, so that all returned members are simple symbols
+  that can be resolved to a class directly."
+  {:added "0.19"}
+  [ns-form]
+  (->> ns-form
+       (filter (every-pred list?
+                           (comp #{:import} first)))
+       (mapcat (fn [[_import-keyword & clauses]]
+                 (->> clauses
+                      (mapcat (fn [x]
+                                (if (symbol? x)
+                                  [x]
+                                  (let [[prefix & classes] x]
+                                    (map (fn [class-symbol]
+                                           (symbol (str prefix
+                                                        "."
+                                                        class-symbol)))
+                                         classes))))))))
+       (distinct)
+       (sort-by pr-str)
+       (vec)))
 
 (defn loaded-project-namespaces
   "Return all loaded namespaces defined in the current project."

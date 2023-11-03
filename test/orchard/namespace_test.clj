@@ -10,6 +10,50 @@
   (is (contains? (into #{} (sut/project-namespaces))
                  'orchard.namespace)))
 
+(deftest project-ns-forms-test
+  (is (map? (sut/project-ns-forms)))
+  (is (contains? (into #{} (sut/project-ns-forms))
+                 ['orchard.namespace-test
+                  '(ns orchard.namespace-test
+                     (:require
+                      [clojure.java.io :as io]
+                      [clojure.string :as string]
+                      [clojure.test :refer [are deftest is testing]]
+                      [orchard.misc :as misc]
+                      [orchard.namespace :as sut]))])))
+
+(deftest ns-form-imports-test
+  (let [corpus (mapcat sut/ns-form-imports (vals (sut/project-ns-forms)))]
+    (is (seq corpus))
+    (doseq [s corpus]
+      (is (symbol? s))
+      (when-not ('#{com.sun.tools.javadoc.RootDocImpl ;; classes on the project can be JDK dependent
+                    com.sun.tools.javadoc.ModifierFilter
+                    com.sun.tools.javadoc.Messager
+                    com.sun.tools.javadoc.JavadocTool
+                    com.sun.tools.javadoc.JavadocEnter
+                    com.sun.tools.javadoc.DocEnv
+                    com.sun.javadoc.Type
+                    com.sun.javadoc.Tag
+                    com.sun.javadoc.RootDoc
+                    com.sun.javadoc.Parameter
+                    com.sun.javadoc.MethodDoc
+                    com.sun.javadoc.FieldDoc
+                    com.sun.javadoc.Doc
+                    com.sun.javadoc.ConstructorDoc
+                    com.sun.javadoc.ClassDoc
+                    jdk.javadoc.doclet.Doclet
+                    jdk.javadoc.doclet.DocletEnvironment
+                    com.sun.source.tree.ClassTree
+                    com.sun.tools.javac.tree.JCTree
+                    com.sun.tools.javac.util.Abort
+                    com.sun.tools.javac.util.Context
+                    com.sun.tools.javac.util.List
+                    com.sun.source.doctree.DocCommentTree}
+                 s)
+        (is (-> s eval class?)
+            (pr-str s))))))
+
 (deftest loaded-namespaces-test
   ;; If we don't pass the second arg, some cider ns will be returned
   (is (some #(re-find #".*orchard" %) (sut/loaded-namespaces)))
