@@ -2,6 +2,10 @@
 
 ## master (unreleased)
 
+## New features
+
+* `orchard.namespace`: introduce new `read-ns-form`, `project-ns-forms`, `ns-form-imports` functions.
+
 ## 0.18.0 (2023-10-30)
 
 ### Changes
