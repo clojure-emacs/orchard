@@ -312,6 +312,12 @@
                    ;; for dynamically loaded classes:
                    :reflector (JavaReflector. (.getClassLoader c))))
 
+(def ^:dynamic *analyze-sources*
+  "Whether to analyze .java sources in addition to reflection-gathered info.
+
+  Bind this to `false` in order to increase performance / decrease the amount of information returned."
+  true)
+
 (defn class-info*
   "For the class symbol, return Java class and member info. Members are indexed
   first by name, and then by argument types to list all overloads."
@@ -321,7 +327,8 @@
                            (catch LinkageError _))]
     (let [package (some-> c package symbol)
           {:keys [members] :as result} (misc/deep-merge (reflect-info (reflection-for c))
-                                                        (source-info class)
+                                                        (when *analyze-sources*
+                                                          (source-info class))
                                                         {:name       (-> c .getSimpleName symbol)
                                                          :class      (-> c .getName symbol)
                                                          :package    package
@@ -378,7 +385,11 @@
         info (if (and cached stale)
                (class-info* class)
                info)]
-    (when (or (not cached) stale)
+    (when (and
+           ;; Only cache full values that possibly were slowly computed.
+           ;; It would be a mistake to cache the fast values, letting them shadow a full computation:
+           *analyze-sources*
+           (or (not cached) stale))
       (.put cache class {:info info, :last-modified last-modified}))
     info))
 

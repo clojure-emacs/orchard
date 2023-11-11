@@ -2,6 +2,11 @@
 
 ## master (unreleased)
 
+## New features
+
+* `orchard.java`: add `*analyze-sources*` dynamic var.
+  * You can bind this to `false` in order to increase performance / decrease the amount of information returned.
+
 ## 0.19.0 (2023-11-04)
 
 ## New features

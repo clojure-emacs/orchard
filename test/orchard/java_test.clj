@@ -528,3 +528,13 @@
             (is (not (string/includes? s "^function.Function java.util.function.Function")))
             (is (not (string/includes? s "^java.util.function.Function java.util.function.Function")))
             (assert (is (not (string/includes? s "java.lang"))))))))))
+
+(when (and util/has-enriched-classpath?
+           @@sut/parser-next-available?)
+  (deftest *analyze-sources*-test
+    (with-redefs [cache (LruMap. 100)]
+      (binding [sut/*analyze-sources* false]
+        (is (nil? (:doc (sut/resolve-symbol 'user `Thread/activeCount)))
+            "Binding this var to `false` results in source info being omitted"))
+      (is (seq (:doc (sut/resolve-symbol 'user `Thread/activeCount)))
+          "Subsequent calls aren't affected, since there's no caching interference"))))
