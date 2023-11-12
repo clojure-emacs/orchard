@@ -120,11 +120,14 @@
         (assoc :path new-path)
         (inspect-render new))))
 
+(defn- nth-wrapper? [x]
+  (and (seq? x)
+       (= 'nth (first x))))
+
 (defn- sibling* [inspector offset pred]
   (let [path (:path inspector)
         last-item (peek path)]
-    (or (when (and (seq? last-item)
-                   (= 'nth (first last-item)))
+    (or (when (nth-wrapper? last-item)
           (let [new-index (+ offset ;; for our purposes, +2 means inc, +1 nop, and +0 dec
                              (second last-item))
                 top (up inspector)]
@@ -149,6 +152,34 @@
   (sibling* inspector 2 (fn [index inspector]
                           (< index
                              (-> inspector :index count)))))
+
+(defn nav-to-item
+  "Shows the value per `nav` for the item at `idx`,
+  relative to the `inspector`'s current value."
+  [inspector idx]
+  (cond
+    (not nav)
+    inspector
+
+    (some #{'<unknown>} (:path inspector))
+    inspector
+
+    :else
+    (let [{:keys [index value path current-page page-size]} inspector
+          new-path (push-item-to-path index idx path current-page page-size)
+          normalized-path (mapv (fn [x]
+                                  (cond-> x
+                                    (nth-wrapper? x) second))
+                                new-path)
+          k (peek normalized-path)
+          v (get value k)]
+      (if (some #{'<unknown>} new-path)
+        inspector
+        (-> (update-in inspector [:stack] conj value)
+            (update-in [:pages-stack] conj current-page)
+            (assoc :current-page 0)
+            (assoc :path new-path)
+            (inspect-render (nav value k v)))))))
 
 (defn next-page
   "Jump to the next page when inspecting a paginated sequence/map. Does nothing
@@ -508,19 +539,25 @@
         (unindent))
     inspector))
 
-(defn- nav-datafy-tx [obj remove-nil-valued-entries?]
+(defn- nav-datafy-tx [remove-nil-valued-entries?]
   (keep (fn [[k v]]
-          (or (some->> (nav obj k v)
-                       (datafy)
-                       (vector k))
-              (when (and (nil? v)
-                         (not remove-nil-valued-entries?))
-                [k v])))))
+          (or
+           ;; NOTE: this `v` used to be a `(nav obj k v)` call.
+           ;; Per Clojure's default implementation of Nav, that's equivalent to `v`.
+           ;; Calling nav is worse since in practice it means that we're eagerly invoking `nav`,
+           ;; which for custom implementations can mean that side-effects (like http or JDBC navigation) would be triggered
+           ;; before the user has expressed any intent to use those side-effects.
+           (some->> v
+                    (datafy)
+                    (vector k))
+           (when (and (nil? v)
+                      (not remove-nil-valued-entries?))
+             [k v])))))
 
 (defn- nav-datafy [obj remove-nil-valued-entries?]
   (let [data (datafy obj)]
     (cond (map? data)
-          (into {} (nav-datafy-tx obj remove-nil-valued-entries?) data)
+          (into {} (nav-datafy-tx remove-nil-valued-entries?) data)
           (or (sequential? data) (set? data))
           (map datafy data))))
 

@@ -443,6 +443,23 @@
                inspect/next-sibling
                inspect/next-sibling)))))
 
+(when datafy?
+  (deftest nav-to-item-test
+    (let [proof (atom [])]
+      (is (= 99
+             (-> {:foo [(with-meta {1 1}
+                          {'clojure.core.protocols/nav (fn [self _ _]
+                                                         (swap! proof conj self)
+                                                         99)})]}
+                 inspect
+                 (inspect/down 2)
+                 (inspect/down 1)
+                 (inspect/nav-to-item 1)
+                 :value))
+          "Inspects the value per its `nav` representation - not the value itself")
+      (is (= [{1 1}] @proof)
+          "Nav is performed exactly once"))))
+
 (deftest path-test
   (testing "inspector tracks the path in the data structure"
     (is (= "(find 50) key" (-> long-map inspect (inspect/down 39) render last)))
@@ -938,32 +955,6 @@
                         "  " (:value ":name" 5) " = " (:value "\"John Doe\"" 6)
                         (:newline)
                         "  " (:value ":class" 7) " = " (:value "\"PersistentArrayMap\"" 8)
-                        (:newline))
-                      (datafy-section rendered))))))))
-
-(deftest inspect-navigable-metadata-extension-test
-  (testing "inspecting a map extended with the Navigable protocol"
-    (let [rendered (-> (extend-nav-vector {:name "John Doe"}) inspect render)]
-      (testing "renders the header"
-        (is (match? '("Class"
-                      ": "
-                      (:value "clojure.lang.PersistentArrayMap" 0)
-                      (:newline)
-                      (:newline))
-                    (header rendered))))
-      (testing "renders the meta information section"
-        (is (match? '("--- Meta Information:"
-                      (:newline)
-                      "  " (:value "clojure.core.protocols/nav" 1)
-                      " = " (:value "orchard.inspect_test$extend_nav_vector$fn" 2)
-                      (:newline)
-                      (:newline))
-                    (demunge (section "Meta Information" rendered)))))
-      (when datafy?
-        (testing "renders the datafy section"
-          (is (match? '("--- Datafy:"
-                        (:newline)
-                        "  " (:value ":name" 5) " = " (:value "[ :name \"John Doe\" ]" 6)
                         (:newline))
                       (datafy-section rendered))))))))
 

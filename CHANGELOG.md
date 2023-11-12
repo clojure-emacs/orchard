@@ -2,6 +2,10 @@
 
 ## master (unreleased)
 
+## New features
+
+* [#209](https://github.com/clojure-emacs/orchard/issues/209): add `orchard.inspect/nav-to-item` function which enables [nav](https://clojure.github.io/clojure/branch-master/clojure.datafy-api.html#clojure.datafy/nav)ing to a specific sub-item within a given Inspector value.
+
 ## 0.20.0 (2023-11-11)
 
 ## New features
