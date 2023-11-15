@@ -209,6 +209,12 @@
   (maybe-tap> (:value inspector))
   (inspect-render inspector))
 
+(defn tap-indexed
+  "Tap the value found at `idx`, without navigating to it."
+  [{:keys [index] :as inspector} idx]
+  (maybe-tap> (get index idx))
+  (inspect-render inspector))
+
 (declare inspector-value-string)
 
 ;;

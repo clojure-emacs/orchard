@@ -1044,13 +1044,13 @@
       (testing "doesn't render page info section"
         (is (nil? (section "Page Info" rendered)))))))
 
-(deftest tap-current-value
-  (testing "tap> current value"
-    (when tap?
+(deftest tap-test
+  (when tap?
 
-      ;; NOTE: this deftest is flaky - wrap the body in the following (and remove the `Thread/sleep`) to reproduce.
-      #_(dotimes [_ 100000])
+    ;; NOTE: this deftest is flaky - wrap the body in the following (and remove the `Thread/sleep`) to reproduce.
+    #_(dotimes [_ 100000])
 
+    (testing "tap-current-value"
       (let [proof (atom [])
             test-tap-handler (fn [x]
                                (swap! proof conj x))
@@ -1072,6 +1072,40 @@
         (let [expected [{:a {:b 1}}
                         {:b 1}
                         :b]
+              tries (atom 0)]
+
+          (while (and (not= expected @proof)
+                      (< @tries 1000))
+            (Thread/sleep sleep)
+            (swap! tries inc))
+
+          (is (= expected @proof)))
+
+        ((misc/call-when-resolved 'clojure.core/remove-tap) test-tap-handler)))
+
+    (testing "tap-indexed"
+      (let [proof (atom [])
+            test-tap-handler (fn [x]
+                               (swap! proof conj x))
+            sleep (long
+                   (if (System/getenv "CI")
+                     200
+                     100))]
+
+        ((misc/call-when-resolved 'clojure.core/add-tap) test-tap-handler)
+
+        (-> (inspect/fresh)
+            (inspect/start {:a {:b 1}})
+            (inspect/tap-indexed 1)
+            (inspect/tap-indexed 2)
+            (inspect/down 2)
+            (inspect/tap-indexed 1)
+            (inspect/tap-indexed 2))
+
+        (let [expected [:a
+                        {:b 1}
+                        :b
+                        1]
               tries (atom 0)]
 
           (while (and (not= expected @proof)

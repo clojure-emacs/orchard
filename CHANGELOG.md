@@ -2,6 +2,11 @@
 
 ## master (unreleased)
 
+## New features
+
+* [#215](https://github.com/clojure-emacs/orchard/issues/215): `orchard.inspect`: offer new `tap-indexed` function.
+  * It allows to `tap>` a sub-item by `idx`, without navigating to it.
+
 ## 0.20.0 (2023-11-11)
 
 ## New features
