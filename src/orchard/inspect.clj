@@ -44,7 +44,10 @@
     (conj path '<unknown>)
     (if (= idx 0)
       (conj path 'class)
-      (let [klass (first index)]
+      (let [klass (first index)
+            klass (if (class? klass)
+                    klass
+                    (-> klass str Class/forName))]
         (cond
           ;; If value's class is a map, going down means jumping into either key
           ;; or value.
@@ -686,7 +689,7 @@
 
 (defn- render-section [obj inspector [section sort-key-fn]]
   (let [method (symbol (str ".get" (name section)))
-        elements (eval (list method obj))]
+        elements (eval (list method obj))] ;; XXX ditch eval
     (if-not (seq elements)
       inspector
       (unindent (reduce (fn [ins elt]
@@ -701,7 +704,9 @@
 
 (defmethod inspect :class [inspector ^Class obj]
   (-> (reduce (partial render-section obj)
-              (render-class-name inspector obj)
+              (-> inspector
+                  (render-labeled-value "Name" (-> obj .getName symbol))
+                  (render-class-name obj))
               [[:Interfaces #(.getName ^Class %)]
                [:Constructors #(.toGenericString ^Constructor %)]
                [:Fields #(.getName ^Field %)]
