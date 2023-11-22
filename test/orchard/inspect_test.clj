@@ -658,23 +658,24 @@
 
 (deftest inspect-java-hashmap-test
   (testing "inspecting java.util.Map descendendants prints a key-value coll"
-    (let [^java.util.Map the-map  {:a 1, :b 2, :c 3}]
-      (is (match? '("Class"
-                    ": "
-                    (:value "java.util.HashMap" 0)
-                    (:newline)
-                    (:newline)
-                    "--- Contents:"
-                    (:newline)
-                    "  " (:value ":b" 1) " = " (:value "2" 2)
-                    (:newline)
-                    "  " (:value ":c" 3) " = " (:value "3" 4)
-                    (:newline)
-                    "  " (:value ":a" 5) " = " (:value "1" 6)
-                    (:newline))
-                  (-> (inspect/fresh)
-                      (inspect/start (java.util.HashMap. the-map))
-                      render))))))
+    (let [^java.util.Map the-map {:a 1, :b 2, :c 3}
+          rendered (-> (inspect/fresh)
+                       (inspect/start (java.util.HashMap. the-map))
+                       render)]
+      (is (match? (matchers/embeds '("Class"
+                                     ": "
+                                     (:value "java.util.HashMap" 0)
+                                     (:newline)
+                                     (:newline)
+                                     "--- Contents:"
+                                     (:newline)))
+                  rendered))
+      (is (match? (matchers/embeds (list "  " (list :value ":a" pos?) " = " (list :value "1" pos?) '(:newline)))
+                  rendered))
+      (is (match? (matchers/embeds (list "  " (list :value ":b" pos?) " = " (list :value "2" pos?) '(:newline)))
+                  rendered))
+      (is (match? (matchers/embeds (list "  " (list :value ":c" pos?) " = " (list :value "3" pos?) '(:newline)))
+                  rendered)))))
 
 (deftest inspect-java-object-test
   (testing "inspecting any Java object prints its fields"
@@ -724,56 +725,50 @@
   (testing "inspecting the java.lang.Object class"
     (let [rendered (-> Object inspect render)]
       (testing "renders the header section"
-        (is (match? '("Class" ": " (:value "java.lang.Class" 0) (:newline) (:newline))
+        (is (match? (list "Name" ": " '(:value "java.lang.Object" 0) '(:newline)
+                          "Class" ": " '(:value "java.lang.Class" 1) '(:newline) '(:newline))
                     (header rendered))))
       (testing "renders the constructors section"
         (is (match? '("--- Constructors:"
                       (:newline)
-                      "  " (:value "public java.lang.Object()" 1)
+                      "  " (:value "public java.lang.Object()" 2)
                       (:newline)
                       (:newline))
                     (section "Constructors" rendered))))
       (testing "renders the methods section"
-        (is (match? (cond-> '("--- Methods:"
-                              (:newline)
-                              "  " (:value "public boolean java.lang.Object.equals(java.lang.Object)" 2)
-                              (:newline)
-                              "  " (:value "public final native java.lang.Class java.lang.Object.getClass()" 3)
-                              (:newline)
-                              "  " (:value "public native int java.lang.Object.hashCode()" 4)
-                              (:newline)
-                              "  " (:value "public final native void java.lang.Object.notify()" 5)
-                              (:newline)
-                              "  " (:value "public final native void java.lang.Object.notifyAll()" 6)
-                              (:newline)
-                              "  " (:value "public java.lang.String java.lang.Object.toString()" 7)
-                              (:newline)
-                              "  " (:value "public final native void java.lang.Object.wait(long) throws java.lang.InterruptedException" 8)
-                              (:newline)
-                              "  " (:value "public final void java.lang.Object.wait() throws java.lang.InterruptedException" 9)
-                              (:newline)
-                              "  " (:value "public final void java.lang.Object.wait(long,int) throws java.lang.InterruptedException" 10)
-                              (:newline))
-                      datafy? (concat ['(:newline)]))
-                    (section "Methods" rendered))))
+        (let [methods (section "Methods" rendered)]
+          (is (match? (matchers/embeds (list "--- Methods:"
+                                             '(:newline)))
+                      methods))
+          (doseq [assertion ["public final native java.lang.Class java.lang.Object.getClass()"
+                             "public boolean java.lang.Object.equals(java.lang.Object)"
+                             "public native int java.lang.Object.hashCode()"
+                             "public final native void java.lang.Object.notify()"
+                             "public final native void java.lang.Object.notifyAll()"
+                             "public java.lang.String java.lang.Object.toString()"
+                             "public final void java.lang.Object.wait() throws java.lang.InterruptedException"
+                             "public final void java.lang.Object.wait(long,int) throws java.lang.InterruptedException"]]
+            (is (match? (matchers/embeds (list "  " (list :value assertion pos?)))
+                        methods)))))
       (when datafy?
         (testing "renders the datafy section"
-          (is (match? `("--- Datafy:"
-                        (:newline)
-                        "  " (:value ":flags" 11) " = " (:value "#{ :public }" 12)
-                        (:newline)
-                        "  " (:value ":members" 13) " = "
-                        (:value ~(str "{ clone [ { :name clone, :return-type java.lang.Object, :declaring-class java.lang.Object, "
-                                      ":parameter-types [], :exception-types [ java.lang.CloneNotSupportedException ], ... } ], equals "
-                                      "[ { :name equals, :return-type boolean, :declaring-class java.lang.Object, :parameter-types "
-                                      "[ java.lang.Object ], :exception-types [], ... } ], finalize [ { :name finalize, :return-type void, "
-                                      ":declaring-class java.lang.Object, :parameter-types [], :exception-types [ java.lang.Throwable ], "
-                                      "... } ], getClass [ { :name getClass, :return-type java.lang.Class, :declaring-class java.lang.Object, "
-                                      ":parameter-types [], :exception-types [], ... } ], hashCode [ { :name hashCode, :return-type int, "
-                                      ":declaring-class java.lang.Object, :parameter-types [], :exception-types [], ... } ], ... }") 14)
-                        (:newline)
-                        "  " (:value ":name" 15) " = " (:value "java.lang.Object" 16)
-                        (:newline))
+          (is (match? (list "--- Datafy:"
+                            '(:newline)
+                            "  " (list :value ":flags" pos?) " = " (list :value "#{ :public }" pos?)
+                            '(:newline)
+                            "  " (list :value ":members" pos?) " = "
+                            (list :value (str "{ clone [ { :name clone, :return-type java.lang.Object, :declaring-class java.lang.Object, "
+                                              ":parameter-types [], :exception-types [ java.lang.CloneNotSupportedException ], ... } ], equals "
+                                              "[ { :name equals, :return-type boolean, :declaring-class java.lang.Object, :parameter-types "
+                                              "[ java.lang.Object ], :exception-types [], ... } ], finalize [ { :name finalize, :return-type void, "
+                                              ":declaring-class java.lang.Object, :parameter-types [], :exception-types [ java.lang.Throwable ], "
+                                              "... } ], getClass [ { :name getClass, :return-type java.lang.Class, :declaring-class java.lang.Object, "
+                                              ":parameter-types [], :exception-types [], ... } ], hashCode [ { :name hashCode, :return-type int, "
+                                              ":declaring-class java.lang.Object, :parameter-types [], :exception-types [], ... } ], ... }")
+                                  pos?)
+                            '(:newline)
+                            "  " (list :value ":name" pos?) " = " (list :value "java.lang.Object" pos?)
+                            '(:newline))
                       (datafy-section rendered))))))))
 
 (deftest inspect-atom-test

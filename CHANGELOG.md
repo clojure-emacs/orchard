@@ -9,6 +9,10 @@
 * [#215](https://github.com/clojure-emacs/orchard/issues/215): `orchard.inspect`: offer new `tap-indexed` function.
   * It allows to `tap>` a sub-item by `idx`, without navigating to it.
 
+## Changes
+
+* [#217](https://github.com/clojure-emacs/orchard/issues/217): Add a `Name` header to inspected Class objects.
+
 ## 0.20.0 (2023-11-11)
 
 ## New features
