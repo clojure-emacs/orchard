@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+## 0.21.0 (2023-11-24)
+
 ## New features
 
 * [#215](https://github.com/clojure-emacs/orchard/issues/215): `orchard.inspect`: offer new `tap-indexed` function.
