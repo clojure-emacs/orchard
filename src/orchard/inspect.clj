@@ -687,30 +687,29 @@
         (seq static-nonaccessible)     (render-fields "Private static fields" static-nonaccessible)
         true                           (render-datafy obj)))))
 
-(defn- render-section [obj inspector [section sort-key-fn]]
-  (let [method (symbol (str ".get" (name section)))
-        elements (eval (list method obj))] ;; XXX ditch eval
-    (if-not (seq elements)
-      inspector
-      (unindent (reduce (fn [ins elt]
-                          (-> ins
-                              (render-indent)
-                              (render-value elt)
-                              (render-ln)))
-                        (-> inspector
-                            (render-section-header section)
-                            (indent))
-                        (sort-by sort-key-fn elements))))))
+(defn- render-class-section [inspector [section elements sort-key-fn]]
+  (if-not (seq elements)
+    inspector
+    (unindent (reduce (fn [ins elt]
+                        (-> ins
+                            (render-indent)
+                            (render-value elt)
+                            (render-ln)))
+                      (-> inspector
+                          (render-section-header section)
+                          (indent))
+                      (sort-by sort-key-fn elements)))))
 
 (defmethod inspect :class [inspector ^Class obj]
-  (-> (reduce (partial render-section obj)
+  (-> (reduce render-class-section
               (-> inspector
                   (render-labeled-value "Name" (-> obj .getName symbol))
                   (render-class-name obj))
-              [[:Interfaces #(.getName ^Class %)]
-               [:Constructors #(.toGenericString ^Constructor %)]
-               [:Fields #(.getName ^Field %)]
-               [:Methods #(vector (.getName ^Method %) (.toGenericString ^Method %))]])
+              [[:Interfaces,   (.getInterfaces obj),   #(.getName ^Class %)]
+               [:Constructors, (.getConstructors obj), #(.toGenericString ^Constructor %)]
+               [:Fields,       (.getFields obj),       #(.getName ^Field %)]
+               [:Methods,      (.getMethods obj),      #(vector (.getName ^Method %)
+                                                                (.toGenericString ^Method %))]])
       (render-datafy obj)))
 
 (defmethod inspect :aref [inspector ^clojure.lang.ARef obj]

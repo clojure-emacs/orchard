@@ -769,7 +769,15 @@
                             '(:newline)
                             "  " (list :value ":name" pos?) " = " (list :value "java.lang.Object" pos?)
                             '(:newline))
-                      (datafy-section rendered))))))))
+                      (datafy-section rendered)))))))
+
+  (testing "inspecting the java.lang.Class class"
+    (let [rendered (-> Class inspect render)]
+      (testing "renders the interfaces section"
+        (is (match? (matchers/embeds (list "--- Interfaces:"
+                                           '(:newline)
+                                           "  " (list :value "java.io.Serializable" number?)))
+                    (section "Interfaces" rendered)))))))
 
 (deftest inspect-atom-test
   (testing "inspecting an atom"
