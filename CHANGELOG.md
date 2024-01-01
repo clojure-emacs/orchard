@@ -2,16 +2,17 @@
 
 ## master (unreleased)
 
+## Changes
+
+* [#217](https://github.com/clojure-emacs/orchard/issues/217): Add a `Name` header to inspected Class objects.
+* [#222](https://github.com/clojure-emacs/orchard/issues/222): optimize the performance of namespace discovery.
+
 ## 0.21.0 (2023-11-24)
 
 ## New features
 
 * [#215](https://github.com/clojure-emacs/orchard/issues/215): `orchard.inspect`: offer new `tap-indexed` function.
   * It allows to `tap>` a sub-item by `idx`, without navigating to it.
-
-## Changes
-
-* [#217](https://github.com/clojure-emacs/orchard/issues/217): Add a `Name` header to inspected Class objects.
 
 ## 0.20.0 (2023-11-11)
 
