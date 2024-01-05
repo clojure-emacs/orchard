@@ -154,8 +154,11 @@
 (defn- find-cljc-files-efficiently
   "Finds .clj/c files as efficiently as possible.
 
-  In particular, avoids visiting and operating on files,
-  as early as possible."
+  In particular, avoids returning unnecessary files,
+  and creating objects for those.
+
+  This way, upstream consumers like `orchard.java.classpath/classpath-seq` will operate on fewer File objects,
+  improving performance for large workloads (e.g. a directory with 1M files was placed as a resource)."
   [^File dir]
   (let [start-path (.toPath dir)
         matcher (reify BiPredicate
