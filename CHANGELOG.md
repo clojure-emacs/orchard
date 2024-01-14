@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+## 0.22.0 (2024-01-14)
+
 ## Changes
 
 * [#217](https://github.com/clojure-emacs/orchard/issues/217): Add a `Name` header to inspected Class objects.

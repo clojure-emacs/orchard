@@ -78,7 +78,7 @@ Documentation for the master branch as well as tagged releases are available
 Just add `orchard` as a dependency and start hacking.
 
 ```clojure
-[cider/orchard "0.21.0"]
+[cider/orchard "0.22.0"]
 ```
 
 Consult the [API documentation](https://cljdoc.org/d/cider/orchard/CURRENT) to get a better idea about the
@@ -156,7 +156,7 @@ make repl
 You can install Orchard locally like this:
 
 ```
-PROJECT_VERSION=0.21.0 make install
+PROJECT_VERSION=0.22.0 make install
 ```
 
 For releasing to [Clojars](https://clojars.org/):
@@ -169,7 +169,7 @@ git push
 
 ## License
 
-Copyright © 2018-2023 Bozhidar Batsov & contributors
+Copyright © 2018-2024 Bozhidar Batsov & contributors
 
 Distributed under the Eclipse Public License either version 1.0 or (at
 your option) any later version.
