@@ -191,7 +191,7 @@ jobs:
 #
 # - run tests against the target matrix
 #   - Java 8, 11, 16 and 17
-#   - Clojure 1.8, 1.9, 1.10, 1.11, master
+#   - Clojure 1.9, 1.10, 1.11, master
 # - linter, eastwood and cljfmt
 
 workflows:
@@ -202,7 +202,7 @@ workflows:
           matrix:
             parameters:
               jdk_version: [openjdk8, openjdk11, openjdk16, openjdk17]
-              clojure_version: ["1.8", "1.9", "1.10", "1.11", "master"]
+              clojure_version: ["1.9", "1.10", "1.11", "master"]
               test_profiles: ["-user,-dev,+test,-provided", "-user,-dev,+test,+provided"]
               parser_target: ["parser-next", "parser", "legacy-parser"]
           filters:

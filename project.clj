@@ -37,8 +37,6 @@
                                        [org.clojure/clojure "1.11.1" :classifier "sources"]
                                        [org.clojure/clojurescript "1.11.4"]]
                         :test-paths ["test-cljs"]}
-             :1.8 {:dependencies [[org.clojure/clojure "1.8.0"]
-                                  [org.clojure/clojure "1.8.0" :classifier "sources"]]}
              :1.9 {:dependencies [[org.clojure/clojure "1.9.0"]
                                   [org.clojure/clojure "1.9.0" :classifier "sources"]]}
              :1.10 {:dependencies [[org.clojure/clojure "1.10.3"]
