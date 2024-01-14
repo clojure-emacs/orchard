@@ -151,7 +151,7 @@
             io/resource ;; can return nil for Emacs backup files, for example
             read-ns-name)))
 
-(defn- find-cljc-files-efficiently
+(defn- find-clj+cljc-files-efficiently
   "Finds .clj/c files as efficiently as possible.
 
   In particular, avoids returning unnecessary files,
@@ -187,7 +187,7 @@
                 (cp/classpath-seq classpath-url
                                   (when (= extract-fn jvm-clojure-resource-name->ns-name) ;; Prefer most efficient method when possible (#222)
                                     (fn [^File dir]
-                                      (find-cljc-files-efficiently dir))))))
+                                      (find-clj+cljc-files-efficiently dir))))))
         (apply concat)
         (pmap extract-fn)
         (filter identity))))
