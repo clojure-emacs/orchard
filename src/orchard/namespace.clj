@@ -11,8 +11,11 @@
    [orchard.java.classpath :as cp]
    [orchard.misc :as misc])
   (:import
-   (java.io PushbackReader)
-   (java.net URL)))
+   (java.io File PushbackReader)
+   (java.net URL)
+   (java.nio.file FileVisitOption Files Path)
+   (java.util.function BiPredicate)
+   (java.util.stream Collectors)))
 
 ;;; Namespace/source resolution
 
@@ -148,9 +151,30 @@
             io/resource ;; can return nil for Emacs backup files, for example
             read-ns-name)))
 
+(defn- find-clj+cljc-files-efficiently
+  "Finds .clj/c files as efficiently as possible.
+
+  In particular, avoids returning unnecessary files,
+  and creating objects for those.
+
+  This way, upstream consumers like `orchard.java.classpath/classpath-seq` will operate on fewer File objects,
+  improving performance for large workloads (e.g. a directory with 1M files was placed as a resource)."
+  [^File dir]
+  (let [start-path (.toPath dir)
+        matcher (reify BiPredicate
+                  (test [_this path _attrs]
+                    (boolean (and
+                              (re-find #"\.cljc*$" (.toString ^Path path)) ;; operate directly on the Path (without File conversion) for efficiency
+                              (-> ^Path path .toFile .isFile)))))]
+
+    (->> (.collect (Files/find start-path 100 matcher (into-array FileVisitOption []))
+                   (Collectors/toList))
+         (mapv (fn [^Path path]
+                 (.toFile path))))))
+
 (defn classpath-namespaces
-  "Returns all namespaces defined in sources on the classpath or the specified
-  classpath URLs."
+  "Returns all namespaces (by default: of .clj or .cljc extension)
+  defined in sources on the classpath or the specified classpath URLs."
   ([]
    (classpath-namespaces (cp/classpath)))
 
@@ -159,7 +183,11 @@
 
   ([classpath-urls extract-fn]
    (->> classpath-urls
-        (pmap cp/classpath-seq)
+        (pmap (fn [classpath-url]
+                (cp/classpath-seq classpath-url
+                                  (when (= extract-fn jvm-clojure-resource-name->ns-name) ;; Prefer most efficient method when possible (#222)
+                                    (fn [^File dir]
+                                      (find-clj+cljc-files-efficiently dir))))))
         (apply concat)
         (pmap extract-fn)
         (filter identity))))

@@ -7,8 +7,53 @@
    [orchard.namespace :as sut]))
 
 (deftest project-namespaces-test
-  (is (contains? (into #{} (sut/project-namespaces))
-                 'orchard.namespace)))
+  (let [all (into #{} (sut/project-namespaces))]
+    (doseq [n '#{orchard.apropos
+                 orchard.apropos-test
+                 orchard.cljs.analysis
+                 orchard.cljs.analysis-test
+                 orchard.cljs.meta
+                 orchard.cljs.test-env
+                 orchard.clojuredocs
+                 orchard.clojuredocs-test
+                 orchard.eldoc
+                 orchard.eldoc-test
+                 orchard.indent
+                 orchard.indent-test
+                 orchard.info
+                 orchard.info-test
+                 orchard.inspect
+                 orchard.inspect-test
+                 orchard.java
+                 orchard.java-test
+                 orchard.java.classpath
+                 orchard.java.classpath-test
+                 orchard.java.classpath-test.third-party-compat-test
+                 orchard.java.resource
+                 orchard.java.resource-test
+                 orchard.lru-map-test
+                 orchard.meta
+                 orchard.meta-test
+                 orchard.misc
+                 orchard.misc-test
+                 orchard.namespace
+                 orchard.namespace-test
+                 orchard.query
+                 orchard.query-test
+                 orchard.spec
+                 orchard.spec-test
+                 orchard.test-macros
+                 orchard.test-no-defs
+                 orchard.test-ns
+                 orchard.test-ns-dep
+                 orchard.test.util
+                 orchard.util.io
+                 orchard.util.os
+                 orchard.util.os-test
+                 orchard.xref
+                 orchard.xref-test}]
+      (is (contains? all n)
+          n))))
 
 (deftest project-ns-forms-test
   (is (map? (sut/project-ns-forms)))

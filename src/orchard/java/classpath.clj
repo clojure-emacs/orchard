@@ -76,21 +76,27 @@
 (defn classpath-seq
   "Returns a sequence of all descendant non-directory files or archive entries
   as relative paths."
-  [^URL url]
-  (let [f (io/as-file url)]
-    (cond
-      (not (.exists f))
-      []
 
-      (misc/archive? url)
-      (->> (enumeration-seq (.entries (JarFile. f)))
-           (filter #(not (.isDirectory ^JarEntry %)))
-           (map #(.getName ^JarEntry %)))
+  ([url]
+   (classpath-seq url nil))
 
-      :else
-      (->> (file-seq f)
-           (filter #(not (.isDirectory ^File %)))
-           (map #(.getPath (.relativize (.toURI url) (.toURI ^File %))))))))
+  ([^URL url, file-seq-fn]
+   (let [f (io/as-file url)]
+     (cond
+       (not (.exists f))
+       []
+
+       (misc/archive? url)
+       (->> (enumeration-seq (.entries (JarFile. f)))
+            (filter #(not (.isDirectory ^JarEntry %)))
+            (map #(.getName ^JarEntry %)))
+
+       :else
+       (->> (if file-seq-fn
+              (file-seq-fn f)
+              (file-seq f))
+            (filter #(not (.isDirectory ^File %)))
+            (map #(.getPath (.relativize (.toURI url) (.toURI ^File %)))))))))
 
 ;;; Boot support - previously part of cider-nrepl
 ;;
