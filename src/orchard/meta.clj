@@ -102,6 +102,11 @@
          ;; Impl might try to resolve it as a class, which may fail
          (catch ClassNotFoundException _
            nil)
+         (catch java.lang.NoClassDefFoundError _
+           ;; this can happen if there is a java class with a camel cased name
+           ;; that otherwise matches the name of a clojure namespace, on a case
+           ;; indifferent filesystem, eg. on OS X.
+           nil)
          ;; TODO: Preserve and display the exception info
          (catch Exception _
            nil))))
