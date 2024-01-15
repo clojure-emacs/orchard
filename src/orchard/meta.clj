@@ -103,9 +103,9 @@
          (catch ClassNotFoundException _
            nil)
          (catch java.lang.NoClassDefFoundError _
-           ;; this can happen if there is a java class with a camel cased name
+           ;; This can happen if there is a java class with a camel cased name
            ;; that otherwise matches the name of a clojure namespace, on a case
-           ;; indifferent filesystem, eg. on OS X.
+           ;; indifferent filesystem, eg. on macOS.
            nil)
          ;; TODO: Preserve and display the exception info
          (catch Exception _
