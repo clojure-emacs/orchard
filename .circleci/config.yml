@@ -10,43 +10,28 @@ version: 2.1
 
 defaults: &defaults
   working_directory: ~/repo
-
-env_defaults: &env_defaults
-  LEIN_ROOT: "true"   # we intended to run lein as root
-
-jdk_env_defaults: &jdk_env_defaults
-  JVM_OPTS: -Xmx3200m -Dclojure.main.report=stderr
+  environment:
+    LEIN_ROOT: "true" # we intend to run lein as root
+    JVM_OPTS: -Xmx3200m -Dclojure.main.report=stderr
 
 # Runners for each major OpenJDK
 
 executors:
   openjdk8:
     docker:
-      - image: circleci/clojure:openjdk-8-lein-2.9.1
-    environment:
-      <<: *env_defaults
-      <<: *jdk_env_defaults
+      - image: clojure:temurin-8-lein-2.10.0-jammy
     <<: *defaults
   openjdk11:
     docker:
-      - image: circleci/clojure:openjdk-11-lein-2.9.1
-    environment:
-      <<: *env_defaults
-      <<: *jdk_env_defaults
-    <<: *defaults
-  openjdk16:
-    docker:
-      - image: circleci/clojure:openjdk-16-lein-2.9.5-buster
-    environment:
-      <<: *env_defaults
-      <<: *jdk_env_defaults
+      - image: clojure:temurin-11-lein-2.10.0-jammy
     <<: *defaults
   openjdk17:
     docker:
-      - image: circleci/clojure:openjdk-17-lein-2.9.5-buster
-    environment:
-      <<: *env_defaults
-      <<: *jdk_env_defaults
+      - image: clojure:temurin-17-lein-2.10.0-jammy
+    <<: *defaults
+  openjdk21:
+    docker:
+      - image: clojure:temurin-21-lein-2.10.0-jammy
     <<: *defaults
 
 # Runs a given set of steps, with some standard pre- and post-
@@ -89,14 +74,14 @@ commands:
       - run:
           name: Install make
           command: |
-            sudo apt-get install make
+            apt-get update && apt-get install -y make git
       - run:
           name: Generate Cache Checksum
           command: |
             for file in << parameters.files >>
             do
               find . -name $file -exec cat {} +
-            done | shasum | awk '{print $1}' > /tmp/clojure_cache_seed
+            done | sha256sum | awk '{print $1}' > /tmp/clojure_cache_seed
       - restore_cache:
           key: clojure-<< parameters.cache_version >>-<< parameters.jdk_version >>-<< parameters.clojure_version >>-{{ checksum "/tmp/clojure_cache_seed" }}
       - steps: << parameters.steps >>
@@ -200,9 +185,26 @@ workflows:
     jobs:
       - test_code:
           matrix:
+            alias: "test_code_jdk8"
             parameters:
-              jdk_version: [openjdk8, openjdk11, openjdk16, openjdk17]
+              jdk_version: [openjdk8]
+              # Clojure 1.9 is tested only against JDK8.
               clojure_version: ["1.9", "1.10", "1.11", "master"]
+              test_profiles: ["-user,-dev,+test,-provided", "-user,-dev,+test,+provided"]
+              # It doesn't make sense to exercise the newer Orchard Java parsers against JDK8
+              # (given that JDK8 is explicitly excluded by those parsers)
+              parser_target: ["legacy-parser"]
+          filters:
+            branches:
+              only: /.*/
+            tags:
+              only: /^v\d+\.\d+\.\d+(-alpha\d+)?$/
+      - test_code:
+          matrix:
+            alias: "test_code"
+            parameters:
+              jdk_version: [openjdk11, openjdk17, openjdk21]
+              clojure_version: ["1.10", "1.11", "master"]
               test_profiles: ["-user,-dev,+test,-provided", "-user,-dev,+test,+provided"]
               parser_target: ["parser-next", "parser", "legacy-parser"]
           filters:
@@ -230,6 +232,7 @@ workflows:
       - deploy:
           requires:
             - test_code
+            - test_code_jdk8
             - "Code Linting, (latest LTS JDK)"
           filters:
             branches:
