@@ -38,9 +38,9 @@
               :line 12,
               :column 1,
               :file "orchard/java/DummyClass.java"
-              :resource-url (java.net.URL. (str "file:"
-                                                (System/getProperty "user.dir")
-                                                "/test-java/orchard/java/DummyClass.java"))}
+              :resource-url (.toURL (java.net.URI. (str "file:"
+                                                        (System/getProperty "user.dir")
+                                                        "/test-java/orchard/java/DummyClass.java")))}
              (dissoc (sut/source-info 'orchard.java.DummyClass)
                      :path))))
 

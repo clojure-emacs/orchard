@@ -9,7 +9,7 @@
    [orchard.util.os :as os])
   (:import
    (java.io IOException)
-   (java.net URL)
+   (java.net URI)
    (javax.net.ssl HttpsURLConnection)))
 
 (def cache (atom {}))
@@ -42,7 +42,7 @@
   (if-not (.startsWith url "http")
     ;; Skip checks for non remote url
     [true]
-    (let [url (URL. url)
+    (let [url (.toURL (URI. url))
           conn ^HttpsURLConnection (.openConnection url)]
       (.setConnectTimeout conn connect-timeout)
       (try
