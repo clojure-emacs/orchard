@@ -462,6 +462,7 @@
   [ns sym]
   (when-let [ns (find-ns ns)]
     (let [c (try (ns-resolve ns sym)
+                 (catch java.lang.NoClassDefFoundError _)
                  (catch Exception _))]
       (if (class? c)
         (class-info (-> ^Class c .getName symbol))
