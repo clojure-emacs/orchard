@@ -10,7 +10,7 @@
    [orchard.misc :as misc])
   (:import
    (java.io File)
-   (java.net URL URLClassLoader)
+   (java.net URI URL URLClassLoader)
    (java.nio.file Paths)
    (java.util.jar JarEntry JarFile)))
 
@@ -114,7 +114,7 @@
                 (let [url (if (re-find #".jar$" path)
                             (str "file:" path)
                             (str "file:" path dir-separator))]
-                  (new java.net.URL url)))
+                  (.toURL (URI. url))))
               paths)]
     ;; TODO: Figure out how to add the JDK sources here
     (new java.net.URLClassLoader (into-array java.net.URL urls))))

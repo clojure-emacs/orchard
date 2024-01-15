@@ -58,9 +58,9 @@
   (is (= 'qualified (misc/namespace-sym 'qualified/sym))))
 
 (deftest file-ext?
-  (is (misc/file-ext? (java.net.URL. "file:/tmp/foo.jar") ".jar"))
-  (is (not (misc/file-ext? (java.net.URL. "file:/tmp/foo.war") ".jar")))
-  (is (not (misc/file-ext? (java.net.URL. "jar:file:/tmp/foo.jar!/BOOT-INF/lib/test.jar") ".jar"))))
+  (is (misc/file-ext? (.toURL (java.net.URI. "file:/tmp/foo.jar")) ".jar"))
+  (is (not (misc/file-ext? (.toURL (java.net.URI. "file:/tmp/foo.war")) ".jar")))
+  (is (not (misc/file-ext? (.toURL (java.net.URI. "jar:file:/tmp/foo.jar!/BOOT-INF/lib/test.jar")) ".jar"))))
 
 (deftest directory?
   (is (misc/directory? (.toURL (.toURI (java.io.File. ""))))))
