@@ -5,6 +5,7 @@
 ### Bugs Fixed
 
 * [#224](https://github.com/clojure-emacs/orchard/issues/224): Don't error on NoClassDefFoundError.
+* `orchard.xref`: avoid occasional null pointer access.
 
 ## 0.22.0 (2024-01-14)
 
