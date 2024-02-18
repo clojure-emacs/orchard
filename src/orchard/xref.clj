@@ -47,7 +47,7 @@
                              v
                              (locking eval-lock
                                (eval v)))]
-    (when (class? v)
+    (when (class? v) ;; maybe a non-class was evaled
       (into #{} (keep (fn [^java.lang.reflect.Field f]
                         (or (and (identical? clojure.lang.Var (.getType f))
                                  (java.lang.reflect.Modifier/isPublic (.getModifiers f))

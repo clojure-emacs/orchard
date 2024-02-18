@@ -12,6 +12,19 @@
 (defn- dummy-fn [_x]
   (map #(fn-dep % 2) (filter even? (range 1 10))))
 
+(deftest fn-deps-class-test
+  (is (nil? (xref/fn-deps-class nil))
+      "Is nil-safe (important, as it uses `eval` which can return anything)")
+
+  (is (nil? (xref/fn-deps-class 2))
+      "Is garbage-safe (important, as it uses `eval` which can return anything)")
+
+  (is (= #{#'clojure.core/keep
+           #'clojure.core/into
+           #'clojure.core/class?
+           #'orchard.xref/eval-lock}
+         (xref/fn-deps-class (.getClass xref/fn-deps-class)))))
+
 ;; Supports #'fn-deps-test
 (deftest sample-test
   (is (some? xref/eval-lock))
