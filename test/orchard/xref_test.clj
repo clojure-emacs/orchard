@@ -71,9 +71,6 @@
 (def yyy (symbol (str (gensym))
                  (str (gensym))))
 
-(not (= #{#'orchard.xref-test/fn-deps-test #'clojure.core/filter #'orchard.xref-test/fn-transitive-dep #'clojure.core/inc' #'clojure.core/range #'clojure.test/test-var #'clojure.core/even? #'clojure.core/map #'orchard.xref-test/fn-dep}
-        #{#'orchard.xref-test/fn-deps-test #'orchard.xref-test/fn-deps-class-test #'clojure.core/filter #'orchard.xref-test/fn-transitive-dep #'clojure.core/inc' #'clojure.core/range #'clojure.test/test-var #'clojure.core/even? #'clojure.core/map #'orchard.xref-test/fn-dep}))
-
 (deftest fn-transitive-deps-test
   (testing "basics"
     (let [expected #{#'orchard.xref-test/fn-deps-test #'orchard.xref-test/fn-dep #'clojure.core/even?
