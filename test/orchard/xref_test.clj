@@ -20,7 +20,7 @@
   (is (nil? (xref/fn-deps-class 2))
       "Is garbage-safe (important, as it uses `eval` which can return anything)")
 
-  (is (set/superset? (xref/fn-deps-class (.getClass xref/fn-deps-class))
+  (is (set/superset? (xref/fn-deps-class (.getClass ^Object xref/fn-deps-class))
                      #{#'clojure.core/keep
                        #'clojure.core/into
                        #'clojure.core/class?
