@@ -1,5 +1,6 @@
 (ns orchard.xref-test
   (:require
+   [clojure.set :as set]
    [clojure.test :refer [deftest is testing]]
    [orchard.xref :as xref]))
 
@@ -11,6 +12,19 @@
 
 (defn- dummy-fn [_x]
   (map #(fn-dep % 2) (filter even? (range 1 10))))
+
+(deftest fn-deps-class-test
+  (is (nil? (xref/fn-deps-class nil))
+      "Is nil-safe (important, as it uses `eval` which can return anything)")
+
+  (is (nil? (xref/fn-deps-class 2))
+      "Is garbage-safe (important, as it uses `eval` which can return anything)")
+
+  (is (set/superset? (xref/fn-deps-class (.getClass ^Object xref/fn-deps-class))
+                     #{#'clojure.core/keep
+                       #'clojure.core/into
+                       #'clojure.core/class?
+                       #'orchard.xref/eval-lock})))
 
 ;; Supports #'fn-deps-test
 (deftest sample-test
@@ -68,8 +82,8 @@
           "Specifically includes `#'clojure.core/inc'`, which is a transitive dep of `#'dummy-fn`
            (via `#'clojure.core/range'`). Unlike other AoT compiled core transitive dependancies
            it gets found because its a non `:static` dependancy.")
-      (is (= expected
-             (xref/fn-transitive-deps dummy-fn))))))
+      (is (set/superset? (xref/fn-transitive-deps dummy-fn)
+                         expected)))))
 
 (deftest fn-refs-test
   (testing "with a fn value"

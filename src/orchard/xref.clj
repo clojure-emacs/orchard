@@ -47,14 +47,15 @@
                              v
                              (locking eval-lock
                                (eval v)))]
-    (into #{} (keep (fn [^java.lang.reflect.Field f]
-                      (or (and (identical? clojure.lang.Var (.getType f))
-                               (java.lang.reflect.Modifier/isPublic (.getModifiers f))
-                               (java.lang.reflect.Modifier/isStatic (.getModifiers f))
-                               (-> f .getName (.startsWith "const__"))
-                               (.get f (fn-name v)))
-                          nil))
-                    (.getDeclaredFields v)))))
+    (when (class? v) ;; maybe a non-class was evaled
+      (into #{} (keep (fn [^java.lang.reflect.Field f]
+                        (or (and (identical? clojure.lang.Var (.getType f))
+                                 (java.lang.reflect.Modifier/isPublic (.getModifiers f))
+                                 (java.lang.reflect.Modifier/isStatic (.getModifiers f))
+                                 (-> f .getName (.startsWith "const__"))
+                                 (.get f (fn-name v)))
+                            nil))
+                      (.getDeclaredFields v))))))
 
 (def ^:private class-cache
   "Reference to Clojures class cache.
