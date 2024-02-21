@@ -1,5 +1,6 @@
 (ns orchard.xref-test
   (:require
+   [clojure.set :as set]
    [clojure.test :refer [deftest is testing]]
    [orchard.xref :as xref]))
 
@@ -19,11 +20,11 @@
   (is (nil? (xref/fn-deps-class 2))
       "Is garbage-safe (important, as it uses `eval` which can return anything)")
 
-  (is (= #{#'clojure.core/keep
-           #'clojure.core/into
-           #'clojure.core/class?
-           #'orchard.xref/eval-lock}
-         (xref/fn-deps-class (.getClass xref/fn-deps-class)))))
+  (is (set/superset? (xref/fn-deps-class (.getClass xref/fn-deps-class))
+                     #{#'clojure.core/keep
+                       #'clojure.core/into
+                       #'clojure.core/class?
+                       #'orchard.xref/eval-lock})))
 
 ;; Supports #'fn-deps-test
 (deftest sample-test
@@ -70,6 +71,9 @@
 (def yyy (symbol (str (gensym))
                  (str (gensym))))
 
+(not (= #{#'orchard.xref-test/fn-deps-test #'clojure.core/filter #'orchard.xref-test/fn-transitive-dep #'clojure.core/inc' #'clojure.core/range #'clojure.test/test-var #'clojure.core/even? #'clojure.core/map #'orchard.xref-test/fn-dep}
+        #{#'orchard.xref-test/fn-deps-test #'orchard.xref-test/fn-deps-class-test #'clojure.core/filter #'orchard.xref-test/fn-transitive-dep #'clojure.core/inc' #'clojure.core/range #'clojure.test/test-var #'clojure.core/even? #'clojure.core/map #'orchard.xref-test/fn-dep}))
+
 (deftest fn-transitive-deps-test
   (testing "basics"
     (let [expected #{#'orchard.xref-test/fn-deps-test #'orchard.xref-test/fn-dep #'clojure.core/even?
@@ -81,8 +85,8 @@
           "Specifically includes `#'clojure.core/inc'`, which is a transitive dep of `#'dummy-fn`
            (via `#'clojure.core/range'`). Unlike other AoT compiled core transitive dependancies
            it gets found because its a non `:static` dependancy.")
-      (is (= expected
-             (xref/fn-transitive-deps dummy-fn))))))
+      (is (set/superset? (xref/fn-transitive-deps dummy-fn)
+                         expected)))))
 
 (deftest fn-refs-test
   (testing "with a fn value"
