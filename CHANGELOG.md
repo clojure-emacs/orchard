@@ -2,6 +2,11 @@
 
 ## master (unreleased)
 
+## Changes
+
+* [cider-nrepl#851](https://github.com/clojure-emacs/cider-nrepl/issues/851): `info*`, offer `:var-meta-whitelist` option.
+  * It allows consumers to specify var metadata beyond Orchard's fixed whitelist.
+
 ### Bugs Fixed
 
 * [#224](https://github.com/clojure-emacs/orchard/issues/224): Don't error on NoClassDefFoundError.
