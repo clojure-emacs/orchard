@@ -2,7 +2,10 @@
   (:require
    [clojure.string :as string]))
 
-(defn foo-in-dep [foo] :bar)
+(defn foo-in-dep
+  {:custom/meta 1}
+  [foo]
+  :bar)
 
 (def x ::dep-namespaced-keyword)
 

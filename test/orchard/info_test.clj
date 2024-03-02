@@ -140,7 +140,15 @@
       (testing "- :clj"
         (let [i (info/info* params)]
           (is (= expected (select-keys i [:ns :name :arglists])))
-          (is (string/includes? (:file i) "test_ns_dep")))))))
+          (is (string/includes? (:file i) "test_ns_dep")))
+        (testing "`:var-meta-allowlist`"
+          (is (= {:ns 'orchard.test-ns-dep
+                  :custom/meta 1
+                  :name 'foo-in-dep}
+                 (-> params
+                     (assoc :var-meta-allowlist [:ns :name :custom/meta])
+                     (info/info*)
+                     (dissoc :file)))))))))
 
 (deftest info-resolve-var-before-alias-test
   (testing "resolve a fully qualified var before an alias - test for bug #53"
