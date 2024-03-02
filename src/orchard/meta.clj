@@ -232,21 +232,24 @@
   [cljs-env var-map]
   (merge-meta-for-indirect-var* var-map var-map identity cljs-env))
 
-(def var-meta-whitelist
+(def var-meta-allowlist
   [:ns :name :doc :file :arglists :forms :macro :special-form
    :protocol :line :column :static :added :deprecated :resource :style/indent :indent])
+
+(def ^:deprecated var-meta-whitelist
+  var-meta-allowlist)
 
 ;; TODO: Split the responsibility of finding meta and normalizing the meta map.
 (defn var-meta
   "Return a map of metadata for var v.
-  If whitelist is missing use var-meta-whitelist."
-  ([v] (var-meta v var-meta-whitelist))
-  ([v whitelist]
+  If `allowlist` is missing, use `var-meta-allowlist`."
+  ([v] (var-meta v var-meta-allowlist))
+  ([v allowlist]
    (when (var? v)
      (-> v
          meta
          maybe-protocol
-         (select-keys (or whitelist var-meta-whitelist))
+         (select-keys (or allowlist var-meta-allowlist))
          map-seq
          maybe-add-file
          maybe-add-url

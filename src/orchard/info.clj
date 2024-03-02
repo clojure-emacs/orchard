@@ -63,7 +63,7 @@
 
 (defn clj-meta
   {:added "0.5"}
-  [{:keys [dialect ns sym computed-ns unqualified-sym]}]
+  [{:keys [dialect ns sym computed-ns unqualified-sym var-meta-allowlist]}]
   {:pre [(= dialect :clj)]}
   (let [ns (or ns computed-ns)
         ns (or (when (some-> ns find-ns)
@@ -73,7 +73,7 @@
      ;; it's a special (special-symbol?)
      (m/special-sym-meta sym)
      ;; it's a var
-     (some-> ns (m/resolve-var sym) (m/var-meta))
+     (some-> ns (m/resolve-var sym) (m/var-meta var-meta-allowlist))
      ;; it's a Java constructor/static member symbol
      (some-> ns (java/resolve-symbol sym))
      ;; it's a Java class/record type symbol
@@ -146,12 +146,16 @@
              (cljs-meta/normalize-var-meta)))))
 
 (defn info*
-  "Provide the info map for the input ns and sym.
+  "Provide the info map for the input `:ns` and `:sym`.
 
-  The default dialect is :clj but it can be specified as part of params.
+  The default `:dialect` is `:clj` but it can be specified as part of `params`.
 
-  Note that the :cljs dialect requires the compiler state to be passed
-  in as :env key in params."
+  Note that the `:cljs` dialect requires the compiler state to be passed
+  in as `:env` key in params.
+
+  A `:var-meta-allowlist` can be optionally passed
+  (defaults to `orchard.meta/var-meta-allowlist`;
+   only applies to `:clj` since for `:cljs` there's no allowlisting)."
   [params]
   (let [params  (normalize-params params)
         dialect (:dialect params)
