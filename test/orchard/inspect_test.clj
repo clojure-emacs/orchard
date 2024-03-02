@@ -191,33 +191,35 @@
                     (inspect/down 1)
                     render)))))
 
+(def any-var 42)
+
 (deftest inspect-var-test
   (testing "inspecting a var"
-    (let [rendered (-> #'*assert* inspect render)]
+    (let [rendered (-> #'any-var inspect render)]
       (testing "renders the header"
         (is (match? (list "Class"
                           ": "
                           (list :value "clojure.lang.Var" number?)
                           '(:newline)
                           "Value: "
-                          (list :value "true" number?)
+                          (list :value "42" number?)
                           '(:newline)
                           '(:newline))
                     (header rendered))))
       (testing "renders the meta information section"
-        (is (match? (cond-> (list "--- Meta Information:"
-                                  '(:newline)
-                                  "  " (list :value ":ns" number?) " = " (list :value "clojure.core" number?)
-                                  '(:newline)
-                                  "  " (list :value ":name" number?) " = " (list :value "*assert*" number?)
-                                  '(:newline))
-                      datafy? (concat ['(:newline)]))
+        (is (match? (matchers/embeds (cond-> (list "--- Meta Information:"
+                                                   '(:newline)
+                                                   "  " (list :value ":ns" number?) " = " (list :value "orchard.inspect-test" number?)
+                                                   '(:newline)
+                                                   "  " (list :value ":name" number?) " = " (list :value "any-var" number?)
+                                                   '(:newline))
+                                       datafy? (concat ['(:newline)])))
                     (section "Meta Information" rendered))))
       (when datafy?
         (testing "renders the datafy section"
           (is (match? (list "--- Datafy:"
                             '(:newline)
-                            "  " "0" ". " (list :value "true" number?)
+                            "  " "0" ". " (list :value "42" number?)
                             '(:newline))
                       (datafy-section rendered))))))))
 
