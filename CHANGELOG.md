@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+## 0.23.0 (2024-03-03)
+
 ## Changes
 
 * [cider-nrepl#851](https://github.com/clojure-emacs/cider-nrepl/issues/851): `info*`, offer `:var-meta-allowlist` option.
