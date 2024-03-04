@@ -113,7 +113,7 @@
        (into {})))
 
 (defn public-macros
-  "Given a namespace return all the public var analysis maps. Analagous to
+  "Given a namespace return all the public var analysis maps. Analogous to
   clojure.core/ns-publics but returns var analysis maps not vars.
 
   Inspired by the ns-publics in cljs.analyzer.api."
@@ -144,7 +144,7 @@
     (apply dissoc macros excludes)))
 
 (defn ns-interns-from-env
-  "Given a namespace return all the var analysis maps. Analagous to
+  "Given a namespace return all the var analysis maps. Analogous to
   clojure.core/ns-interns but returns var analysis maps not vars.
 
   Directly from cljs.analyzer.api."

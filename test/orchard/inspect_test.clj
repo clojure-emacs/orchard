@@ -659,7 +659,7 @@
                             (inspect/start [[111111 2222 333 44 5]])))))))
 
 (deftest inspect-java-hashmap-test
-  (testing "inspecting java.util.Map descendendants prints a key-value coll"
+  (testing "inspecting java.util.Map descendants prints a key-value coll"
     (let [^java.util.Map the-map {:a 1, :b 2, :c 3}
           rendered (-> (inspect/fresh)
                        (inspect/start (java.util.HashMap. the-map))

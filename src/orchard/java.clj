@@ -401,7 +401,7 @@
 
 (defn type-info
   "For the class or interface symbol, return Java type info. If the type has
-  defined contructors, the line and column returned will be for the first of
+  defined constructors, the line and column returned will be for the first of
   these for more convenient `jump` navigation."
   [class]
   (let [info (class-info class)
@@ -417,7 +417,7 @@
   "For the class and member symbols, return Java member info. If the member is
   overloaded, line number and javadoc signature are that of the first overload.
   If the member's definition is in a superclass, info returned will be for the
-  implemention. If the member is an instance member, `this` is prepended to its
+  implementation. If the member is an instance member, `this` is prepended to its
   arglists."
   [class member]
   (let [c
@@ -563,7 +563,7 @@
 
 (def cache-initializer
   "Cache info for a few classes.
-  This also warms up the cache for some underlying, commonly neeed classes (e.g. `Object`).
+  This also warms up the cache for some underlying, commonly needed classes (e.g. `Object`).
 
   This is a def for allowing others to wait for this workload to complete (can be useful sometimes)."
   (delay ;; NOTE: this used to be a `future`, but that can cause odd issues.

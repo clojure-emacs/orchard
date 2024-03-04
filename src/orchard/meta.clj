@@ -144,7 +144,7 @@
 ;; user> (keys (. clojure.lang.Compiler specials))
 ;; (& let* monitor-exit case* fn* try reify* ... )
 ;;
-;; and even if the oficial documentation says let is a special form,
+;; and even if the official documentation says let is a special form,
 ;; it isn't special at all, let* is, while let is just a macro.
 ;;
 ;; Looking at Clojure code I couldn't find any use of :special-form annotation
