@@ -118,7 +118,7 @@
 
 (def long-sequence (range 70))
 (def long-vector (vec (range 70)))
-(def long-map (zipmap (range 70) (range 70)))
+(def long-map (into (sorted-map) (zipmap (range 70) (range 70))))
 (def long-nested-coll (vec (map #(range (* % 10) (+ (* % 10) 80)) (range 200))))
 (def truncated-string (str "\"" (apply str (repeat 146 "a")) "..."))
 
@@ -447,9 +447,9 @@
 
 (deftest path-test
   (testing "inspector tracks the path in the data structure"
-    (is (= "(find 50) key" (-> long-map inspect (inspect/down 39) render last)))
-    (is (= "(get 50)" (-> long-map inspect (inspect/down 40) render last)))
-    (is (= "(get 50) class"  (-> long-map inspect (inspect/down 40) (inspect/down 0) render last))))
+    (is (= "(find 19) key" (-> long-map inspect (inspect/down 39) render last)))
+    (is (= "(get 19)" (-> long-map inspect (inspect/down 40) render last)))
+    (is (= "(get 19) class"  (-> long-map inspect (inspect/down 40) (inspect/down 0) render last))))
   (testing "doesn't show path if unknown navigation has happened"
     (is (= '(:newline)  (-> long-map inspect (inspect/down 40) (inspect/down 0) (inspect/down 1) render last))))
   (testing "doesn't show the path in the top level"
