@@ -165,7 +165,7 @@
   "Given a `metadata` map obtained from a Clojure var object,
   associates a `:style/indent` value based on inference (rule of thumb) rules:
 
-  * The macro name is inspected in conjuction with the arglist,
+  * The macro name is inspected in conjunction with the arglist,
     in search for an acceptably analog match with a clojure.core counterpart.
   * If that fails, the position of `&` is observed.
   * Otherwise, the argument names are observed.
