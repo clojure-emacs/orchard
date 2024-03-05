@@ -351,7 +351,7 @@
                     inspect/next-page
                     inspect/next-page)]
         (is (= 2 (:current-page ins)))
-        (is (= 4 (:current-page (inspect/up ins))))))))
+        (is (= 0 (:current-page (inspect/up ins))))))))
 
 (deftest eval-and-inspect-test
   (testing "evaluate expr in the context of currently inspected value"
@@ -440,7 +440,7 @@
              (inspect/previous-sibling)
              (inspect/previous-sibling)
              :value)))
-  (is (= :c
+  (is (= nil
          (-> '{:foo [:a :b :c]}
              inspect
              (inspect/down 2)
@@ -471,10 +471,37 @@
                                       (inspect/next-sibling))]
     (is (= inspector-at-last-sibling
            (-> inspector-at-last-sibling
+               inspect/previous-sibling
                inspect/next-sibling
-               inspect/next-sibling
-               inspect/next-sibling
-               inspect/next-sibling)))))
+               inspect/previous-sibling
+               inspect/next-sibling))))
+  (testing "siblings with pagination"
+    (is (= 38 (-> long-vector
+                  inspect
+                  (inspect/down 40)
+                  (inspect/previous-sibling)
+                  :value)))
+    (is (= 36 (-> long-vector
+                  inspect
+                  (inspect/down 40)
+                  (inspect/set-page-size 2)
+                  (inspect/previous-sibling)
+                  (inspect/previous-sibling)
+                  (inspect/previous-sibling)
+                  :value)))
+    (is (= 40 (-> long-vector
+                  inspect
+                  (inspect/down 40)
+                  (inspect/next-sibling)
+                  :value)))
+    (is (= 42 (-> long-vector
+                  inspect
+                  (inspect/down 40)
+                  (inspect/set-page-size 2)
+                  (inspect/next-sibling)
+                  (inspect/next-sibling)
+                  (inspect/next-sibling)
+                  :value)))))
 
 (deftest path-test
   (testing "inspector tracks the path in the data structure"

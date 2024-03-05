@@ -110,12 +110,12 @@
 (defn up
   "Pop the stack and re-render an earlier value."
   [inspector]
-  (let [{:keys [stack pages-stack]} inspector]
+  (let [{:keys [stack]} inspector]
     (if (empty? stack)
       (inspect-render inspector)
       (-> inspector
           (update-in [:path] pop-item-from-path)
-          (assoc :current-page (peek pages-stack))
+          (assoc :current-page 0)
           (update-in [:pages-stack] pop)
           (inspect-render (last stack))
           (update-in [:stack] pop)))))
@@ -166,9 +166,7 @@
   "Increment the index of the last 'nth in the path by 1,
   if applicable, and re-render the updated value."
   [inspector]
-  (sibling* inspector 2 (fn [index inspector]
-                          (< index
-                             (-> inspector :index count)))))
+  (sibling* inspector 2 (constantly true)))
 
 (defn set-page-size
   "Set the page size in pagination mode to the specified value. Current page
