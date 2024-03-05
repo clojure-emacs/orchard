@@ -381,6 +381,37 @@
         (inspect/def-current-value *ns* "--test-val--"))
     (is (= 1 @(resolve '--test-val--)))))
 
+(deftest down-test
+  (testing "basic down"
+    (is (= :a (-> '{:foo [:a :b :c]}
+                  inspect
+                  (inspect/down 2)
+                  (inspect/down 1)
+                  :value)))
+    (is (= 19 (-> long-sequence
+                  inspect
+                  (inspect/down 20)
+                  :value)))
+    (is (= 9 (-> long-map
+                 inspect
+                 (inspect/down 20)
+                 :value))))
+  (testing "down with pagination"
+    (is (= 19 (-> long-sequence
+                  inspect
+                  (inspect/set-page-size 2)
+                  (inspect/down 20)
+                  :value)))
+    (is (= 9 (-> long-map
+                 inspect
+                 (inspect/set-page-size 2)
+                 (inspect/down 20)
+                 :value)))
+    (is (= 19 (-> long-map
+                  inspect
+                  (inspect/down 40)
+                  :value)))))
+
 (deftest sibling*-test
   (is (= :c
          (-> '{:foo [:a :b :c]}
@@ -450,6 +481,14 @@
     (is (= "(find 19) key" (-> long-map inspect (inspect/down 39) render last)))
     (is (= "(get 19)" (-> long-map inspect (inspect/down 40) render last)))
     (is (= "(get 19) class"  (-> long-map inspect (inspect/down 40) (inspect/down 0) render last))))
+  (testing "inspector tracks the path in the data structure beyond the first page"
+    (is (= "(find 33) key" (-> long-map inspect (inspect/down 67) render last)))
+    (is (= "(get 33)" (-> long-map inspect (inspect/down 68) render last)))
+    (is (= "(get 33) class"  (-> long-map inspect (inspect/down 68) (inspect/down 0) render last))))
+  (testing "inspector tracks the path in the data structure beyond the first page with custom page size"
+    (is (= "(find 33) key" (-> long-map inspect (inspect/set-page-size 2) (inspect/down 67) render last)))
+    (is (= "(get 33)" (-> long-map inspect (inspect/set-page-size 2) (inspect/down 68) render last)))
+    (is (= "(get 33) class"  (-> long-map inspect (inspect/set-page-size 2) (inspect/down 68) (inspect/down 0) render last))))
   (testing "doesn't show path if unknown navigation has happened"
     (is (= '(:newline)  (-> long-map inspect (inspect/down 40) (inspect/down 0) (inspect/down 1) render last))))
   (testing "doesn't show the path in the top level"

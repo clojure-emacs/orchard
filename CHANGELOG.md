@@ -2,6 +2,10 @@
 
 ## master (unreleased)
 
+### Bugs Fixed
+
+* [#216](https://github.com/clojure-emacs/orchard/issues/216): Fix inspector navigation (`down` and `next-sibling`) with pagination.
+
 ## 0.23.0 (2024-03-03)
 
 ## Changes
