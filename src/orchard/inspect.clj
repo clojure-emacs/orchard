@@ -95,6 +95,18 @@
   (-> (clear inspector)
       (inspect-render value)))
 
+(defn next-page
+  "Jump to the next page when inspecting a paginated sequence/map. Does nothing
+  if already on the last page."
+  [inspector]
+  (inspect-render (update-in inspector [:current-page] inc)))
+
+(defn prev-page
+  "Jump to the previous page when inspecting a paginated sequence/map. Does
+  nothing if already on the first page."
+  [inspector]
+  (inspect-render (update-in inspector [:current-page] dec)))
+
 (defn up
   "Pop the stack and re-render an earlier value."
   [inspector]
@@ -111,17 +123,22 @@
 (defn down
   "Drill down to an indexed object referred to by the previously
    rendered value."
-  [inspector ^Integer idx]
+  [{:keys [page-size value] :as inspector} ^Integer idx]
   {:pre [(integer? idx)]}
-  (let [{:keys [index path current-page page-size]} inspector
-        new (get index idx)
-        val (:value inspector)
-        new-path (push-item-to-path index idx path current-page page-size)]
-    (-> (update-in inspector [:stack] conj val)
-        (update-in [:pages-stack] conj current-page)
-        (assoc :current-page 0)
-        (assoc :path new-path)
-        (inspect-render new))))
+  (let [items-on-page (if (map? value)
+                        (* 2 page-size) ;; keys and values are treated as separate items
+                        page-size)]
+    (if (> idx items-on-page)
+      (recur (next-page inspector) (- idx items-on-page))
+      (let [{:keys [index path current-page page-size]} inspector
+            new (get index idx)
+            val (:value inspector)
+            new-path (push-item-to-path index idx path current-page page-size)]
+        (-> (update-in inspector [:stack] conj val)
+            (update-in [:pages-stack] conj current-page)
+            (assoc :current-page 0)
+            (assoc :path new-path)
+            (inspect-render new))))))
 
 (defn- sibling* [inspector offset pred]
   (let [path (:path inspector)
@@ -152,18 +169,6 @@
   (sibling* inspector 2 (fn [index inspector]
                           (< index
                              (-> inspector :index count)))))
-
-(defn next-page
-  "Jump to the next page when inspecting a paginated sequence/map. Does nothing
-  if already on the last page."
-  [inspector]
-  (inspect-render (update-in inspector [:current-page] inc)))
-
-(defn prev-page
-  "Jump to the previous page when inspecting a paginated sequence/map. Does
-  nothing if already on the first page."
-  [inspector]
-  (inspect-render (update-in inspector [:current-page] dec)))
 
 (defn set-page-size
   "Set the page size in pagination mode to the specified value. Current page
