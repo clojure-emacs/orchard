@@ -501,6 +501,15 @@
                   (inspect/next-sibling)
                   :value))))
   (testing "next sibling doesn't go beyond the current page"
+    (is (= 3 (-> '(1 2 3)
+                 inspect
+                 (inspect/down 2)
+                 (inspect/next-sibling)
+                 (inspect/next-sibling)
+                 (inspect/next-sibling)
+                 (inspect/next-sibling)
+                 (inspect/next-sibling)
+                 :value)))
     (is (= 41 (-> long-vector
                   inspect
                   (inspect/set-page-size 6)
