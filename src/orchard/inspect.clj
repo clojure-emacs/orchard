@@ -95,6 +95,13 @@
   (-> (clear inspector)
       (inspect-render value)))
 
+(defn- items-on-page
+  "Number of individual top level items on a single page."
+  [{:keys [value page-size] :as _inspector}]
+  (if (map? value)
+    (* 2 page-size) ;; keys and values are treated as separate items
+    page-size))
+
 (defn next-page
   "Jump to the next page when inspecting a paginated sequence/map. Does nothing
   if already on the last page."
@@ -110,12 +117,12 @@
 (defn up
   "Pop the stack and re-render an earlier value."
   [inspector]
-  (let [{:keys [stack]} inspector]
+  (let [{:keys [stack pages-stack]} inspector]
     (if (empty? stack)
       (inspect-render inspector)
       (-> inspector
           (update-in [:path] pop-item-from-path)
-          (assoc :current-page 0)
+          (assoc :current-page (peek pages-stack))
           (update-in [:pages-stack] pop)
           (inspect-render (last stack))
           (update-in [:stack] pop)))))
@@ -123,11 +130,9 @@
 (defn down
   "Drill down to an indexed object referred to by the previously
    rendered value."
-  [{:keys [page-size value] :as inspector} ^Integer idx]
+  [inspector ^Integer idx]
   {:pre [(integer? idx)]}
-  (let [items-on-page (if (map? value)
-                        (* 2 page-size) ;; keys and values are treated as separate items
-                        page-size)]
+  (let [items-on-page (items-on-page inspector)]
     (if (> idx items-on-page)
       (recur (next-page inspector) (- idx items-on-page))
       (let [{:keys [index path current-page page-size]} inspector
@@ -150,6 +155,7 @@
                 top (up inspector)]
             (when (pred new-index top)
               (some-> top
+                      (assoc :current-page 0)
                       (down new-index)
                       inspect-render))))
         ;; if no changes were possible, return the inspector as-is so that the UI remains untouched:
@@ -159,14 +165,15 @@
   "Decrement the index of the last 'nth in the path by 1,
   if applicable, and re-render the updated value."
   [inspector]
-  (sibling* inspector 0 (fn [index _inspector]
-                          (pos? index))))
+  (sibling* inspector 0 (fn [idx _inspector]
+                          (pos? idx))))
 
 (defn next-sibling
   "Increment the index of the last 'nth in the path by 1,
   if applicable, and re-render the updated value."
   [inspector]
-  (sibling* inspector 2 (constantly true)))
+  (sibling* inspector 2 (fn [idx {:keys [index page-size current-page] :as _inspector}]
+                          (< idx (+ (count index) (* page-size current-page))))))
 
 (defn set-page-size
   "Set the page size in pagination mode to the specified value. Current page

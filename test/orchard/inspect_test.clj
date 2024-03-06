@@ -351,7 +351,7 @@
                     inspect/next-page
                     inspect/next-page)]
         (is (= 2 (:current-page ins)))
-        (is (= 0 (:current-page (inspect/up ins))))))))
+        (is (= 4 (:current-page (inspect/up ins))))))))
 
 (deftest eval-and-inspect-test
   (testing "evaluate expr in the context of currently inspected value"
@@ -440,7 +440,7 @@
              (inspect/previous-sibling)
              (inspect/previous-sibling)
              :value)))
-  (is (= nil
+  (is (= :c
          (-> '{:foo [:a :b :c]}
              inspect
              (inspect/down 2)
@@ -471,20 +471,26 @@
                                       (inspect/next-sibling))]
     (is (= inspector-at-last-sibling
            (-> inspector-at-last-sibling
-               inspect/previous-sibling
                inspect/next-sibling
-               inspect/previous-sibling
+               inspect/next-sibling
+               inspect/next-sibling
                inspect/next-sibling))))
-  (testing "siblings with pagination"
+  (testing "next and previous siblings with pagination"
     (is (= 38 (-> long-vector
                   inspect
                   (inspect/down 40)
                   (inspect/previous-sibling)
                   :value)))
+    (is (= 38 (-> long-vector
+                  inspect
+                  (inspect/set-page-size 1)
+                  (inspect/down 40)
+                  (inspect/previous-sibling)
+                  :value)))
     (is (= 36 (-> long-vector
                   inspect
-                  (inspect/down 40)
                   (inspect/set-page-size 2)
+                  (inspect/down 40)
                   (inspect/previous-sibling)
                   (inspect/previous-sibling)
                   (inspect/previous-sibling)
@@ -493,11 +499,15 @@
                   inspect
                   (inspect/down 40)
                   (inspect/next-sibling)
-                  :value)))
-    (is (= 42 (-> long-vector
+                  :value))))
+  (testing "next sibling doesn't go beyond the current page"
+    (is (= 41 (-> long-vector
                   inspect
+                  (inspect/set-page-size 6)
                   (inspect/down 40)
-                  (inspect/set-page-size 2)
+                  (inspect/next-sibling)
+                  (inspect/next-sibling)
+                  (inspect/next-sibling)
                   (inspect/next-sibling)
                   (inspect/next-sibling)
                   (inspect/next-sibling)
