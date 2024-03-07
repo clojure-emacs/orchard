@@ -141,7 +141,6 @@
             new-path (push-item-to-path index idx path current-page page-size)]
         (-> (update-in inspector [:stack] conj val)
             (update-in [:pages-stack] conj current-page)
-            (assoc :current-page 0)
             (assoc :path new-path)
             (inspect-render new))))))
 

@@ -383,6 +383,10 @@
 
 (deftest down-test
   (testing "basic down"
+    (is (= 2 (-> #{1 2}
+                 inspect
+                 (inspect/down 2)
+                 :value)))
     (is (= :a (-> '{:foo [:a :b :c]}
                   inspect
                   (inspect/down 2)
@@ -410,7 +414,13 @@
     (is (= 19 (-> long-map
                   inspect
                   (inspect/down 40)
-                  :value)))))
+                  :value)))
+    (is (= {:current-page 65 :value 65}
+           (-> long-map
+               inspect
+               (inspect/set-page-size 1)
+               (inspect/down 131)
+               (select-keys [:value :current-page]))))))
 
 (deftest sibling*-test
   (is (= :c
@@ -476,17 +486,19 @@
                inspect/next-sibling
                inspect/next-sibling))))
   (testing "next and previous siblings with pagination"
-    (is (= 38 (-> long-vector
-                  inspect
-                  (inspect/down 40)
-                  (inspect/previous-sibling)
-                  :value)))
-    (is (= 38 (-> long-vector
-                  inspect
-                  (inspect/set-page-size 1)
-                  (inspect/down 40)
-                  (inspect/previous-sibling)
-                  :value)))
+    (is (= {:value 38 :current-page 1}
+           (-> long-vector
+               inspect
+               (inspect/down 40)
+               (inspect/previous-sibling)
+               (select-keys [:value :current-page]))))
+    (is (= {:value 38 :current-page 38}
+           (-> long-vector
+               inspect
+               (inspect/set-page-size 1)
+               (inspect/down 40)
+               (inspect/previous-sibling)
+               (select-keys [:value :current-page]))))
     (is (= 36 (-> long-vector
                   inspect
                   (inspect/set-page-size 2)
