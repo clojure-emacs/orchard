@@ -113,6 +113,34 @@
     :else ;; possibly infinite
     Integer/MAX_VALUE))
 
+(defn- last-page
+  ([inspector] (last-page inspector (:value inspector)))
+  ([{:keys [current-page page-size]} obj]
+   (cond
+     (map? obj)
+     (quot (dec (* 2 (count obj))) page-size)
+
+     (instance? clojure.lang.Counted obj)
+     (quot (dec (count obj)) page-size)
+
+     ;; if there are no more items after the current page, we must have
+     ;; reached the end of the collection, so it's not infinite.
+     (empty? (drop (* (inc current-page) page-size) obj))
+     current-page
+
+     ;; possibly infinite
+     :else Integer/MAX_VALUE)))
+
+(defn- current-page
+  ([inspector] (current-page inspector (:value inspector)))
+  ([{:keys [current-page] :as inspector} obj]
+   (let [last-page (last-page inspector obj)]
+     ;; current-page might contain an incorrect value, fix that:
+     (cond
+       (< current-page 0) 0
+       (> current-page last-page) last-page
+       :else current-page))))
+
 (defn next-page
   "Jump to the next page when inspecting a paginated sequence/map. Does nothing
   if already on the last page."
@@ -460,19 +488,6 @@
                 (next chunk) (inc idx))
          ins)))))
 
-(defn last-page [{:keys [current-page page-size]} obj]
-  (cond
-    (instance? clojure.lang.Counted obj)
-    (quot (dec (count obj)) page-size)
-
-    ;; if there are no more items after the current page, we must have
-    ;; reached the end of the collection, so it's not infinite.
-    (empty? (drop (* (inc current-page) page-size) obj))
-    current-page
-
-    ;; possibly infinite
-    :else Integer/MAX_VALUE))
-
 (declare known-types)
 
 (defn- render-page-info [{:keys [current-page page-size] :as inspector} obj]
@@ -489,19 +504,6 @@
                                    (if (= last-page Integer/MAX_VALUE)
                                      "?" (inc last-page))))
             (unindent))))))
-
-(defn- current-page [{:keys [current-page] :as inspector} obj]
-  (let [last-page (last-page inspector obj)]
-    ;; current-page might contain an incorrect value, fix that:
-    (cond
-      (< current-page 0)
-      0
-
-      (> current-page last-page)
-      last-page
-
-      :else
-      current-page)))
 
 (defn- chunk-to-display [{:keys [page-size] :as inspector} obj]
   (let [start-idx (* (current-page inspector obj) page-size)]
