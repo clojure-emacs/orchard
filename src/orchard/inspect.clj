@@ -144,14 +144,18 @@
 (defn next-page
   "Jump to the next page when inspecting a paginated sequence/map. Does nothing
   if already on the last page."
-  [inspector]
-  (inspect-render (update-in inspector [:current-page] inc)))
+  [{:keys [current-page] :as inspector}]
+  (if (= current-page (last-page inspector))
+    inspector
+    (inspect-render (update inspector :current-page inc))))
 
 (defn prev-page
   "Jump to the previous page when inspecting a paginated sequence/map. Does
   nothing if already on the first page."
-  [inspector]
-  (inspect-render (update-in inspector [:current-page] dec)))
+  [{:keys [current-page] :as inspector}]
+  (if (zero? current-page)
+    inspector
+    (inspect-render (update inspector :current-page dec))))
 
 (defn up
   "Pop the stack and re-render an earlier value."
