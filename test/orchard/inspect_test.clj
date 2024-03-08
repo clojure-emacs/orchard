@@ -411,37 +411,7 @@
     (is (= 9 (-> long-map
                  inspect
                  (inspect/down 20)
-                 :value)))
-    (testing "doesn't go out of boundaries"
-      (is (= 2 (-> [1 2]
-                   inspect
-                   (inspect/down 10)
-                   :value)))
-      (is (= 2 (-> [1 2]
-                   inspect
-                   (inspect/down 100)
-                   (inspect/next-sibling)
-                   (inspect/next-sibling)
-                   :value)))
-      (is (= 2 (-> {:a 1 :b 2}
-                   inspect
-                   (inspect/down 100)
-                   (inspect/next-sibling)
-                   (inspect/next-sibling)
-                   :value)))
-      (is (= 1 (-> [1 2]
-                   inspect
-                   (inspect/down 100)
-                   (inspect/previous-sibling)
-                   (inspect/previous-sibling)
-                   (inspect/previous-sibling)
-                   :value)))
-      (is (= 999 (-> (range 1000)
-                     inspect
-                     (inspect/down 10000)
-                     (inspect/next-sibling)
-                     (inspect/next-sibling)
-                     :value)))))
+                 :value))))
   (testing "down with pagination"
     (is (= 19 (-> long-sequence
                   inspect
@@ -462,7 +432,49 @@
                inspect
                (inspect/set-page-size 1)
                (inspect/down 131)
-               (select-keys [:value :current-page]))))))
+               (select-keys [:value :current-page])))))
+  (testing "doesn't go out of boundaries"
+    (is (= 2 (-> [1 2]
+                 inspect
+                 (inspect/down 10)
+                 :value)))
+    (is (= 2 (-> [1 2]
+                 inspect
+                 (inspect/down 5)
+                 (inspect/down -10)
+                 :value)))
+    (is (= 2 (-> [1 2]
+                 inspect
+                 (inspect/down 100)
+                 (inspect/next-sibling)
+                 (inspect/next-sibling)
+                 :value)))
+    (is (= 2 (-> {:a 1 :b 2}
+                 inspect
+                 (inspect/down 100)
+                 (inspect/next-sibling)
+                 (inspect/next-sibling)
+                 :value)))
+    (is (= 2 (-> {:a 1 :b 2}
+                 inspect
+                 (inspect/set-page-size 1)
+                 (inspect/down 100)
+                 (inspect/next-sibling)
+                 (inspect/next-sibling)
+                 :value)))
+    (is (= 1 (-> [1 2]
+                 inspect
+                 (inspect/down 100)
+                 (inspect/previous-sibling)
+                 (inspect/previous-sibling)
+                 (inspect/previous-sibling)
+                 :value)))
+    (is (= 999 (-> (range 1000)
+                   inspect
+                   (inspect/down 10000)
+                   (inspect/next-sibling)
+                   (inspect/next-sibling)
+                   :value)))))
 
 (deftest sibling*-test
   (is (= :c
