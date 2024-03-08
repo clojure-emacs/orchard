@@ -117,9 +117,6 @@
   ([inspector] (last-page inspector (:value inspector)))
   ([{:keys [current-page page-size]} obj]
    (cond
-     (map? obj)
-     (quot (dec (* 2 (count obj))) page-size)
-
      (instance? clojure.lang.Counted obj)
      (quot (dec (count obj)) page-size)
 
@@ -145,7 +142,7 @@
   "Jump to the next page when inspecting a paginated sequence/map. Does nothing
   if already on the last page."
   [{:keys [current-page] :as inspector}]
-  (if (= current-page (last-page inspector))
+  (if (>= current-page (last-page inspector))
     inspector
     (inspect-render (update inspector :current-page inc))))
 

@@ -281,6 +281,10 @@
                   inspect
                   (inspect/set-page-size 20)
                   :counter)))
+    (is (= 41 (-> long-map
+                  inspect
+                  (inspect/set-page-size 20)
+                  :counter)))
     (is (= '(:newline) (-> long-sequence
                            inspect
                            (inspect/set-page-size 200)
@@ -329,6 +333,13 @@
                inspect/prev-page
                inspect/prev-page
                :current-page)))
+    (is (= (-> []
+               inspect)
+           (-> []
+               inspect
+               inspect/prev-page
+               inspect/prev-page
+               inspect/prev-page)))
     (is (= 1
            (-> long-vector
                inspect
@@ -440,6 +451,11 @@
                  :value)))
     (is (= 2 (-> [1 2]
                  inspect
+                 (inspect/set-page-size 1)
+                 (inspect/down 10)
+                 :value)))
+    (is (= 2 (-> [1 2]
+                 inspect
                  (inspect/down 5)
                  (inspect/down -10)
                  :value)))
@@ -459,6 +475,7 @@
                  inspect
                  (inspect/set-page-size 1)
                  (inspect/down 100)
+                 (inspect/next-sibling)
                  (inspect/next-sibling)
                  (inspect/next-sibling)
                  :value)))
@@ -852,6 +869,39 @@
                                        (clojure.lang.TaggedLiteral/create 'foo ())))))))
 
 (deftest inspect-path
+  (testing "basic paths"
+    (is (= []
+           (-> [1 2]
+               inspect
+               :path)))
+    (is (= '[(nth 1)]
+           (-> [1 2]
+               inspect
+               (inspect/set-page-size 1)
+               (inspect/next-page)
+               (inspect/next-page)
+               (inspect/next-page)
+               (inspect/down 100)
+               (inspect/next-sibling)
+               :path)))
+    (is (= '[:b]
+           (-> {:a 1 :b 2}
+               inspect
+               (inspect/set-page-size 1)
+               (inspect/next-page)
+               (inspect/next-page)
+               (inspect/next-page)
+               (inspect/down 100)
+               :path)))
+    (is (= '[(find :b) key]
+           (-> {:a 1 :b 2}
+               inspect
+               (inspect/set-page-size 1)
+               (inspect/next-page)
+               (inspect/next-page)
+               (inspect/next-page)
+               (inspect/down 1)
+               :path))))
   (testing "inspector keeps track of the path in the inspected structure"
     (let [t {:a (list 1 2 {:b {:c (vec (map (fn [x] {:foo (* x 10)}) (range 100)))}})
              :z 42}
