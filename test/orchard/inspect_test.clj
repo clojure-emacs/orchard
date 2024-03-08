@@ -383,6 +383,18 @@
 
 (deftest down-test
   (testing "basic down"
+    (is (= 2 (-> (list 1 2)
+                 inspect
+                 (inspect/down 2)
+                 :value)))
+    (is (= 2 (-> [1 2]
+                 inspect
+                 (inspect/down 2)
+                 :value)))
+    (is (= 1 (-> {:a 1 :b 2}
+                 inspect
+                 (inspect/down 2)
+                 :value)))
     (is (= 2 (-> #{1 2}
                  inspect
                  (inspect/down 2)
@@ -399,7 +411,37 @@
     (is (= 9 (-> long-map
                  inspect
                  (inspect/down 20)
-                 :value))))
+                 :value)))
+    (testing "doesn't go out of boundaries"
+      (is (= 2 (-> [1 2]
+                   inspect
+                   (inspect/down 10)
+                   :value)))
+      (is (= 2 (-> [1 2]
+                   inspect
+                   (inspect/down 100)
+                   (inspect/next-sibling)
+                   (inspect/next-sibling)
+                   :value)))
+      (is (= 2 (-> {:a 1 :b 2}
+                   inspect
+                   (inspect/down 100)
+                   (inspect/next-sibling)
+                   (inspect/next-sibling)
+                   :value)))
+      (is (= 1 (-> [1 2]
+                   inspect
+                   (inspect/down 100)
+                   (inspect/previous-sibling)
+                   (inspect/previous-sibling)
+                   (inspect/previous-sibling)
+                   :value)))
+      (is (= 999 (-> (range 1000)
+                     inspect
+                     (inspect/down 10000)
+                     (inspect/next-sibling)
+                     (inspect/next-sibling)
+                     :value)))))
   (testing "down with pagination"
     (is (= 19 (-> long-sequence
                   inspect
@@ -513,7 +555,7 @@
                   (inspect/next-sibling)
                   :value))))
   (testing "next sibling doesn't go beyond the current page"
-    (is (= 3 (-> '(1 2 3)
+    (is (= 3 (-> (list 1 2 3)
                  inspect
                  (inspect/down 2)
                  (inspect/next-sibling)

@@ -102,6 +102,17 @@
     (* 2 page-size) ;; keys and values are treated as separate items
     page-size))
 
+(defn- total-items
+  "Total number of individual top level items in the current inspectable object."
+  [{:keys [value] :as _inspector}]
+  (cond
+    (map? value)
+    (* 2 (count value)) ;; keys and values are treated as separate items
+    (instance? clojure.lang.Counted value)
+    (count value)
+    :else ;; possibly infinite
+    Integer/MAX_VALUE))
+
 (defn next-page
   "Jump to the next page when inspecting a paginated sequence/map. Does nothing
   if already on the last page."
@@ -132,9 +143,14 @@
    rendered value."
   [inspector ^Integer idx]
   {:pre [(integer? idx)]}
-  (let [items-on-page (items-on-page inspector)]
-    (if (> idx items-on-page)
-      (recur (next-page inspector) (- idx items-on-page))
+  (let [idx (min idx (total-items inspector))
+        page-items (items-on-page inspector)]
+    (cond
+      (neg? idx)
+      inspector
+      (> idx page-items)
+      (recur (next-page inspector) (- idx page-items))
+      :else
       (let [{:keys [index path current-page page-size]} inspector
             new (get index idx)
             val (:value inspector)
