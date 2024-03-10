@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+## 0.23.1 (2024-03-10)
+
 ### Bugs Fixed
 
 * [#216](https://github.com/clojure-emacs/orchard/issues/216): Fix some pagination issues with inspector navigation.
