@@ -172,22 +172,24 @@
    rendered value."
   [inspector ^Integer idx]
   {:pre [(integer? idx)]}
-  (let [idx (min idx (total-items inspector))
-        page-items (items-on-page inspector)]
-    (cond
-      (neg? idx)
-      inspector
-      (> idx page-items)
-      (recur (next-page inspector) (- idx page-items))
-      :else
-      (let [{:keys [index path current-page page-size]} inspector
-            new (get index idx)
-            val (:value inspector)
-            new-path (push-item-to-path index idx path current-page page-size)]
-        (-> (update-in inspector [:stack] conj val)
-            (update-in [:pages-stack] conj current-page)
-            (assoc :path new-path)
-            (inspect-render new))))))
+  (if (nil? inspector)
+    (fresh)
+    (let [idx (min idx (total-items inspector))
+          page-items (items-on-page inspector)]
+      (cond
+        (neg? idx)
+        inspector
+        (> idx page-items)
+        (recur (next-page inspector) (- idx page-items))
+        :else
+        (let [{:keys [index path current-page page-size]} inspector
+              new (get index idx)
+              val (:value inspector)
+              new-path (push-item-to-path index idx path current-page page-size)]
+          (-> (update-in inspector [:stack] conj val)
+              (update-in [:pages-stack] conj current-page)
+              (assoc :path new-path)
+              (inspect-render new)))))))
 
 (defn- sibling* [inspector offset pred]
   (let [path (:path inspector)
