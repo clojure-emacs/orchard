@@ -2,6 +2,12 @@
 
 ## master (unreleased)
 
+## 0.23.2 (2024-03-10)
+
+### Bugs Fixed
+
+* `inspector/down`: return the usual value when called on nil `inspector` arguments.
+
 ## 0.23.1 (2024-03-10)
 
 ### Bugs Fixed
