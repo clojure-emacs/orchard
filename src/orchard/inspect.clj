@@ -95,6 +95,65 @@
   (-> (clear inspector)
       (inspect-render value)))
 
+(defn- items-on-page
+  "Number of individual top level items on a single page."
+  [{:keys [value page-size] :as _inspector}]
+  (if (map? value)
+    (* 2 page-size) ;; keys and values are treated as separate items
+    page-size))
+
+(defn- total-items
+  "Total number of individual top level items in the current inspectable object."
+  [{:keys [value] :as _inspector}]
+  (cond
+    (map? value)
+    (* 2 (count value)) ;; keys and values are treated as separate items
+    (instance? clojure.lang.Counted value)
+    (count value)
+    :else ;; possibly infinite
+    Integer/MAX_VALUE))
+
+(defn- last-page
+  ([inspector] (last-page inspector (:value inspector)))
+  ([{:keys [current-page page-size]} obj]
+   (cond
+     (instance? clojure.lang.Counted obj)
+     (quot (dec (count obj)) page-size)
+
+     ;; if there are no more items after the current page, we must have
+     ;; reached the end of the collection, so it's not infinite.
+     (empty? (drop (* (inc current-page) page-size) obj))
+     current-page
+
+     ;; possibly infinite
+     :else Integer/MAX_VALUE)))
+
+(defn- current-page
+  ([inspector] (current-page inspector (:value inspector)))
+  ([{:keys [current-page] :as inspector} obj]
+   (let [last-page (last-page inspector obj)]
+     ;; current-page might contain an incorrect value, fix that:
+     (cond
+       (< current-page 0) 0
+       (> current-page last-page) last-page
+       :else current-page))))
+
+(defn next-page
+  "Jump to the next page when inspecting a paginated sequence/map. Does nothing
+  if already on the last page."
+  [{:keys [current-page] :as inspector}]
+  (if (>= current-page (last-page inspector))
+    inspector
+    (inspect-render (update inspector :current-page inc))))
+
+(defn prev-page
+  "Jump to the previous page when inspecting a paginated sequence/map. Does
+  nothing if already on the first page."
+  [{:keys [current-page] :as inspector}]
+  (if (zero? current-page)
+    inspector
+    (inspect-render (update inspector :current-page dec))))
+
 (defn up
   "Pop the stack and re-render an earlier value."
   [inspector]
@@ -113,15 +172,22 @@
    rendered value."
   [inspector ^Integer idx]
   {:pre [(integer? idx)]}
-  (let [{:keys [index path current-page page-size]} inspector
-        new (get index idx)
-        val (:value inspector)
-        new-path (push-item-to-path index idx path current-page page-size)]
-    (-> (update-in inspector [:stack] conj val)
-        (update-in [:pages-stack] conj current-page)
-        (assoc :current-page 0)
-        (assoc :path new-path)
-        (inspect-render new))))
+  (let [idx (min idx (total-items inspector))
+        page-items (items-on-page inspector)]
+    (cond
+      (neg? idx)
+      inspector
+      (> idx page-items)
+      (recur (next-page inspector) (- idx page-items))
+      :else
+      (let [{:keys [index path current-page page-size]} inspector
+            new (get index idx)
+            val (:value inspector)
+            new-path (push-item-to-path index idx path current-page page-size)]
+        (-> (update-in inspector [:stack] conj val)
+            (update-in [:pages-stack] conj current-page)
+            (assoc :path new-path)
+            (inspect-render new))))))
 
 (defn- sibling* [inspector offset pred]
   (let [path (:path inspector)
@@ -133,6 +199,7 @@
                 top (up inspector)]
             (when (pred new-index top)
               (some-> top
+                      (assoc :current-page 0)
                       (down new-index)
                       inspect-render))))
         ;; if no changes were possible, return the inspector as-is so that the UI remains untouched:
@@ -142,28 +209,15 @@
   "Decrement the index of the last 'nth in the path by 1,
   if applicable, and re-render the updated value."
   [inspector]
-  (sibling* inspector 0 (fn [index _inspector]
-                          (pos? index))))
+  (sibling* inspector 0 (fn [idx _inspector]
+                          (pos? idx))))
 
 (defn next-sibling
   "Increment the index of the last 'nth in the path by 1,
   if applicable, and re-render the updated value."
   [inspector]
-  (sibling* inspector 2 (fn [index inspector]
-                          (< index
-                             (-> inspector :index count)))))
-
-(defn next-page
-  "Jump to the next page when inspecting a paginated sequence/map. Does nothing
-  if already on the last page."
-  [inspector]
-  (inspect-render (update-in inspector [:current-page] inc)))
-
-(defn prev-page
-  "Jump to the previous page when inspecting a paginated sequence/map. Does
-  nothing if already on the first page."
-  [inspector]
-  (inspect-render (update-in inspector [:current-page] dec)))
+  (sibling* inspector 2 (fn [idx {:keys [index page-size current-page] :as _inspector}]
+                          (< idx (+ (count index) (* page-size current-page))))))
 
 (defn set-page-size
   "Set the page size in pagination mode to the specified value. Current page
@@ -435,19 +489,6 @@
                 (next chunk) (inc idx))
          ins)))))
 
-(defn last-page [{:keys [current-page page-size]} obj]
-  (cond
-    (instance? clojure.lang.Counted obj)
-    (quot (dec (count obj)) page-size)
-
-    ;; if there are no more items after the current page, we must have
-    ;; reached the end of the collection, so it's not infinite.
-    (empty? (drop (* (inc current-page) page-size) obj))
-    current-page
-
-    ;; possibly infinite
-    :else Integer/MAX_VALUE))
-
 (declare known-types)
 
 (defn- render-page-info [{:keys [current-page page-size] :as inspector} obj]
@@ -464,19 +505,6 @@
                                    (if (= last-page Integer/MAX_VALUE)
                                      "?" (inc last-page))))
             (unindent))))))
-
-(defn- current-page [{:keys [current-page] :as inspector} obj]
-  (let [last-page (last-page inspector obj)]
-    ;; current-page might contain an incorrect value, fix that:
-    (cond
-      (< current-page 0)
-      0
-
-      (> current-page last-page)
-      last-page
-
-      :else
-      current-page)))
 
 (defn- chunk-to-display [{:keys [page-size] :as inspector} obj]
   (let [start-idx (* (current-page inspector obj) page-size)]
