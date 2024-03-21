@@ -218,8 +218,8 @@
   "Increment the index of the last 'nth in the path by 1,
   if applicable, and re-render the updated value."
   [inspector]
-  (sibling* inspector 2 (fn [idx {:keys [index page-size current-page] :as _inspector}]
-                          (< idx (+ (count index) (* page-size current-page))))))
+  (sibling* inspector 2 (fn [idx inspector]
+                          (<= idx (total-items inspector)))))
 
 (defn set-page-size
   "Set the page size in pagination mode to the specified value. Current page

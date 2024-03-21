@@ -2,6 +2,10 @@
 
 ## master (unreleased)
 
+## Changes
+
+* `inspector/next-sibling`: can beyond the current page.
+
 ## 0.23.2 (2024-03-10)
 
 ### Bugs Fixed
