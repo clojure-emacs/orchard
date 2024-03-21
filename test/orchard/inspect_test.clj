@@ -609,6 +609,26 @@
                   (inspect/next-sibling)
                   :value))))
   (testing "next-sibling doesn't fall beyond the last element."
+    (is (= 3 (-> [1 2 3]
+                 inspect
+                 (inspect/down 2)
+                 (inspect/next-sibling)
+                 (inspect/next-sibling)
+                 (inspect/next-sibling)
+                 (inspect/next-sibling)
+                 :value)))
+    (is (= 69 (-> long-sequence
+                  inspect
+                  (inspect/set-page-size 1)
+                  (inspect/down 67)
+                  (inspect/next-sibling)
+                  (inspect/next-sibling)
+                  (inspect/next-sibling)
+                  (inspect/next-sibling)
+                  (inspect/next-sibling)
+                  (inspect/next-sibling)
+                  (inspect/next-sibling)
+                  :value)))
     (is (= 69 (-> long-vector
                   inspect
                   (inspect/set-page-size 1)
