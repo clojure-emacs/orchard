@@ -2,6 +2,10 @@
 
 ## master (unreleased)
 
+## Changes
+
+* [#232](https://github.com/clojure-emacs/orchard/issues/232): Let`inspector/next-sibling` go beyond the current page, without possibly going out of bounds.
+
 ## 0.23.2 (2024-03-10)
 
 ### Bugs Fixed
