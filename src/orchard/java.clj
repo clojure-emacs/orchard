@@ -322,9 +322,11 @@
   "For the class symbol, return Java class and member info. Members are indexed
   first by name, and then by argument types to list all overloads."
   [class]
-  (when-let [^Class c (try (Class/forName (str class))
-                           (catch Exception _)
-                           (catch LinkageError _))]
+  (when-let [^Class c (try
+                        (Class/forName (str class)) ;; NOTE: we don't pass the `false` argumnt since that complicates the analysis for deftype/defrecord classes.
+                        (catch Exception _)
+                        (catch NoClassDefFoundError _)
+                        (catch LinkageError _))]
     (let [package (some-> c package symbol)
           {:keys [members] :as result} (misc/deep-merge (reflect-info (reflection-for c))
                                                         (when *analyze-sources*
