@@ -323,10 +323,11 @@
   first by name, and then by argument types to list all overloads."
   [class]
   (when-let [^Class c (try
-                        (Class/forName (str class)) ;; NOTE: we don't pass the `false` argumnt since that complicates the analysis for deftype/defrecord classes.
-                        (catch Exception _)
-                        (catch NoClassDefFoundError _)
-                        (catch LinkageError _))]
+                        ;; Don't initialize classes here. There are systems like JavaFX
+                        ;; that needs some setup before some classes can be initialized or
+                        ;; the system will break.
+                        (Class/forName (str class) false (.getContextClassLoader (Thread/currentThread)))
+                        (catch Throwable _))]
     (let [package (some-> c package symbol)
           {:keys [members] :as result} (misc/deep-merge (reflect-info (reflection-for c))
                                                         (when *analyze-sources*
