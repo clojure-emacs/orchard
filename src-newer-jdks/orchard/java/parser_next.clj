@@ -323,14 +323,14 @@
         (when-let [^DocletEnvironment root (parse-java path (module-name klass))]
           (try
             (let [path-resource (io/resource path)]
-              (assoc (->> (.getIncludedElements root)
-                          (filterv #(#{ElementKind/CLASS
-                                       ElementKind/INTERFACE
-                                       ElementKind/ENUM}
-                                     (.getKind ^Element %)))
-                          (mapv #(parse-info % root))
-                          (filterv #(= klass (:class %)))
-                          (first))
+              (assoc (some #(when (#{ElementKind/CLASS
+                                     ElementKind/INTERFACE
+                                     ElementKind/ENUM}
+                                   (.getKind ^Element %))
+                              (let [info (parse-info % root)]
+                                (when (= (:class info) klass)
+                                  info)))
+                           (.getIncludedElements root))
                      ;; relative path on the classpath
                      :file path
                      ;; Legacy key. Please do not remove - we don't do breaking changes!

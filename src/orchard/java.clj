@@ -476,8 +476,7 @@
   [ns sym]
   (when-let [ns (find-ns ns)]
     (->> (vals (ns-imports ns))
-         (map #(member-info (-> ^Class % .getName symbol) sym))
-         (filter identity)
+         (keep #(member-info (-> ^Class % .getName symbol) sym))
          (distinct))))
 
 (defn trim-one-dot
