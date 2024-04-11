@@ -19,19 +19,23 @@ defaults: &defaults
 executors:
   openjdk8:
     docker:
-      - image: clojure:temurin-8-lein-2.10.0-jammy
+      - image: clojure:temurin-8-lein-2.11.2-jammy
     <<: *defaults
   openjdk11:
     docker:
-      - image: clojure:temurin-11-lein-2.10.0-jammy
+      - image: clojure:temurin-11-lein-2.11.2-jammy
     <<: *defaults
   openjdk17:
     docker:
-      - image: clojure:temurin-17-lein-2.10.0-jammy
+      - image: clojure:temurin-17-lein-2.11.2-jammy
     <<: *defaults
   openjdk21:
     docker:
-      - image: clojure:temurin-21-lein-2.10.0-jammy
+      - image: clojure:temurin-21-lein-2.11.2-jammy
+    <<: *defaults
+  openjdk22:
+    docker:
+      - image: clojure:temurin-22-lein-2.11.2-jammy
     <<: *defaults
 
 # Runs a given set of steps, with some standard pre- and post-
@@ -72,9 +76,9 @@ commands:
         default: "1"
     steps:
       - run:
-          name: Install make
+          name: Install git
           command: |
-            apt-get update && apt-get install -y make git
+            apt-get update && apt-get install -y git
       - run:
           name: Generate Cache Checksum
           command: |
@@ -175,7 +179,7 @@ jobs:
 # The ci-test-matrix does the following:
 #
 # - run tests against the target matrix
-#   - Java 8, 11, 16 and 17
+#   - Java 8, 11, 17, 21, 22
 #   - Clojure 1.9, 1.10, 1.11, master
 # - linter, eastwood and cljfmt
 
@@ -203,7 +207,7 @@ workflows:
           matrix:
             alias: "test_code"
             parameters:
-              jdk_version: [openjdk11, openjdk17, openjdk21]
+              jdk_version: [openjdk11, openjdk17, openjdk21, openjdk22]
               clojure_version: ["1.10", "1.11", "master"]
               test_profiles: ["-user,-dev,+test,-provided", "-user,-dev,+test,+provided"]
               parser_target: ["parser-next", "parser", "legacy-parser"]
@@ -213,8 +217,8 @@ workflows:
             tags:
               only: /^v\d+\.\d+\.\d+(-alpha\d+)?$/
       - util_job:
-          name: Code Linting, (latest LTS JDK)
-          jdk_version: openjdk17
+          name: lint_latest_lts
+          jdk_version: openjdk21
           steps:
             - run:
                 name: Running cljfmt
@@ -233,7 +237,7 @@ workflows:
           requires:
             - test_code
             - test_code_jdk8
-            - "Code Linting, (latest LTS JDK)"
+            - lint_latest_lts
           filters:
             branches:
               ignore: /.*/
