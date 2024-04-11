@@ -210,7 +210,8 @@ workflows:
               jdk_version: [openjdk11, openjdk17, openjdk21, openjdk22]
               clojure_version: ["1.10", "1.11", "master"]
               test_profiles: ["-user,-dev,+test,-provided", "-user,-dev,+test,+provided"]
-              parser_target: ["parser-next", "parser", "legacy-parser"]
+              # Don't test legacy parser on JDK11+ since it is never invoked there.
+              parser_target: ["parser-next", "parser"]
           filters:
             branches:
               only: /.*/
