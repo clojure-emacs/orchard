@@ -8,9 +8,6 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :scm {:name "git" :url "https://github.com/clojure-emacs/orchard"}
 
-  :exclusions [org.clojure/clojure ; see versions matrix below
-               org.clojure/clojurescript]
-
   :release-tasks [["vcs" "assert-committed"]
                   ["bump-version" "release"]
                   ["vcs" "commit" "Release %s"]
@@ -33,24 +30,25 @@
 
   :javac-options ["-Xlint:unchecked"]
 
-  :profiles {:provided {:dependencies [[org.clojure/clojure "1.11.1"] ;; Clojure versions matrix
-                                       [org.clojure/clojure "1.11.1" :classifier "sources"]
+  :profiles {:provided {:dependencies [[org.clojure/clojure "1.11.2"] ;; Clojure versions matrix
+                                       [org.clojure/clojure "1.11.2" :classifier "sources"]
                                        [org.clojure/clojurescript "1.11.4"]]
                         :test-paths ["test-cljs"]}
              :1.9 {:dependencies [[org.clojure/clojure "1.9.0"]
                                   [org.clojure/clojure "1.9.0" :classifier "sources"]]}
              :1.10 {:dependencies [[org.clojure/clojure "1.10.3"]
                                    [org.clojure/clojure "1.10.3" :classifier "sources"]]}
-             :1.11 {:dependencies [[org.clojure/clojure "1.11.1"]
-                                   [org.clojure/clojure "1.11.1" :classifier "sources"]]}
+             :1.11 {:dependencies [[org.clojure/clojure "1.11.2"]
+                                   [org.clojure/clojure "1.11.2" :classifier "sources"]]}
              :master {:repositories [["snapshots"
                                       "https://oss.sonatype.org/content/repositories/snapshots"]]
                       :dependencies [[org.clojure/clojure "1.12.0-master-SNAPSHOT"]
                                      [org.clojure/clojure "1.12.0-master-SNAPSHOT" :classifier "sources"]]}
 
 
-             :test {:dependencies [[org.clojure/java.classpath "1.0.0"]
-                                   [nubank/matcher-combinators "3.8.8"]]
+             :test {:dependencies [[org.clojure/java.classpath "1.1.0"]
+                                   [nubank/matcher-combinators "3.9.1"
+                                    :exclusions [org.clojure/clojure]]]
                     :resource-paths ["test-resources"
                                      "not-a.jar"
                                      "test-java-invalid"
@@ -65,8 +63,9 @@
 
              ;; Running the tests with enrich-classpath doing its thing isn't compatible with `lein test`,
              ;; So we use cognitect.test-runner instead.
-             :cognitest {:dependencies [[org.clojure/tools.namespace "1.4.4"]
-                                        [org.clojure/tools.cli "1.0.206"]]
+             :cognitest {:dependencies [[org.clojure/tools.namespace "1.5.0"
+                                         :exclusions [org.clojure/clojure]]
+                                        [org.clojure/tools.cli "1.1.230"]]
                          :source-paths ["test-runner/src"]
                          ;; This piece of middleware dynamically adds the test paths to a cognitect.test-runner main invocation.
                          :middleware [~(do
@@ -84,8 +83,8 @@
              ;; Development tools
              :dev {:plugins [[cider/cider-nrepl "0.45.0"]
                              [refactor-nrepl "3.9.0"]]
-                   :dependencies [[nrepl/nrepl "1.0.0"]
-                                  [org.clojure/tools.namespace "1.4.4"]]
+                   :dependencies [[nrepl/nrepl "1.1.0"]
+                                  [org.clojure/tools.namespace "1.5.0"]]
                    :source-paths ["dev" "src-spec-alpha-2/src/main/clojure"]
                    :resource-paths ["test-resources"]}
 
