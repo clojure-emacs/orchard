@@ -1230,8 +1230,7 @@
                     (header rendered))))
       (when datafy?
         (testing "renders the datafy section"
-          (is (match? (case java-api-version
-                        (11 16 17)
+          (is (match? (if (> java-api-version 8)
                         (list "--- Datafy:"
                               '(:newline)
                               "  "
