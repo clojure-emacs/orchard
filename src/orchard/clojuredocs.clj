@@ -8,11 +8,17 @@
    [clojure.string :as string]
    [orchard.util.os :as os])
   (:import
-   (java.io IOException)
    (java.net URI)
-   (javax.net.ssl HttpsURLConnection)))
+   (javax.net.ssl HttpsURLConnection)
+   (java.util.concurrent.locks ReentrantLock)))
 
 (def cache (atom {}))
+(def ^:private ^ReentrantLock lock
+  "Lock to prevent concurrent loading and parsing of Clojuredocs data and writing
+  it into cache. This lock provides only efficiency benefits and is not
+  necessary for correct behavior as accessing atom that contains immutable data
+  structures is safe without a lock."
+  (ReentrantLock.))
 (def default-edn-file-url
   "https://github.com/clojure-emacs/clojuredocs-export-edn/raw/master/exports/export.compact.edn")
 (def cache-file-name
@@ -21,69 +27,67 @@
                                   "clojuredocs"
                                   "export.edn"]))
 
-(def connect-timeout
-  "Timeout value for checking connection. Unit is millisecond."
+(def http-timeout
+  "Timeout in milliseconds for connecting to a URL and reading the content."
   1000)
+
+(defn- slurp-with-timeout
+  "Like `slurp`, but allows setting a timeout value in milliseconds if the
+  resource is an URL. The maximum waiting time is technically 2x of `timeout`."
+  [^String resource, timeout]
+  (if (and (string? resource) (.startsWith resource "http"))
+    (let [url (.toURL (URI. resource))
+          conn ^HttpsURLConnection (.openConnection url)]
+      (.setConnectTimeout conn timeout)
+      (.setReadTimeout conn timeout)
+      (if (= (.getResponseCode conn) 200)
+        (slurp (.getInputStream conn))
+        (throw (ex-info (format "%s: HTTP error code %s" url
+                                (.getResponseCode conn)) {}))))
+
+    ;; Non-remote URL - use regular slurp.
+    (slurp resource)))
 
 (defn- write-cache-file! [url]
   (.. (io/file cache-file-name)
       getParentFile
       mkdirs)
-  (->> url slurp (spit cache-file-name)))
+  (spit cache-file-name (slurp-with-timeout url http-timeout)))
 
 (defn- load-cache-file! [cache-file]
-  (->> cache-file
-       slurp
-       edn/read-string
-       (reset! cache))
+  (reset! cache (-> cache-file
+                    slurp
+                    edn/read-string))
   true)
-
-(defn test-remote-url [^String url]
-  (if-not (.startsWith url "http")
-    ;; Skip checks for non remote url
-    [true]
-    (let [url (.toURL (URI. url))
-          conn ^HttpsURLConnection (.openConnection url)]
-      (.setConnectTimeout conn connect-timeout)
-      (try
-        (.connect conn)
-        [true]
-        (catch IOException ex
-          [false ex])
-        (finally
-          (.disconnect conn))))))
 
 (defn load-docs-if-not-loaded!
   "Load exported docs from bundled or cached file when no docs are loaded.
   The Cached file take priority."
   {:added "0.5"}
   []
-  (when (empty? @cache)
-    (let [cache-file (io/file cache-file-name)]
-      (load-cache-file!
-       (if (.exists cache-file)
-         cache-file
-         (io/resource "clojuredocs/export.edn"))))))
+  ;; Prevent multiple threads from trying to load the cache simultaneously.
+  (.lock lock)
+  (try (when (empty? @cache)
+         (let [cache-file (io/file cache-file-name)]
+           (load-cache-file!
+            (if (.exists cache-file)
+              cache-file
+              (io/resource "clojuredocs/export.edn")))))
+       (finally (.unlock lock))))
 
 (defn update-cache!
   "Load exported docs file from ClojureDocs, and store it as a cache.
-  A EDN format file is expected to the `export-edn-url` argument.
-
-  If `export-edn-url` is omitted, `default-edn-file-url` is used.
-
-  If `export-edn-url` is not accessible, `IOException` is thrown.
-  If `export-edn-url` is not a URL for remote host, `IllegalArgumentException` is thrown."
+  `export-edn-url` should be the URL to EDN file with Clojuredocs
+  data (`default-edn-file-url` if not provided)."
   {:added "0.5"}
   ([]
    (update-cache! default-edn-file-url))
   ([export-edn-url]
-   (let [cache-file (io/file cache-file-name)
-         ;; connection check not to wait too long
-         [downloadable? conn-ex] (test-remote-url export-edn-url)]
-     (if (not downloadable?)
-       (throw conn-ex)
-       (do (write-cache-file! export-edn-url)
-           (load-cache-file! cache-file))))))
+   (let [cache-file (io/file cache-file-name)]
+     (.lock lock)
+     (try (write-cache-file! export-edn-url)
+          (load-cache-file! cache-file)
+          (finally (.unlock lock))))))
 
 (defn clean-cache!
   "Clean the cached ClojureDocs export file and the in memory cache."

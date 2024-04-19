@@ -4,7 +4,6 @@
    [clojure.test :as test :refer [deftest is testing use-fixtures]]
    [orchard.clojuredocs :as docs])
   (:import
-   (java.io FileNotFoundException IOException)
    (java.time Instant)))
 
 (def ^:private test-edn-file
@@ -69,54 +68,53 @@
 (deftest update-cache!-no-cache-file-test
   (let [cache-file (io/file docs/cache-file-name)]
     (testing "accessible to remote export.edn"
-      (with-redefs [docs/test-remote-url (constantly [true])]
-        (is (not (.exists cache-file)))
-        (is (empty? @docs/cache))
-        (docs/update-cache! test-edn-file)
-        (is (.exists cache-file))
-        (is (contains? @docs/cache :foo.core/bar))
-        (docs/clean-cache!)))
+      (is (not (.exists cache-file)))
+      (is (empty? @docs/cache))
+      (docs/update-cache! test-edn-file)
+      (is (.exists cache-file))
+      (is (contains? @docs/cache :foo.core/bar))
+      (docs/clean-cache!))
 
     (testing "not accessible to remote export.edn"
-      (with-redefs [docs/test-remote-url (constantly [false (IOException. "dummy")])]
-        (is (not (.exists cache-file)))
-        (is (empty? @docs/cache))
-        (is (thrown? IOException (docs/update-cache! test-edn-file)))
-        (is (not (.exists cache-file)))
-        (is (empty? @docs/cache))))))
+      (is (not (.exists cache-file)))
+      (is (empty? @docs/cache))
+      (is (thrown? Exception (docs/update-cache! "http://example.com/no/such/file.edn")))
+      (is (not (.exists cache-file)))
+      (is (empty? @docs/cache))
+      (is (thrown? Exception (docs/update-cache! "http://non.existing.server/no/such/file.edn")))
+      (is (not (.exists cache-file)))
+      (is (empty? @docs/cache)))))
 
 (deftest update-cache!-non-existing-url-test
   (let [cache-file (io/file docs/cache-file-name)]
     (is (not (.exists cache-file)))
     (is (empty? @docs/cache))
-    (is (thrown? FileNotFoundException (docs/update-cache! "file:/not/existing/file.edn")))
+    (is (thrown? Exception (docs/update-cache! "file:/not/existing/file.edn")))
     (is (not (.exists cache-file)))
     (is (empty? @docs/cache))))
 
 (deftest update-cache!-existing-cache-file-test
   (let [cache-file (io/file docs/cache-file-name)]
     (testing "no cached documentation"
-      (with-redefs [docs/test-remote-url (constantly [true])]
-        (create-dummy-cache-file now)
-        (reset! docs/cache {})
+      (create-dummy-cache-file now)
+      (reset! docs/cache {})
 
-        (is (= now (.lastModified cache-file)))
-        (is (empty? @docs/cache))
-        (docs/update-cache! test-edn-file)
-        ;; should be updated
-        (is (not= now (.lastModified cache-file)))
-        (is (contains? @docs/cache :foo.core/bar))))
+      (is (= now (.lastModified cache-file)))
+      (is (empty? @docs/cache))
+      (docs/update-cache! test-edn-file)
+      ;; should be updated
+      (is (not= now (.lastModified cache-file)))
+      (is (contains? @docs/cache :foo.core/bar)))
 
     (testing "not accessible to remote export.edn"
-      (with-redefs [docs/test-remote-url (constantly [false (IOException. "dummy")])]
-        (create-dummy-cache-file now)
-        (reset! docs/cache {})
+      (docs/clean-cache!)
+      (create-dummy-cache-file now)
 
-        (is (= now (.lastModified cache-file)))
-        (is (empty? @docs/cache))
-        (is (thrown? IOException (docs/update-cache! test-edn-file)))
-        (is (= now (.lastModified cache-file)))
-        (is (empty? @docs/cache))))))
+      (is (= now (.lastModified cache-file)))
+      (is (empty? @docs/cache))
+      (is (thrown? Exception (docs/update-cache! "bad/file.edn")))
+      (is (= now (.lastModified cache-file)))
+      (is (empty? @docs/cache)))))
 
 (deftest clean-cache!-test
   (create-dummy-cache-file)
