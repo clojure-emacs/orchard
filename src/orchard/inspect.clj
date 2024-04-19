@@ -10,9 +10,9 @@
   Pretty wild, right?"
   (:require
    [clojure.string :as string]
-   [orchard.misc :as misc])
+   [orchard.misc :as misc]
+   [orchard.print :as print])
   (:import
-   (clojure.lang Seqable)
    (java.lang.reflect Constructor Field Method Modifier)
    (java.util List Map)))
 
@@ -31,7 +31,7 @@
 ;; Navigating Inspector State
 ;;
 
-(declare inspect-render inspect-value)
+(declare inspect-render)
 
 (defn- reset-index [inspector]
   (merge inspector {:counter 0 :index []}))
@@ -236,11 +236,23 @@
   {:pre [(integer? max-atom-length)]}
   (inspect-render (assoc inspector :max-atom-length max-atom-length)))
 
+(defn set-max-value-length
+  "Set the maximum length of a whole printed value before it is truncated."
+  [inspector max-value-length]
+  {:pre [(integer? max-value-length)]}
+  (inspect-render (assoc inspector :max-value-length max-value-length)))
+
 (defn set-max-coll-size
   "Set the maximum number of nested collection members to print before truncating."
   [inspector max-coll-size]
   {:pre [(integer? max-coll-size)]}
   (inspect-render (assoc inspector :max-coll-size max-coll-size)))
+
+(defn set-max-nested-depth
+  "Set the maximum level of nested collections to print before truncating."
+  [inspector max-nested-depth]
+  {:pre [(integer? max-nested-depth)]}
+  (inspect-render (assoc inspector :max-nested-depth max-nested-depth)))
 
 (defn eval-and-inspect
   "Evaluate the given expression where `v` is bound to the currently inspected
@@ -274,140 +286,9 @@
   (maybe-tap> (get index idx))
   (inspect-render inspector))
 
-(declare inspector-value-string)
-
-;;
-;; Render values onto the inspector's current state
-;;
-;; Good for method extenders to use
-
-(defn- scalar? [val]
-  (some #(% val) [number? symbol? keyword?]))
-
-(defn safe-pr-seq
-  ([value fmt]
-   (safe-pr-seq value " " fmt))
-  ([value sep fmt]
-   (->> (map inspect-value value)
-        (string/join sep)
-        (format fmt))))
-
-(def ^:private ^:dynamic *max-atom-length* 150)
-(def ^:private ^:dynamic *max-coll-size* 5)
-
-(defn- short? [coll]
-  ;; Prefer `bounded-count` if available (clojure 1.9+) or fall back to `count`.
-  (let [len (if-let [;; NOTE can't name this `bounded-count` because eastwood's
-                     ;; :local-shadows-var warning can't be suppressed.
-                     bounded-count-fn (some-> (resolve 'clojure.core/bounded-count)
-                                              (var-get))]
-              (bounded-count-fn (inc *max-coll-size*) coll)
-              (count coll))]
-    (<= len *max-coll-size*)))
-
-(defn- truncate-string [s]
-  (when s
-    (let [len (count s)]
-      (if (> len *max-atom-length*)
-        (str (subs s 0 (max (- *max-atom-length* 3) 0)) "...")
-        s))))
-
-(defn value-types [value]
-  (cond
-    (nil? value)                                   nil
-    (string? value)                                :string
-    (scalar? value)                                :scalar
-    (and (instance? Seqable value) (empty? value)) :seq-empty
-    (and (map? value) (short? value))              :map
-    (map-entry? value)                             :map-entry
-    (map? value)                                   :map-long
-    (and (vector? value) (short? value))           :vector
-    (vector? value)                                :vector-long
-    (misc/lazy-seq? value)                         :lazy-seq
-    (and (seq? value) (short? value))              :list
-    (seq? value)                                   :list-long
-    (and (set? value) (short? value))              :set
-    (set? value)                                   :set-long
-    (and (instance? List value) (short? value))    :list
-    (instance? List value)                         :list-long
-    (and (instance? Map value) (short? value))     :map
-    (instance? Map value)                          :map-long
-    (and (.isArray (class value)) (short? value))  :array
-    (.isArray (class value))                       :array-long
-    (instance? Throwable value)                    :throwable
-    :else (or (:inspector-tag (meta value))
-              (type value))))
-
-(defmulti inspect-value #'value-types)
-
-(defmethod inspect-value nil [_value]
-  "nil")
-
-(defmethod inspect-value :scalar [value]
-  (pr-str value))
-
-(defmethod inspect-value :string [value]
-  (truncate-string (pr-str value)))
-
-(defmethod inspect-value :map-entry [[k v]]
-  (str (inspect-value k) " " (inspect-value v)))
-
-(defmethod inspect-value :seq-empty [value]
-  (pr-str value))
-
-(defmethod inspect-value :map [value]
-  (safe-pr-seq value ", " "{ %s }"))
-
-(defmethod inspect-value :map-long [value]
-  (safe-pr-seq (take *max-coll-size* value) ", " "{ %s, ... }"))
-
-(defmethod inspect-value :vector [value]
-  (safe-pr-seq value "[ %s ]"))
-
-(defmethod inspect-value :vector-long [value]
-  (safe-pr-seq (take *max-coll-size* value) "[ %s ... ]"))
-
-(defmethod inspect-value :lazy-seq [value]
-  (let [prefix-length (inc *max-coll-size*)
-        prefix (take prefix-length value)]
-    (if (= (count prefix) prefix-length)
-      (safe-pr-seq (take *max-coll-size* value) "( %s ... )")
-      (safe-pr-seq prefix "( %s )"))))
-
-(defmethod inspect-value :list [value]
-  (safe-pr-seq value "( %s )"))
-
-(defmethod inspect-value :list-long [value]
-  (safe-pr-seq (take *max-coll-size* value) "( %s ... )"))
-
-(defmethod inspect-value :set [value]
-  (safe-pr-seq value "#{ %s }"))
-
-(defmethod inspect-value :set-long [value]
-  (safe-pr-seq (take *max-coll-size* value) "#{ %s ... }"))
-
-(defmethod inspect-value :array [value]
-  (let [ct (.getName (or (.getComponentType (class value)) Object))]
-    (safe-pr-seq value ", " (str ct "[] { %s }"))))
-
-(defmethod inspect-value :array-long [value]
-  (let [ct (.getName (or (.getComponentType (class value)) Object))]
-    (safe-pr-seq (take *max-coll-size* value) ", " (str ct "[] { %s, ... }"))))
-
-(defmethod inspect-value java.lang.Class [value]
-  (pr-str value))
-
-(defmethod inspect-value clojure.core.Eduction [value]
-  (pr-str value))
-
-(defmethod inspect-value clojure.lang.TaggedLiteral [value]
-  (pr-str value))
-
-(defmethod inspect-value :throwable [value]
-  (pr-str value))
-
-(defmethod inspect-value :default [value]
-  (truncate-string (str value)))
+(def ^:private default-max-atom-length 150)
+(def ^:private default-max-value-length 50000)
+(def ^:private default-max-coll-size 5)
 
 (defn render-onto [inspector coll]
   (update-in inspector [:rendered] concat coll))
@@ -443,11 +324,8 @@
 
 (defn render-value [inspector value]
   (let [{:keys [counter]} inspector
-        inspected-value (inspect-value value)
-        inspected-value (cond-> inspected-value
-                          ;; The contract of inspect-value is to return a string, however let's make sure:
-                          (not (string? inspected-value)) str)
-        expr `(:value ~inspected-value ~counter)]
+        inspected-value (print/print-str value)
+        expr (list :value inspected-value counter)]
     (-> inspector
         (update-in [:index] conj value)
         (update-in [:counter] inc)
@@ -660,7 +538,7 @@
 
 (defmethod inspect :string [inspector ^java.lang.String obj]
   (-> (render-class-name inspector obj)
-      (render "Value: " (pr-str obj))
+      (render "Value: " (print/print-str obj))
       (render-ln)
       (render-section-header "Print")
       (indent)
@@ -817,8 +695,13 @@
 (defn inspect-render
   ([inspector] (inspect-render inspector (:value inspector)))
   ([inspector value]
-   (binding [*max-atom-length* (or (:max-atom-length inspector) *max-atom-length*)
-             *max-coll-size* (or (:max-coll-size inspector) *max-coll-size*)]
+   (binding [print/*max-atom-length* (or (:max-atom-length inspector)
+                                         default-max-atom-length)
+             print/*max-total-length* (or (:max-value-length inspector)
+                                          default-max-value-length)
+             *print-length* (or (:max-coll-size inspector)
+                                default-max-coll-size)
+             *print-level* (:max-nested-depth inspector)]
      (-> (reset-index inspector)
          (assoc :rendered [])
          (assoc :value value)

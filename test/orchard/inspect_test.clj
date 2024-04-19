@@ -21,7 +21,9 @@
 (require 'matcher-combinators.test)
 
 (defn- demunge-str [s]
-  (string/replace s #"(?i)\$([a-z-]+)__([0-9]+)(@[a-f0-9]+)?" "\\$$1"))
+  (-> s
+      (string/replace #"(?i)\$([a-z-]+)__([0-9]+)(@[a-f0-9]+)?" "\\$$1")
+      (string/replace #"(?i)(fn|eval)--([0-9]+)" "$1")))
 
 (defn- demunge
   ([rendered]
@@ -120,7 +122,6 @@
 (def long-vector (vec (range 70)))
 (def long-map (into (sorted-map) (zipmap (range 70) (range 70))))
 (def long-nested-coll (vec (map #(range (* % 10) (+ (* % 10) 80)) (range 200))))
-(def truncated-string (str "\"" (apply str (repeat 146 "a")) "..."))
 
 (defn- section? [name rendered]
   (when (string? rendered)
@@ -660,72 +661,6 @@
   (testing "doesn't show the path in the top level"
     (is (= '(:newline) (-> [1 2 3] inspect render last)))))
 
-(defprotocol IMyTestType
-  (^String get-name [this]))
-
-(deftype MyTestType [name]
-  IMyTestType
-  (get-name [_this] name))
-
-(defmethod inspect/inspect-value MyTestType [obj]
-  (str "#<MyTestType " (get-name obj) ">"))
-
-(deftest inspect-val-test
-  (testing "inspect-value print types"
-    (are [result form] (match? result (inspect/inspect-value form))
-      "1" 1
-      "\"2\"" "2"
-      truncated-string (apply str (repeat 300 \a))
-      ":foo" :foo
-      ":abc/def" :abc/def
-      "( :a :b :c )" '(:a :b :c)
-      "[ 1 2 3 ]" [1 2 3]
-      "{ :a 1, :b 2 }" {:a 1 :b 2}
-      "#{ :a }" #{:a}
-      "( 1 1 1 1 1 ... )" (repeat 1)
-      "[ ( 1 1 1 1 1 ... ) ]" [(repeat 1)]
-      "{ :a { ( 0 1 2 3 4 ... ) 1, 2 3, 4 5, 6 7, 8 9, ... } }" {:a {(range 10) 1, 2 3, 4 5, 6 7, 8 9, 10 11}}
-      "( 1 2 3 )" (lazy-seq '(1 2 3))
-      "( 1 1 1 1 1 ... )" (java.util.ArrayList. ^java.util.Collection (repeat 100 1))
-      "( 1 2 3 )" (let [^java.util.Collection x [1 2 3]]
-                    (java.util.ArrayList. x))
-      "{ :a 1, :b 2 }" (let [^java.util.Map x {:a 1 :b 2}]
-                         (java.util.HashMap. x))
-      "long[] { 1, 2, 3, 4 }" (long-array [1 2 3 4])
-      "java.lang.Long[] { 0, 1, 2, 3, 4, ... }" (into-array Long (range 10))
-      "#<MyTestType test1>" (MyTestType. "test1")))
-
-  (testing "inspect-value adjust length and size"
-    (binding [inspect/*max-atom-length* 6
-              inspect/*max-coll-size* 2]
-      (are [result form] (match? result (inspect/inspect-value form))
-        "1" 1
-        "nil" nil
-        "\"2\"" "2"
-        ":abc/def" :abc/def
-        "( :a :b )" '(:a :b)
-        "[ 1 2 ... ]" [1 2 3]
-        "{ :a 1, :b 2 }" {:a 1 :b 2}
-        "{ :a 1, :b 2, ... }" {:a 1 :b 2 :c 3}
-        "{ :a 1, :b 2, ... }" (sorted-map :d 4 :b 2 :a 1 :c 3)
-        "( 1 1 ... )" (repeat 1)
-        "[ ( 1 1 ... ) ]" [(repeat 1)]
-        "{ :a { ( 0 1 ... ) \"ab..., 2 3, ... } }" {:a {(range 10) "abcdefg", 2 3, 4 5, 6 7, 8 9, 10 11}}
-        "java.lang.Long[] { 0, 1, ... }" (into-array Long (range 10))))
-    (binding [inspect/*max-coll-size* 6]
-      (are [result form] (match? result (inspect/inspect-value form))
-        "[ ( 1 1 1 1 1 1 ... ) ]" [(repeat 1)]
-        "{ :a { ( 0 1 2 3 4 5 ... ) 1, 2 3, 4 5, 6 7, 8 9, 10 11 } }" {:a {(range 10) 1, 2 3, 4 5, 6 7, 8 9, 10 11}}))))
-
-(deftest inspect-value-test
-  (is (= "1" (inspect/inspect-value 1)))
-  (is (= "(0 1 2 3 4 5 6 7 8 9)" (inspect/inspect-value (eduction (range 10)))))
-  (is (= ":a" (inspect/inspect-value :a)))
-  (is (= "a" (inspect/inspect-value 'a)))
-  (is (= "\"a\"" (inspect/inspect-value "a")))
-  (binding [inspect/*max-atom-length* 5]
-    (is (= "\"1..." (inspect/inspect-value "1234567890")))))
-
 (deftest inspect-class-fields-test
   (testing "inspecting a class with fields renders correctly"
     (is (match? (list "--- Fields:"
@@ -851,7 +786,7 @@
   (testing "inspect respects :max-atom-length and :max-coll-size configuration"
     (is (match? '("Class"
                   ": "
-                  (:value "clojure.lang.PersistentVector" 0)
+                  (:value "clojure.lang.Persist..." 0)
                   (:newline)
                   (:newline)
                   "--- Contents:"
@@ -859,7 +794,7 @@
                   "  " "0" ". " (:value "[ 111111 2222 333 ... ]" 1)
                   (:newline))
                 (render (-> (inspect/fresh)
-                            (assoc :max-atom-length 4
+                            (assoc :max-atom-length 20
                                    :max-coll-size 3)
                             (inspect/start [[111111 2222 333 44 5]])))))))
 
@@ -1170,7 +1105,7 @@
                       "  "
                       (:value "clojure.core.protocols/datafy" 1)
                       " = "
-                      (:value "orchard.inspect_test$extend_datafy_class$fn" 2)
+                      (:value "#function[orchard.inspect-test/extend-datafy-class/fn]" 2)
                       (:newline)
                       (:newline))
                     (demunge (section "Meta Information" rendered)))))
@@ -1198,7 +1133,7 @@
         (is (match? '("--- Meta Information:"
                       (:newline)
                       "  " (:value "clojure.core.protocols/nav" 1)
-                      " = " (:value "orchard.inspect_test$extend_nav_vector$fn" 2)
+                      " = " (:value "#function[orchard.inspect-test/extend-nav-vector/fn]" 2)
                       (:newline)
                       (:newline))
                     (demunge (section "Meta Information" rendered)))))
@@ -1277,7 +1212,7 @@
                       (:newline)
                       "Value"
                       ": "
-                      (:value "(0 1 2 3 4 5 6 7 8 9)" 1)
+                      (:value "( 0 1 2 3 4 ... )" 1)
                       (:newline)
                       (:newline))
                     (header rendered)))))
