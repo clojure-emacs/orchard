@@ -82,7 +82,7 @@
   [inspector]
   (merge (reset-index inspector)
          {:value nil, :stack [], :path [], :pages-stack [],
-          :current-page 0, :rendered '(), :indentation 0}))
+          :current-page 0, :rendered [], :indentation 0}))
 
 (defn fresh
   "Return an empty inspector."
@@ -279,13 +279,15 @@
 (def ^:private default-max-coll-size 5)
 
 (defn render-onto [inspector coll]
-  (update inspector :rendered concat coll))
+  (update inspector :rendered into coll))
 
 (defn render [inspector & values]
   (render-onto inspector values))
 
 (defn render-ln [inspector & values]
-  (render-onto inspector (concat values '((:newline)))))
+  (-> inspector
+      (render-onto values)
+      (render '(:newline))))
 
 (defn- indent [inspector]
   (update inspector :indentation + 2))
@@ -317,7 +319,7 @@
     (-> inspector
         (update :index conj value)
         (update :counter inc)
-        (update :rendered concat (list expr)))))
+        (update :rendered conj expr))))
 
 (defn render-labeled-value [inspector label value]
   (-> inspector
@@ -696,7 +698,8 @@
          (render-reference)
          (inspect value)
          (render-page-info value)
-         (render-path)))))
+         (render-path)
+         (update :rendered seq)))))
 
 ;; Get a human readable printout of rendered sequence
 (defmulti inspect-print-component first)
