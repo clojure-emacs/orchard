@@ -634,21 +634,15 @@
 
 ;; TODO: Assess the value of this test
 (deftest javadoc-url-test
-  (when (= 7 misc/java-api-version)
-    (testing "java 1.7"
-      (is (= "java/lang/StringBuilder.html#charAt(int)"
-             (-> (info/info-java 'java.lang.StringBuilder 'charAt)
-                 (get :javadoc))))))
-
   (when (= 8 misc/java-api-version)
     (testing "java 1.8"
       (is (= "java/lang/StringBuilder.html#charAt-int-"
              (-> (info/info-java 'java.lang.StringBuilder 'charAt)
                  (get :javadoc))))))
 
-  (when (= 9 misc/java-api-version)
-    (testing "java 9"
-      (is (= "java/lang/StringBuilder.html#charAt-int-"
+  (when (= 11 misc/java-api-version)
+    (testing "java 11"
+      (is (= "java.base/java/lang/StringBuilder.html#charAt(int)"
              (-> (info/info-java 'java.lang.StringBuilder 'charAt)
                  (get :javadoc)))))))
 

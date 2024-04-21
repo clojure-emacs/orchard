@@ -2,6 +2,10 @@
 
 ## master (unreleased)
 
+## Changes
+
+* [#241](https://github.com/clojure-emacs/orchard/issues/241): Extract inspector value printing into a separate namespace `orchard.print`.
+
 ## 0.23.3 (2024-03-24)
 
 ## Changes
