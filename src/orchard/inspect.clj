@@ -51,7 +51,7 @@
         (cond
           ;; If value's class is a map, going down means jumping into either key
           ;; or value.
-          ((supers klass) clojure.lang.IPersistentMap)
+          (.isAssignableFrom Map klass)
           (if (even? idx)
             ;; Even index means jumping into the value by the key.
             (let [key (nth index (dec idx))]
@@ -62,7 +62,7 @@
             (conj path (list 'find (nth index idx)) 'key))
 
           ;; For sequential things going down means getting the nth value.
-          ((supers klass) clojure.lang.Sequential)
+          (.isAssignableFrom List klass)
           (let [coll-idx (+ (* (or current-page 0) page-size)
                             (dec idx))]
             (conj path (list 'nth coll-idx)))
@@ -161,11 +161,11 @@
     (if (empty? stack)
       (inspect-render inspector)
       (-> inspector
-          (update-in [:path] pop-item-from-path)
+          (update :path pop-item-from-path)
           (assoc :current-page (peek pages-stack))
-          (update-in [:pages-stack] pop)
+          (update :pages-stack pop)
           (inspect-render (last stack))
-          (update-in [:stack] pop)))))
+          (update :stack pop)))))
 
 (defn down
   "Drill down to an indexed object referred to by the previously
@@ -186,8 +186,9 @@
               new (get index idx)
               val (:value inspector)
               new-path (push-item-to-path index idx path current-page page-size)]
-          (-> (update-in inspector [:stack] conj val)
-              (update-in [:pages-stack] conj current-page)
+          (-> inspector
+              (update :stack conj val)
+              (update :pages-stack conj current-page)
               (assoc :path new-path)
               (inspect-render new)))))))
 
@@ -278,7 +279,7 @@
 (def ^:private default-max-coll-size 5)
 
 (defn render-onto [inspector coll]
-  (update-in inspector [:rendered] concat coll))
+  (update inspector :rendered concat coll))
 
 (defn render [inspector & values]
   (render-onto inspector values))
@@ -314,9 +315,9 @@
         inspected-value (print/print-str value)
         expr (list :value inspected-value counter)]
     (-> inspector
-        (update-in [:index] conj value)
-        (update-in [:counter] inc)
-        (update-in [:rendered] concat (list expr)))))
+        (update :index conj value)
+        (update :counter inc)
+        (update :rendered concat (list expr)))))
 
 (defn render-labeled-value [inspector label value]
   (-> inspector
