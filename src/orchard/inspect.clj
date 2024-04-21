@@ -254,19 +254,6 @@
   {:pre [(integer? max-nested-depth)]}
   (inspect-render (assoc inspector :max-nested-depth max-nested-depth)))
 
-(defn eval-and-inspect
-  "Evaluate the given expression where `v` is bound to the currently inspected
-  value. Open the evaluation result in the inspector."
-  [inspector expr]
-  (let [{:keys [current-page value]} inspector
-        eval-fn `(fn [~'v] ~(read-string expr))
-        result ((eval eval-fn) value)]
-    (-> (update inspector :stack conj value)
-        (update :pages-stack conj current-page)
-        (assoc :current-page 0)
-        (update :path conj '<unknown>)
-        (inspect-render result))))
-
 (defn def-current-value
   "Define the currently inspected value as a var with the given name in the
   provided namespace."
