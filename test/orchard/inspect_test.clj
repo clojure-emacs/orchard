@@ -365,25 +365,6 @@
         (is (= 2 (:current-page ins)))
         (is (= 4 (:current-page (inspect/up ins))))))))
 
-(deftest eval-and-inspect-test
-  (testing "evaluate expr in the context of currently inspected value"
-    (is (match? (list "Class"
-                      ": " (list :value "java.lang.String" number?)
-                      '(:newline)
-                      "Value: " "\"1001\""
-                      '(:newline)
-                      '(:newline)
-                      "--- Print:"
-                      '(:newline)
-                      "  " "1001"
-                      '(:newline))
-                (-> eval-result
-                    inspect
-                    (inspect/down 2)
-                    (inspect/down 2)
-                    (inspect/eval-and-inspect "(str (+ v 1000))")
-                    render)))))
-
 (deftest def-value-test
   (testing "define var with the currently inspected value"
     (-> eval-result

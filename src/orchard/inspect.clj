@@ -51,7 +51,7 @@
         (cond
           ;; If value's class is a map, going down means jumping into either key
           ;; or value.
-          ((supers klass) clojure.lang.IPersistentMap)
+          (.isAssignableFrom Map klass)
           (if (even? idx)
             ;; Even index means jumping into the value by the key.
             (let [key (nth index (dec idx))]
@@ -62,7 +62,7 @@
             (conj path (list 'find (nth index idx)) 'key))
 
           ;; For sequential things going down means getting the nth value.
-          ((supers klass) clojure.lang.Sequential)
+          (.isAssignableFrom List klass)
           (let [coll-idx (+ (* (or current-page 0) page-size)
                             (dec idx))]
             (conj path (list 'nth coll-idx)))
@@ -82,7 +82,7 @@
   [inspector]
   (merge (reset-index inspector)
          {:value nil, :stack [], :path [], :pages-stack [],
-          :current-page 0, :rendered '(), :indentation 0}))
+          :current-page 0, :rendered [], :indentation 0}))
 
 (defn fresh
   "Return an empty inspector."
@@ -161,11 +161,11 @@
     (if (empty? stack)
       (inspect-render inspector)
       (-> inspector
-          (update-in [:path] pop-item-from-path)
+          (update :path pop-item-from-path)
           (assoc :current-page (peek pages-stack))
-          (update-in [:pages-stack] pop)
+          (update :pages-stack pop)
           (inspect-render (last stack))
-          (update-in [:stack] pop)))))
+          (update :stack pop)))))
 
 (defn down
   "Drill down to an indexed object referred to by the previously
@@ -186,8 +186,9 @@
               new (get index idx)
               val (:value inspector)
               new-path (push-item-to-path index idx path current-page page-size)]
-          (-> (update-in inspector [:stack] conj val)
-              (update-in [:pages-stack] conj current-page)
+          (-> inspector
+              (update :stack conj val)
+              (update :pages-stack conj current-page)
               (assoc :path new-path)
               (inspect-render new)))))))
 
@@ -254,19 +255,6 @@
   {:pre [(integer? max-nested-depth)]}
   (inspect-render (assoc inspector :max-nested-depth max-nested-depth)))
 
-(defn eval-and-inspect
-  "Evaluate the given expression where `v` is bound to the currently inspected
-  value. Open the evaluation result in the inspector."
-  [inspector expr]
-  (let [{:keys [current-page value]} inspector
-        eval-fn `(fn [~'v] ~(read-string expr))
-        result ((eval eval-fn) value)]
-    (-> (update inspector :stack conj value)
-        (update :pages-stack conj current-page)
-        (assoc :current-page 0)
-        (update :path conj '<unknown>)
-        (inspect-render result))))
-
 (defn def-current-value
   "Define the currently inspected value as a var with the given name in the
   provided namespace."
@@ -291,13 +279,15 @@
 (def ^:private default-max-coll-size 5)
 
 (defn render-onto [inspector coll]
-  (update-in inspector [:rendered] concat coll))
+  (update inspector :rendered into coll))
 
 (defn render [inspector & values]
   (render-onto inspector values))
 
 (defn render-ln [inspector & values]
-  (render-onto inspector (concat values '((:newline)))))
+  (-> inspector
+      (render-onto values)
+      (render '(:newline))))
 
 (defn- indent [inspector]
   (update inspector :indentation + 2))
@@ -327,9 +317,9 @@
         inspected-value (print/print-str value)
         expr (list :value inspected-value counter)]
     (-> inspector
-        (update-in [:index] conj value)
-        (update-in [:counter] inc)
-        (update-in [:rendered] concat (list expr)))))
+        (update :index conj value)
+        (update :counter inc)
+        (update :rendered conj expr))))
 
 (defn render-labeled-value [inspector label value]
   (-> inspector
@@ -708,7 +698,8 @@
          (render-reference)
          (inspect value)
          (render-page-info value)
-         (render-path)))))
+         (render-path)
+         (update :rendered seq)))))
 
 ;; Get a human readable printout of rendered sequence
 (defmulti inspect-print-component first)

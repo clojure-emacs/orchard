@@ -5,6 +5,8 @@
   - honor `*print-level*` and `*print-length*` variables
   - provide sufficiently good performance
   - limit the maximum print size and stop printing after it is reached"
+  {:author "Oleksandr Yakushev"
+   :added "0.24"}
   (:refer-clojure :exclude [print print-str])
   (:import
    (clojure.core Eduction)
