@@ -146,16 +146,13 @@
 ;; Drop this in favor of clojure.core/requiring-resolve at some point?
 
 (defn require-and-resolve
-  "Try to require the namespace and get a var for the symbol, return the
-  var if successful, nil if not."
+  "Try to require the namespace and get a var for the symbol, return the var's
+  value if successful, nil if not."
   {:added "0.5"}
   [sym]
-  (when-let [ns (some-> sym namespace symbol)]
-    (when-not (find-ns ns)
-      (try
-        (require ns)
-        (catch Exception _ nil)))
-    (some-> sym find-var var-get)))
+  (try (require (-> sym namespace symbol))
+       (var-get (resolve sym))
+       (catch Exception _)))
 
 (defn call-when-resolved
   "Return a fn that calls the fn resolved through `var-sym` with the
@@ -163,12 +160,10 @@
   once. If requiring failed or the `var-sym` can't be resolved the
   function always returns nil."
   [var-sym]
-  (try (require (symbol (namespace var-sym)))
-       (catch Exception _))
-  (let [resolved-var (resolve var-sym)]
+  (let [resolved-fn (require-and-resolve var-sym)]
     (fn [& args]
-      (when resolved-var
-        (apply resolved-var args)))))
+      (when resolved-fn
+        (apply resolved-fn args)))))
 
 (defn lazy-seq?
   "Return true if `x` is a lazy seq, otherwise false."
