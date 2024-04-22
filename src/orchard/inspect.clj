@@ -23,45 +23,15 @@
 (declare inspect-render)
 
 (defn push-item-to-path
-  "Takes the current inspector index, the `idx` of the value in it to be navigated
-  to, and the path so far, and returns the updated path to the selected value."
-  [index idx path current-page page-size]
-  (if (>= idx (count index))
-    (conj path '<unknown>)
-    (if (= idx 0)
-      (conj path 'class)
-      (let [klass (first index)
-            klass (if (class? klass)
-                    klass
-                    (-> klass str Class/forName))]
-        (cond
-          ;; If value's class is a map, going down means jumping into either key
-          ;; or value.
-          (.isAssignableFrom Map klass)
-          (if (even? idx)
-            ;; Even index means jumping into the value by the key.
-            (let [key (nth index (dec idx))]
-              (conj path (if (keyword? key)
-                           key
-                           (list 'get key))))
-            ;; Odd index means finding the map entry and taking its key
-            (conj path (list 'find (nth index idx)) 'key))
-
-          ;; For sequential things going down means getting the nth value.
-          (.isAssignableFrom List klass)
-          (let [coll-idx (+ (* (or current-page 0) page-size)
-                            (dec idx))]
-            (conj path (list 'nth coll-idx)))
-
-          :else (conj path '<unknown>))))))
-
-(defn pop-item-from-path
-  "Takes the current inspector path, and returns an updated path one level up."
-  [path]
-  (let [last-node (peek path)]
-    (if (= last-node 'key)
-      (pop (pop path)) ; pop twice to remove <(find :some-key) key>
-      (pop path))))
+  "Takes `path` and the role and key of the value to be navigated to, and returns
+  the updated path to the selected value."
+  [path role key]
+  (case role
+    :seq-item (conj path (list 'nth key))
+    :map-value (conj path (if (keyword? key)
+                            key
+                            (list 'get key)))
+    (conj path '<unknown>)))
 
 (def ^:private default-inspector-config
   "Default configuration values for the inspector."
@@ -157,13 +127,13 @@
   [inspector]
   (let [{:keys [stack pages-stack]} inspector]
     (if (empty? stack)
-      (inspect-render inspector)
+      inspector
       (-> inspector
-          (update :path pop-item-from-path)
+          (update :path pop)
           (assoc :current-page (peek pages-stack))
           (update :pages-stack pop)
-          (inspect-render (last stack))
-          (update :stack pop)))))
+          (update :stack pop)
+          (inspect-render (peek stack))))))
 
 (defn down
   "Drill down to an indexed object referred to by the previously
@@ -178,15 +148,15 @@
       (> idx page-items)
       (recur (next-page inspector) (- idx page-items))
       :else
-      (let [{:keys [index path current-page page-size]} inspector
-            new (get index idx)
-            val (:value inspector)
-            new-path (push-item-to-path index idx path current-page page-size)]
+      (let [{:keys [value index current-page]} inspector
+            index-record (get index idx)
+            new-val (:value index-record)]
         (-> inspector
-            (update :stack conj val)
+            (update :stack conj value)
             (update :pages-stack conj current-page)
-            (assoc :path new-path)
-            (inspect-render new))))))
+            (update :path push-item-to-path
+                    (:role index-record) (:key index-record))
+            (inspect-render new-val))))))
 
 (defn- sibling* [inspector offset pred]
   (let [path (:path inspector)
@@ -205,15 +175,15 @@
         inspector)))
 
 (defn previous-sibling
-  "Decrement the index of the last 'nth in the path by 1,
-  if applicable, and re-render the updated value."
+  "Attempt to inspect the item previous to the currenlty inspected value in the
+  parent sequential collection."
   [inspector]
   (sibling* inspector 0 (fn [idx _inspector]
                           (pos? idx))))
 
 (defn next-sibling
-  "Increment the index of the last 'nth in the path by 1,
-  if applicable, and re-render the updated value."
+  "Attempt to inspect the item next to the currenlty inspected value in the parent
+  sequential collection."
   [inspector]
   (sibling* inspector 2 (fn [idx inspector]
                           (<= idx (total-items inspector)))))
@@ -267,7 +237,7 @@
 (defn tap-indexed
   "Tap the value found at `idx`, without navigating to it."
   [{:keys [index] :as inspector} idx]
-  (tap> (get index idx))
+  (tap> (:value (get index idx)))
   (inspect-render inspector))
 
 (defn render-onto [inspector coll]
@@ -304,14 +274,21 @@
       (render (format "%s--- %s:" (or (padding inspector) "") (name section)))
       (render-ln)))
 
-(defn render-value [inspector value]
-  (let [{:keys [counter]} inspector
-        inspected-value (print/print-str value)
-        expr (list :value inspected-value counter)]
-    (-> inspector
-        (update :index conj value)
-        (update :counter inc)
-        (update :rendered conj expr))))
+(defn render-value
+  "Render the given `value` and add it to the index. `value-role` can be provided
+  to mark in the index that the value comes from a collection, and `value-key`
+  stands for the key by which value can be retrieved from its collection."
+  ([inspector value] (render-value inspector value :default nil))
+  ([inspector value value-role value-key]
+   (let [{:keys [counter]} inspector
+         inspected-value (print/print-str value)
+         expr (list :value inspected-value counter)]
+     (-> inspector
+         (update :index conj {:value value
+                              :role value-role
+                              :key value-key})
+         (update :counter inc)
+         (update :rendered conj expr)))))
 
 (defn render-labeled-value [inspector label value]
   (-> inspector
@@ -322,34 +299,41 @@
 (defn- render-class-name [inspector obj]
   (render-labeled-value inspector "Class" (class obj)))
 
-(defn render-map-values [inspector mappable]
+(defn- render-map-values
+  "Render associative key-value pairs. If `mark-values?` is true, attach the keys
+  to the values in the index."
+  [inspector mappable mark-values?]
   (reduce (fn [ins [key val]]
-            (-> ins
-                (render-indent)
-                (render-value key)
-                (render " = ")
-                (render-value val)
-                (render-ln)))
+            (as-> ins ins
+              (render-indent ins)
+              (render-value ins key)
+              (render ins " = ")
+              (if mark-values?
+                (render-value ins val :map-value key)
+                (render-value ins val))
+              (render-ln ins)))
           inspector
           mappable))
 
-(defn render-indexed-values
-  "Render an indexed collection of values. Renders all values in `chunk`, so
-  `chunk` must be finite."
-  ([inspector chunk] (render-indexed-values inspector chunk 0))
-  ([inspector chunk idx-starts-from]
-   (let [n (count chunk)
-         last-idx (+ idx-starts-from n -1)
-         last-idx-len (count (str last-idx))
-         idx-fmt (str "%" last-idx-len "s")]
-     (loop [ins inspector, chunk (seq chunk), idx idx-starts-from]
-       (if chunk
-         (recur (-> ins
-                    (render-indent (format idx-fmt idx) ". ")
-                    (render-value (first chunk))
-                    (render-ln))
-                (next chunk) (inc idx))
-         ins)))))
+(defn- render-indexed-chunk
+  "Render an indexed chunk of values. Renders all values in `chunk`, so `chunk`
+  must be finite. If `mark-values?` is true, attach the indices to the values in
+  the index."
+  [inspector chunk idx-starts-from mark-values?]
+  (let [n (count chunk)
+        last-idx (+ idx-starts-from n -1)
+        last-idx-len (count (str last-idx))
+        idx-fmt (str "%" last-idx-len "s")]
+    (loop [ins inspector, chunk (seq chunk), idx idx-starts-from]
+      (if chunk
+        (recur (as-> ins ins
+                 (render-indent ins (format idx-fmt idx) ". ")
+                 (if mark-values?
+                   (render-value ins (first chunk) :seq-item idx)
+                   (render-value ins (first chunk)))
+                 (render-ln ins))
+               (next chunk) (inc idx))
+        ins))))
 
 (declare known-types)
 
@@ -373,8 +357,10 @@
     (->> obj (drop start-idx) (take page-size))))
 
 (defn render-collection-paged
-  "Render a single page of either an indexed or associative collection."
-  [inspector obj]
+  "Render a single page of either an indexed or associative collection.
+  `primary-object?` set to true means we are rendering the direct contents of
+  the inspected object."
+  [inspector obj primary-object?]
   (let [{:keys [page-size]} inspector
         last-page (last-page inspector obj)
         current-page (current-page inspector obj)
@@ -388,8 +374,11 @@
         ins)
 
       (if (or (map? obj) (instance? Map obj))
-        (render-map-values ins chunk-to-display)
-        (render-indexed-values ins chunk-to-display start-idx))
+        (render-map-values ins chunk-to-display primary-object?)
+        (render-indexed-chunk ins chunk-to-display start-idx
+                              (and primary-object?
+                                   ;; Set items are not indexed - don't mark.
+                                   (instance? List obj))))
 
       (if (< current-page last-page)
         (-> (render-indent ins "...")
@@ -403,7 +392,7 @@
     (-> inspector
         (render-section-header "Meta Information")
         (indent)
-        (render-map-values (meta obj))
+        (render-map-values (meta obj) false)
         (unindent))
     inspector))
 
@@ -436,9 +425,9 @@
 (defn- render-datafy-content [inspector obj]
   (let [contents (nav-datafy obj true)]
     (cond (map? contents)
-          (render-collection-paged inspector contents)
+          (render-collection-paged inspector contents false)
           (sequential? contents)
-          (render-collection-paged inspector contents)
+          (render-collection-paged inspector contents false)
           :else (-> (indent inspector)
                     (inspect contents)
                     (unindent)))))
@@ -484,7 +473,7 @@
       (render-meta-information obj)
       (render-section-header "Contents")
       (indent)
-      (render-collection-paged obj)
+      (render-collection-paged obj true)
       (unindent)
       (render-datafy obj)))
 
@@ -494,7 +483,7 @@
       (render-labeled-value "Component Type" (.getComponentType (class obj)))
       (render-section-header "Contents")
       (indent)
-      (render-collection-paged obj)
+      (render-collection-paged obj true)
       (unindent)
       (render-datafy obj)))
 
@@ -563,7 +552,8 @@
                                                         ;; This is a special value that can be detected client-side:
                                                         (symbol "<non-inspectable value>")
                                                         v)])))
-                                            (into (sorted-map))))
+                                            (into (sorted-map)))
+                                       false)
                     (unindent))
                 inspector))]
       (cond-> inspector
@@ -618,7 +608,7 @@
       inspector
       (-> (render-section-header inspector "Refer from")
           (indent)
-          (render-map-values refers)
+          (render-map-values refers false)
           (unindent)))))
 
 (defn- render-ns-imports [inspector obj]
