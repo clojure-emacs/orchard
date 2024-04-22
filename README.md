@@ -73,7 +73,7 @@ Documentation for the master branch as well as tagged releases are available
 
 ## Usage
 
-**orchard requires Clojure 1.8+ and Java 8+.**
+**orchard requires Clojure 1.10+ and Java 8+.**
 
 Just add `orchard` as a dependency and start hacking.
 

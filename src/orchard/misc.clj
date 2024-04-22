@@ -160,16 +160,6 @@
         (catch Exception _ nil)))
     (some-> sym find-var var-get)))
 
-(def datafy?
-  "True if Datafy and Nav (added in Clojure 1.10) are supported,
-  otherwise false."
-  (some? (resolve 'clojure.core.protocols/datafy)))
-
-(def tap?
-  "True if tap> (added in Clojure 1.10) is supported,
-  otherwise false."
-  (some? (resolve 'clojure.core/tap>)))
-
 (defn call-when-resolved
   "Return a fn that calls the fn resolved through `var-sym` with the
   arguments passed to it. `var-sym` will be required and resolved

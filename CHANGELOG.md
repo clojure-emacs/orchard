@@ -4,6 +4,7 @@
 
 ## Changes
 
+* [#245](https://github.com/clojure-emacs/orchard/issues/245): Drop support for Clojure 1.9.
 * [#241](https://github.com/clojure-emacs/orchard/issues/241): Extract inspector value printing into a separate namespace `orchard.print`.
 * [#244](https://github.com/clojure-emacs/orchard/issues/244): Make `orchard.inspect/start` the single entrypoint to the inspector, deprecate `orchard.inspect/fresh` and `orchard.inspect/clear`.
 

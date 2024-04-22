@@ -195,8 +195,8 @@ different kinds of objects.
 *** Class
 
 Classes are rendered with their name, the implemented interfaces, the
-available constructors, their fields and methods. In Clojure versions
->= 1.10 an optional =Datafy= section is added.
+available constructors, their fields and methods, and their datafied
+representation.
 
 #+begin_src clojure :exports both :results output :wrap example
   (inspect/inspect-print Boolean)
@@ -260,8 +260,6 @@ using =nav= and calling =datafy= again on them.
 Since the [[https://github.com/clojure/clojure/blob/master/src/clj/clojure/core/protocols.clj#L182][Datafiable]] protocol is implemented for every object, this
 section will only be rendered if the datafy-ed version of the object
 is different than the original object.
-
-Minimum requirement for this feature is a Clojure version >= 1.10.
 
 #+begin_src clojure :exports both :results output :wrap example
   (-> {:name "John Doe"}
@@ -429,8 +427,6 @@ Objects implementing the [[https://github.com/clojure/clojure/blob/master/src/cl
 optional =Datafy= section. The ='clojure.core.protocols/nav= function
 of the object will be used for navigation, instead of the default
 implementation declared on object.
-
-Minimum requirement for this feature is a Clojure version >= 1.10.
 
 #+begin_src clojure :exports both :results output :wrap example
   (-> {:name "John Doe"}

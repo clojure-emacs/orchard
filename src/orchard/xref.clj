@@ -8,15 +8,6 @@
    [clojure.string :as string]
    [orchard.query :as q]))
 
-(defn- var->symbol
-  ;; TODO: use `symbol` once we start targeting Clojure >= 1.10 after CIDER 1.8 is released.
-  "Normally one could just use `(symbol var-ref)`,
-  but that doesn't work in older Clojures."
-  [var-ref]
-  (let [{:keys [ns name]} (meta var-ref)]
-    (symbol (str (ns-name ns))
-            (str name))))
-
 (defn- var->fn [var-ref]
   (let [{:keys [test]} (meta var-ref)]
     (if (fn? test)
@@ -99,7 +90,7 @@
             ;; group duplicates. This is important
             ;; because there can be two seemingly equal #'foo.bar/baz var objects in the result.
             ;; That can happen as one re-evaluates code and the old var hasn't been GC'd yet.
-            (keys (group-by var->symbol result))))))
+            (keys (group-by symbol result))))))
 
 (defn fn-transitive-deps
   "Returns a set with all the functions invoked inside `v` or inside those functions.
