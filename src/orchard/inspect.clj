@@ -33,9 +33,6 @@
 
 (declare inspect-render)
 
-(defn- reset-index [inspector]
-  (merge inspector {:counter 0 :index []}))
-
 (defn push-item-to-path
   "Takes the current inspector index, the `idx` of the value in it to be navigated
   to, and the path so far, and returns the updated path to the selected value."
@@ -77,23 +74,35 @@
       (pop (pop path)) ; pop twice to remove <(find :some-key) key>
       (pop path))))
 
-(defn clear
-  "Clear an inspector's state."
-  [inspector]
-  (merge (reset-index inspector)
-         {:value nil, :stack [], :path [], :pages-stack [],
-          :current-page 0, :rendered [], :indentation 0}))
+(def ^:private default-inspector-config
+  "Default configuration values for the inspector."
+  {:page-size        32    ; = Clojure's default chunked sequences chunk size.
+   :max-atom-length  150
+   :max-value-length 50000 ; Only to avoid printing graphs with loops.
+   :max-coll-size    5})
 
-(defn fresh
-  "Return an empty inspector."
-  []
-  (inspect-render (clear {:page-size 32})))
+(defn- reset-render-state [inspector]
+  (assoc inspector :counter 0, :index [], :indentation 0, :rendered []))
 
 (defn start
-  "Put a new value onto the inspector stack."
-  [inspector value]
-  (-> (clear inspector)
-      (inspect-render value)))
+  "Create a new inspector for the `value`. Optinally accepts a `config` map (which
+  can be an existing inspector with changed config)."
+  ([value] (start {} value))
+  ([config value]
+   (-> default-inspector-config
+       (merge (select-keys config (keys default-inspector-config)))
+       (assoc :stack [], :path [], :pages-stack [], :current-page 0)
+       (inspect-render value))))
+
+(defn ^:deprecated clear
+  "If necessary, use `(start inspector nil) instead.`"
+  [inspector]
+  (start inspector nil))
+
+(defn ^:deprecated fresh
+  "If necessary, use `(start nil)` instead."
+  []
+  (start nil))
 
 (defn- items-on-page
   "Number of individual top level items on a single page."
@@ -271,10 +280,6 @@
   [{:keys [index] :as inspector} idx]
   (maybe-tap> (get index idx))
   (inspect-render inspector))
-
-(def ^:private default-max-atom-length 150)
-(def ^:private default-max-value-length 50000)
-(def ^:private default-max-coll-size 5)
 
 (defn render-onto [inspector coll]
   (update inspector :rendered into coll))
@@ -681,23 +686,21 @@
       inspector)))
 
 (defn inspect-render
-  ([inspector] (inspect-render inspector (:value inspector)))
-  ([inspector value]
-   (binding [print/*max-atom-length* (or (:max-atom-length inspector)
-                                         default-max-atom-length)
-             print/*max-total-length* (or (:max-value-length inspector)
-                                          default-max-value-length)
-             *print-length* (or (:max-coll-size inspector)
-                                default-max-coll-size)
-             *print-level* (:max-nested-depth inspector)]
-     (-> (reset-index inspector)
-         (assoc :rendered [])
-         (assoc :value value)
+  ([{:keys [max-atom-length max-value-length max-coll-size max-nested-depth value]
+     :as inspector}]
+   (binding [print/*max-atom-length*  max-atom-length
+             print/*max-total-length* max-value-length
+             *print-length*           max-coll-size
+             *print-level*            max-nested-depth]
+     (-> inspector
+         (reset-render-state)
          (render-reference)
          (inspect value)
          (render-page-info value)
          (render-path)
-         (update :rendered seq)))))
+         (update :rendered seq))))
+  ([inspector value]
+   (inspect-render (assoc inspector :value value))))
 
 ;; Get a human readable printout of rendered sequence
 (defmulti inspect-print-component first)
@@ -714,5 +717,5 @@
 (defn inspect-print [x]
   (print
    (with-out-str
-     (doseq [component (:rendered (inspect-render (assoc (fresh) :display-fields true) x))]
+     (doseq [component (:rendered (start x))]
        (inspect-print-component component)))))

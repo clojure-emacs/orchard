@@ -149,7 +149,7 @@
 
 (defn inspect
   [value]
-  (inspect/start (inspect/fresh) value))
+  (inspect/start value))
 
 (defn render
   [inspector]
@@ -165,14 +165,14 @@
 (deftest pop-empty-test
   (testing "popping an empty inspector renders nil"
     (is (match? nil-result
-                (-> (inspect/fresh)
+                (-> (inspect nil)
                     inspect/up
                     render)))))
 
 (deftest pop-empty-idempotent-test
   (testing "popping an empty inspector is idempotent"
     (is (match? nil-result
-                (-> (inspect/fresh)
+                (-> (inspect nil)
                     inspect/up
                     inspect/up
                     render)))))
@@ -180,14 +180,14 @@
 (deftest push-empty-test
   (testing "pushing an empty inspector index renders nil"
     (is (match? nil-result
-                (-> (inspect/fresh)
+                (-> (inspect nil)
                     (inspect/down 1)
                     render)))))
 
 (deftest push-empty-idempotent-test
   (testing "pushing an empty inspector index is idempotent"
     (is (match? nil-result
-                (-> (inspect/fresh)
+                (-> (inspect nil)
                     (inspect/down 1)
                     (inspect/down 1)
                     render)))))
@@ -669,7 +669,7 @@
                       '(:newline)
                       "  " "3" ". " (list :value "3" number?)
                       '(:newline))
-                (render (inspect/start (inspect/fresh) [1 2 nil 3])))))
+                (render (inspect [1 2 nil 3])))))
 
   (testing "inspect :coll aligns index numbers so that values appear aligned"
     (is (match? (list "Class"
@@ -701,11 +701,10 @@
                       '(:newline)
                       "  " "10" ". " (list :value "10" number?)
                       '(:newline))
-                (render (inspect/start (inspect/fresh) (vec (range 11)))))))
+                (render (inspect (vec (range 11)))))))
 
   (testing "inspect :coll aligns index numbers correctly for page size > 100"
-    (let [rendered (-> (inspect/fresh)
-                       (inspect/start (vec (range 101)))
+    (let [rendered (-> (inspect (vec (range 101)))
                        (inspect/set-page-size 200)
                        render)
           head (take 11 rendered)
@@ -770,17 +769,15 @@
                   (:newline)
                   "  " "0" ". " (:value "[ 111111 2222 333 ... ]" 1)
                   (:newline))
-                (render (-> (inspect/fresh)
-                            (assoc :max-atom-length 20
-                                   :max-coll-size 3)
-                            (inspect/start [[111111 2222 333 44 5]])))))))
+                (-> (inspect/start {:max-atom-length 20
+                                    :max-coll-size 3}
+                                   [[111111 2222 333 44 5]])
+                    render)))))
 
 (deftest inspect-java-hashmap-test
   (testing "inspecting java.util.Map descendants prints a key-value coll"
     (let [^java.util.Map the-map {:a 1, :b 2, :c 3}
-          rendered (-> (inspect/fresh)
-                       (inspect/start (java.util.HashMap. the-map))
-                       render)]
+          rendered (render (inspect (java.util.HashMap. the-map)))]
       (is (match? (matchers/embeds '("Class"
                                      ": "
                                      (:value "java.util.HashMap" 0)
@@ -814,8 +811,7 @@
                   (:newline) "  " (:value "FORM_KW" 6) " = " (:value ":form" 7)
                   (:newline) "  " (:value "TAG_KW" 8) " = " (:value ":tag" 9)
                   (:newline))
-                (render (inspect/start (inspect/fresh)
-                                       (clojure.lang.TaggedLiteral/create 'foo ())))))))
+                (render (inspect (clojure.lang.TaggedLiteral/create 'foo ())))))))
 
 (deftest inspect-path
   (testing "basic paths"
@@ -854,7 +850,7 @@
   (testing "inspector keeps track of the path in the inspected structure"
     (let [t {:a (list 1 2 {:b {:c (vec (map (fn [x] {:foo (* x 10)}) (range 100)))}})
              :z 42}
-          inspector (-> (inspect/start (inspect/fresh) t)
+          inspector (-> (inspect t)
                         (inspect/down 1)
                         (inspect/up)
                         (inspect/down 2)
@@ -1215,8 +1211,7 @@
 
         ((misc/call-when-resolved 'clojure.core/add-tap) test-tap-handler)
 
-        (-> (inspect/fresh)
-            (inspect/start {:a {:b 1}})
+        (-> (inspect {:a {:b 1}})
             (inspect/tap-current-value)
             (inspect/down 2)
             (inspect/tap-current-value)
@@ -1248,8 +1243,7 @@
 
         ((misc/call-when-resolved 'clojure.core/add-tap) test-tap-handler)
 
-        (-> (inspect/fresh)
-            (inspect/start {:a {:b 1}})
+        (-> (inspect {:a {:b 1}})
             (inspect/tap-indexed 1)
             (inspect/tap-indexed 2)
             (inspect/down 2)
