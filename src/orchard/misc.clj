@@ -108,21 +108,18 @@
     (apply f (filter identity xs))))
 
 (defn parse-java-version
-  "Parse a Java version string according to JEP 223 and return the appropriate version."
+  "Parse a Java version string according to JEP 223 and return the appropriate
+  version."
   [java-ver]
-  (try
-    ;; the no-opt split is because a java version string can end with
-    ;; an optional string consisting of a hyphen followed by other characters
-    (let [[no-opt _] (string/split java-ver #"-")
-          [major minor _] (string/split no-opt #"\.")
-          major (Integer/parseInt major)]
-      (if (> major 1)
-        major
-        (Integer/parseInt (or minor "7"))))
-    (catch Exception _ 7)))
+  (try (let [[major minor _] (string/split java-ver #"\.")
+             major (Integer/parseInt major)]
+         (if (> major 1)
+           major
+           (Integer/parseInt minor)))
+       (catch Exception _ 8)))
 
 (def java-api-version
-  (parse-java-version (System/getProperty "java.version")))
+  (parse-java-version (System/getProperty "java.specification.version")))
 
 ;; TODO move back to analysis.cljs
 (defn add-ns-macros

@@ -516,20 +516,16 @@
              :class
              type-info)))
 
-(def javadoc-base-urls
-  "Copied from clojure.java.javadoc. These are the base urls for
-  javadocs from `clojure.java.javadoc/*core-java-api*`. It is here for
-  two reasons:
-  1. Add Java 13+ to this list
-  2. Backport newer data to older Clojure releases"
-  {8 "https://docs.oracle.com/javase/8/docs/api/"
-   9 "https://docs.oracle.com/javase/9/docs/api/"
-   10 "https://docs.oracle.com/javase/10/docs/api/"
-   11 "https://docs.oracle.com/en/java/javase/11/docs/api/"
-   12 "https://docs.oracle.com/en/java/javase/12/docs/api/"
-   13 "https://docs.oracle.com/en/java/javase/13/docs/api/"
-   14 "https://docs.oracle.com/en/java/javase/14/docs/api/"
-   15 "https://docs.oracle.com/en/java/javase/15/docs/api/"})
+(defn javadoc-base-url
+  "Re-implementation of `clojure.java.javadoc/*core-java-api*` because it doesn't
+  contain newer JDK versions, especially in older Clojure."
+  [jdk-version]
+  (cond (<= jdk-version 10)
+        (format "https://docs.oracle.com/javase/%s/docs/api/" jdk-version)
+        (<= 11 jdk-version 22)
+        (format "https://docs.oracle.com/en/java/javase/%s/docs/api/" jdk-version)
+        :else ;; For newer JDK version, default to latest LTS.
+        (recur 21)))
 
 (defn resolve-javadoc-path
   "Resolve a relative javadoc path to a URL and return as a map. Prefer javadoc
@@ -545,8 +541,7 @@
                   ;; Older Clojure versions don't have javadoc for newer JDKs.
                   ;; We just backport them regardless of Clojure version.
                   (zipmap ["java." "javax." "org.ietf.jgss." "org.omg." "org.w3c.dom." "org.xml.sax"]
-                          (repeat (or (javadoc-base-urls misc/java-api-version)
-                                      (javadoc-base-urls 11))))))
+                          (repeat (javadoc-base-url misc/java-api-version)))))
       path))
 
 (defn- initialize-cache!* []

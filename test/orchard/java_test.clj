@@ -355,7 +355,7 @@
       (testing "Unrecognized java version doesn't blank out the javadocs"
         (with-redefs [misc/java-api-version 12345
                       cache (LruMap. 100)]
-          (is (= "https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/String.html"
+          (is (= "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html"
                  (get-url ['java.lang.String]))))))))
 
 (deftest class-resolution-test
