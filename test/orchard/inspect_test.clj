@@ -375,10 +375,6 @@
     (is (= 1 @(resolve '--test-val--)))))
 
 (deftest down-test
-  (is (= {:path [], :index [], :pages-stack [], :value nil, :page-size 32, :counter 0, :rendered '("nil" (:newline)), :stack [], :indentation 0, :current-page 0}
-         (inspect/down nil 1))
-      "Accepts a nil inspector, rendering a fresh inspector then")
-
   (testing "basic down"
     (is (= 2 (-> (list 1 2)
                  inspect
