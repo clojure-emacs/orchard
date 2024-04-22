@@ -620,20 +620,27 @@
                   :value)))))
 
 (deftest path-test
-  (testing "inspector tracks the path in the data structure"
-    (is (= "(find 19) key" (-> long-map inspect (inspect/down 39) render last)))
-    (is (= "(get 19)" (-> long-map inspect (inspect/down 40) render last)))
-    (is (= "(get 19) class"  (-> long-map inspect (inspect/down 40) (inspect/down 0) render last))))
-  (testing "inspector tracks the path in the data structure beyond the first page"
-    (is (= "(find 33) key" (-> long-map inspect (inspect/down 67) render last)))
-    (is (= "(get 33)" (-> long-map inspect (inspect/down 68) render last)))
-    (is (= "(get 33) class"  (-> long-map inspect (inspect/down 68) (inspect/down 0) render last))))
+  (let [t {:a (list 1 2 {:b {:c (vec (map (fn [x] {:foo (* x 10)}) (range 100)))}})
+           :z 42}
+        inspector (-> (inspect t)
+                      (inspect/down 1)
+                      (inspect/up)
+                      (inspect/down 2)
+                      (inspect/down 2)
+                      (inspect/up)
+                      (inspect/down 3)
+                      (inspect/down 2)
+                      (inspect/down 2)
+                      inspect/next-page
+                      inspect/next-page
+                      (inspect/down 10))]
+    (is (= ":a (nth 2) :b :c (nth 73)" (-> inspector render last))))
   (testing "inspector tracks the path in the data structure beyond the first page with custom page size"
-    (is (= "(find 33) key" (-> long-map inspect (inspect/set-page-size 2) (inspect/down 67) render last)))
-    (is (= "(get 33)" (-> long-map inspect (inspect/set-page-size 2) (inspect/down 68) render last)))
-    (is (= "(get 33) class"  (-> long-map inspect (inspect/set-page-size 2) (inspect/down 68) (inspect/down 0) render last))))
+    (is (= "(get 33)" (-> long-map inspect (inspect/set-page-size 2) (inspect/down 68) render last))))
   (testing "doesn't show path if unknown navigation has happened"
-    (is (= '(:newline)  (-> long-map inspect (inspect/down 40) (inspect/down 0) (inspect/down 1) render last))))
+    (is (= '(:newline) (-> long-map inspect (inspect/down 39) render last)))
+    (is (= '(:newline) (-> long-map inspect (inspect/down 40) (inspect/down 0) render last)))
+    (is (= '(:newline) (-> long-map inspect (inspect/down 40) (inspect/down 0) (inspect/down 1) render last))))
   (testing "doesn't show the path in the top level"
     (is (= '(:newline) (-> [1 2 3] inspect render last)))))
 
@@ -836,7 +843,7 @@
                (inspect/next-page)
                (inspect/down 100)
                :path)))
-    (is (= '[(find :b) key]
+    (is (= '[<unknown>]
            (-> {:a 1 :b 2}
                inspect
                (inspect/set-page-size 1)
@@ -859,13 +866,13 @@
                         (inspect/down 2)
                         inspect/next-page
                         inspect/next-page
-                        (inspect/down 10)
-                        (inspect/down 1))]
-      (is (= '[:a (nth 2) :b :c (nth 73) (find :foo) key] (:path inspector)))
-      (is (= '[:a (nth 2) :b :c (nth 73) (find :foo) key class]
+                        (inspect/down 10))]
+      (is (= '[:a (nth 2) :b :c (nth 73)] (:path inspector)))
+      (is (= '[:a (nth 2) :b :c (nth 73) <unknown>]
              (:path (-> inspector (inspect/down 0)))))
-      (is (= '[:a (nth 2) :b :c (nth 73) (find :foo) key class <unknown>]
-             (:path (-> inspector (inspect/down 0) (inspect/down 1))))))))
+      (is (= '[:a (nth 2) :b :c]
+             (:path (-> inspector (inspect/down 0) (inspect/down 0)
+                        (inspect/up) (inspect/up) (inspect/up))))))))
 
 (deftest inspect-object-class-test
   (testing "inspecting the java.lang.Object class"
