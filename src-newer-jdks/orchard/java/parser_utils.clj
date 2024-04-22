@@ -1,7 +1,6 @@
 (ns orchard.java.parser-utils
   "The common parts to the `parser` and `parser-next` namespaces."
   {:added "0.15.0"}
-  (:refer-clojure :exclude [resolve])
   (:require
    [clojure.java.io :as io]
    [clojure.string :as string])
@@ -87,15 +86,6 @@
 (defn parse-variable-element [^VariableElement f env]
   {:name (-> f .getSimpleName str symbol)
    :type (-> f .asType (typesym env))})
-
-(defn- resolve
-  "Workaround for CLJ-1403, fixed in Clojure 1.10. Once 1.9 support is
-  discontinued, this function may simply be removed."
-  [sym]
-  (try
-    (clojure.core/resolve sym)
-    (catch Exception _
-      nil)))
 
 (defn module-name
   "Return the module name, or nil if modular"

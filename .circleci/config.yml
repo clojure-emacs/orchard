@@ -180,7 +180,7 @@ jobs:
 #
 # - run tests against the target matrix
 #   - Java 8, 11, 17, 21, 22
-#   - Clojure 1.9, 1.10, 1.11, master
+#   - Clojure 1.10, 1.11, master
 # - linter, eastwood and cljfmt
 
 workflows:
@@ -192,8 +192,7 @@ workflows:
             alias: "test_code_jdk8"
             parameters:
               jdk_version: [openjdk8]
-              # Clojure 1.9 is tested only against JDK8.
-              clojure_version: ["1.9", "1.10", "1.11", "master"]
+              clojure_version: ["1.10", "1.11", "master"]
               test_profiles: ["-user,-dev,+test,-provided", "-user,-dev,+test,+provided"]
               # It doesn't make sense to exercise the newer Orchard Java parsers against JDK8
               # (given that JDK8 is explicitly excluded by those parsers)

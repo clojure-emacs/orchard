@@ -9,24 +9,13 @@
 
   Pretty wild, right?"
   (:require
+   [clojure.core.protocols :refer [datafy nav]]
    [clojure.string :as string]
-   [orchard.misc :as misc]
    [orchard.print :as print])
   (:import
    (java.lang.reflect Constructor Field Method Modifier)
    (java.util List Map)))
 
-;; Datafy Nav and tap> are only available since Clojure 1.10
-(require 'clojure.core.protocols)
-
-(def ^:private datafy
-  (misc/call-when-resolved 'clojure.core.protocols/datafy))
-
-(def ^:private nav
-  (misc/call-when-resolved 'clojure.core.protocols/nav))
-
-(def ^:private maybe-tap>
-  (misc/call-when-resolved 'clojure.core/tap>))
 ;;
 ;; Navigating Inspector State
 ;;
@@ -272,13 +261,13 @@
 (defn tap-current-value
   "Tap the currently inspected value."
   [inspector]
-  (maybe-tap> (:value inspector))
+  (tap> (:value inspector))
   (inspect-render inspector))
 
 (defn tap-indexed
   "Tap the value found at `idx`, without navigating to it."
   [{:keys [index] :as inspector} idx]
-  (maybe-tap> (get index idx))
+  (tap> (get index idx))
   (inspect-render inspector))
 
 (defn render-onto [inspector coll]
@@ -435,9 +424,7 @@
           (map datafy data))))
 
 (defn- render-datafy? [inspector obj]
-  (cond (not misc/datafy?)
-        false
-        (map? obj)
+  (cond (map? obj)
         (not= obj (nav-datafy obj false))
         (or (sequential? obj) (set? obj))
         (not= (chunk-to-display inspector obj)

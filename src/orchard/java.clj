@@ -542,9 +542,8 @@
                 (when (.startsWith classname prefix)
                   (str url path))))
             (into @javadoc/*remote-javadocs*
-                  ;; clojure 1.8 has no javadoc for anything beyond java
-                  ;; 8. clojure 1.10.1 doesn't have 13. We just backport them
-                  ;; regardless of clojure version
+                  ;; Older Clojure versions don't have javadoc for newer JDKs.
+                  ;; We just backport them regardless of Clojure version.
                   (zipmap ["java." "javax." "org.ietf.jgss." "org.omg." "org.w3c.dom." "org.xml.sax"]
                           (repeat (or (javadoc-base-urls misc/java-api-version)
                                       (javadoc-base-urls 11))))))

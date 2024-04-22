@@ -11,7 +11,7 @@
    [matcher-combinators.matchers :as matchers]
    [orchard.inspect :as inspect]
    [orchard.meta :as m]
-   [orchard.misc :refer [datafy? java-api-version tap?]]
+   [orchard.misc :refer [java-api-version]]
    [orchard.misc :as misc])
   (:import
    (java.io File)
@@ -208,21 +208,20 @@
                           '(:newline))
                     (header rendered))))
       (testing "renders the meta information section"
-        (is (match? (matchers/embeds (cond-> (list "--- Meta Information:"
-                                                   '(:newline)
-                                                   "  " (list :value ":ns" number?) " = " (list :value "orchard.inspect-test" number?)
-                                                   '(:newline)
-                                                   "  " (list :value ":name" number?) " = " (list :value "any-var" number?)
-                                                   '(:newline))
-                                       datafy? (concat ['(:newline)])))
+        (is (match? (matchers/embeds (list "--- Meta Information:"
+                                           '(:newline)
+                                           "  " (list :value ":ns" number?) " = " (list :value "orchard.inspect-test" number?)
+                                           '(:newline)
+                                           "  " (list :value ":name" number?) " = " (list :value "any-var" number?)
+                                           '(:newline)
+                                           '(:newline)))
                     (section "Meta Information" rendered))))
-      (when datafy?
-        (testing "renders the datafy section"
-          (is (match? (list "--- Datafy:"
-                            '(:newline)
-                            "  " "0" ". " (list :value "42" number?)
-                            '(:newline))
-                      (datafy-section rendered))))))))
+      (testing "renders the datafy section"
+        (is (match? (list "--- Datafy:"
+                          '(:newline)
+                          "  " "0" ". " (list :value "42" number?)
+                          '(:newline))
+                    (datafy-section rendered)))))))
 
 (deftest inspect-expr-test
   (testing "rendering an expr"
@@ -740,18 +739,17 @@
                       (:newline)
                       (:newline))
                     (section "Contents" rendered))))
-      (when datafy?
-        (testing "renders the datafy section"
-          (is (match? '("--- Datafy:"
-                        (:newline)
-                        "  " "0" ". " (:value "{ :class \"PersistentHashMap\", :x 0 }" 3)
-                        (:newline)
-                        "  " "1" ". " (:value "{ :class \"PersistentHashMap\", :x 1 }" 4)
-                        (:newline)
-                        "  " "..."
-                        (:newline)
-                        (:newline))
-                      (datafy-section rendered)))))
+      (testing "renders the datafy section"
+        (is (match? '("--- Datafy:"
+                      (:newline)
+                      "  " "0" ". " (:value "{ :class \"PersistentHashMap\", :x 0 }" 3)
+                      (:newline)
+                      "  " "1" ". " (:value "{ :class \"PersistentHashMap\", :x 1 }" 4)
+                      (:newline)
+                      "  " "..."
+                      (:newline)
+                      (:newline))
+                    (datafy-section rendered))))
       (testing "renders the page info section"
         (is (match? '("--- Page Info:"
                       (:newline)
@@ -898,26 +896,25 @@
                              "public final void java.lang.Object.wait(long,int) throws java.lang.InterruptedException"]]
             (is (match? (matchers/embeds (list "  " (list :value assertion pos?)))
                         methods)))))
-      (when datafy?
-        (testing "renders the datafy section"
-          (is (match? (list "--- Datafy:"
-                            '(:newline)
-                            "  " (list :value ":flags" pos?) " = " (list :value "#{ :public }" pos?)
-                            '(:newline)
-                            "  " (list :value ":members" pos?) " = "
-                            (list :value (str "{ clone [ { :name clone, :return-type java.lang.Object, :declaring-class java.lang.Object, "
-                                              ":parameter-types [], :exception-types [ java.lang.CloneNotSupportedException ], ... } ], equals "
-                                              "[ { :name equals, :return-type boolean, :declaring-class java.lang.Object, :parameter-types "
-                                              "[ java.lang.Object ], :exception-types [], ... } ], finalize [ { :name finalize, :return-type void, "
-                                              ":declaring-class java.lang.Object, :parameter-types [], :exception-types [ java.lang.Throwable ], "
-                                              "... } ], getClass [ { :name getClass, :return-type java.lang.Class, :declaring-class java.lang.Object, "
-                                              ":parameter-types [], :exception-types [], ... } ], hashCode [ { :name hashCode, :return-type int, "
-                                              ":declaring-class java.lang.Object, :parameter-types [], :exception-types [], ... } ], ... }")
-                                  pos?)
-                            '(:newline)
-                            "  " (list :value ":name" pos?) " = " (list :value "java.lang.Object" pos?)
-                            '(:newline))
-                      (datafy-section rendered)))))))
+      (testing "renders the datafy section"
+        (is (match? (list "--- Datafy:"
+                          '(:newline)
+                          "  " (list :value ":flags" pos?) " = " (list :value "#{ :public }" pos?)
+                          '(:newline)
+                          "  " (list :value ":members" pos?) " = "
+                          (list :value (str "{ clone [ { :name clone, :return-type java.lang.Object, :declaring-class java.lang.Object, "
+                                            ":parameter-types [], :exception-types [ java.lang.CloneNotSupportedException ], ... } ], equals "
+                                            "[ { :name equals, :return-type boolean, :declaring-class java.lang.Object, :parameter-types "
+                                            "[ java.lang.Object ], :exception-types [], ... } ], finalize [ { :name finalize, :return-type void, "
+                                            ":declaring-class java.lang.Object, :parameter-types [], :exception-types [ java.lang.Throwable ], "
+                                            "... } ], getClass [ { :name getClass, :return-type java.lang.Class, :declaring-class java.lang.Object, "
+                                            ":parameter-types [], :exception-types [], ... } ], hashCode [ { :name hashCode, :return-type int, "
+                                            ":declaring-class java.lang.Object, :parameter-types [], :exception-types [], ... } ], ... }")
+                                pos?)
+                          '(:newline)
+                          "  " (list :value ":name" pos?) " = " (list :value "java.lang.Object" pos?)
+                          '(:newline))
+                    (datafy-section rendered))))))
 
   (testing "inspecting the java.lang.Class class"
     (let [rendered (-> Class inspect render)]
@@ -938,24 +935,23 @@
                       (:newline))
                     (header rendered))))
       (testing "renders the contains section"
-        (is (match? (cond-> '("--- Contains:"
-                              (:newline)
-                              "  " "Class" ": " (:value "clojure.lang.PersistentArrayMap" 1)
-                              (:newline)
-                              (:newline)
-                              "  --- Contents:"
-                              (:newline)
-                              "    " (:value ":a" 2) " = " (:value "1" 3)
-                              (:newline))
-                      datafy? (concat ['(:newline)]))
+        (is (match? '("--- Contains:"
+                      (:newline)
+                      "  " "Class" ": " (:value "clojure.lang.PersistentArrayMap" 1)
+                      (:newline)
+                      (:newline)
+                      "  --- Contents:"
+                      (:newline)
+                      "    " (:value ":a" 2) " = " (:value "1" 3)
+                      (:newline)
+                      (:newline))
                     (section "Contains" rendered))))
-      (when datafy?
-        (testing "renders the datafy section"
-          (is (match? '("--- Datafy:"
-                        (:newline)
-                        "  " "0" ". " (:value "{ :a 1 }" 4)
-                        (:newline))
-                      (datafy-section rendered))))))))
+      (testing "renders the datafy section"
+        (is (match? '("--- Datafy:"
+                      (:newline)
+                      "  " "0" ". " (:value "{ :a 1 }" 4)
+                      (:newline))
+                    (datafy-section rendered)))))))
 
 (deftest inspect-atom-infinite-seq-test
   (testing "inspecting an atom holding an infinite seq"
@@ -968,30 +964,29 @@
                       (:newline))
                     (header rendered))))
       (testing "renders the contains section"
-        (is (match? (cond-> '("--- Contains:"
-                              (:newline)
-                              "  " "Class" ": " (:value "clojure.lang.Repeat" 1)
-                              (:newline)
-                              (:newline)
-                              "  --- Contents:"
-                              (:newline)
-                              "    " "0" ". " (:value "1" 2)
-                              (:newline)
-                              "    " "1" ". " (:value "1" 3)
-                              (:newline)
-                              "    " "2" ". " (:value "1" 4)
-                              (:newline)
-                              "    " "..."
-                              (:newline))
-                      datafy? (concat ['(:newline)]))
+        (is (match? '("--- Contains:"
+                      (:newline)
+                      "  " "Class" ": " (:value "clojure.lang.Repeat" 1)
+                      (:newline)
+                      (:newline)
+                      "  --- Contents:"
+                      (:newline)
+                      "    " "0" ". " (:value "1" 2)
+                      (:newline)
+                      "    " "1" ". " (:value "1" 3)
+                      (:newline)
+                      "    " "2" ". " (:value "1" 4)
+                      (:newline)
+                      "    " "..."
+                      (:newline)
+                      (:newline))
                     (section "Contains" rendered))))
-      (when datafy?
-        (testing "renders the datafy section"
-          (is (match? '("--- Datafy:"
-                        (:newline)
-                        "  " "0" ". " (:value "( 1 1 1 1 1 ... )" 5)
-                        (:newline))
-                      (datafy-section rendered))))))))
+      (testing "renders the datafy section"
+        (is (match? '("--- Datafy:"
+                      (:newline)
+                      "  " "0" ". " (:value "( 1 1 1 1 1 ... )" 5)
+                      (:newline))
+                    (datafy-section rendered)))))))
 
 (deftest inspect-clojure-string-namespace-test
   (testing "inspecting the clojure.string namespace"
@@ -1031,36 +1026,35 @@
                       (:newline))
                     (section "Imports" result))))
       (testing "renders the interns section"
-        (is (match? (cond-> `("--- Interns:"
-                              (:newline)
-                              "  " (:value ~(str "{ ends-with? #'clojure.string/ends-with?, "
-                                                 "replace-first-char #'clojure.string/replace-first-char, "
-                                                 "capitalize #'clojure.string/capitalize, "
-                                                 "reverse #'clojure.string/reverse, join #'clojure.string/join, ... }") 5)
-                              (:newline))
-                      datafy? (concat ['(:newline)]))
+        (is (match? `("--- Interns:"
+                      (:newline)
+                      "  " (:value ~(str "{ ends-with? #'clojure.string/ends-with?, "
+                                         "replace-first-char #'clojure.string/replace-first-char, "
+                                         "capitalize #'clojure.string/capitalize, "
+                                         "reverse #'clojure.string/reverse, join #'clojure.string/join, ... }") 5)
+                      (:newline)
+                      (:newline))
                     (section "Interns" result))))
-      (when datafy?
-        (testing "renders the datafy from section"
-          (is (match? `("--- Datafy:"
-                        (:newline)
-                        "  " (:value ":name" 6) " = " (:value "clojure.string" 7)
-                        (:newline)
-                        "  " (:value ":publics" 8) " = "
-                        (:value ~(str "{ blank? #'clojure.string/blank?, capitalize "
-                                      "#'clojure.string/capitalize, ends-with? #'clojure.string/ends-with?, "
-                                      "escape #'clojure.string/escape, includes? #'clojure.string/includes?, ... }") 9)
-                        (:newline)
-                        "  " (:value ":imports" 10) " = "
-                        (:value ~(str "{ AbstractMethodError java.lang.AbstractMethodError, Appendable java.lang.Appendable, "
-                                      "ArithmeticException java.lang.ArithmeticException, ArrayIndexOutOfBoundsException "
-                                      "java.lang.ArrayIndexOutOfBoundsException, ArrayStoreException java.lang.ArrayStoreException, ... }") 11)
-                        (:newline)
-                        "  " (:value ":interns" 12) " = "
-                        (:value ~(str "{ blank? #'clojure.string/blank?, capitalize #'clojure.string/capitalize, ends-with? #'clojure.string/ends-with?, "
-                                      "escape #'clojure.string/escape, includes? #'clojure.string/includes?, ... }") 13)
-                        (:newline))
-                      (datafy-section result))))))))
+      (testing "renders the datafy from section"
+        (is (match? `("--- Datafy:"
+                      (:newline)
+                      "  " (:value ":name" 6) " = " (:value "clojure.string" 7)
+                      (:newline)
+                      "  " (:value ":publics" 8) " = "
+                      (:value ~(str "{ blank? #'clojure.string/blank?, capitalize "
+                                    "#'clojure.string/capitalize, ends-with? #'clojure.string/ends-with?, "
+                                    "escape #'clojure.string/escape, includes? #'clojure.string/includes?, ... }") 9)
+                      (:newline)
+                      "  " (:value ":imports" 10) " = "
+                      (:value ~(str "{ AbstractMethodError java.lang.AbstractMethodError, Appendable java.lang.Appendable, "
+                                    "ArithmeticException java.lang.ArithmeticException, ArrayIndexOutOfBoundsException "
+                                    "java.lang.ArrayIndexOutOfBoundsException, ArrayStoreException java.lang.ArrayStoreException, ... }") 11)
+                      (:newline)
+                      "  " (:value ":interns" 12) " = "
+                      (:value ~(str "{ blank? #'clojure.string/blank?, capitalize #'clojure.string/capitalize, ends-with? #'clojure.string/ends-with?, "
+                                    "escape #'clojure.string/escape, includes? #'clojure.string/includes?, ... }") 13)
+                      (:newline))
+                    (datafy-section result)))))))
 
 (deftest inspect-datafiable-metadata-extension-test
   (testing "inspecting a map extended with the Datafiable protocol"
@@ -1082,15 +1076,14 @@
                       (:newline)
                       (:newline))
                     (demunge (section "Meta Information" rendered)))))
-      (when datafy?
-        (testing "renders the datafy section"
-          (is (match? '("--- Datafy:"
-                        (:newline)
-                        "  " (:value ":name" 5) " = " (:value "\"John Doe\"" 6)
-                        (:newline)
-                        "  " (:value ":class" 7) " = " (:value "\"PersistentArrayMap\"" 8)
-                        (:newline))
-                      (datafy-section rendered))))))))
+      (testing "renders the datafy section"
+        (is (match? '("--- Datafy:"
+                      (:newline)
+                      "  " (:value ":name" 5) " = " (:value "\"John Doe\"" 6)
+                      (:newline)
+                      "  " (:value ":class" 7) " = " (:value "\"PersistentArrayMap\"" 8)
+                      (:newline))
+                    (datafy-section rendered)))))))
 
 (deftest inspect-navigable-metadata-extension-test
   (testing "inspecting a map extended with the Navigable protocol"
@@ -1110,13 +1103,12 @@
                       (:newline)
                       (:newline))
                     (demunge (section "Meta Information" rendered)))))
-      (when datafy?
-        (testing "renders the datafy section"
-          (is (match? '("--- Datafy:"
-                        (:newline)
-                        "  " (:value ":name" 5) " = " (:value "[ :name \"John Doe\" ]" 6)
-                        (:newline))
-                      (datafy-section rendered))))))))
+      (testing "renders the datafy section"
+        (is (match? '("--- Datafy:"
+                      (:newline)
+                      "  " (:value ":name" 5) " = " (:value "[ :name \"John Doe\" ]" 6)
+                      (:newline))
+                    (datafy-section rendered)))))))
 
 (deftest inspect-throwable-test
   (testing "inspecting a throwable"
@@ -1136,44 +1128,43 @@
                       (:newline)
                       (:newline))
                     (header rendered))))
-      (when datafy?
-        (testing "renders the datafy section"
-          (is (match? (if (> java-api-version 8)
-                        (list "--- Datafy:"
-                              '(:newline)
-                              "  "
-                              (list :value ":via" number?)
-                              " = "
-                              (list :value
-                                    "[ { :type clojure.lang.ExceptionInfo, :message \"BOOM\", :data {} } ]"
-                                    number?)
-                              '(:newline)
-                              "  "
-                              (list :value ":trace" number?)
-                              " = "
-                              (list :value "[]" number?)
-                              '(:newline)
-                              "  "
-                              (list :value ":cause" number?)
-                              " = "
-                              (list :value "\"BOOM\"" number?)
-                              '(:newline)
-                              "  "
-                              (list :value ":data" number?)
-                              " = "
-                              (list :value "{}" number?)
-                              '(:newline))
-                        (list "--- Datafy:"
-                              '(:newline)
-                              "  " (list :value ":via" number?) " = " (list :value "[ { :type clojure.lang.ExceptionInfo, :message \"BOOM\", :data {} } ]" number?)
-                              '(:newline)
-                              "  " (list :value ":trace" number?) " = " (list :value "[]" number?)
-                              '(:newline)
-                              "  " (list :value ":cause" number?) " = " (list :value "\"BOOM\"" number?)
-                              '(:newline)
-                              "  " (list :value ":data" number?) " = " (list :value "{}" number?)
-                              '(:newline)))
-                      (datafy-section rendered))))))))
+      (testing "renders the datafy section"
+        (is (match? (if (> java-api-version 8)
+                      (list "--- Datafy:"
+                            '(:newline)
+                            "  "
+                            (list :value ":via" number?)
+                            " = "
+                            (list :value
+                                  "[ { :type clojure.lang.ExceptionInfo, :message \"BOOM\", :data {} } ]"
+                                  number?)
+                            '(:newline)
+                            "  "
+                            (list :value ":trace" number?)
+                            " = "
+                            (list :value "[]" number?)
+                            '(:newline)
+                            "  "
+                            (list :value ":cause" number?)
+                            " = "
+                            (list :value "\"BOOM\"" number?)
+                            '(:newline)
+                            "  "
+                            (list :value ":data" number?)
+                            " = "
+                            (list :value "{}" number?)
+                            '(:newline))
+                      (list "--- Datafy:"
+                            '(:newline)
+                            "  " (list :value ":via" number?) " = " (list :value "[ { :type clojure.lang.ExceptionInfo, :message \"BOOM\", :data {} } ]" number?)
+                            '(:newline)
+                            "  " (list :value ":trace" number?) " = " (list :value "[]" number?)
+                            '(:newline)
+                            "  " (list :value ":cause" number?) " = " (list :value "\"BOOM\"" number?)
+                            '(:newline)
+                            "  " (list :value ":data" number?) " = " (list :value "{}" number?)
+                            '(:newline)))
+                    (datafy-section rendered)))))))
 
 (deftest inspect-eduction-test
   (testing "inspecting eduction shows its object fields"
@@ -1195,75 +1186,73 @@
         (is (nil? (section "Page Info" rendered)))))))
 
 (deftest tap-test
-  (when tap?
+  ;; NOTE: this deftest is flaky - wrap the body in the following (and remove the `Thread/sleep`) to reproduce.
+  #_(dotimes [_ 100000])
 
-    ;; NOTE: this deftest is flaky - wrap the body in the following (and remove the `Thread/sleep`) to reproduce.
-    #_(dotimes [_ 100000])
+  (testing "tap-current-value"
+    (let [proof (atom [])
+          test-tap-handler (fn [x]
+                             (swap! proof conj x))
+          sleep (long
+                 (if (System/getenv "CI")
+                   200
+                   100))]
 
-    (testing "tap-current-value"
-      (let [proof (atom [])
-            test-tap-handler (fn [x]
-                               (swap! proof conj x))
-            sleep (long
-                   (if (System/getenv "CI")
-                     200
-                     100))]
+      ((misc/call-when-resolved 'clojure.core/add-tap) test-tap-handler)
 
-        ((misc/call-when-resolved 'clojure.core/add-tap) test-tap-handler)
+      (-> (inspect {:a {:b 1}})
+          (inspect/tap-current-value)
+          (inspect/down 2)
+          (inspect/tap-current-value)
+          (inspect/down 1)
+          (inspect/tap-current-value))
 
-        (-> (inspect {:a {:b 1}})
-            (inspect/tap-current-value)
-            (inspect/down 2)
-            (inspect/tap-current-value)
-            (inspect/down 1)
-            (inspect/tap-current-value))
+      (let [expected [{:a {:b 1}}
+                      {:b 1}
+                      :b]
+            tries (atom 0)]
 
-        (let [expected [{:a {:b 1}}
-                        {:b 1}
-                        :b]
-              tries (atom 0)]
+        (while (and (not= expected @proof)
+                    (< @tries 1000))
+          (Thread/sleep sleep)
+          (swap! tries inc))
 
-          (while (and (not= expected @proof)
-                      (< @tries 1000))
-            (Thread/sleep sleep)
-            (swap! tries inc))
+        (is (= expected @proof)))
 
-          (is (= expected @proof)))
+      ((misc/call-when-resolved 'clojure.core/remove-tap) test-tap-handler)))
 
-        ((misc/call-when-resolved 'clojure.core/remove-tap) test-tap-handler)))
+  (testing "tap-indexed"
+    (let [proof (atom [])
+          test-tap-handler (fn [x]
+                             (swap! proof conj x))
+          sleep (long
+                 (if (System/getenv "CI")
+                   200
+                   100))]
 
-    (testing "tap-indexed"
-      (let [proof (atom [])
-            test-tap-handler (fn [x]
-                               (swap! proof conj x))
-            sleep (long
-                   (if (System/getenv "CI")
-                     200
-                     100))]
+      ((misc/call-when-resolved 'clojure.core/add-tap) test-tap-handler)
 
-        ((misc/call-when-resolved 'clojure.core/add-tap) test-tap-handler)
+      (-> (inspect {:a {:b 1}})
+          (inspect/tap-indexed 1)
+          (inspect/tap-indexed 2)
+          (inspect/down 2)
+          (inspect/tap-indexed 1)
+          (inspect/tap-indexed 2))
 
-        (-> (inspect {:a {:b 1}})
-            (inspect/tap-indexed 1)
-            (inspect/tap-indexed 2)
-            (inspect/down 2)
-            (inspect/tap-indexed 1)
-            (inspect/tap-indexed 2))
+      (let [expected [:a
+                      {:b 1}
+                      :b
+                      1]
+            tries (atom 0)]
 
-        (let [expected [:a
-                        {:b 1}
-                        :b
-                        1]
-              tries (atom 0)]
+        (while (and (not= expected @proof)
+                    (< @tries 1000))
+          (Thread/sleep sleep)
+          (swap! tries inc))
 
-          (while (and (not= expected @proof)
-                      (< @tries 1000))
-            (Thread/sleep sleep)
-            (swap! tries inc))
+        (is (= expected @proof)))
 
-          (is (= expected @proof)))
-
-        ((misc/call-when-resolved 'clojure.core/remove-tap) test-tap-handler)))))
+      ((misc/call-when-resolved 'clojure.core/remove-tap) test-tap-handler))))
 
 (deftest datafy-test
   (testing "When `(datafy x)` is identical to `x`, no Datafy section is included"
