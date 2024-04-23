@@ -526,19 +526,29 @@
                inspect/next-sibling
                inspect/next-sibling))))
   (testing "next and previous siblings with pagination"
-    (is (= {:value 32 :current-page 1}
+    (is (= {:value 32 :pages-stack [1]}
            (-> long-vector
                inspect
                (inspect/down 32)
                (inspect/next-sibling)
-               (select-keys [:value :current-page]))))
-    (is (= {:value 31 :current-page 0}
+               (select-keys [:value :pages-stack]))))
+    (is (= {:value 31 :pages-stack [0]}
            (-> long-vector
                inspect
                (inspect/next-page)
                (inspect/down 1)
                (inspect/previous-sibling)
-               (select-keys [:value :current-page]))))
+               (select-keys [:value :pages-stack]))))
+    (is (= 3
+           (-> long-vector
+               inspect
+               (inspect/set-page-size 1)
+               (inspect/down 1)
+               (inspect/next-sibling)
+               (inspect/next-sibling)
+               (inspect/next-sibling)
+               (inspect/up)
+               :current-page)))
     (is (= 28 (-> long-vector
                   inspect
                   (inspect/down 32)
