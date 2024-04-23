@@ -6,8 +6,6 @@
    [clojure.string :as string]
    [orchard.util.io :as util.io]))
 
-(require 'clojure.core.protocols)
-
 (defn os-windows? []
   (.startsWith (System/getProperty "os.name") "Windows"))
 

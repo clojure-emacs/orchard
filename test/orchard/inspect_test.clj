@@ -1198,7 +1198,7 @@
                    200
                    100))]
 
-      ((misc/call-when-resolved 'clojure.core/add-tap) test-tap-handler)
+      (add-tap test-tap-handler)
 
       (-> (inspect {:a {:b 1}})
           (inspect/tap-current-value)
@@ -1219,7 +1219,7 @@
 
         (is (= expected @proof)))
 
-      ((misc/call-when-resolved 'clojure.core/remove-tap) test-tap-handler)))
+      (remove-tap test-tap-handler)))
 
   (testing "tap-indexed"
     (let [proof (atom [])
@@ -1230,7 +1230,7 @@
                    200
                    100))]
 
-      ((misc/call-when-resolved 'clojure.core/add-tap) test-tap-handler)
+      (add-tap test-tap-handler)
 
       (-> (inspect {:a {:b 1}})
           (inspect/tap-indexed 1)
@@ -1252,7 +1252,7 @@
 
         (is (= expected @proof)))
 
-      ((misc/call-when-resolved 'clojure.core/remove-tap) test-tap-handler))))
+      (remove-tap test-tap-handler))))
 
 (deftest datafy-test
   (testing "When `(datafy x)` is identical to `x`, no Datafy section is included"
