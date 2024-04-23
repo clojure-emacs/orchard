@@ -354,7 +354,8 @@
         (render-indexed-chunk ins chunk-to-display start-idx
                               (and primary-object?
                                    ;; Set items are not indexed - don't mark.
-                                   (instance? List obj))))
+                                   (or (instance? List obj)
+                                       (.isArray (class obj))))))
 
       (if (< current-page last-page)
         (-> (render-indent ins "...")

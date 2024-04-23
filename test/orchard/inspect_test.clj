@@ -582,7 +582,17 @@
                   (inspect/next-sibling)
                   (inspect/next-sibling)
                   (inspect/next-sibling)
-                  :value)))))
+                  :value))))
+  (testing "sibling functions work with arrays"
+    (is (= {:value 35, :pages-stack [1], :path '[(nth 35)]}
+           (-> (byte-array (range 40))
+               inspect
+               (inspect/down 34)
+               (inspect/next-sibling)
+               (inspect/next-sibling)
+               (inspect/next-sibling)
+               (inspect/next-sibling)
+               (select-keys [:value :pages-stack :path]))))))
 
 (deftest path-test
   (let [t {:a (list 1 2 {:b {:c (vec (map (fn [x] {:foo (* x 10)}) (range 100)))}})
