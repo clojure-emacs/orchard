@@ -63,24 +63,6 @@
   []
   (start nil))
 
-(defn- items-on-page
-  "Number of individual top level items on a single page."
-  [{:keys [value page-size] :as _inspector}]
-  (if (map? value)
-    (* 2 page-size) ;; keys and values are treated as separate items
-    page-size))
-
-(defn- total-items
-  "Total number of individual top level items in the current inspectable object."
-  [{:keys [value] :as _inspector}]
-  (cond
-    (map? value)
-    (* 2 (count value)) ;; keys and values are treated as separate items
-    (instance? clojure.lang.Counted value)
-    (count value)
-    :else ;; possibly infinite
-    Integer/MAX_VALUE))
-
 (defn- last-page
   ([inspector] (last-page inspector (:value inspector)))
   ([{:keys [current-page page-size]} obj]
@@ -95,16 +77,6 @@
 
      ;; possibly infinite
      :else Integer/MAX_VALUE)))
-
-(defn- current-page
-  ([inspector] (current-page inspector (:value inspector)))
-  ([{:keys [current-page] :as inspector} obj]
-   (let [last-page (last-page inspector obj)]
-     ;; current-page might contain an incorrect value, fix that:
-     (cond
-       (< current-page 0) 0
-       (> current-page last-page) last-page
-       :else current-page))))
 
 (defn next-page
   "Jump to the next page when inspecting a paginated sequence/map. Does nothing
@@ -142,7 +114,12 @@
 (defn- down*
   "Navigate to `child` value of the current inspector without re-rendering."
   [inspector child child-role child-key]
-  (let [{:keys [value current-page]} inspector]
+  (let [{:keys [value current-page page-size]} inspector
+        ;; If down* was called on an invisible element (e.g. by sibling*),
+        ;; :current-page may be wrong, recompute it.
+        current-page (if (number? child-key)
+                       (quot child-key page-size)
+                       current-page)]
     (-> inspector
         (assoc :value child)
         (update :stack conj value)
@@ -352,8 +329,8 @@
                                      "?" (inc last-page))))
             (unindent))))))
 
-(defn- chunk-to-display [{:keys [page-size] :as inspector} obj]
-  (let [start-idx (* (current-page inspector obj) page-size)]
+(defn- chunk-to-display [{:keys [current-page page-size]} obj]
+  (let [start-idx (* current-page page-size)]
     (->> obj (drop start-idx) (take page-size))))
 
 (defn render-collection-paged
@@ -361,9 +338,8 @@
   `primary-object?` set to true means we are rendering the direct contents of
   the inspected object."
   [inspector obj primary-object?]
-  (let [{:keys [page-size]} inspector
+  (let [{:keys [current-page page-size]} inspector
         last-page (last-page inspector obj)
-        current-page (current-page inspector obj)
         start-idx (* current-page page-size)
         chunk-to-display (chunk-to-display inspector obj)]
     (as-> inspector ins
@@ -383,9 +359,7 @@
       (if (< current-page last-page)
         (-> (render-indent ins "...")
             (render-ln))
-        ins)
-
-      (assoc ins :current-page current-page))))
+        ins))))
 
 (defn render-meta-information [inspector obj]
   (if (seq (meta obj))
