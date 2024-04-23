@@ -405,74 +405,62 @@
                  (inspect/down 20)
                  :value))))
   (testing "down with pagination"
-    (is (= 19 (-> long-sequence
-                  inspect
-                  (inspect/set-page-size 2)
-                  (inspect/down 20)
-                  :value)))
-    (is (= 9 (-> long-map
-                 inspect
-                 (inspect/set-page-size 2)
-                 (inspect/down 20)
-                 :value)))
+    (is (= long-sequence (-> long-sequence
+                             inspect
+                             (inspect/set-page-size 2)
+                             (inspect/down 20)
+                             :value)))
+    (is (= long-map (-> long-map
+                        inspect
+                        (inspect/set-page-size 2)
+                        (inspect/down 20)
+                        :value)))
     (is (= 19 (-> long-map
                   inspect
                   (inspect/down 40)
-                  :value)))
-    (is (= {:current-page 65 :value 65}
-           (-> long-map
-               inspect
-               (inspect/set-page-size 1)
-               (inspect/down 131)
-               (select-keys [:value :current-page])))))
+                  :value))))
   (testing "doesn't go out of boundaries"
+    (is (= [1 2] (-> [1 2]
+                     inspect
+                     (inspect/down 10)
+                     :value)))
+    (is (= [1 2] (-> [1 2]
+                     inspect
+                     (inspect/set-page-size 1)
+                     (inspect/down 10)
+                     :value)))
+    (is (= [1 2] (-> [1 2]
+                     inspect
+                     (inspect/down 5)
+                     (inspect/down -10)
+                     :value)))
     (is (= 2 (-> [1 2]
                  inspect
-                 (inspect/down 10)
-                 :value)))
-    (is (= 2 (-> [1 2]
-                 inspect
-                 (inspect/set-page-size 1)
-                 (inspect/down 10)
-                 :value)))
-    (is (= 2 (-> [1 2]
-                 inspect
-                 (inspect/down 5)
-                 (inspect/down -10)
-                 :value)))
-    (is (= 2 (-> [1 2]
-                 inspect
-                 (inspect/down 100)
+                 (inspect/down 1)
                  (inspect/next-sibling)
                  (inspect/next-sibling)
                  :value)))
     (is (= 2 (-> {:a 1 :b 2}
                  inspect
-                 (inspect/down 100)
+                 (inspect/down 4)
                  (inspect/next-sibling)
                  (inspect/next-sibling)
                  :value)))
-    (is (= 2 (-> {:a 1 :b 2}
+    (is (= 1 (-> {:a 1 :b 2}
                  inspect
                  (inspect/set-page-size 1)
-                 (inspect/down 100)
+                 (inspect/down 2)
                  (inspect/next-sibling)
                  (inspect/next-sibling)
                  (inspect/next-sibling)
                  :value)))
     (is (= 1 (-> [1 2]
                  inspect
-                 (inspect/down 100)
+                 (inspect/down 1)
                  (inspect/previous-sibling)
                  (inspect/previous-sibling)
                  (inspect/previous-sibling)
-                 :value)))
-    (is (= 999 (-> (range 1000)
-                   inspect
-                   (inspect/down 10000)
-                   (inspect/next-sibling)
-                   (inspect/next-sibling)
-                   :value)))))
+                 :value)))))
 
 (deftest sibling*-test
   (is (= :c
@@ -538,51 +526,29 @@
                inspect/next-sibling
                inspect/next-sibling))))
   (testing "next and previous siblings with pagination"
-    (is (= {:value 38 :current-page 1}
+    (is (= {:value 32 :current-page 1}
            (-> long-vector
                inspect
-               (inspect/down 40)
-               (inspect/previous-sibling)
+               (inspect/down 32)
+               (inspect/next-sibling)
                (select-keys [:value :current-page]))))
-    (is (= {:value 38 :current-page 38}
+    (is (= {:value 31 :current-page 0}
            (-> long-vector
                inspect
-               (inspect/set-page-size 1)
-               (inspect/down 40)
+               (inspect/next-page)
+               (inspect/down 1)
                (inspect/previous-sibling)
                (select-keys [:value :current-page]))))
-    (is (= 36 (-> long-vector
+    (is (= 28 (-> long-vector
                   inspect
-                  (inspect/set-page-size 2)
-                  (inspect/down 40)
+                  (inspect/down 32)
                   (inspect/previous-sibling)
                   (inspect/previous-sibling)
                   (inspect/previous-sibling)
                   :value)))
-    (is (= 40 (-> long-vector
+    (is (= 32 (-> long-vector
                   inspect
-                  (inspect/down 40)
-                  (inspect/next-sibling)
-                  :value))))
-  (testing "next sibling does go beyond the current page"
-    (is (= 3 (-> (list 1 2 3)
-                 inspect
-                 (inspect/down 2)
-                 (inspect/next-sibling)
-                 (inspect/next-sibling)
-                 (inspect/next-sibling)
-                 (inspect/next-sibling)
-                 (inspect/next-sibling)
-                 :value)))
-    (is (= 45 (-> long-vector
-                  inspect
-                  (inspect/set-page-size 3)
-                  (inspect/down 40)
-                  (inspect/next-sibling)
-                  (inspect/next-sibling)
-                  (inspect/next-sibling)
-                  (inspect/next-sibling)
-                  (inspect/next-sibling)
+                  (inspect/down 32)
                   (inspect/next-sibling)
                   :value))))
   (testing "next-sibling doesn't fall beyond the last element."
@@ -596,20 +562,9 @@
                  :value)))
     (is (= 69 (-> long-sequence
                   inspect
-                  (inspect/set-page-size 1)
-                  (inspect/down 67)
-                  (inspect/next-sibling)
-                  (inspect/next-sibling)
-                  (inspect/next-sibling)
-                  (inspect/next-sibling)
-                  (inspect/next-sibling)
-                  (inspect/next-sibling)
-                  (inspect/next-sibling)
-                  :value)))
-    (is (= 69 (-> long-vector
-                  inspect
-                  (inspect/set-page-size 1)
-                  (inspect/down 67)
+                  (inspect/next-page)
+                  (inspect/next-page)
+                  (inspect/down 4)
                   (inspect/next-sibling)
                   (inspect/next-sibling)
                   (inspect/next-sibling)
@@ -636,7 +591,12 @@
                       (inspect/down 10))]
     (is (= ":a (nth 2) :b :c (nth 73)" (-> inspector render last))))
   (testing "inspector tracks the path in the data structure beyond the first page with custom page size"
-    (is (= "(get 33)" (-> long-map inspect (inspect/set-page-size 2) (inspect/down 68) render last))))
+    (is (= "(get 2)" (-> long-map inspect
+                         (inspect/set-page-size 2)
+                         (inspect/next-page)
+                         (inspect/down 2)
+                         render
+                         last))))
   (testing "doesn't show path if unknown navigation has happened"
     (is (= '(:newline) (-> long-map inspect (inspect/down 39) render last)))
     (is (= '(:newline) (-> long-map inspect (inspect/down 40) (inspect/down 0) render last)))
@@ -727,6 +687,33 @@
       (is (match? (list "  " "100" ". " (list :value "100" number?)
                         '(:newline))
                   tail)))))
+
+(deftest inspect-coll-meta-test
+  (testing "inspecting a collection with metadata renders the metadata section"
+    (testing "renders the meta information section"
+      (let [rendered (render (inspect (with-meta [:a :b :c :d :e] {:m 42})))]
+        (is (match? '("--- Meta Information:"
+                      (:newline)
+                      "  "
+                      (:value ":m" 1)
+                      " = "
+                      (:value "42" 2)
+                      (:newline)
+                      (:newline))
+                    (section "Meta Information" rendered)))))
+
+    (testing "meta values can be navigated to"
+      (is (= 42 (-> (inspect (with-meta [:a :b :c :d :e] {:m 42}))
+                    (inspect/down 2)
+                    :value))))
+
+    (testing "regular values can be navigated to"
+      (is (= :a (-> (inspect (with-meta [:a :b :c :d :e] {:m 42}))
+                    (inspect/down 3)
+                    :value)))
+      (is (= :e (-> (inspect (with-meta [:a :b :c :d :e] {:m 42}))
+                    (inspect/down 7)
+                    :value))))))
 
 (deftest inspect-coll-nav-test
   (testing "inspecting a collection extended with the Datafiable and Navigable protocols"
@@ -831,7 +818,7 @@
                (inspect/next-page)
                (inspect/next-page)
                (inspect/next-page)
-               (inspect/down 100)
+               (inspect/down 1)
                (inspect/next-sibling)
                :path)))
     (is (= '[:b]
@@ -841,7 +828,7 @@
                (inspect/next-page)
                (inspect/next-page)
                (inspect/next-page)
-               (inspect/down 100)
+               (inspect/down 2)
                :path)))
     (is (= '[<unknown>]
            (-> {:a 1 :b 2}
@@ -872,7 +859,12 @@
              (:path (-> inspector (inspect/down 0)))))
       (is (= '[:a (nth 2) :b :c]
              (:path (-> inspector (inspect/down 0) (inspect/down 0)
-                        (inspect/up) (inspect/up) (inspect/up))))))))
+                        (inspect/up) (inspect/up) (inspect/up)))))))
+  (testing "path tracking works if object has metadata"
+    (is (= [:data]
+           (-> (inspect (with-meta {:data 1} {:m 2}))
+               (inspect/down 4)
+               :path)))))
 
 (deftest inspect-object-class-test
   (testing "inspecting the java.lang.Object class"

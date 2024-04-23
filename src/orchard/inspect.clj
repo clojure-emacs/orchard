@@ -122,55 +122,57 @@
     inspector
     (inspect-render (update inspector :current-page dec))))
 
+(defn- up*
+  "Move one value up the stack without re-rendering."
+  [{:keys [stack pages-stack] :as inspector}]
+  (if (empty? stack)
+    inspector
+    (-> inspector
+        (update :path pop)
+        (assoc :current-page (peek pages-stack))
+        (update :pages-stack pop)
+        (assoc :value (peek stack))
+        (update :stack pop))))
+
 (defn up
   "Pop the stack and re-render an earlier value."
   [inspector]
-  (let [{:keys [stack pages-stack]} inspector]
-    (if (empty? stack)
-      inspector
-      (-> inspector
-          (update :path pop)
-          (assoc :current-page (peek pages-stack))
-          (update :pages-stack pop)
-          (update :stack pop)
-          (inspect-render (peek stack))))))
+  (inspect-render (up* inspector)))
+
+(defn- down*
+  "Navigate to `child` value of the current inspector without re-rendering."
+  [inspector child child-role child-key]
+  (let [{:keys [value current-page]} inspector]
+    (-> inspector
+        (assoc :value child)
+        (update :stack conj value)
+        (assoc :current-page 0)
+        (update :pages-stack conj current-page)
+        (update :path push-item-to-path child-role child-key))))
 
 (defn down
-  "Drill down to an indexed object referred to by the previously
-   rendered value."
-  [inspector ^Integer idx]
+  "Drill down to an indexed object referred to by the previously rendered value."
+  [inspector idx]
   {:pre [(integer? idx)]}
-  (let [idx (min idx (total-items inspector))
-        page-items (items-on-page inspector)]
-    (cond
-      (neg? idx)
-      inspector
-      (> idx page-items)
-      (recur (next-page inspector) (- idx page-items))
-      :else
-      (let [{:keys [value index current-page]} inspector
-            index-record (get index idx)
-            new-val (:value index-record)]
-        (-> inspector
-            (update :stack conj value)
-            (update :pages-stack conj current-page)
-            (update :path push-item-to-path
-                    (:role index-record) (:key index-record))
-            (inspect-render new-val))))))
+  (if-let [{:keys [value role key]} (get (:index inspector) idx)]
+    (inspect-render (down* inspector value role key))
+    inspector))
 
-(defn- sibling* [inspector offset pred]
+(defn- sibling* [inspector offset]
   (let [path (:path inspector)
         last-item (peek path)]
     (or (when (and (seq? last-item)
                    (= 'nth (first last-item)))
-          (let [new-index (+ offset ;; for our purposes, +2 means inc, +1 nop, and +0 dec
-                             (second last-item))
-                top (up inspector)]
-            (when (pred new-index top)
-              (some-> top
-                      (assoc :current-page 0)
-                      (down new-index)
-                      inspect-render))))
+          (let [new-index (+ (second last-item) offset)
+                top (up* inspector)
+                sibling (try (nth (:value top) new-index ::not-found)
+                             ;; Exception may happen if the collection
+                             ;; rendered as sequential doesn't support nth.
+                             (catch Exception _ ::not-found))]
+            (when-not (= sibling ::not-found)
+              (-> top
+                  (down* sibling :seq-item new-index)
+                  inspect-render))))
         ;; if no changes were possible, return the inspector as-is so that the UI remains untouched:
         inspector)))
 
@@ -178,15 +180,13 @@
   "Attempt to inspect the item previous to the currenlty inspected value in the
   parent sequential collection."
   [inspector]
-  (sibling* inspector 0 (fn [idx _inspector]
-                          (pos? idx))))
+  (sibling* inspector -1))
 
 (defn next-sibling
   "Attempt to inspect the item next to the currenlty inspected value in the parent
   sequential collection."
   [inspector]
-  (sibling* inspector 2 (fn [idx inspector]
-                          (<= idx (total-items inspector)))))
+  (sibling* inspector 1))
 
 (defn set-page-size
   "Set the page size in pagination mode to the specified value. Current page
