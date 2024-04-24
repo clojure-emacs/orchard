@@ -106,6 +106,8 @@
     ": "
     (:value "clojure.lang.PersistentTreeMap" 0)
     (:newline)
+    "Count: " "4"
+    (:newline)
     (:newline)
     "--- Contents:"
     (:newline)
@@ -234,6 +236,8 @@
   (testing "pushing a rendered expr inspector idx"
     (is (match? (list "Class"
                       ": " (list :value "clojure.lang.PersistentArrayMap" number?)
+                      '(:newline)
+                      "Count: " "1"
                       '(:newline)
                       '(:newline)
                       "--- Contents:"
@@ -587,7 +591,7 @@
     (is (= {:value 35, :pages-stack [1], :path '[(nth 35)]}
            (-> (byte-array (range 40))
                inspect
-               (inspect/down 34)
+               (inspect/down 33)
                (inspect/next-sibling)
                (inspect/next-sibling)
                (inspect/next-sibling)
@@ -644,6 +648,8 @@
     (is (match? (list "Class"
                       ": " (list :value "clojure.lang.PersistentVector" number?)
                       '(:newline)
+                      "Count: " "4"
+                      '(:newline)
                       '(:newline)
                       "--- Contents:"
                       '(:newline)
@@ -660,6 +666,8 @@
   (testing "inspect :coll aligns index numbers so that values appear aligned"
     (is (match? (list "Class"
                       ": " (list :value "clojure.lang.PersistentVector" number?)
+                      '(:newline)
+                      "Count: " "11"
                       '(:newline)
                       '(:newline)
                       "--- Contents:"
@@ -693,10 +701,12 @@
     (let [rendered (-> (inspect (vec (range 101)))
                        (inspect/set-page-size 200)
                        render)
-          head (take 11 rendered)
+          head (take 14 rendered)
           tail (take-last 5 rendered)]
       (is (match? (list "Class"
                         ": " (list :value "clojure.lang.PersistentVector" number?)
+                        '(:newline)
+                        "Count: " "101"
                         '(:newline)
                         '(:newline)
                         "--- Contents:"
@@ -775,6 +785,8 @@
     (is (match? '("Class"
                   ": "
                   (:value "clojure.lang.Persist..." 0)
+                  (:newline)
+                  "Count: " "1"
                   (:newline)
                   (:newline)
                   "--- Contents:"
@@ -958,6 +970,8 @@
                       (:newline)
                       "  " "Class" ": " (:value "clojure.lang.PersistentArrayMap" 1)
                       (:newline)
+                      "  " "Count: " "1"
+                      (:newline)
                       (:newline)
                       "  --- Contents:"
                       (:newline)
@@ -1083,6 +1097,8 @@
                       ": "
                       (:value "clojure.lang.PersistentArrayMap" 0)
                       (:newline)
+                      "Count: " "1"
+                      (:newline)
                       (:newline))
                     (header rendered))))
       (testing "renders the meta information section"
@@ -1111,6 +1127,8 @@
         (is (match? '("Class"
                       ": "
                       (:value "clojure.lang.PersistentArrayMap" 0)
+                      (:newline)
+                      "Count: " "1"
                       (:newline)
                       (:newline))
                     (header rendered))))
@@ -1203,6 +1221,38 @@
     (let [rendered (-> (eduction (range 100)) inspect render)]
       (testing "doesn't render page info section"
         (is (nil? (section "Page Info" rendered)))))))
+
+(deftest render-counted-length-test
+  (testing "inspecting counted collections shows their size upfront"
+    (let [rendered (-> (range 10) inspect render)]
+      (is (match? '("Class"
+                    ": "
+                    (:value "clojure.lang.LongRange" 0)
+                    (:newline)
+                    "Count: " "10"
+                    (:newline)
+                    (:newline))
+                  (header rendered))))
+    (let [rendered (-> (zipmap (range 20) (range 20)) inspect render)]
+      (is (match? '("Class"
+                    ": "
+                    (:value "clojure.lang.PersistentHashMap" 0)
+                    (:newline)
+                    "Count: " "20"
+                    (:newline)
+                    (:newline))
+                  (header rendered))))
+    (let [rendered (-> (byte-array 30) inspect render)]
+      (is (match? '("Class"
+                    ": "
+                    (:value "[B" 0)
+                    (:newline)
+                    "Count: " "30"
+                    (:newline)
+                    "Component Type" ": " (:value "byte" 1)
+                    (:newline)
+                    (:newline))
+                  (header rendered))))))
 
 (deftest tap-test
   ;; NOTE: this deftest is flaky - wrap the body in the following (and remove the `Thread/sleep`) to reproduce.

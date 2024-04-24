@@ -63,20 +63,27 @@
   []
   (start nil))
 
+(defn- array? [obj]
+  (.isArray (class obj)))
+
+(defn- counted-length [obj]
+  (cond (instance? clojure.lang.Counted obj) (count obj)
+        (array? obj) (java.lang.reflect.Array/getLength obj)))
+
 (defn- last-page
   ([inspector] (last-page inspector (:value inspector)))
   ([{:keys [current-page page-size]} obj]
-   (cond
-     (instance? clojure.lang.Counted obj)
-     (quot (dec (count obj)) page-size)
+   (let [clength (counted-length obj)]
+     (cond
+       clength (quot (dec clength) page-size)
 
-     ;; if there are no more items after the current page, we must have
-     ;; reached the end of the collection, so it's not infinite.
-     (empty? (drop (* (inc current-page) page-size) obj))
-     current-page
+       ;; if there are no more items after the current page, we must have
+       ;; reached the end of the collection, so it's not infinite.
+       (empty? (drop (* (inc current-page) page-size) obj))
+       current-page
 
-     ;; possibly infinite
-     :else Integer/MAX_VALUE)))
+       ;; possibly infinite
+       :else Integer/MAX_VALUE))))
 
 (defn next-page
   "Jump to the next page when inspecting a paginated sequence/map. Does nothing
@@ -276,6 +283,13 @@
 (defn- render-class-name [inspector obj]
   (render-labeled-value inspector "Class" (class obj)))
 
+(defn- render-counted-length [inspector obj]
+  (if-let [clength (counted-length obj)]
+    (-> inspector
+        (render-indent "Count: " (str clength))
+        (render-ln))
+    inspector))
+
 (defn- render-map-values
   "Render associative key-value pairs. If `mark-values?` is true, attach the keys
   to the values in the index."
@@ -354,8 +368,7 @@
         (render-indexed-chunk ins chunk-to-display start-idx
                               (and primary-object?
                                    ;; Set items are not indexed - don't mark.
-                                   (or (instance? List obj)
-                                       (.isArray (class obj))))))
+                                   (or (instance? List obj) (array? obj)))))
 
       (if (< current-page last-page)
         (-> (render-indent ins "...")
@@ -445,6 +458,7 @@
 
 (defmethod inspect :coll [inspector obj]
   (-> (render-class-name inspector obj)
+      (render-counted-length obj)
       (render-meta-information obj)
       (render-section-header "Contents")
       (indent)
@@ -454,7 +468,7 @@
 
 (defmethod inspect :array [inspector obj]
   (-> (render-class-name inspector obj)
-      (render-labeled-value "Count" (java.lang.reflect.Array/getLength obj)) ; avoid reflection warning from Clojure compiler
+      (render-counted-length obj)
       (render-labeled-value "Component Type" (.getComponentType (class obj)))
       (render-section-header "Contents")
       (indent)
