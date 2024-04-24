@@ -9,6 +9,7 @@
 * [#244](https://github.com/clojure-emacs/orchard/issues/244): Make `orchard.inspect/start` the single entrypoint to the inspector, deprecate `orchard.inspect/fresh` and `orchard.inspect/clear`.
 * [#246](https://github.com/clojure-emacs/orchard/issues/246): Reimplement path tracking and sibling navigation.
 * [#246](https://github.com/clojure-emacs/orchard/issues/246): Enable sibling navigation for arrays.
+* [#252](https://github.com/clojure-emacs/orchard/issues/252): Display count in the inspector header for objects with known size.
 
 ### Bugs Fixed
 
