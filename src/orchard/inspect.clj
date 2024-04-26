@@ -43,26 +43,6 @@
 (defn- reset-render-state [inspector]
   (assoc inspector :counter 0, :index [], :indentation 0, :rendered []))
 
-(defn start
-  "Create a new inspector for the `value`. Optinally accepts a `config` map (which
-  can be an existing inspector with changed config)."
-  ([value] (start {} value))
-  ([config value]
-   (-> default-inspector-config
-       (merge (select-keys config (keys default-inspector-config)))
-       (assoc :stack [], :path [], :pages-stack [], :current-page 0)
-       (inspect-render value))))
-
-(defn ^:deprecated clear
-  "If necessary, use `(start inspector nil) instead.`"
-  [inspector]
-  (start inspector nil))
-
-(defn ^:deprecated fresh
-  "If necessary, use `(start nil)` instead."
-  []
-  (start nil))
-
 (defn- array? [obj]
   (.isArray (class obj)))
 
@@ -667,6 +647,28 @@
          (update :rendered seq))))
   ([inspector value]
    (inspect-render (assoc inspector :value value))))
+
+;; Public entrypoints
+
+(defn start
+  "Create a new inspector for the `value`. Optinally accepts a `config` map (which
+  can be an existing inspector with changed config)."
+  ([value] (start {} value))
+  ([config value]
+   (-> default-inspector-config
+       (merge (select-keys config (keys default-inspector-config)))
+       (assoc :stack [], :path [], :pages-stack [], :current-page 0)
+       (inspect-render value))))
+
+(defn ^:deprecated clear
+  "If necessary, use `(start inspector nil) instead.`"
+  [inspector]
+  (start inspector nil))
+
+(defn ^:deprecated fresh
+  "If necessary, use `(start nil)` instead."
+  []
+  (start nil))
 
 (defn inspect-print
   "Get a human readable printout of rendered sequence."
