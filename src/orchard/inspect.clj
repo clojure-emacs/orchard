@@ -668,20 +668,13 @@
   ([inspector value]
    (inspect-render (assoc inspector :value value))))
 
-;; Get a human readable printout of rendered sequence
-(defmulti inspect-print-component first)
-
-(defmethod inspect-print-component :newline [_]
-  (prn))
-
-(defmethod inspect-print-component :value [[_ & xs]]
-  (print (str (first xs))))
-
-(defmethod inspect-print-component :default [x]
-  (print x))
-
-(defn inspect-print [x]
+(defn inspect-print
+  "Get a human readable printout of rendered sequence."
+  [x]
   (print
    (with-out-str
-     (doseq [component (:rendered (start x))]
-       (inspect-print-component component)))))
+     (doseq [[type value :as component] (:rendered (start x))]
+       (print (case type
+                :newline \newline
+                :value (str value)
+                component))))))
