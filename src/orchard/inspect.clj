@@ -41,37 +41,71 @@
    :max-coll-size    5})
 
 (defn- reset-render-state [inspector]
-  (assoc inspector :counter 0, :index [], :indentation 0, :rendered []))
+  (-> inspector
+      (assoc :counter 0, :index [], :indentation 0, :rendered [])
+      (dissoc :chunk :start-idx :last-page)))
 
 (defn- array? [obj]
   (.isArray (class obj)))
+
+(defn- object-type [obj]
+  (cond
+    (nil? obj) :nil
+    (string? obj) :string
+    (set? obj) :set
+    (instance? Map obj) :map
+    (instance? List obj) :list
+    (var? obj) :var
+    (instance? Class obj) :class
+    (instance? clojure.lang.Namespace obj) :namespace
+    (instance? clojure.lang.ARef obj) :aref
+    (.isArray (class obj)) :array
+    :else (or (:inspector-tag (meta obj))
+              (type obj))))
 
 (defn- counted-length [obj]
   (cond (instance? clojure.lang.Counted obj) (count obj)
         (array? obj) (java.lang.reflect.Array/getLength obj)))
 
-(defn- last-page
-  ([inspector] (last-page inspector (:value inspector)))
-  ([{:keys [current-page page-size]} obj]
-   (let [clength (counted-length obj)]
-     (cond
-       clength (quot (dec clength) page-size)
+(defn- pagination-info
+  "Calculate if the object should be paginated given the page size. Return a map
+  with pagination info, or nil if object fits in a single page."
+  [obj page-size current-page]
+  (let [clength (counted-length obj)
+        start-idx (* current-page page-size)
+        ;; Try grab a chunk that is one element longer than asked in
+        ;; page-size. This is how we know there are elements beyond the
+        ;; current page.
+        chunk+1 (->> obj
+                     (drop start-idx)
+                     (take (inc page-size)))
+        count+1 (count chunk+1)
+        paginate? (or (> current-page 0) ;; In non-paginated it's always 0.
+                      (> count+1 page-size))
+        last-page (cond clength (quot (dec clength) page-size)
+                        (<= count+1 page-size) current-page
+                        ;; Possibly infinite
+                        :else Integer/MAX_VALUE)]
+    (when paginate?
+      {:chunk (take page-size chunk+1)
+       :start-idx start-idx
+       :last-page last-page})))
 
-       ;; if there are no more items after the current page, we must have
-       ;; reached the end of the collection, so it's not infinite.
-       (empty? (drop (* (inc current-page) page-size) obj))
-       current-page
-
-       ;; possibly infinite
-       :else Integer/MAX_VALUE))))
+(defn- decide-if-paginated
+  "Make early decision if the inspected object should be paginated. If so,
+  assoc the `:chunk` to be displayed to `inspector`."
+  [{:keys [value current-page page-size] :as inspector}]
+  (let [pageable? (boolean (#{:list :map :set :array} (object-type value)))]
+    (cond-> (assoc inspector :pageable pageable?)
+      pageable? (merge (pagination-info value page-size current-page)))))
 
 (defn next-page
   "Jump to the next page when inspecting a paginated sequence/map. Does nothing
   if already on the last page."
-  [{:keys [current-page] :as inspector}]
-  (if (>= current-page (last-page inspector))
-    inspector
-    (inspect-render (update inspector :current-page inc))))
+  [{:keys [current-page last-page] :as inspector}]
+  (if (some-> last-page (> current-page))
+    (inspect-render (update inspector :current-page inc))
+    inspector))
 
 (defn prev-page
   "Jump to the previous page when inspecting a paginated sequence/map. Does
@@ -308,143 +342,169 @@
 
 (declare known-types)
 
-(defn- render-page-info [{:keys [current-page page-size] :as inspector} obj]
-  (if-not (#{:coll :array} (known-types inspector obj))
-    inspector
-    (let [last-page (last-page inspector obj)
-          paginate? (not= last-page 0)]
-      (if-not paginate?
-        inspector
-        (-> (render-section-header inspector "Page Info")
-            (indent)
-            (render-indent (format "Page size: %d, showing page: %d of %s"
-                                   page-size (inc current-page)
-                                   (if (= last-page Integer/MAX_VALUE)
-                                     "?" (inc last-page))))
-            (unindent))))))
+(defn- render-page-info
+  [{:keys [current-page last-page page-size] :as inspector}]
+  (if last-page
+    (-> (render-section-header inspector "Page Info")
+        (indent)
+        (render-indent (format "Page size: %d, showing page: %d of %s"
+                               page-size (inc current-page)
+                               (if (= last-page Integer/MAX_VALUE)
+                                 "?" (inc last-page))))
+        (unindent)
+        (render-ln))
+    inspector))
 
-(defn- chunk-to-display [{:keys [current-page page-size]} obj]
-  (let [start-idx (* current-page page-size)]
-    (->> obj (drop start-idx) (take page-size))))
+(defn- render-items [inspector items map? start-idx mark-values?]
+  (if map?
+    (render-map-values inspector items mark-values?)
+    (render-indexed-chunk inspector items start-idx mark-values?)))
 
-(defn render-collection-paged
-  "Render a single page of either an indexed or associative collection.
-  `primary-object?` set to true means we are rendering the direct contents of
-  the inspected object."
-  [inspector obj primary-object?]
-  (let [{:keys [current-page page-size]} inspector
-        last-page (last-page inspector obj)
-        start-idx (* current-page page-size)
-        chunk-to-display (chunk-to-display inspector obj)]
-    (as-> inspector ins
-      (if (> current-page 0)
-        (-> ins
-            (render-indent "...")
-            (render-ln))
-        ins)
+(defn- render-value-maybe-expand
+  "If `obj` is a collection smaller than page-size, then render it as a
+  collection, otherwise as a compact value."
+  [{:keys [page-size] :as inspector} obj]
+  (if (some-> (counted-length obj) (<= page-size))
+    (render-items inspector obj (map? obj) 0 false)
+    (-> (render-indent inspector)
+        (render-value obj)
+        (render-ln))))
 
-      (if (or (map? obj) (instance? Map obj))
-        (render-map-values ins chunk-to-display primary-object?)
-        (render-indexed-chunk ins chunk-to-display start-idx
-                              (and primary-object?
-                                   ;; Set items are not indexed - don't mark.
-                                   (or (instance? List obj) (array? obj)))))
+(defn- render-leading-page-ellipsis [{:keys [current-page] :as inspector}]
+  (if (> current-page 0)
+    (-> inspector
+        (render-indent "...")
+        (render-ln))
+    inspector))
 
-      (if (< current-page last-page)
-        (-> (render-indent ins "...")
-            (render-ln))
-        ins))))
+(defn- render-trailing-page-ellipsis
+  [{:keys [current-page last-page] :as inspector}]
+  (if (some-> last-page (> current-page))
+    (-> inspector
+        (render-indent "...")
+        (render-ln))
+    inspector))
+
+(defn- render-collection-paged
+  "Render a single page of either an indexed or associative collection."
+  [{:keys [value chunk start-idx] :as inspector}]
+  (let [type (object-type value)]
+    (-> inspector
+        (render-leading-page-ellipsis)
+        (render-items (or chunk value) (= type :map) (or start-idx 0)
+                      ;; Set items are not indexed - don't mark.
+                      (not= type :set))
+        (render-trailing-page-ellipsis))))
 
 (defn render-meta-information [inspector obj]
   (if (seq (meta obj))
     (-> inspector
         (render-section-header "Meta Information")
         (indent)
-        (render-map-values (meta obj) false)
+        (render-value-maybe-expand (meta obj))
         (unindent))
     inspector))
 
-(defn- nav-datafy-tx [obj remove-nil-valued-entries?]
-  (keep (fn [[k v]]
-          (or (some->> (nav obj k v)
-                       (datafy)
-                       (vector k))
-              (when (and (nil? v)
-                         (not remove-nil-valued-entries?))
-                [k v])))))
+;;;; Datafy
 
-(defn- nav-datafy [obj remove-nil-valued-entries?]
-  (let [data (datafy obj)]
-    (cond (map? data)
-          (into {} (nav-datafy-tx obj remove-nil-valued-entries?) data)
-          (or (sequential? data) (set? data))
-          (map datafy data))))
+(defn- datafy-kvs [original-object kvs]
+  (let [differs? (volatile! false)
+        result (into {}
+                     (keep (fn [[k v]]
+                             (when-some [dat (some->> (nav original-object k v)
+                                                      datafy)]
+                               (when-not (= dat v)
+                                 (vreset! differs? true))
+                               [k dat])))
+                     kvs)]
+    (with-meta result {:differs @differs?})))
 
-(defn- render-datafy? [inspector obj]
-  (cond (map? obj)
-        (not= obj (nav-datafy obj false))
-        (or (sequential? obj) (set? obj))
-        (not= (chunk-to-display inspector obj)
-              (map datafy (chunk-to-display inspector obj)))
-        :else (not= obj (datafy obj))))
+(defn- datafy-seq [s]
+  (let [differs? (volatile! false)
+        result (mapv #(let [dat (datafy %)]
+                        (when-not (= dat %)
+                          (vreset! differs? true))
+                        dat) s)]
+    (with-meta result {:differs @differs?})))
 
-(declare inspect)
+(defn- datafy-root [obj]
+  (let [datafied (datafy obj)]
+    (when-not (identical? obj datafied)
+      datafied)))
 
-(defn- render-datafy-content [inspector obj]
-  (let [contents (nav-datafy obj true)]
-    (cond (map? contents)
-          (render-collection-paged inspector contents false)
-          (sequential? contents)
-          (render-collection-paged inspector contents false)
-          :else (-> (indent inspector)
-                    (inspect contents)
-                    (unindent)))))
+(defn- datafy-displayed-value
+  "Datafy either the current value or its paginated view. Return datafied
+  representation if it differs from value and boolean `mirror?` that tells if
+  the datafied representation mirrors the structure of the input collection."
+  [{:keys [value chunk pageable]}]
+  (if-let [datafied (datafy-root value)]
+    ;; If the root value has datafy representation, check if it's a collection.
+    ;; If so, additionally datafy its items or map values.
+    (let [datafied (case (object-type datafied)
+                     :map (datafy-kvs datafied datafied)
+                     (:list :set) (datafy-seq datafied)
+                     datafied)]
+      ;; Only render the datafy section if the datafied version of the object is
+      ;; different than object, since we don't want to show the same data twice.
+      (when-not (identical? datafied value)
+        [datafied false]))
 
-(defn- render-datafy [inspector obj]
-  ;; Only render the datafy section if the datafyed version of the object is
-  ;; different than object, since we don't want to show the same data twice to
-  ;; the user.
-  (if-not (render-datafy? inspector obj)
-    inspector
-    (-> (render-section-header inspector "Datafy")
-        (indent)
-        (render-datafy-content obj)
-        (unindent))))
+    (when pageable
+      ;; If the value is a type that can be paged, then only datafy the
+      ;; displayed chunk.
+      (let [chunk (or chunk value)
+            map? (= (object-type value) :map)
+            datafied (if map?
+                       (datafy-kvs value chunk)
+                       (datafy-seq chunk))]
+        ;; Only return the datafied representation if at least one value is
+        ;; different from the original.
+        (when (:differs (meta datafied))
+          [datafied true])))))
+
+(defn- render-datafy [{:keys [start-idx] :as inspector}]
+  (if-let [[datafied mirror?] (datafy-displayed-value inspector)]
+    (as-> inspector ins
+      (render-section-header ins "Datafy")
+      (indent ins)
+
+      (if mirror?
+        ;; If datafy is a "mirror" of the inspected object, then display it
+        ;; using the same pagination rules as the main chunk.
+        (-> ins
+            (render-leading-page-ellipsis)
+            (render-items datafied (map? datafied) (or start-idx 0) false)
+            (render-trailing-page-ellipsis))
+        ;; Otherwise, render datafied representation as a collection if it is
+        ;; small enough, or as a single value.
+        (render-value-maybe-expand ins datafied))
+
+      (unindent ins))
+    inspector))
 
 ;; Inspector multimethod
-(defn known-types [_ins obj]
-  (cond
-    (nil? obj) :nil
-    (map? obj) :coll
-    (vector? obj) :coll
-    (seq? obj) :coll
-    (set? obj) :coll
-    (var? obj) :var
-    (string? obj) :string
-    (instance? Class obj) :class
-    (instance? clojure.lang.Namespace obj) :namespace
-    (instance? clojure.lang.ARef obj) :aref
-    (instance? List obj) :coll
-    (instance? Map obj) :coll
-    (.isArray (class obj)) :array
-    :else (or (:inspector-tag (meta obj))
-              (type obj))))
+(defn- dispatch-inspect [_ins obj]
+  (object-type obj))
 
-(defmulti inspect #'known-types)
+(defmulti inspect #'dispatch-inspect)
 
 (defmethod inspect :nil [inspector _obj]
   (-> inspector
       (render-ln "nil")))
 
-(defmethod inspect :coll [inspector obj]
+(defn- inspect-coll [inspector obj]
   (-> (render-class-name inspector obj)
       (render-counted-length obj)
       (render-meta-information obj)
       (render-section-header "Contents")
       (indent)
-      (render-collection-paged obj true)
+      (render-collection-paged)
       (unindent)
-      (render-datafy obj)))
+      (render-datafy)))
+
+(defmethod inspect :list [inspector obj] (inspect-coll inspector obj))
+(defmethod inspect :set  [inspector obj] (inspect-coll inspector obj))
+(defmethod inspect :map  [inspector obj] (inspect-coll inspector obj))
 
 (defmethod inspect :array [inspector obj]
   (-> (render-class-name inspector obj)
@@ -452,9 +512,9 @@
       (render-labeled-value "Component Type" (.getComponentType (class obj)))
       (render-section-header "Contents")
       (indent)
-      (render-collection-paged obj true)
+      (render-collection-paged)
       (unindent)
-      (render-datafy obj)))
+      (render-datafy)))
 
 (defn- render-var-value [inspector ^clojure.lang.Var obj]
   (if-not (.isBound obj)
@@ -463,11 +523,11 @@
         (render-value (var-get obj))
         (render-ln))))
 
-(defmethod inspect :var [inspector ^clojure.lang.Var obj]
+(defmethod inspect :var [inspector obj]
   (-> (render-class-name inspector obj)
       (render-var-value obj)
       (render-meta-information obj)
-      (render-datafy obj)))
+      (render-datafy)))
 
 (defn- render-indent-str-lines [inspector s]
   (reduce #(-> (render-indent %1 (str %2))
@@ -532,7 +592,7 @@
         (seq static-accessible)        (render-fields "Static fields" static-accessible)
         (seq non-static-nonaccessible) (render-fields "Private instance fields" non-static-nonaccessible)
         (seq static-nonaccessible)     (render-fields "Private static fields" static-nonaccessible)
-        true                           (render-datafy obj)))))
+        true                           (render-datafy)))))
 
 (defn- render-class-section [inspector [section elements sort-key-fn]]
   (if-not (seq elements)
@@ -557,15 +617,20 @@
                [:Fields,       (.getFields obj),       #(.getName ^Field %)]
                [:Methods,      (.getMethods obj),      #(vector (.getName ^Method %)
                                                                 (.toGenericString ^Method %))]])
-      (render-datafy obj)))
+      (render-datafy)))
 
 (defmethod inspect :aref [inspector ^clojure.lang.ARef obj]
-  (-> (render-class-name inspector obj)
-      (render-section-header "Contains")
-      (indent)
-      (inspect (deref obj))
-      (unindent)
-      (render-datafy obj)))
+  (let [val (deref obj)]
+    (-> (render-class-name inspector obj)
+        (render-section-header "Deref")
+        (indent)
+        (render-class-name val)
+        (render-counted-length val)
+        (render-section-header "Contents")
+        (indent)
+        (render-value-maybe-expand val)
+        (unindent)
+        (unindent))))
 
 (defn ns-refers-by-ns [^clojure.lang.Namespace ns]
   (group-by (fn [^clojure.lang.Var v] (.ns v))
@@ -604,23 +669,12 @@
 
 (defmethod inspect :namespace [inspector ^clojure.lang.Namespace obj]
   (-> (render-class-name inspector obj)
-      (render-labeled-value "Count" (count (ns-map obj)))
+      (render-counted-length (ns-map obj))
+      (render-meta-information obj)
       (render-ns-refers obj)
       (render-ns-imports obj)
       (render-ns-interns obj)
-      (render-datafy obj)))
-
-;;
-;; Entry point to inspect a value and get the serialized rep
-;;
-(defn render-reference [inspector]
-  (let [{:keys [type ns sym expr]} (:reference inspector)]
-    (cond (= type :var)
-          (render-ln inspector "Var: #'" ns "/" sym)
-          (= type :expr)
-          (render-ln inspector "Expr: " expr)
-          :else
-          inspector)))
+      (render-datafy)))
 
 (defn render-path [inspector]
   (let [path (:path inspector)]
@@ -640,9 +694,9 @@
              *print-level*            max-nested-depth]
      (-> inspector
          (reset-render-state)
-         (render-reference)
+         (decide-if-paginated)
          (inspect value)
-         (render-page-info value)
+         (render-page-info)
          (render-path)
          (update :rendered seq))))
   ([inspector value]
