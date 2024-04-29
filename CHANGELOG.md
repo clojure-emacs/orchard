@@ -11,6 +11,7 @@
 * [#246](https://github.com/clojure-emacs/orchard/issues/246): Enable sibling navigation for arrays.
 * [#252](https://github.com/clojure-emacs/orchard/issues/252): Display count in the inspector header for objects with known size.
 * [#253](https://github.com/clojure-emacs/orchard/issues/253): Rework pagination and datafy.
+* [#242](https://github.com/clojure-emacs/orchard/issues/242): Remove redundant Java package prefixes in the inspector.
 
 ### Bugs Fixed
 
