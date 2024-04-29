@@ -10,6 +10,7 @@
 * [#246](https://github.com/clojure-emacs/orchard/issues/246): Reimplement path tracking and sibling navigation.
 * [#246](https://github.com/clojure-emacs/orchard/issues/246): Enable sibling navigation for arrays.
 * [#252](https://github.com/clojure-emacs/orchard/issues/252): Display count in the inspector header for objects with known size.
+* [#253](https://github.com/clojure-emacs/orchard/issues/253): Rework pagination and datafy.
 
 ### Bugs Fixed
 
