@@ -125,6 +125,8 @@
 (def long-map (into (sorted-map) (zipmap (range 70) (range 70))))
 (def long-nested-coll (vec (map #(range (* % 10) (+ (* % 10) 80)) (range 200))))
 
+(defrecord TestRecord [a b c d])
+
 (defn- section? [name rendered]
   (when (string? rendered)
     (re-matches (re-pattern (format "--- %s:" name)) rendered)))
@@ -142,6 +144,11 @@
 (defn- header [rendered]
   (take-while #(not (and (string? %)
                          (re-matches #".*---.*" %))) rendered))
+
+(defn- page-size-info [rendered]
+  (let [s (last (butlast rendered))]
+    (when (and (string? s) (.startsWith ^String s "Page size:"))
+      s)))
 
 (defn- extend-datafy-class [m]
   (vary-meta m assoc 'clojure.core.protocols/datafy (fn [x] (assoc x :class (.getSimpleName (class x))))))
@@ -272,14 +279,12 @@
     (is (-> long-vector
             inspect
             :rendered
-            ^String (last)
-            (.startsWith "Page size:"))))
+            page-size-info)))
   (testing "small collections are not paginated"
-    (is (= '(:newline)
-           (-> (range 10)
-               inspect
-               :rendered
-               last))))
+    (is (nil? (-> (range 10)
+                  inspect
+                  :rendered
+                  page-size-info))))
   (testing "changing page size"
     (is (= 21 (-> long-sequence
                   inspect
@@ -289,18 +294,18 @@
                   inspect
                   (inspect/set-page-size 20)
                   :counter)))
-    (is (= '(:newline) (-> long-sequence
-                           inspect
-                           (inspect/set-page-size 200)
-                           :rendered
-                           last))))
+    (is (nil? (-> long-sequence
+                  inspect
+                  (inspect/set-page-size 200)
+                  :rendered
+                  page-size-info))))
   (testing "uncounted collections have their size determined on the last page"
     (is (= "Page size: 32, showing page: 2 of 2"
            (-> (range 50)
                inspect
                inspect/next-page
                :rendered
-               last))))
+               page-size-info))))
   (testing "next-page and prev-page are bound to collection size"
     (is (= 0
            (-> []
@@ -366,7 +371,23 @@
                     inspect/next-page
                     inspect/next-page)]
         (is (= 2 (:current-page ins)))
-        (is (= 4 (:current-page (inspect/up ins))))))))
+        (is (= 4 (:current-page (inspect/up ins)))))))
+  (testing "pagination commands are no-ops on non-pageable objects"
+    (let [ins (inspect 42)]
+      (is (match? (render ins)
+                  (render (-> ins
+                              inspect/next-page
+                              inspect/next-page
+                              inspect/prev-page
+                              inspect/prev-page)))))
+    ;; Atom deref contents are non-pageable.
+    (let [ins (inspect (atom (range 100)))]
+      (is (match? (render ins)
+                  (render (-> ins
+                              inspect/next-page
+                              inspect/next-page
+                              inspect/prev-page
+                              inspect/prev-page)))))))
 
 (deftest def-value-test
   (testing "define var with the currently inspected value"
@@ -743,15 +764,30 @@
                     :value)))
       (is (= :e (-> (inspect (with-meta [:a :b :c :d :e] {:m 42}))
                     (inspect/down 7)
-                    :value))))))
+                    :value))))
+
+    (testing "if meta is larger than page size, render it as a single value"
+      (let [rendered (-> [:a :b :c :d :e]
+                         (with-meta (zipmap (range 20) (range)))
+                         inspect
+                         (inspect/set-page-size 10)
+                         render)]
+        (is (match? '("--- Meta Information:"
+                      (:newline)
+                      "  "
+                      (:value "{ 0 0, 7 7, 1 1, 4 4, 15 15, ... }" 1)
+                      (:newline)
+                      (:newline))
+                    (section "Meta Information" rendered)))))))
 
 (deftest inspect-coll-nav-test
   (testing "inspecting a collection extended with the Datafiable and Navigable protocols"
-    (let [rendered (-> (->> (iterate inc 0)
-                            (map #(hash-map :x %))
-                            (map extend-datafy-class)
-                            (map extend-nav-vector))
-                       inspect (inspect/set-page-size 2) render)]
+    (let [ins (-> (->> (iterate inc 0)
+                       (map #(hash-map :x %))
+                       (map extend-datafy-class)
+                       (map extend-nav-vector))
+                  inspect (inspect/set-page-size 2))
+          rendered (render ins)]
       (testing "renders the content section"
         (is (match? '("--- Contents:"
                       (:newline)
@@ -777,8 +813,24 @@
       (testing "renders the page info section"
         (is (match? '("--- Page Info:"
                       (:newline)
-                      "  " "Page size: 2, showing page: 1 of ?")
-                    (section "Page Info" rendered)))))))
+                      "  " "Page size: 2, showing page: 1 of ?"
+                      (:newline))
+                    (section "Page Info" rendered))))
+      (testing "follows the same pagination rules"
+        (is (match? '("--- Datafy:"
+                      (:newline)
+                      "  " "..."
+                      (:newline)
+                      "  " "4" ". " (:value "{ :class \"PersistentHashMap\", :x 4 }" 3)
+                      (:newline)
+                      "  " "5" ". " (:value "{ :class \"PersistentHashMap\", :x 5 }" 4)
+                      (:newline)
+                      "  " "..."
+                      (:newline)
+                      (:newline))
+                    (datafy-section (render (-> ins
+                                                (inspect/next-page)
+                                                (inspect/next-page))))))))))
 
 (deftest inspect-configure-length-test
   (testing "inspect respects :max-atom-length and :max-coll-size configuration"
@@ -965,8 +1017,8 @@
                       (:newline)
                       (:newline))
                     (header rendered))))
-      (testing "renders the contains section"
-        (is (match? '("--- Contains:"
+      (testing "renders the deref section"
+        (is (match? '("--- Deref:"
                       (:newline)
                       "  " "Class" ": " (:value "clojure.lang.PersistentArrayMap" 1)
                       (:newline)
@@ -976,15 +1028,40 @@
                       "  --- Contents:"
                       (:newline)
                       "    " (:value ":a" 2) " = " (:value "1" 3)
-                      (:newline)
                       (:newline))
-                    (section "Contains" rendered))))
-      (testing "renders the datafy section"
-        (is (match? '("--- Datafy:"
-                      (:newline)
-                      "  " "0" ". " (:value "{ :a 1 }" 4)
-                      (:newline))
-                    (datafy-section rendered)))))))
+                    (section "Deref" rendered))))
+      (testing "doesn't render the datafy section"
+        (is (match? nil (datafy-section rendered))))))
+
+  (testing "small collection is rendered fully"
+    (is (match? '("--- Deref:"
+                  (:newline)
+                  "  " "Class" ": " (:value "clojure.lang.LongRange" 1)
+                  (:newline)
+                  "  " "Count: " "3"
+                  (:newline)
+                  (:newline)
+                  "  --- Contents:"
+                  (:newline)
+                  "    " "0" ". " (:value "0" 2)
+                  (:newline)
+                  "    " "1" ". " (:value "1" 3)
+                  (:newline)
+                  "    " "2" ". " (:value "2" 4)
+                  (:newline))
+                (->> (atom (range 3)) inspect render (section "Deref")))))
+
+  (testing "larger collection is rendered as a single value"
+    (is (match? '("--- Deref:"
+                  (:newline)
+                  "  " "Class" ": " (:value "clojure.lang.LongRange" 1)
+                  (:newline)
+                  "  " "Count: " "100" (:newline) (:newline)
+                  "  --- Contents:"
+                  (:newline)
+                  "    " (:value "( 0 1 2 3 4 ... )" 2)
+                  (:newline))
+                (->> (atom (range 100)) inspect render (section "Deref"))))))
 
 (deftest inspect-atom-infinite-seq-test
   (testing "inspecting an atom holding an infinite seq"
@@ -996,30 +1073,17 @@
                       (:newline)
                       (:newline))
                     (header rendered))))
-      (testing "renders the contains section"
-        (is (match? '("--- Contains:"
+      (testing "renders the deref section"
+        (is (match? '("--- Deref:"
                       (:newline)
                       "  " "Class" ": " (:value "clojure.lang.Repeat" 1)
                       (:newline)
                       (:newline)
                       "  --- Contents:"
                       (:newline)
-                      "    " "0" ". " (:value "1" 2)
-                      (:newline)
-                      "    " "1" ". " (:value "1" 3)
-                      (:newline)
-                      "    " "2" ". " (:value "1" 4)
-                      (:newline)
-                      "    " "..."
-                      (:newline)
+                      "    " (:value "( 1 1 1 1 1 ... )" 2)
                       (:newline))
-                    (section "Contains" rendered))))
-      (testing "renders the datafy section"
-        (is (match? '("--- Datafy:"
-                      (:newline)
-                      "  " "0" ". " (:value "( 1 1 1 1 1 ... )" 5)
-                      (:newline))
-                    (datafy-section rendered)))))))
+                    (section "Deref" rendered)))))))
 
 (deftest inspect-clojure-string-namespace-test
   (testing "inspecting the clojure.string namespace"
@@ -1029,63 +1093,74 @@
                           ": "
                           (list :value "clojure.lang.Namespace" number?)
                           '(:newline)
-                          "Count"
-                          ": "
-                          (list :value string?
-                                number?)
+                          "Count: " string?
                           '(:newline)
                           '(:newline))
                     (header result))))
+      (testing "renders the meta section"
+        (is (match? '("--- Meta Information:"
+                      (:newline)
+                      "  " (:value ":doc" 1)
+                      " = "
+                      (:value #=(str "\"Clojure String utilities\\n\\nIt is poor form to (:use clojure.string). "
+                                     "Instead, use require\\nwith :as to specify a prefix, e.g.\\n\\n(ns your.namespace.here\\n ...\"") 2)
+                      (:newline)
+                      "  " (:value ":author" 3)
+                      " = "
+                      (:value "\"Stuart Sierra, Stuart Halloway, David Liebke\"" 4)
+                      (:newline)
+                      (:newline))
+                    (section "Meta Information" result))))
       (testing "renders the refer from section"
-        (is (match? `("--- Refer from:"
+        (is (match? '("--- Refer from:"
                       (:newline)
                       "  "
-                      (:value "clojure.core" 2)
+                      (:value "clojure.core" 5)
                       " = "
-                      (:value ~(str "[ #'clojure.core/primitives-classnames #'clojure.core/+' #'clojure.core/decimal? "
-                                    "#'clojure.core/restart-agent #'clojure.core/sort-by ... ]") 3)
+                      (:value #=(str "[ #'clojure.core/primitives-classnames #'clojure.core/+' #'clojure.core/decimal? "
+                                     "#'clojure.core/restart-agent #'clojure.core/sort-by ... ]") 6)
                       (:newline)
                       (:newline))
                     (section "Refer from" result))))
       (testing "renders the imports section"
-        (is (match? `("--- Imports:"
+        (is (match? '("--- Imports:"
                       (:newline)
-                      "  " (:value ~(str "{ Enum java.lang.Enum, "
-                                         "InternalError java.lang.InternalError, "
-                                         "NullPointerException java.lang.NullPointerException, "
-                                         "InheritableThreadLocal java.lang.InheritableThreadLocal, "
-                                         "Class java.lang.Class, ... }") 4)
+                      "  " (:value #=(str "{ Enum java.lang.Enum, "
+                                          "InternalError java.lang.InternalError, "
+                                          "NullPointerException java.lang.NullPointerException, "
+                                          "InheritableThreadLocal java.lang.InheritableThreadLocal, "
+                                          "Class java.lang.Class, ... }") 7)
                       (:newline)
                       (:newline))
                     (section "Imports" result))))
       (testing "renders the interns section"
-        (is (match? `("--- Interns:"
+        (is (match? '("--- Interns:"
                       (:newline)
-                      "  " (:value ~(str "{ ends-with? #'clojure.string/ends-with?, "
-                                         "replace-first-char #'clojure.string/replace-first-char, "
-                                         "capitalize #'clojure.string/capitalize, "
-                                         "reverse #'clojure.string/reverse, join #'clojure.string/join, ... }") 5)
+                      "  " (:value #=(str "{ ends-with? #'clojure.string/ends-with?, "
+                                          "replace-first-char #'clojure.string/replace-first-char, "
+                                          "capitalize #'clojure.string/capitalize, "
+                                          "reverse #'clojure.string/reverse, join #'clojure.string/join, ... }") 8)
                       (:newline)
                       (:newline))
                     (section "Interns" result))))
       (testing "renders the datafy from section"
-        (is (match? `("--- Datafy:"
+        (is (match? '("--- Datafy:"
                       (:newline)
-                      "  " (:value ":name" 6) " = " (:value "clojure.string" 7)
+                      "  " (:value ":name" 9) " = " (:value "clojure.string" 10)
                       (:newline)
-                      "  " (:value ":publics" 8) " = "
-                      (:value ~(str "{ blank? #'clojure.string/blank?, capitalize "
-                                    "#'clojure.string/capitalize, ends-with? #'clojure.string/ends-with?, "
-                                    "escape #'clojure.string/escape, includes? #'clojure.string/includes?, ... }") 9)
+                      "  " (:value ":publics" 11) " = "
+                      (:value #=(str "{ blank? #'clojure.string/blank?, capitalize "
+                                     "#'clojure.string/capitalize, ends-with? #'clojure.string/ends-with?, "
+                                     "escape #'clojure.string/escape, includes? #'clojure.string/includes?, ... }") 12)
                       (:newline)
-                      "  " (:value ":imports" 10) " = "
-                      (:value ~(str "{ AbstractMethodError java.lang.AbstractMethodError, Appendable java.lang.Appendable, "
-                                    "ArithmeticException java.lang.ArithmeticException, ArrayIndexOutOfBoundsException "
-                                    "java.lang.ArrayIndexOutOfBoundsException, ArrayStoreException java.lang.ArrayStoreException, ... }") 11)
+                      "  " (:value ":imports" 13) " = "
+                      (:value #=(str "{ AbstractMethodError java.lang.AbstractMethodError, Appendable java.lang.Appendable, "
+                                     "ArithmeticException java.lang.ArithmeticException, ArrayIndexOutOfBoundsException "
+                                     "java.lang.ArrayIndexOutOfBoundsException, ArrayStoreException java.lang.ArrayStoreException, ... }") 14)
                       (:newline)
-                      "  " (:value ":interns" 12) " = "
-                      (:value ~(str "{ blank? #'clojure.string/blank?, capitalize #'clojure.string/capitalize, ends-with? #'clojure.string/ends-with?, "
-                                    "escape #'clojure.string/escape, includes? #'clojure.string/includes?, ... }") 13)
+                      "  " (:value ":interns" 15) " = "
+                      (:value #=(str "{ blank? #'clojure.string/blank?, capitalize #'clojure.string/capitalize, ends-with? #'clojure.string/ends-with?, "
+                                     "escape #'clojure.string/escape, includes? #'clojure.string/includes?, ... }") 16)
                       (:newline))
                     (datafy-section result)))))))
 
@@ -1328,7 +1403,83 @@
     (let [rendered (-> {:foo :bar} inspect render)]
       (is (nil? (datafy-section rendered))))
     (let [rendered (-> {:foo :bar :nilable nil} inspect render)]
-      (is (nil? (datafy-section rendered))))))
+      (is (nil? (datafy-section rendered)))))
+  (testing "datafy is not included for records"
+    (let [rendered (-> (->TestRecord 1 2 3 4) inspect render)]
+      (is (nil? (datafy-section rendered)))))
+  (testing "if datafied repr doesn't mirror the original, don't page datafied"
+    (let [rendered (-> {:a 1, :b 2}
+                       (with-meta {'clojure.core.protocols/datafy
+                                   (fn [_] (range 30))})
+                       inspect
+                       (inspect/set-page-size 1)
+                       render)]
+      (is (match? '("--- Contents:"
+                    (:newline)
+                    "  " (:value ":a" 3)
+                    " = "
+                    (:value "1" 4)
+                    (:newline)
+                    "  " "..."
+                    (:newline)
+                    (:newline))
+                  (section "Contents" rendered)))
+      (is (match? '("--- Datafy:"
+                    (:newline)
+                    "  " (:value "[ 0 1 2 3 4 ... ]" 5)
+                    (:newline)
+                    (:newline))
+                  (datafy-section rendered))))
+
+    (testing "if datafied is small enough, render it as a collection"
+      (let [rendered (-> {:a 1, :b 2}
+                         (with-meta {'clojure.core.protocols/datafy
+                                     (fn [_] (range 3))})
+                         inspect
+                         (inspect/set-page-size 5)
+                         render)]
+        (is (match? '("--- Datafy:"
+                      (:newline)
+                      "  " "0" ". " (:value "0" 7)
+                      (:newline)
+                      "  " "1" ". " (:value "1" 8)
+                      (:newline)
+                      "  " "2" ". " (:value "2" 9)
+                      (:newline))
+                    (datafy-section rendered))))))
+  (testing "datafy doesn't show if the differing datafied is not on the current page"
+    (let [ins (-> {:a 1, :b (with-meta [] {'clojure.core.protocols/datafy
+                                           (fn [_] :datafied)})}
+                  inspect
+                  (inspect/set-page-size 1))
+          rendered (render ins)]
+      (is (match? nil (datafy-section rendered)))
+      (is (match? '("--- Datafy:"
+                    (:newline)
+                    "  " "..."
+                    (:newline)
+                    "  " (:value ":b" 3)
+                    " = "
+                    (:value ":datafied" 4)
+                    (:newline)
+                    (:newline))
+                  (datafy-section (-> ins (inspect/next-page) render)))))
+    (let [ins (-> [1 2 3 (with-meta [] {'clojure.core.protocols/datafy
+                                        (fn [_] :datafied)})]
+                  inspect
+                  (inspect/set-page-size 2))
+          rendered (render ins)]
+      (is (match? nil (datafy-section rendered)))
+      (is (match? '("--- Datafy:"
+                    (:newline)
+                    "  " "..."
+                    (:newline)
+                    "  " "2" ". " (:value "3" 3)
+                    (:newline)
+                    "  " "3" ". " (:value ":datafied" 4)
+                    (:newline)
+                    (:newline))
+                  (datafy-section (-> ins (inspect/next-page) render)))))))
 
 (deftest private-field-access-test
   (testing "Inspection of private fields is attempted (may fail depending on the JDK and the module of the given class)"
