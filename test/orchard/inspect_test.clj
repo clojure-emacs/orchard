@@ -1245,7 +1245,7 @@
     (let [rendered (-> (byte-array 30) inspect render)]
       (is (match? '("Class"
                     ": "
-                    (:value "[B" 0)
+                    (:value #"\[B|byte/1" 0)
                     (:newline)
                     "Count: " "30"
                     (:newline)
