@@ -275,18 +275,18 @@
 (defn render-value
   "Render the given `value` and add it to the index. `value-role` can be provided
   to mark in the index that the value comes from a collection, and `value-key`
-  stands for the key by which value can be retrieved from its collection."
-  ([inspector value] (render-value inspector value :default nil))
-  ([inspector value value-role value-key]
-   (let [{:keys [counter]} inspector
-         inspected-value (print/print-str value)
-         expr (list :value inspected-value counter)]
-     (-> inspector
-         (update :index conj {:value value
-                              :role value-role
-                              :key value-key})
-         (update :counter inc)
-         (update :rendered conj expr)))))
+  stands for the key by which value can be retrieved from its collection.
+  `display-value` string can be provided explicitly."
+  [inspector value & {:keys [value-role value-key display-value]}]
+  (let [{:keys [counter]} inspector
+        display-value (or display-value (print/print-str value))
+        expr (list :value display-value counter)]
+    (-> inspector
+        (update :index conj {:value value
+                             :role value-role
+                             :key value-key})
+        (update :counter inc)
+        (update :rendered conj expr))))
 
 (defn render-labeled-value [inspector label value]
   (-> inspector
@@ -314,7 +314,7 @@
               (render-value ins key)
               (render ins " = ")
               (if mark-values?
-                (render-value ins val :map-value key)
+                (render-value ins val :value-role :map-value, :value-key key)
                 (render-value ins val))
               (render-ln ins)))
           inspector
@@ -334,7 +334,8 @@
         (recur (as-> ins ins
                  (render-indent ins (format idx-fmt idx) ". ")
                  (if mark-values?
-                   (render-value ins (first chunk) :seq-item idx)
+                   (render-value ins (first chunk) :value-role :seq-item
+                                 :value-key idx)
                    (render-value ins (first chunk)))
                  (render-ln ins))
                (next chunk) (inc idx))
@@ -594,30 +595,48 @@
         (seq static-nonaccessible)     (render-fields "Private static fields" static-nonaccessible)
         true                           (render-datafy)))))
 
-(defn- render-class-section [inspector [section elements sort-key-fn]]
+(defn- shorten-member-string [member-string, ^Class class full-class-prefix]
+  ;; Ugly as hell, but easier than reimplementing all custom printing that
+  ;; java.lang.reflect does.
+  (-> member-string
+      (string/replace full-class-prefix "")
+      (string/replace (.getCanonicalName class) (.getSimpleName class))
+      (string/replace #"java.lang.([A-Z])" "$1")))
+
+(defn- render-class-section [inspector section elements print-fn & [sort-fn]]
   (if-not (seq elements)
     inspector
-    (unindent (reduce (fn [ins elt]
-                        (-> ins
-                            (render-indent)
-                            (render-value elt)
-                            (render-ln)))
-                      (-> inspector
-                          (render-section-header section)
-                          (indent))
-                      (sort-by sort-key-fn elements)))))
+    (unindent (->> (mapv #(vector % (print-fn %)) elements)
+                   (sort-by (if sort-fn
+                              (comp sort-fn first)
+                              second))
+                   (reduce (fn [ins [elt printed]]
+                             (-> ins
+                                 (render-indent)
+                                 (render-value elt :display-value printed)
+                                 (render-ln)))
+                           (-> inspector
+                               (render-section-header section)
+                               (indent)))))))
 
 (defmethod inspect :class [inspector ^Class obj]
-  (-> (reduce render-class-section
-              (-> inspector
-                  (render-labeled-value "Name" (-> obj .getName symbol))
-                  (render-class-name obj))
-              [[:Interfaces,   (.getInterfaces obj),   #(.getName ^Class %)]
-               [:Constructors, (.getConstructors obj), #(.toGenericString ^Constructor %)]
-               [:Fields,       (.getFields obj),       #(.getName ^Field %)]
-               [:Methods,      (.getMethods obj),      #(vector (.getName ^Method %)
-                                                                (.toGenericString ^Method %))]])
-      (render-datafy)))
+  (let [full-class-prefix (str (.getCanonicalName obj) ".")
+        print-fn (fn [to-string]
+                   #(shorten-member-string (to-string %) obj full-class-prefix))]
+    (-> inspector
+        (render-labeled-value "Name" (-> obj .getName symbol))
+        (render-class-name obj)
+        (render-class-section :Interfaces (.getInterfaces obj)
+                              #(.getName ^Class %))
+        (render-class-section :Constructors (.getConstructors obj)
+                              (print-fn #(.toGenericString ^Constructor %)))
+        (render-class-section :Fields (.getFields obj)
+                              (print-fn #(.toGenericString ^Field %)))
+        (render-class-section :Methods (.getMethods obj)
+                              (print-fn #(.toGenericString ^Method %))
+                              #(vector (.getName ^Method %)
+                                       (.toGenericString ^Method %)))
+        (render-datafy))))
 
 (defmethod inspect :aref [inspector ^clojure.lang.ARef obj]
   (let [val (deref obj)]

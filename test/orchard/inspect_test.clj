@@ -653,11 +653,11 @@
   (testing "inspecting a class with fields renders correctly"
     (is (match? (list "--- Fields:"
                       '(:newline)
-                      "  " (list :value "public static final java.lang.Boolean java.lang.Boolean.FALSE" number?)
+                      "  " (list :value "public static final Boolean FALSE" number?)
                       '(:newline)
-                      "  " (list :value "public static final java.lang.Boolean java.lang.Boolean.TRUE" number?)
+                      "  " (list :value "public static final Boolean TRUE" number?)
                       '(:newline)
-                      "  " (list :value "public static final java.lang.Class java.lang.Boolean.TYPE" number?)
+                      "  " (list :value "public static final Class<Boolean> TYPE" number?)
                       '(:newline)
                       '(:newline))
                 (->> Boolean inspect render (section "Fields")))))
@@ -960,7 +960,7 @@
       (testing "renders the constructors section"
         (is (match? '("--- Constructors:"
                       (:newline)
-                      "  " (:value "public java.lang.Object()" 2)
+                      "  " (:value "public Object()" 2)
                       (:newline)
                       (:newline))
                     (section "Constructors" rendered))))
@@ -969,14 +969,14 @@
           (is (match? (matchers/embeds (list "--- Methods:"
                                              '(:newline)))
                       methods))
-          (doseq [assertion ["public final native java.lang.Class java.lang.Object.getClass()"
-                             "public boolean java.lang.Object.equals(java.lang.Object)"
-                             "public native int java.lang.Object.hashCode()"
-                             "public final native void java.lang.Object.notify()"
-                             "public final native void java.lang.Object.notifyAll()"
-                             "public java.lang.String java.lang.Object.toString()"
-                             "public final void java.lang.Object.wait() throws java.lang.InterruptedException"
-                             "public final void java.lang.Object.wait(long,int) throws java.lang.InterruptedException"]]
+          (doseq [assertion ["public final native Class<?> getClass()"
+                             "public boolean equals(Object)"
+                             "public native int hashCode()"
+                             "public final native void notify()"
+                             "public final native void notifyAll()"
+                             "public String toString()"
+                             "public final void wait() throws InterruptedException"
+                             "public final void wait(long,int) throws InterruptedException"]]
             (is (match? (matchers/embeds (list "  " (list :value assertion pos?)))
                         methods)))))
       (testing "renders the datafy section"
