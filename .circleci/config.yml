@@ -11,7 +11,6 @@ version: 2.1
 defaults: &defaults
   working_directory: ~/repo
   environment:
-    LEIN_ROOT: "true" # we intend to run lein as root
     JVM_OPTS: -Xmx3200m -Dclojure.main.report=stderr
 
 # Runners for each major OpenJDK
@@ -104,23 +103,26 @@ jobs:
   util_job:
     description: |
       Running utility commands/checks (linter etc.)
-      Always uses Java11 and Clojure 1.11
+      Always uses latest Java LTS and Clojure release
     parameters:
       jdk_version:
-        description: Version of JDK to test against
         type: string
+        default: "openjdk21"
+      clojure_version:
+        type: string
+        default: "1.11"
       steps:
         type: steps
     executor: << parameters.jdk_version >>
     environment:
-      VERSION: "1.11"
+      VERSION: << parameters.clojure_version >>
     steps:
       - checkout
       - with_cache:
-          parser_target: "parser"
+          parser_target: "parser-next"
           cache_version: "util-job-v1"
           jdk_version: << parameters.jdk_version >>
-          clojure_version: "1.11"
+          clojure_version: << parameters.clojure_version >>
           steps: << parameters.steps >>
 
   deploy:
@@ -218,7 +220,6 @@ workflows:
               only: /^v\d+\.\d+\.\d+(-alpha\d+)?$/
       - util_job:
           name: lint_latest_lts
-          jdk_version: openjdk21
           steps:
             - run:
                 name: Running cljfmt
