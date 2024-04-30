@@ -172,8 +172,8 @@ jobs:
       clojure_version:
         description: Version of Clojure to test against
         type: string
-      test_profiles:
-        description: Maps directly to the TEST_PROFILES var in Makefile
+      extra_profiles:
+        description: Additional profiles to pass to TEST_PROFILES var in Makefile
         type: string
       parser_target:
         description: The Java parser to be exercised
@@ -181,7 +181,7 @@ jobs:
     executor: << parameters.jdk_version >>
     environment:
       VERSION: << parameters.clojure_version >>
-      TEST_PROFILES: << parameters.test_profiles >>
+      TEST_PROFILES: -user,-dev,+test,<< parameters.extra_profiles >>
     steps:
       - checkout
       - with_cache:
@@ -218,7 +218,7 @@ workflows:
             parameters:
               jdk_version: [openjdk8]
               clojure_version: ["1.10", "1.11", "master"]
-              test_profiles: ["-user,-dev,+test,-provided", "-user,-dev,+test,+provided"]
+              extra_profiles: ["+provided", "-provided"]
               # It doesn't make sense to exercise the newer Orchard Java parsers against JDK8
               # (given that JDK8 is explicitly excluded by those parsers)
               parser_target: ["legacy-parser"]
@@ -233,7 +233,7 @@ workflows:
             parameters:
               jdk_version: [openjdk11, openjdk17, openjdk21, openjdk22]
               clojure_version: ["1.10", "1.11", "master"]
-              test_profiles: ["-user,-dev,+test,-provided", "-user,-dev,+test,+provided"]
+              extra_profiles: ["+provided"]
               # Don't test legacy parser on JDK11+ since it is never invoked there.
               parser_target: ["parser-next", "parser"]
           filters:
@@ -241,6 +241,15 @@ workflows:
               only: /.*/
             tags:
               only: /^v\d+\.\d+\.\d+(-alpha\d+)?$/
+      - test_code:
+          matrix:
+            # Test code without CLJS on the classpath for a single parser.
+            alias: "test_code_no_cljs"
+            parameters:
+              jdk_version: [openjdk11, openjdk17, openjdk21, openjdk22]
+              clojure_version: ["1.10", "1.11", "master"]
+              extra_profiles: ["-provided"]
+              parser_target: ["parser"]
       - eastwood:
           matrix:
             alias: "eastwood"
