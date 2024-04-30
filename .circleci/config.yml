@@ -125,6 +125,34 @@ jobs:
           clojure_version: << parameters.clojure_version >>
           steps: << parameters.steps >>
 
+  eastwood:
+    description: |
+      Run Eastwood on source code against given version of JDK and Clojure
+    parameters:
+      jdk_version:
+        description: Version of JDK to test against
+        type: string
+      clojure_version:
+        description: Version of Clojure to test against
+        type: string
+    executor: << parameters.jdk_version >>
+    environment:
+      VERSION: << parameters.clojure_version >>
+      TEST_PROFILES: "-user,-dev,+test,+provided"
+    steps:
+      - checkout
+      - with_cache:
+          jdk_version: << parameters.jdk_version >>
+          clojure_version: << parameters.clojure_version >>
+          parser_target: parser-next
+          cache_version: "eastwood-v1"
+          steps:
+            # Eastwood is run for every Clojure and JDK version because its
+            # results are sensitive to the code in the runtime.
+            - run:
+                name: Running Eastwood
+                command: make eastwood
+
   deploy:
     executor: openjdk8
     steps:
@@ -165,11 +193,6 @@ jobs:
             - run:
                 name: Running tests
                 command: PARSER_TARGET=<< parameters.parser_target >> make test
-            # Eastwood is run for every item in the CI matrix, because its results are sensitive to the code in the runtime,
-            # so we make the most out of this linter by exercising all profiles, JDK versions, etc.
-            - run:
-                name: Running Eastwood
-                command: make eastwood
 
 ######################################################################
 #
@@ -213,6 +236,17 @@ workflows:
               test_profiles: ["-user,-dev,+test,-provided", "-user,-dev,+test,+provided"]
               # Don't test legacy parser on JDK11+ since it is never invoked there.
               parser_target: ["parser-next", "parser"]
+          filters:
+            branches:
+              only: /.*/
+            tags:
+              only: /^v\d+\.\d+\.\d+(-alpha\d+)?$/
+      - eastwood:
+          matrix:
+            alias: "eastwood"
+            parameters:
+              jdk_version: [openjdk8, openjdk11, openjdk17, openjdk21, openjdk22]
+              clojure_version: ["1.10", "1.11", "master"]
           filters:
             branches:
               only: /.*/
