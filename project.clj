@@ -30,14 +30,14 @@
 
   :javac-options ["-Xlint:unchecked"]
 
-  :profiles {:provided {:dependencies [[org.clojure/clojure "1.11.2"] ;; Clojure versions matrix
-                                       [org.clojure/clojure "1.11.2" :classifier "sources"]
-                                       [org.clojure/clojurescript "1.11.4"]]
+  :profiles {:provided {:dependencies [[org.clojure/clojure "1.11.3"] ;; Clojure versions matrix
+                                       [org.clojure/clojure "1.11.3" :classifier "sources"]
+                                       [org.clojure/clojurescript "1.11.132"]]
                         :test-paths ["test-cljs"]}
              :1.10 {:dependencies [[org.clojure/clojure "1.10.3"]
                                    [org.clojure/clojure "1.10.3" :classifier "sources"]]}
-             :1.11 {:dependencies [[org.clojure/clojure "1.11.2"]
-                                   [org.clojure/clojure "1.11.2" :classifier "sources"]]}
+             :1.11 {:dependencies [[org.clojure/clojure "1.11.3"]
+                                   [org.clojure/clojure "1.11.3" :classifier "sources"]]}
              :master {:repositories [["snapshots"
                                       "https://oss.sonatype.org/content/repositories/snapshots"]]
                       :dependencies [[org.clojure/clojure "1.12.0-master-SNAPSHOT"]
@@ -79,9 +79,9 @@
                                          `add-cognitest)]}
 
              ;; Development tools
-             :dev {:plugins [[cider/cider-nrepl "0.45.0"]
+             :dev {:plugins [[cider/cider-nrepl "0.47.0"]
                              [refactor-nrepl "3.9.0"]]
-                   :dependencies [[nrepl/nrepl "1.1.0"]
+                   :dependencies [[nrepl/nrepl "1.1.1"]
                                   [org.clojure/tools.namespace "1.5.0"]]
                    :source-paths ["dev" "src-spec-alpha-2/src/main/clojure"]
                    :resource-paths ["test-resources"]}
