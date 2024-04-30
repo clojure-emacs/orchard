@@ -848,6 +848,34 @@
                 (-> (inspect/start {:max-atom-length 20
                                     :max-coll-size 3}
                                    [[111111 2222 333 44 5]])
+                    render))))
+  (testing "inspect respects :max-value-length configuration"
+    (is (match? '("Class"
+                  ": "
+                  (:value "clojure.lang.PersistentVector" 0)
+                  (:newline)
+                  "Count: " "1"
+                  (:newline)
+                  (:newline)
+                  "--- Contents:"
+                  (:newline)
+                  "  " "0" ". " (:value "( \"long value\" \"long value\" \"long value\" \"long val..." 1)
+                  (:newline))
+                (-> (inspect/start {:max-value-length 50} [(repeat "long value")])
+                    render))))
+  (testing "inspect respects :max-value-depth configuration"
+    (is (match? '("Class"
+                  ": "
+                  (:value "clojure.lang.PersistentVector" 0)
+                  (:newline)
+                  "Count: " "1"
+                  (:newline)
+                  (:newline)
+                  "--- Contents:"
+                  (:newline)
+                  "  " "0" ". " (:value "[ [ [ [ [ [ ... ] ] ] ] ] ]" 1)
+                  (:newline))
+                (-> (inspect/start {:max-nested-depth 5} [[[[[[[[[[1]]]]]]]]]])
                     render)))))
 
 (deftest inspect-java-hashmap-test
