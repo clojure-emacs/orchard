@@ -14,6 +14,9 @@
                        (.put a :b b)
                        (.put b :a a)
                        a))
+(def infinite-map (let [m (java.util.HashMap.)]
+                    (.put m (symbol "long key to ensure total length works accurately") m)
+                    m))
 
 (defn nasty [lvl]
   (if (= lvl 0)
@@ -101,7 +104,11 @@
       "( 1 1 1 1 1 1 1 1 1 1 1 1 1 1 ..." (java.util.ArrayList. ^java.util.Collection (repeat 100 1))
       "java.lang....[] { 0, 1, 2, 3, ..." (into-array Long (range 10))
       "{ :m { :m { :m { :m { :m 1234,..." (nasty 5)
-      "{ :b { :a { :b { :a { :b { :a ..." graph-with-loop)))
+      "{ :b { :a { :b { :a { :b { :a ..." graph-with-loop))
+
+  (testing "writer won't go much over total-length"
+    (is (= 2003 (count (binding [sut/*max-total-length* 2000]
+                         (sut/print-str infinite-map)))))))
 
 (deftest print-clojure-limits
   (are [result form] (= result (binding [*print-length* 5

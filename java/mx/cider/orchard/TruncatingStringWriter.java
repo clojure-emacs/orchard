@@ -61,6 +61,7 @@ public class TruncatingStringWriter extends StringWriter {
                 writeEllipsis();
         } else if (totalLimit >= 0) {
             super.write(cbuf, off, totalLimit);
+            totalLimit = 0;
             writeEllipsis();
         }
     }
@@ -81,6 +82,7 @@ public class TruncatingStringWriter extends StringWriter {
                 writeEllipsis();
         } else if (totalLimit >= 0) {
             super.write(str, off, totalLimit);
+            totalLimit = 0;
             writeEllipsis();
         }
     }
