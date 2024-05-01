@@ -37,7 +37,7 @@
   "Default configuration values for the inspector."
   {:page-size        32    ; = Clojure's default chunked sequences chunk size.
    :max-atom-length  150
-   :max-value-length 50000 ; Only to avoid printing graphs with loops.
+   :max-value-length 10000 ; To avoid printing huge graphs and Exceptions.
    :max-coll-size    5
    :max-nested-depth nil})
 
