@@ -978,7 +978,7 @@
                (inspect/down 4)
                :path)))))
 
-(deftest inspect-object-class-test
+(deftest inspect-class-test
   (testing "inspecting the java.lang.Object class"
     (let [rendered (-> Object inspect render)]
       (testing "renders the header section"
@@ -1033,7 +1033,32 @@
         (is (match? (matchers/embeds (list "--- Interfaces:"
                                            '(:newline)
                                            "  " (list :value "java.io.Serializable" number?)))
-                    (section "Interfaces" rendered)))))))
+                    (section "Interfaces" rendered))))))
+
+  (testing "inspecting the java.lang.ClassValue class"
+    (let [rendered (-> java.lang.ClassValue inspect render)]
+      (testing "renders the header section"
+        (is (match? (list "Name" ": " '(:value "java.lang.ClassValue" 0) '(:newline)
+                          "Class" ": " '(:value "java.lang.Class" 1) '(:newline) '(:newline))
+                    (header rendered))))
+      (testing "renders the methods section"
+        (let [methods (section "Methods" rendered)]
+          (is (match? (matchers/embeds (list "--- Methods:"
+                                             '(:newline)))
+                      methods))
+          (doseq [assertion ["public boolean equals(Object)"
+                             "public T get(Class<?>)"
+                             "public final native Class<?> getClass()"
+                             "public native int hashCode()"
+                             "public final native void notify()"
+                             "public final native void notifyAll()"
+                             "public void remove(Class<?>)"
+                             "public String toString()"
+                             "public final native void wait(long) throws InterruptedException"
+                             "public final void wait() throws InterruptedException"
+                             "public final void wait(long,int) throws InterruptedException"]]
+            (is (match? (matchers/embeds (list "  " (list :value assertion pos?)))
+                        methods))))))))
 
 (deftest inspect-atom-test
   (testing "inspecting an atom"

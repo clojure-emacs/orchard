@@ -596,11 +596,12 @@
         (seq static-nonaccessible)     (render-fields "Private static fields" static-nonaccessible)
         true                           (render-datafy)))))
 
-(defn- shorten-member-string [member-string, ^Class class full-class-prefix]
+(defn- shorten-member-string [member-string, ^Class class]
   ;; Ugly as hell, but easier than reimplementing all custom printing that
   ;; java.lang.reflect does.
   (-> member-string
-      (string/replace full-class-prefix "")
+      (string/replace #"[\w\.]+\.(\w+\()" "$1") ;; remove class from method name
+      (string/replace #"[\w\.]+\.(\w+)$" "$1") ;; remove class from field name
       (string/replace (.getCanonicalName class) (.getSimpleName class))
       (string/replace #"java.lang.([A-Z])" "$1")))
 
@@ -621,9 +622,8 @@
                                (indent)))))))
 
 (defmethod inspect :class [inspector ^Class obj]
-  (let [full-class-prefix (str (.getCanonicalName obj) ".")
-        print-fn (fn [to-string]
-                   #(shorten-member-string (to-string %) obj full-class-prefix))]
+  (let [print-fn (fn [to-string]
+                   #(shorten-member-string (to-string %) obj))]
     (-> inspector
         (render-labeled-value "Name" (-> obj .getName symbol))
         (render-class-name obj)
