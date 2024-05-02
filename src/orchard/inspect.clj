@@ -292,7 +292,7 @@
 
 (defn render-labeled-value [inspector label value & [value-opts]]
   (-> inspector
-      (render-indent label ": ")
+      (render-indent (str label ": "))
       (render-value value value-opts)
       (render-ln)))
 
@@ -520,9 +520,7 @@
 (defn- render-var-value [inspector ^clojure.lang.Var obj]
   (if-not (.isBound obj)
     inspector
-    (-> (render-indent inspector "Value: ")
-        (render-value (var-get obj))
-        (render-ln))))
+    (render-labeled-value inspector "Value" (var-get obj))))
 
 (defmethod inspect :var [inspector obj]
   (-> (render-class-name inspector obj)
