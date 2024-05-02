@@ -102,8 +102,7 @@
 (def eval-result (eval (read-string code)))
 
 (def inspect-result
-  '("Class"
-    ": "
+  '("Class: "
     (:value "clojure.lang.PersistentTreeMap" 0)
     (:newline)
     "Count: " "4"
@@ -207,8 +206,7 @@
   (testing "inspecting a var"
     (let [rendered (-> #'any-var inspect render)]
       (testing "renders the header"
-        (is (match? (list "Class"
-                          ": "
+        (is (match? (list "Class: "
                           (list :value "clojure.lang.Var" number?)
                           '(:newline)
                           "Value: "
@@ -241,8 +239,8 @@
 
 (deftest push-test
   (testing "pushing a rendered expr inspector idx"
-    (is (match? (list "Class"
-                      ": " (list :value "clojure.lang.PersistentArrayMap" number?)
+    (is (match? (list "Class: "
+                      (list :value "clojure.lang.PersistentArrayMap" number?)
                       '(:newline)
                       "Count: " "1"
                       '(:newline)
@@ -666,8 +664,8 @@
 
 (deftest inspect-coll-test
   (testing "inspect :coll prints contents of the coll"
-    (is (match? (list "Class"
-                      ": " (list :value "clojure.lang.PersistentVector" number?)
+    (is (match? (list "Class: "
+                      (list :value "clojure.lang.PersistentVector" number?)
                       '(:newline)
                       "Count: " "4"
                       '(:newline)
@@ -685,8 +683,8 @@
                 (render (inspect [1 2 nil 3])))))
 
   (testing "inspect :coll aligns index numbers so that values appear aligned"
-    (is (match? (list "Class"
-                      ": " (list :value "clojure.lang.PersistentVector" number?)
+    (is (match? (list "Class: "
+                      (list :value "clojure.lang.PersistentVector" number?)
                       '(:newline)
                       "Count: " "11"
                       '(:newline)
@@ -722,10 +720,10 @@
     (let [rendered (-> (inspect (vec (range 101)))
                        (inspect/set-page-size 200)
                        render)
-          head (take 14 rendered)
+          head (take 13 rendered)
           tail (take-last 5 rendered)]
-      (is (match? (list "Class"
-                        ": " (list :value "clojure.lang.PersistentVector" number?)
+      (is (match? (list "Class: "
+                        (list :value "clojure.lang.PersistentVector" number?)
                         '(:newline)
                         "Count: " "101"
                         '(:newline)
@@ -834,8 +832,7 @@
 
 (deftest inspect-configure-length-test
   (testing "inspect respects :max-atom-length and :max-coll-size configuration"
-    (is (match? '("Class"
-                  ": "
+    (is (match? '("Class: "
                   (:value "clojure.lang.Persist..." 0)
                   (:newline)
                   "Count: " "1"
@@ -850,8 +847,7 @@
                                    [[111111 2222 333 44 5]])
                     render))))
   (testing "inspect respects :max-value-length configuration"
-    (is (match? '("Class"
-                  ": "
+    (is (match? '("Class: "
                   (:value "clojure.lang.PersistentVector" 0)
                   (:newline)
                   "Count: " "1"
@@ -864,8 +860,7 @@
                 (-> (inspect/start {:max-value-length 50} [(repeat "long value")])
                     render))))
   (testing "inspect respects :max-value-depth configuration"
-    (is (match? '("Class"
-                  ": "
+    (is (match? '("Class: "
                   (:value "clojure.lang.PersistentVector" 0)
                   (:newline)
                   "Count: " "1"
@@ -882,8 +877,7 @@
   (testing "inspecting java.util.Map descendants prints a key-value coll"
     (let [^java.util.Map the-map {:a 1, :b 2, :c 3}
           rendered (render (inspect (java.util.HashMap. the-map)))]
-      (is (match? (matchers/embeds '("Class"
-                                     ": "
+      (is (match? (matchers/embeds '("Class: "
                                      (:value "java.util.HashMap" 0)
                                      (:newline)
                                      (:newline)
@@ -899,11 +893,10 @@
 
 (deftest inspect-java-object-test
   (testing "inspecting any Java object prints its fields"
-    (is (match? '("Class"
-                  ": "
+    (is (match? '("Class: "
                   (:value "clojure.lang.TaggedLiteral" 0)
                   (:newline)
-                  "Value" ": " (:value "#foo ()" 1)
+                  "Value: " (:value "#foo ()" 1)
                   (:newline)
                   (:newline)
                   "--- Instance fields:"
@@ -978,12 +971,12 @@
                (inspect/down 4)
                :path)))))
 
-(deftest inspect-object-class-test
+(deftest inspect-class-test
   (testing "inspecting the java.lang.Object class"
     (let [rendered (-> Object inspect render)]
       (testing "renders the header section"
-        (is (match? (list "Name" ": " '(:value "java.lang.Object" 0) '(:newline)
-                          "Class" ": " '(:value "java.lang.Class" 1) '(:newline) '(:newline))
+        (is (match? (list "Name: " '(:value "java.lang.Object" 0) '(:newline)
+                          "Class: " '(:value "java.lang.Class" 1) '(:newline) '(:newline))
                     (header rendered))))
       (testing "renders the constructors section"
         (is (match? '("--- Constructors:"
@@ -1033,14 +1026,37 @@
         (is (match? (matchers/embeds (list "--- Interfaces:"
                                            '(:newline)
                                            "  " (list :value "java.io.Serializable" number?)))
-                    (section "Interfaces" rendered)))))))
+                    (section "Interfaces" rendered))))))
+
+  (testing "inspecting the java.lang.ClassValue class"
+    (let [rendered (-> java.lang.ClassValue inspect render)]
+      (testing "renders the header section"
+        (is (match? (list "Name: " '(:value "java.lang.ClassValue" 0) '(:newline)
+                          "Class: " '(:value "java.lang.Class" 1) '(:newline) '(:newline))
+                    (header rendered))))
+      (testing "renders the methods section"
+        (let [methods (section "Methods" rendered)]
+          (is (match? (matchers/embeds (list "--- Methods:"
+                                             '(:newline)))
+                      methods))
+          (doseq [assertion ["public boolean equals(Object)"
+                             "public T get(Class<?>)"
+                             "public final native Class<?> getClass()"
+                             "public native int hashCode()"
+                             "public final native void notify()"
+                             "public final native void notifyAll()"
+                             "public void remove(Class<?>)"
+                             "public String toString()"
+                             "public final void wait() throws InterruptedException"
+                             "public final void wait(long,int) throws InterruptedException"]]
+            (is (match? (matchers/embeds (list "  " (list :value assertion pos?)))
+                        methods))))))))
 
 (deftest inspect-atom-test
   (testing "inspecting an atom"
     (let [rendered (-> (atom {:a 1}) inspect render)]
       (testing "renders the header section"
-        (is (match? '("Class"
-                      ": "
+        (is (match? '("Class: "
                       (:value "clojure.lang.Atom" 0)
                       (:newline)
                       (:newline))
@@ -1048,7 +1064,7 @@
       (testing "renders the deref section"
         (is (match? '("--- Deref:"
                       (:newline)
-                      "  " "Class" ": " (:value "clojure.lang.PersistentArrayMap" 1)
+                      "  " "Class: " (:value "clojure.lang.PersistentArrayMap" 1)
                       (:newline)
                       "  " "Count: " "1"
                       (:newline)
@@ -1064,7 +1080,7 @@
   (testing "small collection is rendered fully"
     (is (match? '("--- Deref:"
                   (:newline)
-                  "  " "Class" ": " (:value "clojure.lang.LongRange" 1)
+                  "  " "Class: " (:value "clojure.lang.LongRange" 1)
                   (:newline)
                   "  " "Count: " "3"
                   (:newline)
@@ -1082,7 +1098,7 @@
   (testing "larger collection is rendered as a single value"
     (is (match? '("--- Deref:"
                   (:newline)
-                  "  " "Class" ": " (:value "clojure.lang.LongRange" 1)
+                  "  " "Class: " (:value "clojure.lang.LongRange" 1)
                   (:newline)
                   "  " "Count: " "100" (:newline) (:newline)
                   "  --- Contents:"
@@ -1095,8 +1111,7 @@
   (testing "inspecting an atom holding an infinite seq"
     (let [rendered (-> (atom (repeat 1)) inspect (inspect/set-page-size 3) render)]
       (testing "renders the header section"
-        (is (match? '("Class"
-                      ": "
+        (is (match? '("Class: "
                       (:value "clojure.lang.Atom" 0)
                       (:newline)
                       (:newline))
@@ -1104,7 +1119,7 @@
       (testing "renders the deref section"
         (is (match? '("--- Deref:"
                       (:newline)
-                      "  " "Class" ": " (:value "clojure.lang.Repeat" 1)
+                      "  " "Class: " (:value "clojure.lang.Repeat" 1)
                       (:newline)
                       (:newline)
                       "  --- Contents:"
@@ -1117,8 +1132,7 @@
   (testing "inspecting the clojure.string namespace"
     (let [result (-> (find-ns 'clojure.string) inspect render)]
       (testing "renders the header"
-        (is (match? (list "Class"
-                          ": "
+        (is (match? (list "Class: "
                           (list :value "clojure.lang.Namespace" number?)
                           '(:newline)
                           "Count: " string?
@@ -1196,8 +1210,7 @@
   (testing "inspecting a map extended with the Datafiable protocol"
     (let [rendered (-> (extend-datafy-class {:name "John Doe"}) inspect render)]
       (testing "renders the header"
-        (is (match? '("Class"
-                      ": "
+        (is (match? '("Class: "
                       (:value "clojure.lang.PersistentArrayMap" 0)
                       (:newline)
                       "Count: " "1"
@@ -1227,8 +1240,7 @@
   (testing "inspecting a map extended with the Navigable protocol"
     (let [rendered (-> (extend-nav-vector {:name "John Doe"}) inspect render)]
       (testing "renders the header"
-        (is (match? '("Class"
-                      ": "
+        (is (match? '("Class: "
                       (:value "clojure.lang.PersistentArrayMap" 0)
                       (:newline)
                       "Count: " "1"
@@ -1256,10 +1268,10 @@
                          (.setStackTrace (into-array StackTraceElement [])))
                        inspect render)]
       (testing "renders the header"
-        (is (match? `("Class"
-                      ": " (:value "clojure.lang.ExceptionInfo" 0)
+        (is (match? `("Class: "
+                      (:value "clojure.lang.ExceptionInfo" 0)
                       (:newline)
-                      "Value" ": "
+                      "Value: "
                       (:value
                        ~(if (= 8 (:minor *clojure-version*))
                           "#error {\n :cause \"BOOM\"\n :data {}\n :via\n [{:type clojure.lang.ExceptionInfo\n   :message \"BOOM\"\n   :data {}\n   :at nil}]\n :trace\n []}"
@@ -1310,12 +1322,10 @@
   (testing "inspecting eduction shows its object fields"
     (let [rendered (-> (eduction (range 10)) inspect render)]
       (testing "renders the header section"
-        (is (match? '("Class"
-                      ": "
+        (is (match? '("Class: "
                       (:value "clojure.core.Eduction" 0)
                       (:newline)
-                      "Value"
-                      ": "
+                      "Value: "
                       (:value "( 0 1 2 3 4 ... )" 1)
                       (:newline)
                       (:newline))
@@ -1328,8 +1338,7 @@
 (deftest render-counted-length-test
   (testing "inspecting counted collections shows their size upfront"
     (let [rendered (-> (range 10) inspect render)]
-      (is (match? '("Class"
-                    ": "
+      (is (match? '("Class: "
                     (:value "clojure.lang.LongRange" 0)
                     (:newline)
                     "Count: " "10"
@@ -1337,8 +1346,7 @@
                     (:newline))
                   (header rendered))))
     (let [rendered (-> (zipmap (range 20) (range 20)) inspect render)]
-      (is (match? '("Class"
-                    ": "
+      (is (match? '("Class: "
                     (:value "clojure.lang.PersistentHashMap" 0)
                     (:newline)
                     "Count: " "20"
@@ -1346,13 +1354,12 @@
                     (:newline))
                   (header rendered))))
     (let [rendered (-> (byte-array 30) inspect render)]
-      (is (match? '("Class"
-                    ": "
+      (is (match? '("Class: "
                     (:value #"\[B|byte/1" 0)
                     (:newline)
                     "Count: " "30"
                     (:newline)
-                    "Component Type" ": " (:value "byte" 1)
+                    "Component Type: " (:value "byte" 1)
                     (:newline)
                     (:newline))
                   (header rendered))))))
