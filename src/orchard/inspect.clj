@@ -278,21 +278,22 @@
   to mark in the index that the value comes from a collection, and `value-key`
   stands for the key by which value can be retrieved from its collection.
   `display-value` string can be provided explicitly."
-  [inspector value & {:keys [value-role value-key display-value]}]
-  (let [{:keys [counter]} inspector
-        display-value (or display-value (print/print-str value))
-        expr (list :value display-value counter)]
-    (-> inspector
-        (update :index conj {:value value
-                             :role value-role
-                             :key value-key})
-        (update :counter inc)
-        (update :rendered conj expr))))
+  ([inspector value] (render-value inspector value nil))
+  ([inspector value {:keys [value-role value-key display-value]}]
+   (let [{:keys [counter]} inspector
+         display-value (or display-value (print/print-str value))
+         expr (list :value display-value counter)]
+     (-> inspector
+         (update :index conj {:value value
+                              :role value-role
+                              :key value-key})
+         (update :counter inc)
+         (update :rendered conj expr)))))
 
-(defn render-labeled-value [inspector label value]
+(defn render-labeled-value [inspector label value & [value-opts]]
   (-> inspector
       (render-indent label ": ")
-      (render-value value)
+      (render-value value value-opts)
       (render-ln)))
 
 (defn- render-class-name [inspector obj]
@@ -310,14 +311,13 @@
   to the values in the index."
   [inspector mappable mark-values?]
   (reduce (fn [ins [key val]]
-            (as-> ins ins
-              (render-indent ins)
-              (render-value ins key)
-              (render ins " = ")
-              (if mark-values?
-                (render-value ins val :value-role :map-value, :value-key key)
-                (render-value ins val))
-              (render-ln ins)))
+            (-> ins
+                (render-indent)
+                (render-value key)
+                (render " = ")
+                (render-value val (when mark-values?
+                                    {:value-role :map-value, :value-key key}))
+                (render-ln)))
           inspector
           mappable))
 
@@ -332,13 +332,12 @@
         idx-fmt (str "%" last-idx-len "s")]
     (loop [ins inspector, chunk (seq chunk), idx idx-starts-from]
       (if chunk
-        (recur (as-> ins ins
-                 (render-indent ins (format idx-fmt idx) ". ")
-                 (if mark-values?
-                   (render-value ins (first chunk) :value-role :seq-item
-                                 :value-key idx)
-                   (render-value ins (first chunk)))
-                 (render-ln ins))
+        (recur (-> ins
+                   (render-indent (format idx-fmt idx) ". ")
+                   (render-value (first chunk)
+                                 (when mark-values?
+                                   {:value-role :seq-item, :value-key idx}))
+                   (render-ln))
                (next chunk) (inc idx))
         ins))))
 
@@ -555,6 +554,15 @@
         (catch Exception _
           ::access-denied)))))
 
+(defn- shorten-member-string [member-string, ^Class class]
+  ;; Ugly as hell, but easier than reimplementing all custom printing that
+  ;; java.lang.reflect does.
+  (-> member-string
+      (string/replace #"[\w\.]+\.(\w+\()" "$1") ;; remove class from method name
+      (string/replace #"[\w\.]+\.(\w+)$" "$1") ;; remove class from field name
+      (string/replace (.getCanonicalName class) (.getSimpleName class))
+      (string/replace #"java.lang.([A-Z])" "$1")))
+
 (defmethod inspect :default [inspector obj]
   (let [class-chain (loop [c (class obj), res ()]
                       (if c
@@ -569,7 +577,18 @@
         (group-by (fn [^Field f]
                     [(Modifier/isStatic (.getModifiers f))
                      (not= ::access-denied (memoized-field-val f obj))])
-                  all-fields)]
+                  all-fields)
+        ;; This is fine like this for now. If this condp ever grows bigger,
+        ;; consider refactoring it into something polymorphic.
+        printed (cond-> (print/print-str obj)
+                  (instance? Constructor obj)
+                  (shorten-member-string (.getDeclaringClass ^Constructor obj))
+
+                  (instance? Method obj)
+                  (shorten-member-string (.getDeclaringClass ^Method obj))
+
+                  (instance? Field obj)
+                  (shorten-member-string (.getDeclaringClass ^Field obj)))]
     (letfn [(render-fields [inspector section-name fields]
               (if (seq fields)
                 (-> inspector
@@ -589,21 +608,12 @@
                 inspector))]
       (cond-> inspector
         true                           (render-labeled-value "Class" (class obj))
-        true                           (render-labeled-value "Value" obj)
+        true                           (render-labeled-value "Value" obj {:display-value printed})
         (seq non-static-accessible)    (render-fields "Instance fields" non-static-accessible)
         (seq static-accessible)        (render-fields "Static fields" static-accessible)
         (seq non-static-nonaccessible) (render-fields "Private instance fields" non-static-nonaccessible)
         (seq static-nonaccessible)     (render-fields "Private static fields" static-nonaccessible)
         true                           (render-datafy)))))
-
-(defn- shorten-member-string [member-string, ^Class class]
-  ;; Ugly as hell, but easier than reimplementing all custom printing that
-  ;; java.lang.reflect does.
-  (-> member-string
-      (string/replace #"[\w\.]+\.(\w+\()" "$1") ;; remove class from method name
-      (string/replace #"[\w\.]+\.(\w+)$" "$1") ;; remove class from field name
-      (string/replace (.getCanonicalName class) (.getSimpleName class))
-      (string/replace #"java.lang.([A-Z])" "$1")))
 
 (defn- render-class-section [inspector section elements print-fn & [sort-fn]]
   (if-not (seq elements)
@@ -615,7 +625,7 @@
                    (reduce (fn [ins [elt printed]]
                              (-> ins
                                  (render-indent)
-                                 (render-value elt :display-value printed)
+                                 (render-value elt {:display-value printed})
                                  (render-ln)))
                            (-> inspector
                                (render-section-header section)

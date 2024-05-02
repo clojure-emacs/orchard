@@ -1054,7 +1054,6 @@
                              "public final native void notifyAll()"
                              "public void remove(Class<?>)"
                              "public String toString()"
-                             "public final native void wait(long) throws InterruptedException"
                              "public final void wait() throws InterruptedException"
                              "public final void wait(long,int) throws InterruptedException"]]
             (is (match? (matchers/embeds (list "  " (list :value assertion pos?)))
