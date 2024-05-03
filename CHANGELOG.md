@@ -2,6 +2,12 @@
 
 ## master (unreleased)
 
+## 0.25.0 (2024-05-03)
+
+* Inspector: make spacious printing customizable.
+* Inspector: shorten rendered field and method class members.
+* Inspector: Prevent writer going over the total limit.
+
 ## 0.24.0 (2024-04-30)
 
 ## Changes
