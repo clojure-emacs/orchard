@@ -579,15 +579,17 @@
                   all-fields)
         ;; This is fine like this for now. If this condp ever grows bigger,
         ;; consider refactoring it into something polymorphic.
-        printed (cond-> (print/print-str obj)
+        printed (cond
                   (instance? Constructor obj)
-                  (shorten-member-string (.getDeclaringClass ^Constructor obj))
+                  (shorten-member-string (str obj) (.getDeclaringClass ^Constructor obj))
 
                   (instance? Method obj)
-                  (shorten-member-string (.getDeclaringClass ^Method obj))
+                  (shorten-member-string (str obj) (.getDeclaringClass ^Method obj))
 
                   (instance? Field obj)
-                  (shorten-member-string (.getDeclaringClass ^Field obj)))]
+                  (shorten-member-string (str obj) (.getDeclaringClass ^Field obj))
+
+                  :else (print/print-str obj))]
     (letfn [(render-fields [inspector section-name fields]
               (if (seq fields)
                 (-> inspector

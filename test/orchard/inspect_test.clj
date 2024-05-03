@@ -1052,6 +1052,14 @@
             (is (match? (matchers/embeds (list "  " (list :value assertion pos?)))
                         methods))))))))
 
+(deftest inspect-method-test
+  (testing "reflect.Method values aren't truncated"
+    (let [rendered (-> (.getDeclaredMethod clojure.lang.AFn "invoke"
+                                           (into-array Class (repeat 15 Object)))
+                       inspect render)]
+      (is (match? (matchers/embeds ['(:value "public Object invoke(Object,Object,Object,Object,Object,Object,Object,Object,Object,Object,Object,Object,Object,Object,Object)" 1)])
+                  rendered)))))
+
 (deftest inspect-atom-test
   (testing "inspecting an atom"
     (let [rendered (-> (atom {:a 1}) inspect render)]
