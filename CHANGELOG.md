@@ -2,11 +2,13 @@
 
 ## master (unreleased)
 
+* [#267](https://github.com/clojure-emacs/orchard/issues/267): Inspector: don't truncate constructor/field/method names.
+
 ## 0.25.0 (2024-05-03)
 
-* Inspector: make spacious printing customizable.
-* Inspector: shorten rendered field and method class members.
-* Inspector: Prevent writer going over the total limit.
+* [#265](https://github.com/clojure-emacs/orchard/issues/265): Inspector: make spacious printing customizable.
+* [#263](https://github.com/clojure-emacs/orchard/issues/263): Inspector: shorten rendered field and method class members.
+* [#260](https://github.com/clojure-emacs/orchard/issues/260): Inspector: prevent writer going over the total limit.
 
 ## 0.24.0 (2024-04-30)
 
