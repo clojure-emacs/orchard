@@ -1364,6 +1364,19 @@
                     (:newline))
                   (header rendered))))))
 
+(deftest non-spacious-test
+  (testing ":spacious false makes value rendering tighter"
+    (is (= '("--- Contents:"
+             (:newline)
+             "  " (:value ":a" 1)
+             " = "
+             (:value "[({:b byte[] {0, 1, 2, 3, 4}})]" 2)
+             (:newline))
+           (->> {:a [(list {:b (byte-array (range 5))})]}
+                (inspect/start {:spacious false})
+                render
+                (section "Contents"))))))
+
 (deftest tap-test
   ;; NOTE: this deftest is flaky - wrap the body in the following (and remove the `Thread/sleep`) to reproduce.
   #_(dotimes [_ 100000])

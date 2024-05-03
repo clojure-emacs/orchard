@@ -39,7 +39,8 @@
    :max-atom-length  150
    :max-value-length 10000 ; To avoid printing huge graphs and Exceptions.
    :max-coll-size    5
-   :max-nested-depth nil})
+   :max-nested-depth nil
+   :spacious         true})
 
 (defn- reset-render-state [inspector]
   (-> inspector
@@ -714,10 +715,12 @@
       inspector)))
 
 (defn inspect-render
-  ([{:keys [max-atom-length max-value-length max-coll-size max-nested-depth value]
+  ([{:keys [max-atom-length max-value-length max-coll-size max-nested-depth value
+            spacious]
      :as inspector}]
    (binding [print/*max-atom-length*  max-atom-length
              print/*max-total-length* max-value-length
+             print/*spacious*         spacious
              *print-length*           max-coll-size
              *print-level*            max-nested-depth]
      (-> inspector
