@@ -1388,6 +1388,33 @@
                 render
                 (section "Contents"))))))
 
+(deftest object-view-mode-test
+  (testing "in :object view-mode recognized objects are rendered as :default"
+    (let [rendered (->> (list 1 2 3) (inspect/start {:view-mode :object}) render)]
+      (is (match? (matchers/embeds
+                   '("--- Instance fields:"
+                     (:newline)
+                     "  " (:value "_count" 2) " = " (:value "3" 3) (:newline)
+                     "  " (:value "_first" 4) " = " (:value "1" 5) (:newline)
+                     "  " (:value "_hash" 6) " = " (:value "0" 7) (:newline)
+                     (:newline) (:newline)))
+                  (section "Instance fields" rendered)))
+      (is (match? '("--- View mode:" (:newline) "  " ":object")
+                  (section "View mode" rendered))))
+
+    (let [rendered (->> (atom "foo") (inspect/start {:view-mode :object}) render)]
+      (is (match? (matchers/embeds
+                   '("--- Instance fields:"
+                     (:newline)
+                     "  " (:value "_meta" 2) " = " (:value "nil" 3) (:newline)
+                     "  " (:value "state" 4) " = " (:value "foo" 5) (:newline)
+                     "  " (:value "validator" 6) " = " (:value "nil" 7) (:newline)
+                     "  " (:value "watches" 8) " = " (:value "{}" 9) (:newline)
+                     (:newline)))
+                  (section "Instance fields" rendered)))
+      (is (match? '("--- View mode:" (:newline) "  " ":object")
+                  (section "View mode" rendered))))))
+
 (deftest tap-test
   ;; NOTE: this deftest is flaky - wrap the body in the following (and remove the `Thread/sleep`) to reproduce.
   #_(dotimes [_ 100000])
