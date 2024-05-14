@@ -33,11 +33,14 @@
                             (list 'get key)))
     (conj path '<unknown>)))
 
+(def ^:private supported-view-modes #{:normal :object})
+
 (def ^:private default-inspector-config
   "Default configuration values for the inspector."
-  {:page-size        32    ; = Clojure's default chunked sequences chunk size.
+  {:page-size        32      ; = Clojure's default chunked sequences chunk size.
+   :view-mode        :normal
    :max-atom-length  150
-   :max-value-length 10000 ; To avoid printing huge graphs and Exceptions.
+   :max-value-length 10000   ; To avoid printing huge graphs and Exceptions.
    :max-coll-size    5
    :max-nested-depth nil
    :spacious         true})
@@ -193,7 +196,7 @@
   (sibling* inspector 1))
 
 (defn- validate-config [{:keys [page-size max-atom-length max-value-length
-                                max-coll-size max-nested-depth spacious]
+                                max-coll-size max-nested-depth spacious view-mode]
                          :as config}]
   (when (some? page-size) (pre-ex (pos-int? page-size)))
   (when (some? max-atom-length) (pre-ex (pos-int? max-atom-length)))
@@ -201,6 +204,7 @@
   (when (some? max-coll-size) (pre-ex (pos-int? max-coll-size)))
   (when (some? max-nested-depth) (pre-ex (pos-int? max-nested-depth)))
   (when (some? spacious) (pre-ex (boolean? spacious)))
+  (when (some? view-mode) (pre-ex (supported-view-modes view-mode)))
   (select-keys config (keys default-inspector-config)))
 
 (defn refresh
@@ -212,7 +216,8 @@
   `:max-value-length` - maximum length of a whole printed value before truncating
   `:max-coll-size` - maximum number of collection items to print before truncating
   `:max-nested-depth` - maximum nesting level to print before truncating
-  `:spacious` - if true, collection values will have extra space around parens"
+  `:spacious` - if true, collection values will have extra space around parens
+  `:view-mode` - one of #{`:normal`, `:object`}"
   [inspector config-override]
   (as-> (validate-config config-override) config
     ;; If page size is changed, reset the current page.
@@ -485,8 +490,11 @@
     inspector))
 
 ;; Inspector multimethod
-(defn- dispatch-inspect [_ins obj]
-  (object-type obj))
+(defn- dispatch-inspect [{:keys [view-mode] :as _ins} obj]
+  (if (= view-mode :object)
+    ;; When :object mode is requested, render all values as unrecognized objects.
+    :default
+    (object-type obj)))
 
 (defmulti inspect #'dispatch-inspect)
 
@@ -502,7 +510,8 @@
       (indent)
       (render-collection-paged)
       (unindent)
-      (render-datafy)))
+      (render-datafy)
+      (render-page-info)))
 
 (defmethod inspect :list [inspector obj] (inspect-coll inspector obj))
 (defmethod inspect :set  [inspector obj] (inspect-coll inspector obj))
@@ -516,7 +525,8 @@
       (indent)
       (render-collection-paged)
       (unindent)
-      (render-datafy)))
+      (render-datafy)
+      (render-page-info)))
 
 (defn- render-var-value [inspector ^clojure.lang.Var obj]
   (if-not (.isBound obj)
@@ -716,6 +726,15 @@
           (unindent))
       inspector)))
 
+(defn render-view-mode [inspector]
+  (let [view-mode (:view-mode inspector)]
+    (if (= view-mode :normal)
+      inspector
+      (-> (render-section-header inspector "View mode")
+          (indent)
+          (render-indent (str view-mode))
+          (unindent)))))
+
 (defn inspect-render
   ([{:keys [max-atom-length max-value-length max-coll-size max-nested-depth value
             spacious]
@@ -729,8 +748,8 @@
          (reset-render-state)
          (decide-if-paginated)
          (inspect value)
-         (render-page-info)
          (render-path)
+         (render-view-mode)
          (update :rendered seq))))
   ([inspector value]
    (inspect-render (assoc inspector :value value))))
