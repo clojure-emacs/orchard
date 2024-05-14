@@ -65,6 +65,10 @@
     :else (or (:inspector-tag (meta obj))
               (type obj))))
 
+(defmacro ^:private pre-ex [x]
+  `(when-not ~x
+     (throw (ex-info (str "Precondition failed: " (pr-str '~x)) {}))))
+
 (defn- counted-length [obj]
   (cond (instance? clojure.lang.Counted obj) (count obj)
         (array? obj) (java.lang.reflect.Array/getLength obj)))
@@ -153,7 +157,7 @@
 (defn down
   "Drill down to an indexed object referred to by the previously rendered value."
   [inspector idx]
-  {:pre [(integer? idx)]}
+  (pre-ex (int? idx))
   (if-let [{:keys [value role key]} (get (:index inspector) idx)]
     (inspect-render (down* inspector value role key))
     inspector))
@@ -191,12 +195,12 @@
 (defn- validate-config [{:keys [page-size max-atom-length max-value-length
                                 max-coll-size max-nested-depth spacious]
                          :as config}]
-  {:pre [(or (nil? page-size) (and (integer? page-size) (pos? page-size)))
-         (or (nil? max-atom-length) (integer? max-atom-length))
-         (or (nil? max-value-length) (integer? max-value-length))
-         (or (nil? max-coll-size) (integer? max-coll-size))
-         (or (nil? max-nested-depth) (integer? max-nested-depth))
-         (or (nil? spacious) (boolean? spacious))]}
+  (when (some? page-size) (pre-ex (pos-int? page-size)))
+  (when (some? max-atom-length) (pre-ex (pos-int? max-atom-length)))
+  (when (some? max-value-length) (pre-ex (pos-int? max-value-length)))
+  (when (some? max-coll-size) (pre-ex (pos-int? max-coll-size)))
+  (when (some? max-nested-depth) (pre-ex (pos-int? max-nested-depth)))
+  (when (some? spacious) (pre-ex (boolean? spacious)))
   (select-keys config (keys default-inspector-config)))
 
 (defn refresh
