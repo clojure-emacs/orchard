@@ -163,6 +163,9 @@
   [inspector]
   (:rendered inspector))
 
+(defn set-page-size [inspector new-size]
+  (inspect/refresh inspector {:page-size new-size}))
+
 (deftest nil-test
   (testing "nil renders correctly"
     (is (match? nil-result
@@ -286,15 +289,15 @@
   (testing "changing page size"
     (is (= 21 (-> long-sequence
                   inspect
-                  (inspect/set-page-size 20)
+                  (set-page-size 20)
                   :counter)))
     (is (= 41 (-> long-map
                   inspect
-                  (inspect/set-page-size 20)
+                  (set-page-size 20)
                   :counter)))
     (is (nil? (-> long-sequence
                   inspect
-                  (inspect/set-page-size 200)
+                  (set-page-size 200)
                   :rendered
                   page-size-info))))
   (testing "uncounted collections have their size determined on the last page"
@@ -430,12 +433,12 @@
   (testing "down with pagination"
     (is (= long-sequence (-> long-sequence
                              inspect
-                             (inspect/set-page-size 2)
+                             (set-page-size 2)
                              (inspect/down 20)
                              :value)))
     (is (= long-map (-> long-map
                         inspect
-                        (inspect/set-page-size 2)
+                        (set-page-size 2)
                         (inspect/down 20)
                         :value)))
     (is (= 19 (-> long-map
@@ -449,7 +452,7 @@
                      :value)))
     (is (= [1 2] (-> [1 2]
                      inspect
-                     (inspect/set-page-size 1)
+                     (set-page-size 1)
                      (inspect/down 10)
                      :value)))
     (is (= [1 2] (-> [1 2]
@@ -471,7 +474,7 @@
                  :value)))
     (is (= 1 (-> {:a 1 :b 2}
                  inspect
-                 (inspect/set-page-size 1)
+                 (set-page-size 1)
                  (inspect/down 2)
                  (inspect/next-sibling)
                  (inspect/next-sibling)
@@ -565,7 +568,7 @@
     (is (= 3
            (-> long-vector
                inspect
-               (inspect/set-page-size 1)
+               (set-page-size 1)
                (inspect/down 1)
                (inspect/next-sibling)
                (inspect/next-sibling)
@@ -635,7 +638,7 @@
     (is (= ":a (nth 2) :b :c (nth 73)" (-> inspector render last))))
   (testing "inspector tracks the path in the data structure beyond the first page with custom page size"
     (is (= "(get 2)" (-> long-map inspect
-                         (inspect/set-page-size 2)
+                         (set-page-size 2)
                          (inspect/next-page)
                          (inspect/down 2)
                          render
@@ -718,7 +721,7 @@
 
   (testing "inspect :coll aligns index numbers correctly for page size > 100"
     (let [rendered (-> (inspect (vec (range 101)))
-                       (inspect/set-page-size 200)
+                       (set-page-size 200)
                        render)
           head (take 13 rendered)
           tail (take-last 5 rendered)]
@@ -768,7 +771,7 @@
       (let [rendered (-> [:a :b :c :d :e]
                          (with-meta (zipmap (range 20) (range)))
                          inspect
-                         (inspect/set-page-size 10)
+                         (set-page-size 10)
                          render)]
         (is (match? '("--- Meta Information:"
                       (:newline)
@@ -784,7 +787,7 @@
                        (map #(hash-map :x %))
                        (map extend-datafy-class)
                        (map extend-nav-vector))
-                  inspect (inspect/set-page-size 2))
+                  inspect (set-page-size 2))
           rendered (render ins)]
       (testing "renders the content section"
         (is (match? '("--- Contents:"
@@ -919,7 +922,7 @@
     (is (= '[(nth 1)]
            (-> [1 2]
                inspect
-               (inspect/set-page-size 1)
+               (set-page-size 1)
                (inspect/next-page)
                (inspect/next-page)
                (inspect/next-page)
@@ -929,7 +932,7 @@
     (is (= '[:b]
            (-> {:a 1 :b 2}
                inspect
-               (inspect/set-page-size 1)
+               (set-page-size 1)
                (inspect/next-page)
                (inspect/next-page)
                (inspect/next-page)
@@ -938,7 +941,7 @@
     (is (= '[<unknown>]
            (-> {:a 1 :b 2}
                inspect
-               (inspect/set-page-size 1)
+               (set-page-size 1)
                (inspect/next-page)
                (inspect/next-page)
                (inspect/next-page)
@@ -1117,7 +1120,7 @@
 
 (deftest inspect-atom-infinite-seq-test
   (testing "inspecting an atom holding an infinite seq"
-    (let [rendered (-> (atom (repeat 1)) inspect (inspect/set-page-size 3) render)]
+    (let [rendered (-> (atom (repeat 1)) inspect (set-page-size 3) render)]
       (testing "renders the header section"
         (is (match? '("Class: "
                       (:value "clojure.lang.Atom" 0)
@@ -1468,7 +1471,7 @@
                        (with-meta {'clojure.core.protocols/datafy
                                    (fn [_] (range 30))})
                        inspect
-                       (inspect/set-page-size 1)
+                       (set-page-size 1)
                        render)]
       (is (match? '("--- Contents:"
                     (:newline)
@@ -1492,7 +1495,7 @@
                          (with-meta {'clojure.core.protocols/datafy
                                      (fn [_] (range 3))})
                          inspect
-                         (inspect/set-page-size 5)
+                         (set-page-size 5)
                          render)]
         (is (match? '("--- Datafy:"
                       (:newline)
@@ -1507,7 +1510,7 @@
     (let [ins (-> {:a 1, :b (with-meta [] {'clojure.core.protocols/datafy
                                            (fn [_] :datafied)})}
                   inspect
-                  (inspect/set-page-size 1))
+                  (set-page-size 1))
           rendered (render ins)]
       (is (match? nil (datafy-section rendered)))
       (is (match? '("--- Datafy:"
@@ -1523,7 +1526,7 @@
     (let [ins (-> [1 2 3 (with-meta [] {'clojure.core.protocols/datafy
                                         (fn [_] :datafied)})]
                   inspect
-                  (inspect/set-page-size 2))
+                  (set-page-size 2))
           rendered (render ins)]
       (is (match? nil (datafy-section rendered)))
       (is (match? '("--- Datafy:"

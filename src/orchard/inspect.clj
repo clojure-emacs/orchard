@@ -188,38 +188,34 @@
   [inspector]
   (sibling* inspector 1))
 
-(defn set-page-size
-  "Set the page size in pagination mode to the specified value. Current page
-  will be reset to zero."
-  [inspector new-page-size]
-  {:pre [(integer? new-page-size) (pos? new-page-size)]}
-  (inspect-render (assoc inspector
-                         :page-size new-page-size
-                         :current-page 0)))
+(defn- validate-config [{:keys [page-size max-atom-length max-value-length
+                                max-coll-size max-nested-depth spacious]
+                         :as config}]
+  {:pre [(or (nil? page-size) (and (integer? page-size) (pos? page-size)))
+         (or (nil? max-atom-length) (integer? max-atom-length))
+         (or (nil? max-value-length) (integer? max-value-length))
+         (or (nil? max-coll-size) (integer? max-coll-size))
+         (or (nil? max-nested-depth) (integer? max-nested-depth))
+         (or (nil? spacious) (boolean? spacious))]}
+  (select-keys config (keys default-inspector-config)))
 
-(defn set-max-atom-length
-  "Set the maximum length of atomic collection members before they're truncated."
-  [inspector max-atom-length]
-  {:pre [(integer? max-atom-length)]}
-  (inspect-render (assoc inspector :max-atom-length max-atom-length)))
+(defn refresh
+  "Update inspector configuration with values in `config-override` and re-render.
+  Unspecified config values remain the same. Supported config keys:
 
-(defn set-max-value-length
-  "Set the maximum length of a whole printed value before it is truncated."
-  [inspector max-value-length]
-  {:pre [(integer? max-value-length)]}
-  (inspect-render (assoc inspector :max-value-length max-value-length)))
-
-(defn set-max-coll-size
-  "Set the maximum number of nested collection members to print before truncating."
-  [inspector max-coll-size]
-  {:pre [(integer? max-coll-size)]}
-  (inspect-render (assoc inspector :max-coll-size max-coll-size)))
-
-(defn set-max-nested-depth
-  "Set the maximum level of nested collections to print before truncating."
-  [inspector max-nested-depth]
-  {:pre [(integer? max-nested-depth)]}
-  (inspect-render (assoc inspector :max-nested-depth max-nested-depth)))
+  `:page-size` - page size in pagination mode
+  `:max-atom-length` - maximum length of atomic value before truncating
+  `:max-value-length` - maximum length of a whole printed value before truncating
+  `:max-coll-size` - maximum number of collection items to print before truncating
+  `:max-nested-depth` - maximum nesting level to print before truncating
+  `:spacious` - if true, collection values will have extra space around parens"
+  [inspector config-override]
+  (as-> (validate-config config-override) config
+    ;; If page size is changed, reset the current page.
+    (if (contains? config :page-size)
+      (assoc config :current-page 0)
+      config)
+    (inspect-render (merge inspector config))))
 
 (defn def-current-value
   "Define the currently inspected value as a var with the given name in the
@@ -739,11 +735,12 @@
 
 (defn start
   "Create a new inspector for the `value`. Optinally accepts a `config` map (which
-  can be an existing inspector with changed config)."
+  can be an existing inspector with changed config). See `refresh` for the list
+  of supported keys."
   ([value] (start {} value))
   ([config value]
    (-> default-inspector-config
-       (merge (select-keys config (keys default-inspector-config)))
+       (merge (validate-config config))
        (assoc :stack [], :path [], :pages-stack [], :current-page 0)
        (inspect-render value))))
 
@@ -756,6 +753,31 @@
   "If necessary, use `(start nil)` instead."
   []
   (start nil))
+
+(defn ^:deprecated set-page-size
+  "Use `refresh` instead."
+  [inspector new-page-size]
+  (refresh inspector {:page-size new-page-size}))
+
+(defn ^:deprecated set-max-atom-length
+  "Use `refresh` instead."
+  [inspector max-atom-length]
+  (refresh inspector {:max-atom-length max-atom-length}))
+
+(defn ^:deprecated set-max-value-length
+  "Use `refresh` instead."
+  [inspector max-value-length]
+  (refresh inspector {:max-value-length max-value-length}))
+
+(defn ^:deprecated set-max-coll-size
+  "Use `refresh` instead."
+  [inspector max-coll-size]
+  (refresh inspector {:max-coll-size max-coll-size}))
+
+(defn ^:deprecated set-max-nested-depth
+  "Use `refresh` instead."
+  [inspector max-nested-depth]
+  (refresh inspector {:max-nested-depth max-nested-depth}))
 
 (defn inspect-print
   "Get a human readable printout of rendered sequence."
