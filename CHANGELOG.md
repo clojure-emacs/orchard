@@ -3,6 +3,8 @@
 ## master (unreleased)
 
 * [#267](https://github.com/clojure-emacs/orchard/issues/267): Inspector: don't truncate constructor/field/method names.
+* [#269](https://github.com/clojure-emacs/orchard/issues/269): Inspector: add `refresh` function as a single entrypoint to changing inspector config.
+* [#270](https://github.com/clojure-emacs/orchard/issues/270): Inspector: throw exceptions instead of AssertionErrors when inspector is misconfigured.
 
 ## 0.25.0 (2024-05-03)
 
