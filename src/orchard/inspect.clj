@@ -643,14 +643,39 @@
                                (render-section-header section)
                                (indent)))))))
 
+(defn- render-class-hierarchy [inspector ^Class klass]
+  (let [seen (volatile! #{})]
+    (letfn [(render-class [ins k]
+              (if (@seen k)
+                ins
+                (do (vswap! seen conj k)
+                    (-> ins
+                        (render-indented-value k)
+                        (indent)
+                        (render-parents k)
+                        (unindent)))))
+            (render-parents [ins ^Class k]
+              (as-> ins ins
+                (if-let [super (.getSuperclass k)]
+                  (render-class ins super)
+                  ins)
+                (reduce render-class ins
+                        (sort-by #(.getName ^Class %) (.getInterfaces k)))))]
+      (if (or (.getSuperclass klass) (seq (.getInterfaces klass)))
+        (as-> inspector ins
+          (render-section-header ins "Class hierarchy")
+          (indent ins)
+          (render-parents ins klass)
+          (unindent ins))
+        inspector))))
+
 (defmethod inspect :class [inspector ^Class obj]
   (let [print-fn (fn [to-string]
                    #(shorten-member-string (to-string %) obj))]
     (-> inspector
         (render-labeled-value "Name" (-> obj .getName symbol))
         (render-class-name obj)
-        (render-class-section :Interfaces (.getInterfaces obj)
-                              #(.getName ^Class %))
+        (render-class-hierarchy obj)
         (render-class-section :Constructors (.getConstructors obj)
                               (print-fn #(.toGenericString ^Constructor %)))
         (render-class-section :Fields (.getFields obj)
