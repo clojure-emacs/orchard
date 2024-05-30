@@ -974,6 +974,11 @@
                (inspect/down 4)
                :path)))))
 
+(defn- rendered-hier [indents-and-classnames]
+  (mapcat (fn [[indent class]]
+            [indent (list :value class number?) '(:newline)])
+          (partition 2 indents-and-classnames)))
+
 (deftest inspect-class-test
   (testing "inspecting the java.lang.Object class"
     (let [rendered (-> Object inspect render)]
@@ -1025,11 +1030,27 @@
 
   (testing "inspecting the java.lang.Class class"
     (let [rendered (-> Class inspect render)]
-      (testing "renders the interfaces section"
-        (is (match? (matchers/embeds (list "--- Interfaces:"
+      (testing "renders the class hierarchy section"
+        (is (match? (matchers/embeds (list "--- Class hierarchy:"
                                            '(:newline)
-                                           "  " (list :value "java.io.Serializable" number?)))
-                    (section "Interfaces" rendered))))))
+                                           "  " (list :value "java.lang.Object" number?)
+                                           '(:newline)
+                                           "  " (list :value "java.io.Serializable" number?)
+                                           '(:newline)))
+                    (section "Class hierarchy" rendered))))))
+
+  (testing "inspecting the java.io.FileReader  class"
+    (let [rendered (-> java.io.FileReader inspect render)]
+      (testing "renders the class hierarchy section"
+        (is (match? (concat '("--- Class hierarchy:" (:newline))
+                            (rendered-hier ["  " "java.io.InputStreamReader"
+                                            "    " "java.io.Reader"
+                                            "      " "java.lang.Object"
+                                            "      " "java.io.Closeable"
+                                            "        " "java.lang.AutoCloseable"
+                                            "      " "java.lang.Readable"])
+                            '((:newline)))
+                    (section "Class hierarchy" rendered))))))
 
   (testing "inspecting the java.lang.ClassValue class"
     (let [rendered (-> java.lang.ClassValue inspect render)]
