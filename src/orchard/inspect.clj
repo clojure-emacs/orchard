@@ -296,6 +296,12 @@
          (update :counter inc)
          (update :rendered conj expr)))))
 
+(defn render-indented-value [inspector value & [value-opts]]
+  (-> inspector
+      (render-indent)
+      (render-value value value-opts)
+      (render-ln)))
+
 (defn render-labeled-value [inspector label value & [value-opts]]
   (-> inspector
       (render-indent (str label ": "))
@@ -373,9 +379,7 @@
   [{:keys [page-size] :as inspector} obj]
   (if (some-> (counted-length obj) (<= page-size))
     (render-items inspector obj (map? obj) 0 false)
-    (-> (render-indent inspector)
-        (render-value obj)
-        (render-ln))))
+    (render-indented-value inspector obj)))
 
 (defn- render-leading-page-ellipsis [{:keys [current-page] :as inspector}]
   (if (> current-page 0)
@@ -634,10 +638,7 @@
                               (comp sort-fn first)
                               second))
                    (reduce (fn [ins [elt printed]]
-                             (-> ins
-                                 (render-indent)
-                                 (render-value elt {:display-value printed})
-                                 (render-ln)))
+                             (render-indented-value ins elt {:display-value printed}))
                            (-> inspector
                                (render-section-header section)
                                (indent)))))))
@@ -692,10 +693,8 @@
       inspector
       (-> (render-section-header inspector "Imports")
           (indent)
-          (render-indent)
-          (render-value imports)
-          (unindent)
-          (render-ln)))))
+          (render-indented-value imports)
+          (unindent)))))
 
 (defn- render-ns-interns [inspector obj]
   (let [interns (ns-interns obj)]
@@ -703,10 +702,8 @@
       inspector
       (-> (render-section-header inspector "Interns")
           (indent)
-          (render-indent)
-          (render-value interns)
-          (unindent)
-          (render-ln)))))
+          (render-indented-value interns)
+          (unindent)))))
 
 (defmethod inspect :namespace [inspector ^clojure.lang.Namespace obj]
   (-> (render-class-name inspector obj)
