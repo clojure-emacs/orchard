@@ -2,7 +2,9 @@
 
 ## master (unreleased)
 
-## 0.26.0 (2024-06-30)
+* [#275](https://github.com/clojure-emacs/orchard/issues/275): Inspector: re-implement :view-mode as a transient stack-remembered option.
+
+## 0.26.0 (2024-05-30)
 
 * [#272](https://github.com/clojure-emacs/orchard/issues/272): Inspector: display superclass hierarchy when inspecting a class.
 * [#267](https://github.com/clojure-emacs/orchard/issues/267): Inspector: don't truncate constructor/field/method names.
