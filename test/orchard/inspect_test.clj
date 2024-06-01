@@ -1411,7 +1411,10 @@
 
 (deftest object-view-mode-test
   (testing "in :object view-mode recognized objects are rendered as :default"
-    (let [rendered (->> (list 1 2 3) (inspect/start {:view-mode :object}) render)]
+    (let [rendered (-> (list 1 2 3)
+                       (inspect/start)
+                       (inspect/set-view-mode :object)
+                       render)]
       (is (match? (matchers/embeds
                    '("--- Instance fields:"
                      (:newline)
@@ -1423,7 +1426,10 @@
       (is (match? '("--- View mode:" (:newline) "  " ":object")
                   (section "View mode" rendered))))
 
-    (let [rendered (->> (atom "foo") (inspect/start {:view-mode :object}) render)]
+    (let [rendered (-> (atom "foo")
+                       (inspect/start)
+                       (inspect/set-view-mode :object)
+                       render)]
       (is (match? (matchers/embeds
                    '("--- Instance fields:"
                      (:newline)
@@ -1434,7 +1440,36 @@
                      (:newline)))
                   (section "Instance fields" rendered)))
       (is (match? '("--- View mode:" (:newline) "  " ":object")
-                  (section "View mode" rendered))))))
+                  (section "View mode" rendered)))))
+
+  (testing "navigating away from an object changes the view mode back to normal"
+    (let [rendered (-> (list 1 2 3)
+                       (inspect/start)
+                       (inspect/set-view-mode :object)
+                       (inspect/down 13)
+                       render)]
+      (is (match? (matchers/prefix
+                   '("--- Contents:"
+                     (:newline)
+                     "  " "0" ". " (:value "2" 1) (:newline)
+                     "  " "1" ". " (:value "3" 2) (:newline)))
+                  (section "Contents" rendered)))))
+
+  (testing "going back to value viewed with a different mode will remember that view mode"
+    (let [rendered (-> (list 1 2 3)
+                       (inspect/start)
+                       (inspect/set-view-mode :object)
+                       (inspect/down 13)
+                       (inspect/set-view-mode :normal)
+                       (inspect/up)
+                       render)]
+      (is (match? (matchers/prefix
+                   '("--- Instance fields:"
+                     (:newline)
+                     "  " (:value "_count" 2) " = " (:value "3" 3) (:newline)
+                     "  " (:value "_first" 4) " = " (:value "1" 5) (:newline)
+                     "  " (:value "_hash" 6) " = " (:value "0" 7) (:newline)))
+                  (section "Instance fields" rendered))))))
 
 (deftest tap-test
   ;; NOTE: this deftest is flaky - wrap the body in the following (and remove the `Thread/sleep`) to reproduce.

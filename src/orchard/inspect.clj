@@ -38,7 +38,6 @@
 (def ^:private default-inspector-config
   "Default configuration values for the inspector."
   {:page-size        32      ; = Clojure's default chunked sequences chunk size.
-   :view-mode        :normal
    :max-atom-length  150
    :max-value-length 10000   ; To avoid printing huge graphs and Exceptions.
    :max-coll-size    5
@@ -126,13 +125,15 @@
 
 (defn- up*
   "Move one value up the stack without re-rendering."
-  [{:keys [stack pages-stack] :as inspector}]
+  [{:keys [stack pages-stack view-modes-stack] :as inspector}]
   (if (empty? stack)
     inspector
     (-> inspector
         (update :path pop)
         (assoc :current-page (peek pages-stack))
         (update :pages-stack pop)
+        (assoc :view-mode (peek view-modes-stack))
+        (update :view-modes-stack pop)
         (assoc :value (peek stack))
         (update :stack pop))))
 
@@ -144,7 +145,7 @@
 (defn- down*
   "Navigate to `child` value of the current inspector without re-rendering."
   [inspector child child-role child-key]
-  (let [{:keys [value current-page page-size]} inspector
+  (let [{:keys [value current-page page-size view-mode]} inspector
         ;; If down* was called on an invisible element (e.g. by sibling*),
         ;; :current-page may be wrong, recompute it.
         current-page (if (number? child-key)
@@ -155,6 +156,8 @@
         (update :stack conj value)
         (assoc :current-page 0)
         (update :pages-stack conj current-page)
+        (assoc :view-mode :normal)
+        (update :view-modes-stack conj view-mode)
         (update :path push-item-to-path child-role child-key))))
 
 (defn down
@@ -196,7 +199,7 @@
   (sibling* inspector 1))
 
 (defn- validate-config [{:keys [page-size max-atom-length max-value-length
-                                max-coll-size max-nested-depth spacious view-mode]
+                                max-coll-size max-nested-depth spacious]
                          :as config}]
   (when (some? page-size) (pre-ex (pos-int? page-size)))
   (when (some? max-atom-length) (pre-ex (pos-int? max-atom-length)))
@@ -204,7 +207,6 @@
   (when (some? max-coll-size) (pre-ex (pos-int? max-coll-size)))
   (when (some? max-nested-depth) (pre-ex (pos-int? max-nested-depth)))
   (when (some? spacious) (pre-ex (boolean? spacious)))
-  (when (some? view-mode) (pre-ex (supported-view-modes view-mode)))
   (select-keys config (keys default-inspector-config)))
 
 (defn refresh
@@ -216,8 +218,7 @@
   `:max-value-length` - maximum length of a whole printed value before truncating
   `:max-coll-size` - maximum number of collection items to print before truncating
   `:max-nested-depth` - maximum nesting level to print before truncating
-  `:spacious` - if true, collection values will have extra space around parens
-  `:view-mode` - one of #{`:normal`, `:object`}"
+  `:spacious` - if true, collection values will have extra space around parens"
   [inspector config-override]
   (as-> (validate-config config-override) config
     ;; If page size is changed, reset the current page.
@@ -244,6 +245,13 @@
   [{:keys [index] :as inspector} idx]
   (tap> (:value (get index idx)))
   (inspect-render inspector))
+
+(defn set-view-mode
+  "Set the view mode for the current value to `mode`. See allowed values in
+  `supported-view-modes`."
+  [inspector mode]
+  (pre-ex (contains? supported-view-modes mode))
+  (inspect-render (assoc inspector :view-mode mode)))
 
 (defn render-onto [inspector coll]
   (update inspector :rendered into coll))
@@ -786,7 +794,8 @@
   ([config value]
    (-> default-inspector-config
        (merge (validate-config config))
-       (assoc :stack [], :path [], :pages-stack [], :current-page 0)
+       (assoc :stack [], :path [], :pages-stack [], :current-page 0,
+              :view-modes-stack [], :view-mode :normal)
        (inspect-render value))))
 
 (defn ^:deprecated clear
