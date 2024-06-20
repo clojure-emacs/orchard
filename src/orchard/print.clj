@@ -42,10 +42,6 @@
   "Maximum total size of the resulting string."
   Integer/MAX_VALUE)
 
-(def ^:dynamic *spacious*
-  "If true, collections look like `[ 1 2 3 ]` instead of `[1 2 3]`."
-  true)
-
 (defn- print-coll [^TruncatingStringWriter w, ^Iterable x, ^String sep
                    ^String prefix, ^String suffix]
   (let [level *print-level*]
@@ -101,24 +97,16 @@
   (print (.getValue x) w))
 
 (defmethod print :persistent-map [x w]
-  (if *spacious*
-    (print-coll w x ", " "{ " " }")
-    (print-coll w x ", " "{" "}")))
+  (print-coll w x ", " "{" "}"))
 
 (defmethod print :vector [x w]
-  (if *spacious*
-    (print-coll w x " " "[ " " ]")
-    (print-coll w x " " "[" "]")))
+  (print-coll w x " " "[" "]"))
 
 (defmethod print :list [x w]
-  (if *spacious*
-    (print-coll w x " " "( " " )")
-    (print-coll w x " " "(" ")")))
+  (print-coll w x " " "(" ")"))
 
 (defmethod print :set [x w]
-  (if *spacious*
-    (print-coll w x " " "#{ " " }")
-    (print-coll w x " " "#{" "}")))
+  (print-coll w x " " "#{" "}"))
 
 (defmethod print :map [^Map x, w]
   (if (.isEmpty x)
@@ -126,18 +114,14 @@
     (let [;; If the map is a Clojure map, don't take the entrySet but iterate
           ;; directly as the order might be important.
           coll (if (instance? IPersistentMap x) x (.entrySet ^Map x))]
-      (if *spacious*
-        (print-coll w coll ", " "{ " " }")
-        (print-coll w coll ", " "{" "}")))))
+      (print-coll w coll ", " "{" "}"))))
 
 (defmethod print :array [x, ^TruncatingStringWriter w]
   (let [ct (.getName (or (.getComponentType (class x)) Object))
         as-seq (seq x)]
     (.write w ct)
     (if as-seq
-      (if *spacious*
-        (print-coll w as-seq ", " "[] { " " }")
-        (print-coll w as-seq ", " "[] {" "}"))
+      (print-coll w as-seq ", " "[] {" "}")
       (.write w "[] {}"))))
 
 (defmethod print IDeref [^IDeref x, ^TruncatingStringWriter w]
