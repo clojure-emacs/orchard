@@ -41,8 +41,7 @@
    :max-atom-length  150
    :max-value-length 10000   ; To avoid printing huge graphs and Exceptions.
    :max-coll-size    5
-   :max-nested-depth nil
-   :spacious         true})
+   :max-nested-depth nil})
 
 (defn- reset-render-state [inspector]
   (-> inspector
@@ -199,14 +198,13 @@
   (sibling* inspector 1))
 
 (defn- validate-config [{:keys [page-size max-atom-length max-value-length
-                                max-coll-size max-nested-depth spacious]
+                                max-coll-size max-nested-depth]
                          :as config}]
   (when (some? page-size) (pre-ex (pos-int? page-size)))
   (when (some? max-atom-length) (pre-ex (pos-int? max-atom-length)))
   (when (some? max-value-length) (pre-ex (pos-int? max-value-length)))
   (when (some? max-coll-size) (pre-ex (pos-int? max-coll-size)))
   (when (some? max-nested-depth) (pre-ex (pos-int? max-nested-depth)))
-  (when (some? spacious) (pre-ex (boolean? spacious)))
   (select-keys config (keys default-inspector-config)))
 
 (defn refresh
@@ -217,8 +215,7 @@
   `:max-atom-length` - maximum length of atomic value before truncating
   `:max-value-length` - maximum length of a whole printed value before truncating
   `:max-coll-size` - maximum number of collection items to print before truncating
-  `:max-nested-depth` - maximum nesting level to print before truncating
-  `:spacious` - if true, collection values will have extra space around parens"
+  `:max-nested-depth` - maximum nesting level to print before truncating"
   [inspector config-override]
   (as-> (validate-config config-override) config
     ;; If page size is changed, reset the current page.
@@ -766,12 +763,10 @@
           (unindent)))))
 
 (defn inspect-render
-  ([{:keys [max-atom-length max-value-length max-coll-size max-nested-depth value
-            spacious]
+  ([{:keys [max-atom-length max-value-length max-coll-size max-nested-depth value]
      :as inspector}]
    (binding [print/*max-atom-length*  max-atom-length
              print/*max-total-length* max-value-length
-             print/*spacious*         spacious
              *print-length*           max-coll-size
              *print-level*            max-nested-depth]
      (-> inspector

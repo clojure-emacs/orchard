@@ -110,13 +110,13 @@
     (:newline)
     "--- Contents:"
     (:newline)
-    "  " (:value ":a" 1) " = " (:value "{ :b 1 }" 2)
+    "  " (:value ":a" 1) " = " (:value "{:b 1}" 2)
     (:newline)
     "  " (:value ":c" 3) " = " (:value "\"a\"" 4)
     (:newline)
     "  " (:value ":d" 5) " = " (:value "e" 6)
     (:newline)
-    "  " (:value ":f" 7) " = " (:value "[ 2 3 ]" 8)
+    "  " (:value ":f" 7) " = " (:value "[2 3]" 8)
     (:newline)))
 
 (def long-sequence (range 70))
@@ -776,7 +776,7 @@
         (is (match? '("--- Meta Information:"
                       (:newline)
                       "  "
-                      (:value "{ 0 0, 7 7, 1 1, 4 4, 15 15, ... }" 1)
+                      (:value "{0 0, 7 7, 1 1, 4 4, 15 15, ...}" 1)
                       (:newline)
                       (:newline))
                     (section "Meta Information" rendered)))))))
@@ -792,9 +792,9 @@
       (testing "renders the content section"
         (is (match? '("--- Contents:"
                       (:newline)
-                      "  " "0" ". " (:value "{ :x 0 }" 1)
+                      "  " "0" ". " (:value "{:x 0}" 1)
                       (:newline)
-                      "  " "1" ". " (:value "{ :x 1 }" 2)
+                      "  " "1" ". " (:value "{:x 1}" 2)
                       (:newline)
                       "  " "..."
                       (:newline)
@@ -803,9 +803,9 @@
       (testing "renders the datafy section"
         (is (match? '("--- Datafy:"
                       (:newline)
-                      "  " "0" ". " (:value "{ :class \"PersistentHashMap\", :x 0 }" 3)
+                      "  " "0" ". " (:value "{:class \"PersistentHashMap\", :x 0}" 3)
                       (:newline)
-                      "  " "1" ". " (:value "{ :class \"PersistentHashMap\", :x 1 }" 4)
+                      "  " "1" ". " (:value "{:class \"PersistentHashMap\", :x 1}" 4)
                       (:newline)
                       "  " "..."
                       (:newline)
@@ -822,9 +822,9 @@
                       (:newline)
                       "  " "..."
                       (:newline)
-                      "  " "4" ". " (:value "{ :class \"PersistentHashMap\", :x 4 }" 3)
+                      "  " "4" ". " (:value "{:class \"PersistentHashMap\", :x 4}" 3)
                       (:newline)
-                      "  " "5" ". " (:value "{ :class \"PersistentHashMap\", :x 5 }" 4)
+                      "  " "5" ". " (:value "{:class \"PersistentHashMap\", :x 5}" 4)
                       (:newline)
                       "  " "..."
                       (:newline)
@@ -843,7 +843,7 @@
                   (:newline)
                   "--- Contents:"
                   (:newline)
-                  "  " "0" ". " (:value "[ 111111 2222 333 ... ]" 1)
+                  "  " "0" ". " (:value "[111111 2222 333 ...]" 1)
                   (:newline))
                 (-> (inspect/start {:max-atom-length 20
                                     :max-coll-size 3}
@@ -858,7 +858,7 @@
                   (:newline)
                   "--- Contents:"
                   (:newline)
-                  "  " "0" ". " (:value "( \"long value\" \"long value\" \"long value\" \"long val..." 1)
+                  "  " "0" ". " (:value "(\"long value\" \"long value\" \"long value\" \"long valu..." 1)
                   (:newline))
                 (-> (inspect/start {:max-value-length 50} [(repeat "long value")])
                     render))))
@@ -871,7 +871,7 @@
                   (:newline)
                   "--- Contents:"
                   (:newline)
-                  "  " "0" ". " (:value "[ [ [ [ [ [ ... ] ] ] ] ] ]" 1)
+                  "  " "0" ". " (:value "[[[[[[...]]]]]]" 1)
                   (:newline))
                 (-> (inspect/start {:max-nested-depth 5} [[[[[[[[[[1]]]]]]]]]])
                     render)))))
@@ -1011,17 +1011,17 @@
       (testing "renders the datafy section"
         (is (match? (list "--- Datafy:"
                           '(:newline)
-                          "  " (list :value ":flags" pos?) " = " (list :value "#{ :public }" pos?)
+                          "  " (list :value ":flags" pos?) " = " (list :value "#{:public}" pos?)
                           '(:newline)
                           "  " (list :value ":members" pos?) " = "
-                          (list :value (str "{ clone [ { :name clone, :return-type java.lang.Object, :declaring-class java.lang.Object, "
-                                            ":parameter-types [], :exception-types [ java.lang.CloneNotSupportedException ], ... } ], equals "
-                                            "[ { :name equals, :return-type boolean, :declaring-class java.lang.Object, :parameter-types "
-                                            "[ java.lang.Object ], :exception-types [], ... } ], finalize [ { :name finalize, :return-type void, "
-                                            ":declaring-class java.lang.Object, :parameter-types [], :exception-types [ java.lang.Throwable ], "
-                                            "... } ], getClass [ { :name getClass, :return-type java.lang.Class, :declaring-class java.lang.Object, "
-                                            ":parameter-types [], :exception-types [], ... } ], hashCode [ { :name hashCode, :return-type int, "
-                                            ":declaring-class java.lang.Object, :parameter-types [], :exception-types [], ... } ], ... }")
+                          (list :value (str "{clone [{:name clone, :return-type java.lang.Object, :declaring-class java.lang.Object, "
+                                            ":parameter-types [], :exception-types [java.lang.CloneNotSupportedException], ...}], equals "
+                                            "[{:name equals, :return-type boolean, :declaring-class java.lang.Object, :parameter-types "
+                                            "[java.lang.Object], :exception-types [], ...}], finalize [{:name finalize, :return-type void, "
+                                            ":declaring-class java.lang.Object, :parameter-types [], :exception-types [java.lang.Throwable], "
+                                            "...}], getClass [{:name getClass, :return-type java.lang.Class, :declaring-class java.lang.Object, "
+                                            ":parameter-types [], :exception-types [], ...}], hashCode [{:name hashCode, :return-type int, "
+                                            ":declaring-class java.lang.Object, :parameter-types [], :exception-types [], ...}], ...}")
                                 pos?)
                           '(:newline)
                           "  " (list :value ":name" pos?) " = " (list :value "java.lang.Object" pos?)
@@ -1135,7 +1135,7 @@
                   "  " "Count: " "100" (:newline) (:newline)
                   "  --- Contents:"
                   (:newline)
-                  "    " (:value "( 0 1 2 3 4 ... )" 2)
+                  "    " (:value "(0 1 2 3 4 ...)" 2)
                   (:newline))
                 (->> (atom (range 100)) inspect render (section "Deref"))))))
 
@@ -1156,7 +1156,7 @@
                       (:newline)
                       "  --- Contents:"
                       (:newline)
-                      "    " (:value "( 1 1 1 1 1 ... )" 2)
+                      "    " (:value "(1 1 1 1 1 ...)" 2)
                       (:newline))
                     (section "Deref" rendered)))))))
 
@@ -1191,29 +1191,29 @@
                       "  "
                       (:value "clojure.core" 5)
                       " = "
-                      (:value #=(str "[ #'clojure.core/primitives-classnames #'clojure.core/+' #'clojure.core/decimal? "
-                                     "#'clojure.core/restart-agent #'clojure.core/sort-by ... ]") 6)
+                      (:value #=(str "[#'clojure.core/primitives-classnames #'clojure.core/+' #'clojure.core/decimal? "
+                                     "#'clojure.core/restart-agent #'clojure.core/sort-by ...]") 6)
                       (:newline)
                       (:newline))
                     (section "Refer from" result))))
       (testing "renders the imports section"
         (is (match? '("--- Imports:"
                       (:newline)
-                      "  " (:value #=(str "{ Enum java.lang.Enum, "
+                      "  " (:value #=(str "{Enum java.lang.Enum, "
                                           "InternalError java.lang.InternalError, "
                                           "NullPointerException java.lang.NullPointerException, "
                                           "InheritableThreadLocal java.lang.InheritableThreadLocal, "
-                                          "Class java.lang.Class, ... }") 7)
+                                          "Class java.lang.Class, ...}") 7)
                       (:newline)
                       (:newline))
                     (section "Imports" result))))
       (testing "renders the interns section"
         (is (match? '("--- Interns:"
                       (:newline)
-                      "  " (:value #=(str "{ ends-with? #'clojure.string/ends-with?, "
+                      "  " (:value #=(str "{ends-with? #'clojure.string/ends-with?, "
                                           "replace-first-char #'clojure.string/replace-first-char, "
                                           "capitalize #'clojure.string/capitalize, "
-                                          "reverse #'clojure.string/reverse, join #'clojure.string/join, ... }") 8)
+                                          "reverse #'clojure.string/reverse, join #'clojure.string/join, ...}") 8)
                       (:newline)
                       (:newline))
                     (section "Interns" result))))
@@ -1223,18 +1223,18 @@
                       "  " (:value ":name" 9) " = " (:value "clojure.string" 10)
                       (:newline)
                       "  " (:value ":publics" 11) " = "
-                      (:value #=(str "{ blank? #'clojure.string/blank?, capitalize "
+                      (:value #=(str "{blank? #'clojure.string/blank?, capitalize "
                                      "#'clojure.string/capitalize, ends-with? #'clojure.string/ends-with?, "
-                                     "escape #'clojure.string/escape, includes? #'clojure.string/includes?, ... }") 12)
+                                     "escape #'clojure.string/escape, includes? #'clojure.string/includes?, ...}") 12)
                       (:newline)
                       "  " (:value ":imports" 13) " = "
-                      (:value #=(str "{ AbstractMethodError java.lang.AbstractMethodError, Appendable java.lang.Appendable, "
+                      (:value #=(str "{AbstractMethodError java.lang.AbstractMethodError, Appendable java.lang.Appendable, "
                                      "ArithmeticException java.lang.ArithmeticException, ArrayIndexOutOfBoundsException "
-                                     "java.lang.ArrayIndexOutOfBoundsException, ArrayStoreException java.lang.ArrayStoreException, ... }") 14)
+                                     "java.lang.ArrayIndexOutOfBoundsException, ArrayStoreException java.lang.ArrayStoreException, ...}") 14)
                       (:newline)
                       "  " (:value ":interns" 15) " = "
-                      (:value #=(str "{ blank? #'clojure.string/blank?, capitalize #'clojure.string/capitalize, ends-with? #'clojure.string/ends-with?, "
-                                     "escape #'clojure.string/escape, includes? #'clojure.string/includes?, ... }") 16)
+                      (:value #=(str "{blank? #'clojure.string/blank?, capitalize #'clojure.string/capitalize, ends-with? #'clojure.string/ends-with?, "
+                                     "escape #'clojure.string/escape, includes? #'clojure.string/includes?, ...}") 16)
                       (:newline))
                     (datafy-section result)))))))
 
@@ -1290,7 +1290,7 @@
       (testing "renders the datafy section"
         (is (match? '("--- Datafy:"
                       (:newline)
-                      "  " (:value ":name" 5) " = " (:value "[ :name \"John Doe\" ]" 6)
+                      "  " (:value ":name" 5) " = " (:value "[:name \"John Doe\"]" 6)
                       (:newline))
                     (datafy-section rendered)))))))
 
@@ -1320,7 +1320,7 @@
                             (list :value ":via" number?)
                             " = "
                             (list :value
-                                  "[ { :type clojure.lang.ExceptionInfo, :message \"BOOM\", :data {} } ]"
+                                  "[{:type clojure.lang.ExceptionInfo, :message \"BOOM\", :data {}}]"
                                   number?)
                             '(:newline)
                             "  "
@@ -1340,7 +1340,7 @@
                             '(:newline))
                       (list "--- Datafy:"
                             '(:newline)
-                            "  " (list :value ":via" number?) " = " (list :value "[ { :type clojure.lang.ExceptionInfo, :message \"BOOM\", :data {} } ]" number?)
+                            "  " (list :value ":via" number?) " = " (list :value "[{:type clojure.lang.ExceptionInfo, :message \"BOOM\", :data {}}]" number?)
                             '(:newline)
                             "  " (list :value ":trace" number?) " = " (list :value "[]" number?)
                             '(:newline)
@@ -1358,7 +1358,7 @@
                       (:value "clojure.core.Eduction" 0)
                       (:newline)
                       "Value: "
-                      (:value "( 0 1 2 3 4 ... )" 1)
+                      (:value "(0 1 2 3 4 ...)" 1)
                       (:newline)
                       (:newline))
                     (header rendered)))))
@@ -1395,19 +1395,6 @@
                     (:newline)
                     (:newline))
                   (header rendered))))))
-
-(deftest non-spacious-test
-  (testing ":spacious false makes value rendering tighter"
-    (is (= '("--- Contents:"
-             (:newline)
-             "  " (:value ":a" 1)
-             " = "
-             (:value "[({:b byte[] {0, 1, 2, 3, 4}})]" 2)
-             (:newline))
-           (->> {:a [(list {:b (byte-array (range 5))})]}
-                (inspect/start {:spacious false})
-                render
-                (section "Contents"))))))
 
 (deftest object-view-mode-test
   (testing "in :object view-mode recognized objects are rendered as :default"
@@ -1568,7 +1555,7 @@
                   (section "Contents" rendered)))
       (is (match? '("--- Datafy:"
                     (:newline)
-                    "  " (:value "[ 0 1 2 3 4 ... ]" 5)
+                    "  " (:value "[0 1 2 3 4 ...]" 5)
                     (:newline)
                     (:newline))
                   (datafy-section rendered))))
