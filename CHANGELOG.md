@@ -6,6 +6,7 @@
 
 * [#275](https://github.com/clojure-emacs/orchard/issues/275): Inspector: re-implement :view-mode as a transient stack-remembered option.
 * [#274](https://github.com/clojure-emacs/orchard/issues/274): Inspector: remove support for spacious printing.
+* [#279](https://github.com/clojure-emacs/orchard/issues/279): Inspector: render atom metadata.
 
 ## 0.26.0 (2024-05-30)
 

@@ -694,6 +694,7 @@
 (defmethod inspect :aref [inspector ^clojure.lang.ARef obj]
   (let [val (deref obj)]
     (-> (render-class-name inspector obj)
+        (render-meta-information obj)
         (render-section-header "Deref")
         (indent)
         (render-class-name val)

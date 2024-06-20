@@ -1137,7 +1137,15 @@
                   (:newline)
                   "    " (:value "(0 1 2 3 4 ...)" 2)
                   (:newline))
-                (->> (atom (range 100)) inspect render (section "Deref"))))))
+                (->> (atom (range 100)) inspect render (section "Deref")))))
+
+  (testing "meta is shown on atoms"
+    (is (match? '("--- Meta Information:"
+                  (:newline)
+                  "  " (:value ":foo" 1) " = " (:value "\"bar\"" 2)
+                  (:newline)
+                  (:newline))
+                (->> (atom [1 2 3] :meta {:foo "bar"}) inspect render (section "Meta Information"))))))
 
 (deftest inspect-atom-infinite-seq-test
   (testing "inspecting an atom holding an infinite seq"
