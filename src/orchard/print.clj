@@ -49,9 +49,8 @@
     (when-not (nil? level)
       (set! *print-level* (dec level)))
     (try
-      (let [it (if (instance? Iterable x)
-                 (.iterator ^Iterable x)
-                 (.iterator (seq x)))]
+      (let [^Iterable iterable (if (instance? Iterable x) x (seq x))
+            it (.iterator iterable)]
         (if (.hasNext it)
           (do (.write w prefix)
               (if (or (nil? level) (pos? level))

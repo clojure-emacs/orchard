@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+* [#280](https://github.com/clojure-emacs/orchard/issues/279): Printer: fix a bug when the printed collection is not Iterable.
+
 ## 0.26.1 (2024-06-02)
 
 * [#275](https://github.com/clojure-emacs/orchard/issues/275): Inspector: re-implement :view-mode as a transient stack-remembered option.

@@ -130,3 +130,8 @@
     "#Atom[{...}]" 1
     "#Atom[{:a (...)}]" 2
     "#Atom[{:a (0 1 2 3 4 5 6 7 8 9)}]" 3))
+
+(deftest print-non-iterable
+  (is (= "#{1 2 3}" (sut/print-str (reify clojure.lang.IPersistentSet
+                                     (equiv [t o] (.equals t o))
+                                     (seq [_] (seq [1 2 3])))))))
