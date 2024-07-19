@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+## 0.26.2 (2024-07-19)
+
 * [#280](https://github.com/clojure-emacs/orchard/issues/279): Printer: fix a bug when the printed collection is not Iterable.
 
 ## 0.26.1 (2024-06-02)
