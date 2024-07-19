@@ -4,13 +4,13 @@
 
 ## 0.26.2 (2024-07-19)
 
+* [#274](https://github.com/clojure-emacs/orchard/issues/274): Inspector: remove support for spacious printing.
+* [#279](https://github.com/clojure-emacs/orchard/issues/279): Inspector: render atom metadata.
 * [#280](https://github.com/clojure-emacs/orchard/issues/279): Printer: fix a bug when the printed collection is not Iterable.
 
 ## 0.26.1 (2024-06-02)
 
 * [#275](https://github.com/clojure-emacs/orchard/issues/275): Inspector: re-implement :view-mode as a transient stack-remembered option.
-* [#274](https://github.com/clojure-emacs/orchard/issues/274): Inspector: remove support for spacious printing.
-* [#279](https://github.com/clojure-emacs/orchard/issues/279): Inspector: render atom metadata.
 
 ## 0.26.0 (2024-05-30)
 
