@@ -14,7 +14,8 @@
                  IPersistentSet IPersistentVector Keyword Symbol TaggedLiteral
                  Var)
    (java.util List Map Map$Entry)
-   (mx.cider.orchard TruncatingStringWriter)))
+   (mx.cider.orchard TruncatingStringWriter
+                     TruncatingStringWriter$TotalLimitExceeded)))
 
 (defmulti print
   (fn [x _]
@@ -48,21 +49,22 @@
     (when-not (nil? level)
       (set! *print-level* (dec level)))
     (try
-      (let [it (.iterator x)]
+      (let [it (if (instance? Iterable x)
+                 (.iterator ^Iterable x)
+                 (.iterator (seq x)))]
         (if (.hasNext it)
           (do (.write w prefix)
               (if (or (nil? level) (pos? level))
-                (when (.canWrite w)
-                  (print (.next it) w)
-                  (loop [remaining (unchecked-dec
-                                    (long (or *print-length* Long/MAX_VALUE)))]
-                    (when (.hasNext it)
-                      (.write w sep)
-                      (if (and (> remaining 0) (.canWrite w))
-                        (do (print (.next it) w)
-                            (recur (unchecked-dec remaining)))
-                        ;; There are more items but we reached the limit.
-                        (.write w "...")))))
+                (do (print (.next it) w)
+                    (loop [remaining (unchecked-dec
+                                      (long (or *print-length* Long/MAX_VALUE)))]
+                      (when (.hasNext it)
+                        (.write w sep)
+                        (if (> remaining 0)
+                          (do (print (.next it) w)
+                              (recur (unchecked-dec remaining)))
+                          ;; There are more items but we reached the limit.
+                          (.write w "...")))))
                 ;; Special case: ran out of nesting levels.
                 (.write w "..."))
               (.write w suffix))
@@ -167,5 +169,6 @@
   limit is reached."
   [x]
   (let [writer (TruncatingStringWriter. *max-atom-length* *max-total-length*)]
-    (print x writer)
+    (try (print x writer)
+         (catch TruncatingStringWriter$TotalLimitExceeded _))
     (.toString writer)))
