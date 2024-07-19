@@ -3,7 +3,8 @@
    [clojure.test :as t :refer [is are deftest testing]]
    [orchard.print :as sut])
   (:import
-   (mx.cider.orchard TruncatingStringWriter)))
+   (mx.cider.orchard TruncatingStringWriter
+                     TruncatingStringWriter$TotalLimitExceeded)))
 
 ;; for `match?`
 (require 'matcher-combinators.test)
@@ -39,7 +40,8 @@
 
 (defn sample-writer [atom-limit total-limit & strings]
   (let [writer (TruncatingStringWriter. atom-limit total-limit)]
-    (run! #(.write writer ^String %) strings)
+    (try (run! #(.write writer ^String %) strings)
+         (catch TruncatingStringWriter$TotalLimitExceeded _))
     (str writer)))
 
 (deftest truncating-string-writer
@@ -52,14 +54,7 @@
     "hellohellohellohello" ["hello" "hello" "hello" "hello"]
     "hellohellohellohello..." ["hello" "hello" "hello" "hello" "hello"]
     "hellohellohihihihell..." ["hello" "hello" "hi" "hi" "hi" "hello"]
-    "" ["" "" "" "" ""])
-
-  (testing "calling canWrite() when the writer is full creates ellipsis"
-    (let [writer (TruncatingStringWriter. 5 20)]
-      (run! #(.write writer ^String %) ["hello" "hello" "hello" "hello"])
-      (is (match? "hellohellohellohello" (str writer)))
-      (is (not (.canWrite writer)))
-      (is (match? "hellohellohellohello..." (str writer))))))
+    "" ["" "" "" "" ""]))
 
 (deftest print-no-limits
   (are [result form] (match? result (sut/print-str form))

@@ -5,11 +5,14 @@ import java.io.*;
 /**
  * A <code>java.io.StringWriter</code> with limits on both a single write and
  * the resulting string size. Limits are not guaranteed to be exact, because of
- * appending ellipsis the final size can be a few characters longer.
+ * appending ellipsis the final size can be a few characters longer. If the
+ * total limit is exceeded, the writer throws a TotalLimitExceeded error.
  *
  * This class is not thread-safe.
  */
 public class TruncatingStringWriter extends StringWriter {
+
+    public static class TotalLimitExceeded extends Error {}
 
     private int totalLimit;
     private int singleWriteLimit;
@@ -31,15 +34,6 @@ public class TruncatingStringWriter extends StringWriter {
         totalLimit -= 3;
     }
 
-    public boolean canWrite() {
-        if (totalLimit > 0) return true;
-        // We assume that if the caller checks this predicate, they intend to
-        // write. At limit=0 we tell them not to, but append ellipsis anyway.
-        if (totalLimit == 0)
-            writeEllipsis();
-        return false;
-    }
-
     @Override
     public void write(int c) {
         if (totalLimit > 0) {
@@ -47,6 +41,7 @@ public class TruncatingStringWriter extends StringWriter {
             totalLimit--;
         } else if (totalLimit == 0) {
             writeEllipsis();
+            throw new TotalLimitExceeded();
         }
     }
 
@@ -59,10 +54,13 @@ public class TruncatingStringWriter extends StringWriter {
             totalLimit -= len;
             if (singleTooBig)
                 writeEllipsis();
-        } else if (totalLimit >= 0) {
-            super.write(cbuf, off, totalLimit);
-            totalLimit = 0;
-            writeEllipsis();
+        } else {
+            if (totalLimit >= 0) {
+                super.write(cbuf, off, totalLimit);
+                totalLimit = 0;
+                writeEllipsis();
+            }
+            throw new TotalLimitExceeded();
         }
     }
 
@@ -80,10 +78,13 @@ public class TruncatingStringWriter extends StringWriter {
             totalLimit -= len;
             if (singleTooBig)
                 writeEllipsis();
-        } else if (totalLimit >= 0) {
-            super.write(str, off, totalLimit);
-            totalLimit = 0;
-            writeEllipsis();
+        } else {
+            if (totalLimit >= 0) {
+                super.write(str, off, totalLimit);
+                totalLimit = 0;
+                writeEllipsis();
+            }
+            throw new TotalLimitExceeded();
         }
     }
 }
