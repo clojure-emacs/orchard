@@ -78,28 +78,19 @@
                                          `add-cognitest)]}
 
              ;; Development tools
-             :dev {:plugins [[cider/cider-nrepl "0.47.0"]
-                             [refactor-nrepl "3.9.0"]]
-                   :dependencies [[nrepl/nrepl "1.1.1"]
-                                  [org.clojure/tools.namespace "1.5.0"]]
+             :dev {:dependencies [[org.clojure/tools.namespace "1.5.0"]]
                    :source-paths ["dev" "submodules/spec-alpha2/src/main/clojure"]
                    :resource-paths ["test-resources"]}
 
              :cljfmt {:plugins [[lein-cljfmt "0.9.2"]]
-                      :cljfmt {:indents {as-> [[:inner 0]]
-                                         with-debug-bindings [[:inner 0]]
-                                         merge-meta [[:inner 0]]
-                                         letfn [[:block 1] [:inner 2]]}}}
+                      :cljfmt {:indents {merge-meta [[:inner 0]]}}}
 
              :clj-kondo {:plugins [[com.github.clj-kondo/lein-clj-kondo "2023.07.13"]]}
 
              :eastwood  {:plugins  [[jonase/eastwood "1.4.0"]]
                          :eastwood {:ignored-faults {:unused-ret-vals-in-try {orchard.java {:line 84}
                                                                               orchard.java.parser-next-test true}}
-                                    :exclude-namespaces ~(cond-> '[clojure.alpha.spec
-                                                                   clojure.alpha.spec.gen
-                                                                   clojure.alpha.spec.impl
-                                                                   clojure.alpha.spec.test]
+                                    :exclude-namespaces ~(cond-> []
                                                            jdk8?
                                                            (conj 'orchard.java.parser
                                                                  'orchard.java.parser-test
