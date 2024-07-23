@@ -56,15 +56,14 @@
                     :jvm-opts
                     ["-Dorchard.initialize-cache.silent=false"
                      "-Dorchard.internal.test-suite-running=true"]
-                    :test-paths ["test"]
-                    :source-paths ["test-runner/src"]}
+                    :test-paths ["test"]}
 
              ;; Running the tests with enrich-classpath doing its thing isn't compatible with `lein test`,
              ;; So we use cognitect.test-runner instead.
              :cognitest {:dependencies [[org.clojure/tools.namespace "1.5.0"
                                          :exclusions [org.clojure/clojure]]
                                         [org.clojure/tools.cli "1.1.230"]]
-                         :source-paths ["test-runner/src"]
+                         :source-paths ["submodules/test-runner/src"]
                          ;; This piece of middleware dynamically adds the test paths to a cognitect.test-runner main invocation.
                          :middleware [~(do
                                          (defn add-cognitest [{:keys [test-paths] :as project}]
@@ -83,7 +82,7 @@
                              [refactor-nrepl "3.9.0"]]
                    :dependencies [[nrepl/nrepl "1.1.1"]
                                   [org.clojure/tools.namespace "1.5.0"]]
-                   :source-paths ["dev" "src-spec-alpha-2/src/main/clojure"]
+                   :source-paths ["dev" "submodules/spec-alpha2/src/main/clojure"]
                    :resource-paths ["test-resources"]}
 
              :cljfmt {:plugins [[lein-cljfmt "0.9.2"]]

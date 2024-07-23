@@ -40,8 +40,6 @@ executors:
 # Runs a given set of steps, with some standard pre- and post-
 # steps, including restoring of cache, saving of cache.
 #
-# we also install `make` here.
-#
 # Adapted from https://github.com/lambdaisland/meta/blob/master/circleci/clojure_orb.yml
 
 commands:
@@ -75,9 +73,8 @@ commands:
         default: "1"
     steps:
       - run:
-          name: Install git
-          command: |
-            apt-get update && apt-get install -y git
+          name: Checkout submodules
+          command: make submodules
       - run:
           name: Generate Cache Checksum
           command: |

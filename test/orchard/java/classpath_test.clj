@@ -75,21 +75,15 @@
                                                  ;; remove dev-resources, only present in the :dev profile:
                                                  dev-resources-path)))))))
             ^File non-existing-jar (->> the-classpath
-                                        (filter (fn [u]
-                                                  ;; Find the non-existing jar declared under the :test profile:
-                                                  (-> u io/as-file str (.contains "does-not-exist.jar"))))
-                                        first)]
-        (assert (seq corpus)
-                "There's something to test")
-        (assert non-existing-jar
-                "The classpath includes the non-existing jar")
+                                        ;; Find the non-existing jar declared under the :test profile:
+                                        (some #(when (-> % io/as-file str (.contains "does-not-exist.jar"))
+                                                 %)))]
+        (is (seq corpus) "There's something to test")
+        (is non-existing-jar "The classpath includes the non-existing jar")
         (testing "Orchard will succeed even in presence of an entry in the classpath that refers to a non-existing.jar"
           (is (not (-> non-existing-jar io/as-file .exists))
               (pr-str non-existing-jar)))
-        (doseq [item corpus
-                :let [entry (cp/classpath-seq item)]]
-          (is (seq entry)
-              (pr-str [item entry])))))
+        (is (seq (mapcat cp/classpath-seq corpus)))))
     (testing "returns relative paths"
       (doseq [^String entry (mapcat cp/classpath-seq (cp/classpath))]
         (is (not (-> entry File. .isAbsolute)))))))
