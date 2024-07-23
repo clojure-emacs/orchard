@@ -6,7 +6,7 @@
 SHELL = /bin/bash -Eeu
 
 HOME=$(shell echo $$HOME)
-VERSION ?= 1.11
+CLOJURE_VERSION ?= 1.11
 TEST_PROFILES ?= "-user,-dev,+test"
 
 # The Lein profiles that will be selected for `lein-repl`.
@@ -34,12 +34,12 @@ endif
 # one without (java.parser will be used).
 test: clean submodules .EXPORT_ALL_VARIABLES
 	@if [[ "$$PARSER_TARGET" == "parser-next" ]] ; then \
-		bash 'lein' 'update-in' ':plugins' 'conj' "[mx.cider/lein-enrich-classpath \"$(ENRICH_CLASSPATH_VERSION)\"]" '--' 'with-profile' $(TEST_PROFILES),+cognitest,+$(VERSION) 'update-in' ':middleware' 'conj' 'cider.enrich-classpath.plugin-v2/middleware' '--' 'repl' | grep " -cp " > .test-classpath; \
+		bash 'lein' 'update-in' ':plugins' 'conj' "[mx.cider/lein-enrich-classpath \"$(ENRICH_CLASSPATH_VERSION)\"]" '--' 'with-profile' $(TEST_PROFILES),+cognitest,+$(CLOJURE_VERSION) 'update-in' ':middleware' 'conj' 'cider.enrich-classpath.plugin-v2/middleware' '--' 'repl' | grep " -cp " > .test-classpath; \
 		cat .test-classpath; \
 		eval "$$(cat .test-classpath)"; \
 		rm .test-classpath; \
 	elif [[ "$$PARSER_TARGET" == "parser" ]] ; then \
-		bash 'lein' 'update-in' ':plugins' 'conj' "[mx.cider/lein-enrich-classpath \"$(ENRICH_CLASSPATH_VERSION)\"]" '--' 'with-profile' $(TEST_PROFILES),+cognitest,+$(VERSION) 'update-in' ':middleware' 'conj' 'cider.enrich-classpath.plugin-v2/middleware' '--' 'repl' | grep " -cp " > .test-classpath; \
+		bash 'lein' 'update-in' ':plugins' 'conj' "[mx.cider/lein-enrich-classpath \"$(ENRICH_CLASSPATH_VERSION)\"]" '--' 'with-profile' $(TEST_PROFILES),+cognitest,+$(CLOJURE_VERSION) 'update-in' ':middleware' 'conj' 'cider.enrich-classpath.plugin-v2/middleware' '--' 'repl' | grep " -cp " > .test-classpath; \
 		cat .test-classpath; \
 		sed $(SED_INPLACE) 's/--add-opens=jdk.compiler\/com.sun.tools.javac.code=ALL-UNNAMED//g' .test-classpath; \
 		sed $(SED_INPLACE) 's/--add-opens=jdk.compiler\/com.sun.tools.javac.tree=ALL-UNNAMED//g' .test-classpath; \
@@ -47,7 +47,7 @@ test: clean submodules .EXPORT_ALL_VARIABLES
 		eval "$$(cat .test-classpath)"; \
 		rm .test-classpath; \
 	elif [[ "$$PARSER_TARGET" == "legacy-parser" ]] ; then \
-		lein with-profile -user,-dev,+$(VERSION),$(TEST_PROFILES) test; \
+		lein with-profile -user,-dev,+$(CLOJURE_VERSION),$(TEST_PROFILES) test; \
 	else \
 		echo "PARSER_TARGET unset!"; \
 		exit 1; \
@@ -56,10 +56,10 @@ test: clean submodules .EXPORT_ALL_VARIABLES
 quick-test: test
 
 eastwood:
-	lein with-profile -user,-dev,+$(VERSION),+eastwood,+deploy,$(TEST_PROFILES) eastwood
+	lein with-profile -user,-dev,+$(CLOJURE_VERSION),+eastwood,+deploy,$(TEST_PROFILES) eastwood
 
 cljfmt:
-	lein with-profile -user,-dev,+$(VERSION),+deploy,+cljfmt cljfmt check
+	lein with-profile -user,-dev,+$(CLOJURE_VERSION),+deploy,+cljfmt cljfmt check
 
 # Note that -dev is necessary for not hitting OOM errors in CircleCI
 .make_kondo_prep: project.clj .clj-kondo/config.edn
@@ -73,11 +73,11 @@ lint: kondo cljfmt eastwood
 # Deployment is performed via CI by creating a git tag prefixed with "v".
 # Please do not deploy locally as it skips various measures.
 deploy: check-env clean
-	lein with-profile -user,-dev,+$(VERSION),-provided deploy clojars
+	lein with-profile -user,-dev,+$(CLOJURE_VERSION),-provided deploy clojars
 
 # Usage: PROJECT_VERSION=0.26.2 make install
 install: clean check-install-env
-	lein with-profile -user,-dev,+$(VERSION),-provided install
+	lein with-profile -user,-dev,+$(CLOJURE_VERSION),-provided install
 
 clean:
 	lein with-profile -user,-dev clean

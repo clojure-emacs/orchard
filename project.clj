@@ -38,10 +38,10 @@
                                    [org.clojure/clojure "1.10.3" :classifier "sources"]]}
              :1.11 {:dependencies [[org.clojure/clojure "1.11.3"]
                                    [org.clojure/clojure "1.11.3" :classifier "sources"]]}
-             :master {:repositories [["snapshots"
-                                      "https://oss.sonatype.org/content/repositories/snapshots"]]
-                      :dependencies [[org.clojure/clojure "1.12.0-master-SNAPSHOT"]
-                                     [org.clojure/clojure "1.12.0-master-SNAPSHOT" :classifier "sources"]]}
+             :1.12 {:repositories [["snapshots"
+                                    "https://oss.sonatype.org/content/repositories/snapshots"]]
+                    :dependencies [[org.clojure/clojure "1.12.0-master-SNAPSHOT"]
+                                   [org.clojure/clojure "1.12.0-master-SNAPSHOT" :classifier "sources"]]}
 
 
              :test {:dependencies [[org.clojure/java.classpath "1.1.0"]
