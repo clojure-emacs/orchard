@@ -1,7 +1,6 @@
 /.lein-*
 /.nrepl-port
 /checkouts
-/src-spec-alpha-2
 /classes
 .javac
 .enrich-classpath-lein-repl
@@ -19,4 +18,6 @@ nashorn_code_cache/
 .cljs_node_repl/
 .clj-kondo/.cache
 /.test-classpath
-/test-runner
+/.cpcache
+/.clj-kondo
+/.eastwood

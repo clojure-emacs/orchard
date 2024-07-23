@@ -30,19 +30,21 @@
 
   :javac-options ["-Xlint:unchecked"]
 
-  :profiles {:provided {:dependencies [[org.clojure/clojure "1.11.3"] ;; Clojure versions matrix
-                                       [org.clojure/clojure "1.11.3" :classifier "sources"]
-                                       [org.clojure/clojurescript "1.11.132"]]
-                        :test-paths ["test-cljs"]}
+  :profiles {:provided {:dependencies [[org.clojure/clojure "1.11.3"]
+                                       [org.clojure/clojure "1.11.3" :classifier "sources"]]}
+
              :1.10 {:dependencies [[org.clojure/clojure "1.10.3"]
                                    [org.clojure/clojure "1.10.3" :classifier "sources"]]}
              :1.11 {:dependencies [[org.clojure/clojure "1.11.3"]
                                    [org.clojure/clojure "1.11.3" :classifier "sources"]]}
-             :master {:repositories [["snapshots"
-                                      "https://oss.sonatype.org/content/repositories/snapshots"]]
-                      :dependencies [[org.clojure/clojure "1.12.0-master-SNAPSHOT"]
-                                     [org.clojure/clojure "1.12.0-master-SNAPSHOT" :classifier "sources"]]}
+             :1.12 {:repositories [["snapshots"
+                                    "https://oss.sonatype.org/content/repositories/snapshots"]]
+                    :dependencies [[org.clojure/clojure "1.12.0-master-SNAPSHOT"]
+                                   [org.clojure/clojure "1.12.0-master-SNAPSHOT" :classifier "sources"]]}
 
+             ;; Needed to test how Orchard behaves with Clojurescript on classpath.
+             :cljs {:dependencies [[org.clojure/clojurescript "1.11.132"]]
+                    :test-paths ["test-cljs"]}
 
              :test {:dependencies [[org.clojure/java.classpath "1.1.0"]
                                    [nubank/matcher-combinators "3.9.1"
@@ -56,15 +58,14 @@
                     :jvm-opts
                     ["-Dorchard.initialize-cache.silent=false"
                      "-Dorchard.internal.test-suite-running=true"]
-                    :test-paths ["test"]
-                    :source-paths ["test-runner/src"]}
+                    :test-paths ["test"]}
 
              ;; Running the tests with enrich-classpath doing its thing isn't compatible with `lein test`,
              ;; So we use cognitect.test-runner instead.
              :cognitest {:dependencies [[org.clojure/tools.namespace "1.5.0"
                                          :exclusions [org.clojure/clojure]]
                                         [org.clojure/tools.cli "1.1.230"]]
-                         :source-paths ["test-runner/src"]
+                         :source-paths ["submodules/test-runner/src"]
                          ;; This piece of middleware dynamically adds the test paths to a cognitect.test-runner main invocation.
                          :middleware [~(do
                                          (defn add-cognitest [{:keys [test-paths] :as project}]
@@ -79,28 +80,19 @@
                                          `add-cognitest)]}
 
              ;; Development tools
-             :dev {:plugins [[cider/cider-nrepl "0.47.0"]
-                             [refactor-nrepl "3.9.0"]]
-                   :dependencies [[nrepl/nrepl "1.1.1"]
-                                  [org.clojure/tools.namespace "1.5.0"]]
-                   :source-paths ["dev" "src-spec-alpha-2/src/main/clojure"]
+             :dev {:dependencies [[org.clojure/tools.namespace "1.5.0"]]
+                   :source-paths ["dev" "submodules/spec-alpha2/src/main/clojure"]
                    :resource-paths ["test-resources"]}
 
              :cljfmt {:plugins [[lein-cljfmt "0.9.2"]]
-                      :cljfmt {:indents {as-> [[:inner 0]]
-                                         with-debug-bindings [[:inner 0]]
-                                         merge-meta [[:inner 0]]
-                                         letfn [[:block 1] [:inner 2]]}}}
+                      :cljfmt {:indents {merge-meta [[:inner 0]]}}}
 
              :clj-kondo {:plugins [[com.github.clj-kondo/lein-clj-kondo "2023.07.13"]]}
 
              :eastwood  {:plugins  [[jonase/eastwood "1.4.0"]]
                          :eastwood {:ignored-faults {:unused-ret-vals-in-try {orchard.java {:line 84}
                                                                               orchard.java.parser-next-test true}}
-                                    :exclude-namespaces ~(cond-> '[clojure.alpha.spec
-                                                                   clojure.alpha.spec.gen
-                                                                   clojure.alpha.spec.impl
-                                                                   clojure.alpha.spec.test]
+                                    :exclude-namespaces ~(cond-> []
                                                            jdk8?
                                                            (conj 'orchard.java.parser
                                                                  'orchard.java.parser-test

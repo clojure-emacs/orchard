@@ -1,0 +1,6 @@
+[submodule "submodules/test-runner"]
+	path = submodules/test-runner
+	url = https://github.com/cognitect-labs/test-runner
+[submodule "submodules/spec-alpha2"]
+	path = submodules/spec-alpha2
+	url = https://github.com/clojure/spec-alpha2
