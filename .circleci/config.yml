@@ -116,7 +116,7 @@ jobs:
     executor: << parameters.jdk_version >>
     environment:
       CLOJURE_VERSION: << parameters.clojure_version >>
-      TEST_PROFILES: "-user,-dev,+test,+provided"
+      TEST_PROFILES: "-user,-dev,+test,+cljs"
     steps:
       - checkout
       - with_cache:
@@ -157,13 +157,13 @@ jobs:
     executor: << parameters.jdk_version >>
     environment:
       CLOJURE_VERSION: << parameters.clojure_version >>
-      TEST_PROFILES: -user,-dev,+test,<< parameters.extra_profiles >>
+      TEST_PROFILES: -user,-dev,+test<< parameters.extra_profiles >>
       PARSER_TARGET: << parameters.parser_target >>
     steps:
       - checkout
       - with_cache:
           clojure_version: << parameters.clojure_version >>
-          cache_version: "test_v1"
+          cache_version: test_v1_<< parameters.extra_profiles>>
           steps:
             - run:
                 name: Running tests
@@ -184,7 +184,7 @@ workflows:
             parameters:
               jdk_version: [jdk8]
               clojure_version: ["1.10", "1.11", "1.12"]
-              extra_profiles: ["+provided", "-provided"]
+              extra_profiles: [",+cljs", ""]
               # It doesn't make sense to exercise the newer Orchard Java parsers against JDK8
               # (given that JDK8 is explicitly excluded by those parsers)
               parser_target: ["legacy-parser"]
@@ -199,7 +199,7 @@ workflows:
             parameters:
               jdk_version: [jdk11, jdk17, jdk21, jdk22]
               clojure_version: ["1.10", "1.11", "1.12"]
-              extra_profiles: ["+provided"]
+              extra_profiles: [",+cljs"]
               # Don't test legacy parser on JDK11+ since it is never invoked there.
               parser_target: ["parser-next", "parser"]
           filters:
@@ -214,7 +214,7 @@ workflows:
             parameters:
               jdk_version: [jdk11, jdk17, jdk21, jdk22]
               clojure_version: ["1.10", "1.11", "1.12"]
-              extra_profiles: ["-provided"]
+              extra_profiles: [""]
               parser_target: ["parser"]
       - eastwood:
           matrix:

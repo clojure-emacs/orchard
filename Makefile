@@ -13,7 +13,7 @@ TEST_PROFILES ?= "-user,-dev,+test"
 # Feel free to upgrade this, or to override it with an env var named LEIN_PROFILES.
 # Expected format: "+dev,+test"
 # Don't use spaces here.
-LEIN_PROFILES ?= "+dev,+test,+1.11"
+LEIN_PROFILES ?= "+dev,+test,+1.11,+cljs"
 
 # The enrich-classpath version to be injected.
 # Feel free to upgrade this.
