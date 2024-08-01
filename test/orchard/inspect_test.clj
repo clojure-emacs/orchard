@@ -1074,7 +1074,14 @@
                              "public final void wait() throws InterruptedException"
                              "public final void wait(long,int) throws InterruptedException"]]
             (is (match? (matchers/embeds (list "  " (list :value assertion pos?)))
-                        methods))))))))
+                        methods)))))))
+
+  (testing "inspecting an internal class"
+    (is (match? `("--- Fields:"
+                  (:newline) "  "
+                  (:value "public volatile clojure.lang.MethodImplCache __methodImplCache" ~number?)
+                  (:newline) (:newline))
+                (section "Fields" (-> clojure.lang.AFunction$1 inspect render))))))
 
 (deftest inspect-method-test
   (testing "reflect.Method values aren't truncated"

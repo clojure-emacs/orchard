@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+* [#282](https://github.com/clojure-emacs/orchard/issues/282): Inspector: don't crash when inspecting internal classes.
+
 ## 0.26.2 (2024-07-19)
 
 * [#274](https://github.com/clojure-emacs/orchard/issues/274): Inspector: remove support for spacious printing.
