@@ -1,39 +1,13 @@
 (ns orchard.spec
   (:require
    [clojure.pprint :as pp]
+   [clojure.spec.alpha :as spec1]
    [clojure.string :as string]
    [clojure.walk :as walk]
    [orchard.misc :as misc]))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; These are all wrappers for Clojure Spec functions.                                   ;;
-;; - clojure.spec.alpha (renamed from clojure.spec and included in Clojure 1.9)         ;;
-;; - clojure.alpha.spec (spec-2, the new experimental version)                          ;;
-;; We can't simply require the ns because it's existence depends on the Clojure version ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; clojure.spec.alpha
-
-(def ^:private clojure-spec-alpha-get-spec
-  (misc/call-when-resolved 'clojure.spec.alpha/get-spec))
-
-(def ^:private clojure-spec-alpha-describe
-  (misc/call-when-resolved 'clojure.spec.alpha/describe))
-
-(def ^:private clojure-spec-alpha-form
-  (misc/call-when-resolved 'clojure.spec.alpha/form))
-
-(def ^:private clojure-spec-alpha-gen
-  (misc/call-when-resolved 'clojure.spec.alpha/gen))
-
-(def ^:private clojure-spec-alpha-registry
-  (misc/call-when-resolved 'clojure.spec.alpha/registry))
-
-(def clojure-spec-alpha?
-  "True if `clojure.spec.alpha` is supported, otherwise false."
-  (some? (resolve (symbol "clojure.spec.alpha" "get-spec"))))
-
-;; clojure.alpha.spec - spec-2
+;; Below are the wrappers for clojure.alpha.spec (spec-2), the second
+;; experimental version of Spec.
 
 (def ^:private clojure-alpha-spec-get-spec
   (misc/call-when-resolved 'clojure.alpha.spec/get-spec))
@@ -52,41 +26,30 @@
 
 (def clojure-alpha-spec?
   "True if `clojure.alpha.spec` is supported, otherwise false."
-  (some? (resolve (symbol "clojure.alpha.spec" "get-spec"))))
-
-(def spec?
-  "True if `clojure.spec.alpha` or`clojure.alpha.spec` is supported, otherwise false."
-  (or clojure-spec-alpha? clojure-alpha-spec?))
+  (some? (resolve 'clojure.alpha.spec/get-spec)))
 
 (defn- try-fn [f & args]
   (try (apply f args) (catch Exception _)))
 
-(defn- ex-unable-to-resolve-spec [s]
-  (ex-info (format "Unable to resolve spec: %s" s) {:s s}))
-
 (defn get-spec [k]
   (or (clojure-alpha-spec-get-spec k)
-      (clojure-spec-alpha-get-spec k)))
+      (spec1/get-spec k)))
 
 (defn describe [s]
   (or (try-fn clojure-alpha-spec-describe s)
-      (try-fn clojure-spec-alpha-describe s)
-      (throw (ex-unable-to-resolve-spec s))))
+      (spec1/describe s)))
 
 (defn registry []
-  (apply merge
-         (clojure-spec-alpha-registry)
+  (merge (spec1/registry)
          (clojure-alpha-spec-registry)))
 
 (defn form [s]
   (or (try-fn clojure-alpha-spec-form s)
-      (try-fn clojure-spec-alpha-form s)
-      (throw (ex-unable-to-resolve-spec s))))
+      (spec1/form s)))
 
 (defn gen [s]
   (or (try-fn clojure-alpha-spec-gen s)
-      (try-fn clojure-spec-alpha-gen s)
-      (throw (ex-unable-to-resolve-spec s))))
+      (spec1/gen s)))
 
 (def ^:private generate*
   "All Clojure Spec versions use test.check under the hood. So let's
