@@ -575,11 +575,14 @@
 (defn- shorten-member-string [member-string, ^Class class]
   ;; Ugly as hell, but easier than reimplementing all custom printing that
   ;; java.lang.reflect does.
-  (-> member-string
-      (string/replace #"[\w\.]+\.(\w+\()" "$1") ;; remove class from method name
-      (string/replace #"[\w\.]+\.(\w+)$" "$1") ;; remove class from field name
-      (string/replace (.getCanonicalName class) (.getSimpleName class))
-      (string/replace #"java.lang.([A-Z])" "$1")))
+  (as-> member-string s
+    (string/replace s #"[\w\.]+\.(\w+\()" "$1") ;; remove class from method name
+    (string/replace s #"[\w\.]+\.(\w+)$" "$1") ;; remove class from field name
+    ;; Class might not have a canonical name, as per `.getCanonicalName` doc.
+    (if-let [canonical (.getCanonicalName class)]
+      (string/replace s canonical (.getSimpleName class))
+      s)
+    (string/replace s #"java.lang.([A-Z])" "$1")))
 
 (defmethod inspect :default [inspector obj]
   (let [class-chain (loop [c (class obj), res ()]
