@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+## 0.26.3 (2024-08-14)
+
 * [#282](https://github.com/clojure-emacs/orchard/issues/282): Inspector: don't crash when inspecting internal classes.
 * [#284](https://github.com/clojure-emacs/orchard/issues/284): Add orchard.trace.
 
