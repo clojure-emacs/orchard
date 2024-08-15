@@ -11,9 +11,4 @@
    [clojure.test :as test]
    [clojure.tools.namespace.repl :refer [clear refresh refresh-all refresh-dirs set-refresh-dirs]]))
 
-(def jdk8?
-  (->> "java.version" System/getProperty (re-find #"^1.8.")))
-
-(cond->> ["dev" "src" "test"]
-  (not jdk8?) (into ["test-newer-jdks"])
-  true        (apply set-refresh-dirs))
+(set-refresh-dirs "dev" "src" "test")
