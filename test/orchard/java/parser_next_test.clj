@@ -3,8 +3,7 @@
    [clojure.string :as string]
    [clojure.test :refer [deftest is testing]]
    [orchard.java :as java]
-   [orchard.java.parser-next :as sut]
-   [orchard.java.parser-utils :as parser-utils]
+   [orchard.misc :as misc]
    [orchard.test.util :as util])
   (:import
    (orchard.java DummyClass)))
@@ -12,12 +11,19 @@
 (when (System/getenv "CI")
   (println "has-enriched-classpath?" (pr-str util/has-enriched-classpath?)))
 
+(def source-info
+  (when (>= misc/java-api-version 9)
+    (misc/require-and-resolve 'orchard.java.parser-next/source-info)))
+
+(def parse-java
+  (when (>= misc/java-api-version 9)
+    (misc/require-and-resolve 'orchard.java.parser-utils/parse-java)))
+
 (when @@java/parser-next-available?
   (deftest parse-java-test
     (testing "Throws an informative exception on invalid code"
       (try
-        (parser-utils/parse-java "orchard/java/UnderscoreClass.java"
-                                 nil)
+        (parse-java "orchard/java/UnderscoreClass.java" nil)
         (assert false)
         (catch Exception e
           (is (-> e ex-data :out (string/includes? "'_' is a keyword, and may not be used as an identifier"))))))))
@@ -75,12 +81,12 @@
                :doc-block-tags-fragments [],
                :doc
                "Class level docstring.\n\n <pre>\n   DummyClass dc = new DummyClass();\n </pre>\n\n @author Arne Brasseur"}
-             (dissoc (sut/source-info 'orchard.java.DummyClass)
+             (dissoc (source-info 'orchard.java.DummyClass)
                      :path
                      :resource-url))))
 
     (testing "java file in a jar"
-      (let [rt-info (sut/source-info 'clojure.lang.RT)]
+      (let [rt-info (source-info 'clojure.lang.RT)]
         (is (= {:file "clojure/lang/RT.java"}
                (select-keys rt-info [:file])))
         (is (re-find #"jar:file:/.*/.m2/repository/org/clojure/clojure/.*/clojure-.*-sources.jar!/clojure/lang/RT.java"
@@ -97,24 +103,24 @@
              :content
              " and its\nsubgroups. Recursively iterates over all subgroups in the current\nthread's thread group.\n\nThe value returned is only an estimate because the number of\nthreads may change dynamically while this method traverses internal\ndata structures, and might be affected by the presence of certain\nsystem threads. This method is intended primarily for debugging\nand monitoring purposes."}]
            (-> `Thread
-               sut/source-info
+               source-info
                (get-in [:members 'activeCount [] :doc-fragments])))
         "Returns a data structure with carefully managed whitespace location")
 
     (is (some #{{:type "text", :content " permission as well as\n"}}
               (-> `Thread
-                  sut/source-info
+                  source-info
                   (get-in [:members 'getAllStackTraces [] :doc-fragments])))
         "A specific fragment starts with a single space and ends in a single newline")
 
     (is (= {:content "<i>Param</i>&nbsp;<pre>obj</pre>:&nbsp;", :type "html"}
            (-> `Thread
-               sut/source-info
+               source-info
                (get-in [:members 'holdsLock '[java.lang.Object] :doc-block-tags-fragments 1])))
         "Formats params correctly")
 
     (let [fragments (-> `String
-                        sut/source-info
+                        source-info
                         (get-in [:members
                                  'format
                                  ['java.util.Locale 'java.lang.String 'java.lang.Object]
@@ -142,7 +148,7 @@
       (assert (> (count corpus)
                  50))
       (doseq [class-sym corpus
-              :let [{:keys [members] :as info} (sut/source-info class-sym)]]
+              :let [{:keys [members] :as info} (source-info class-sym)]]
         (testing class-sym
           (is (contains? info :doc))
           (is (contains? info :doc-fragments))

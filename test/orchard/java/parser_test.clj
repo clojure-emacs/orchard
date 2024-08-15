@@ -1,12 +1,16 @@
 (ns orchard.java.parser-test
   (:require
    [clojure.test :refer [deftest is testing]]
-   [orchard.java.parser :as sut]
+   [orchard.misc :as misc]
    [orchard.test.util :as util])
   (:import
    (orchard.java DummyClass)))
 
-(when util/has-enriched-classpath?
+(def source-info
+  (when (>= misc/java-api-version 9)
+    (misc/require-and-resolve 'orchard.java.parser/source-info)))
+
+(when (and source-info util/has-enriched-classpath?)
   (deftest source-info-test
     (is (class? DummyClass))
 
@@ -41,11 +45,11 @@
               :resource-url (.toURL (java.net.URI. (str "file:"
                                                         (System/getProperty "user.dir")
                                                         "/test-java/orchard/java/DummyClass.java")))}
-             (dissoc (sut/source-info 'orchard.java.DummyClass)
+             (dissoc (source-info 'orchard.java.DummyClass)
                      :path))))
 
     (testing "java file in a jar"
-      (let [rt-info (sut/source-info 'clojure.lang.RT)]
+      (let [rt-info (source-info 'clojure.lang.RT)]
         (is (= {:file "clojure/lang/RT.java"}
                (select-keys rt-info [:file])))
         (is (re-find #"jar:file:/.*/.m2/repository/org/clojure/clojure/.*/clojure-.*-sources.jar!/clojure/lang/RT.java"

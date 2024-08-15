@@ -23,9 +23,7 @@
   :jvm-opts ["-Dclojure.main.report=stderr"]
 
   :source-paths ["src"]
-  :test-paths ~(cond-> ["test"]
-                 (not jdk8?)
-                 (conj "test-newer-jdks"))
+  :test-paths ["test"]
   :java-source-paths ["java"]
 
   :javac-options ["-Xlint:unchecked"]
@@ -68,12 +66,9 @@
                          :middleware [~(do
                                          (defn add-cognitest [{:keys [test-paths] :as project}]
                                            (assert (seq test-paths))
-                                           (let [cmd (reduce into [["cognitect.test-runner"]
-                                                                   (vec
-                                                                    (interleave (take (count test-paths)
-                                                                                      (repeat "--dir"))
-                                                                                test-paths))
-                                                                   ["--namespace-regex" (pr-str ".*")]])]
+                                           (let [cmd (-> ["cognitect.test-runner"]
+                                                         (into (interleave (repeat "--dir") test-paths))
+                                                         (conj "--namespace-regex" (pr-str ".*")))]
                                              (assoc-in project [:enrich-classpath :main] (clojure.string/join " " cmd))))
                                          `add-cognitest)]}
 
