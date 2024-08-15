@@ -37,10 +37,10 @@
                     :url (io/as-url file)})))
           (remove #(.startsWith ^String (:relpath %) "META-INF/"))
           (remove #(re-matches #".*\.(clj[cs]?|java|class)" (:relpath %)))))
-   (filter (memfn ^File isDirectory) (map io/as-file (cp/classpath (cp/boot-aware-classloader))))))
+   (filter (memfn ^File isDirectory) (map io/as-file (cp/classpath (cp/context-classloader))))))
 
 (defn resource-full-path ^URL [relative-path]
-  (io/resource relative-path (cp/boot-aware-classloader)))
+  (io/resource relative-path (cp/context-classloader)))
 
 (defn resource-path-tuple
   "If it's a resource, return a tuple of the relative path and the full

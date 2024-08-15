@@ -1,17 +1,13 @@
 (ns orchard.java.classpath
   "Classpath access and modification utilities.
 
-  Provides an alternative to the java.classpath contrib library.
-  The library is Boot-aware, meaning it takes into account the
-  classpath manipulation magic, performed by the Boot build tool."
+  Provides an alternative to the java.classpath contrib library."
   (:require
    [clojure.java.io :as io]
-   [clojure.string :as string]
    [orchard.misc :as misc])
   (:import
    (java.io File)
-   (java.net URI URL URLClassLoader)
-   (java.nio.file Paths)
+   (java.net URL URLClassLoader)
    (java.util.jar JarEntry JarFile)))
 
 ;;; Classloaders
@@ -97,48 +93,3 @@
               (file-seq f))
             (filter #(not (.isDirectory ^File %)))
             (map #(.getPath (.relativize (.toURI url) (.toURI ^File %)))))))))
-
-;;; Boot support - previously part of cider-nrepl
-;;
-;; The Boot build tool stores files in a temporary directory, so
-;; we have to do a bit of work to figure out where the real resources are.
-
-(defn boot-classloader
-  "Creates a class-loader that knows original source files paths in Boot project."
-  []
-  (let [class-path (System/getProperty "fake.class.path")
-        dir-separator (System/getProperty "file.separator")
-        paths (string/split class-path (re-pattern (System/getProperty "path.separator")))
-        urls (map
-              (fn [path]
-                (let [url (if (re-find #".jar$" path)
-                            (str "file:" path)
-                            (str "file:" path dir-separator))]
-                  (.toURL (URI. url))))
-              paths)]
-    ;; TODO: Figure out how to add the JDK sources here
-    (new java.net.URLClassLoader (into-array java.net.URL urls))))
-
-(defn boot-aware-classloader
-  []
-  (if (misc/boot-project?)
-    (boot-classloader)
-    (context-classloader)))
-
-(defn classpath-file-relative-path
-  "Boot stores files in a temporary directory & ClojureScript stores
-  the :file metadata location absolutely instead of relatively to the
-  classpath. This means when doing jump to source in Boot &
-  ClojureScript, you end up at the temp file.  This code attempts to
-  find the classpath-relative location of the file, so that it can be
-  opened correctly."
-  [s]
-  (let [path (Paths/get s (into-array String []))
-        path-count (.getNameCount path)]
-    (or (first
-         (sequence
-          (comp (map #(.subpath path % path-count))
-                (map str)
-                (filter io/resource))
-          (range path-count)))
-        s)))
