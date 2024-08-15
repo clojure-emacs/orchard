@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+* [#285](https://github.com/clojure-emacs/orchard/issues/285): **BREAKING:** Remove special handling of Boot classpath.
+
 ## 0.26.3 (2024-08-14)
 
 * [#282](https://github.com/clojure-emacs/orchard/issues/282): Inspector: don't crash when inspecting internal classes.
