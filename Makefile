@@ -7,7 +7,7 @@ SHELL = /bin/bash -Eeu
 
 HOME=$(shell echo $$HOME)
 CLOJURE_VERSION ?= 1.11
-TEST_PROFILES ?= "-user,-dev,+test,+spec2"
+TEST_PROFILES ?= "-user,-dev,+test,+spec2,+cljs"
 
 # The Lein profiles that will be selected for `lein-repl`.
 # Feel free to upgrade this, or to override it with an env var named LEIN_PROFILES.
@@ -37,14 +37,13 @@ base-src.zip:
 test: clean submodules base-src.zip .EXPORT_ALL_VARIABLES
 	@if [[ "$$PARSER_TARGET" == "parser-next" ]] ; then \
 		lein with-profile $(TEST_PROFILES),+$(CLOJURE_VERSION),+parser-next test; \
-	elif [[ "$$PARSER_TARGET" == "parser" ]] ; then \
-		lein with-profile $(TEST_PROFILES),+$(CLOJURE_VERSION) test; \
-	elif [[ "$$PARSER_TARGET" == "legacy-parser" ]] ; then \
-		lein with-profile $(TEST_PROFILES),+$(CLOJURE_VERSION) test; \
 	else \
-		echo "PARSER_TARGET unset!"; \
-		exit 1; \
+		lein with-profile $(TEST_PROFILES),+$(CLOJURE_VERSION) test; \
 	fi
+
+# Sanity check that we don't break if Clojurescript or Spec2 aren't present.
+test-no-extra-deps:
+	lein with-profile -user,-dev,+test,+$(CLOJURE_VERSION) test
 
 quick-test: test
 

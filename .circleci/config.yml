@@ -147,104 +147,111 @@ jobs:
     description: |
       Run tests against given version of JDK and Clojure
     parameters:
+      command:
+        description: Command to pass to Make
+        type: string
+        default: test
       jdk_version:
         description: Version of JDK to test against
         type: string
       clojure_version:
         description: Version of Clojure to test against
         type: string
-      extra_profiles:
-        description: Additional profiles to pass to TEST_PROFILES var in Makefile
-        type: string
       parser_target:
         description: The Java parser to be exercised
         type: string
+        default: parser
     executor: << parameters.jdk_version >>
     environment:
       CLOJURE_VERSION: << parameters.clojure_version >>
-      TEST_PROFILES: -user,-dev,+test<< parameters.extra_profiles >>
       PARSER_TARGET: << parameters.parser_target >>
     steps:
       - checkout
       - with_cache:
           clojure_version: << parameters.clojure_version >>
-          cache_version: test_v1_<< parameters.extra_profiles>>
+          cache_version: test_v1_<< parameters.command >>
           steps:
             - run:
-                name: Running tests
-                command: make test
+                name: Running tests (make << parameters.command >>)
+                command: make << parameters.command >>
 
 # The ci-test-matrix does the following:
 #
 # - run tests against the target matrix
 # - kondo, eastwood and cljfmt
 
+tags_filter: &tags_filter
+  tags:
+    only: /^v\d+\.\d+\.\d+(-alpha\d+)?$/
+
 workflows:
   version: 2.1
   ci-test-matrix:
     jobs:
       - test:
-          matrix:
-            alias: "test_jdk8"
-            parameters:
-              jdk_version: [jdk8]
-              clojure_version: ["1.10", "1.11", "1.12"]
-              extra_profiles: [",+cljs", ""]
-              # It doesn't make sense to exercise the newer Orchard Java parsers against JDK8
-              # (given that JDK8 is explicitly excluded by those parsers)
-              parser_target: ["legacy-parser"]
-          filters:
-            branches:
-              only: /.*/
-            tags:
-              only: /^v\d+\.\d+\.\d+(-alpha\d+)?$/
-      - test:
+          # Regular tests for all Clojure and JDK versions (except JDK21, see
+          # below). This matrix doesn't perform parser tests because we don't
+          # have JDK sources here.
           matrix:
             alias: "test"
             parameters:
-              jdk_version: [jdk11, jdk17, jdk21, jdk22]
+              jdk_version: [jdk8, jdk11, jdk17, jdk22]
               clojure_version: ["1.10", "1.11", "1.12"]
-              extra_profiles: [",+cljs"]
-              # Don't test legacy parser on JDK11+ since it is never invoked there.
-              parser_target: ["parser-next", "parser"]
           filters:
             branches:
               only: /.*/
-            tags:
-              only: /^v\d+\.\d+\.\d+(-alpha\d+)?$/
+            <<: *tags_filter
       - test:
+          # We have source for JDK21, so with this JDK version we also perform
+          # Java parser tests (for both regular parser and parser-next).
           matrix:
-            # Test code without CLJS on the classpath for a single parser.
-            alias: "test_no_cljs"
+            alias: "test_with_sources"
             parameters:
-              jdk_version: [jdk11, jdk17, jdk21, jdk22]
+              jdk_version: [jdk21]
               clojure_version: ["1.10", "1.11", "1.12"]
-              extra_profiles: [""]
-              parser_target: ["parser"]
+              parser_target: ["parser", "parser-next"]
+          filters:
+            branches:
+              only: /.*/
+            <<: *tags_filter
+      - test:
+          # Sanity check that we don't have a requirement for Clojurescript or
+          # spec-alpha2 being on the classpath.
+          matrix:
+            alias: "test_no_extra_deps"
+            parameters:
+              jdk_version: [jdk22]
+              clojure_version: ["1.11"]
+              command: ["test-no-extra-deps"]
+          filters:
+            branches:
+              only: /.*/
+            <<: *tags_filter
+      # Eastwood output partly depends on Clojure and JDK version it is run on,
+      # so selectively test with several versions of those.
       - eastwood:
           matrix:
             alias: "eastwood"
             parameters:
-              jdk_version: [jdk8, jdk11, jdk17, jdk21, jdk22]
-              clojure_version: ["1.10", "1.11", "1.12"]
+              jdk_version: [jdk8, jdk22]
+              clojure_version: ["1.11", "1.12"]
           filters:
             branches:
               only: /.*/
-            tags:
-              only: /^v\d+\.\d+\.\d+(-alpha\d+)?$/
+            <<: *tags_filter
       - lint:
           filters:
             branches:
               only: /.*/
-            tags:
-              only: /^v\d+\.\d+\.\d+(-alpha\d+)?$/
+            <<: *tags_filter
       - deploy:
           requires:
             - test
-            - test_jdk8
+            - test_with_sources
+            - test_no_extra_deps
+            - eastwood
             - lint
           filters:
             branches:
               ignore: /.*/
-            tags:
-              only: /^v\d+\.\d+\.\d+(-alpha\d+)?$/
+            <<: *tags_filter
