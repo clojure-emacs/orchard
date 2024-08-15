@@ -7,7 +7,7 @@ SHELL = /bin/bash -Eeu
 
 HOME=$(shell echo $$HOME)
 CLOJURE_VERSION ?= 1.11
-TEST_PROFILES ?= "-user,-dev,+test"
+TEST_PROFILES ?= "-user,-dev,+test,+spec2"
 
 # The Lein profiles that will be selected for `lein-repl`.
 # Feel free to upgrade this, or to override it with an env var named LEIN_PROFILES.

@@ -1,8 +1,7 @@
 (ns orchard.java.parser-test
   (:require
    [clojure.test :refer [deftest is testing]]
-   [orchard.misc :as misc]
-   [orchard.test.util :as util])
+   [orchard.misc :as misc])
   (:import
    (orchard.java DummyClass)))
 

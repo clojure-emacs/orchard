@@ -1,5 +1,5 @@
 {:output            {:progress      true
-                     :exclude-files ["analysis.cljc" "meta.cljc" "inspect_test.clj"]}
+                     :exclude-files ["analysis.cljc" "meta.cljc" "inspect_test.clj" "base-src.zip"]}
  :config-in-comment {:linters {:unused-value         {:level :off}
                                :unresolved-namespace {:level :off}}}
  :linters           {:unused-private-var {:level   :warning

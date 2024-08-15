@@ -28,7 +28,7 @@
   {:dependencies '[[org.clojure/java.classpath "1.1.0"]
                    [nubank/matcher-combinators "3.9.1"
                     :exclusions [org.clojure/clojure]]]
-   :source-paths (cond-> ["submodules/spec-alpha2/src/main/clojure" "test-java"]
+   :source-paths (cond-> ["test-java"]
                    ;; We only include sources with JDK21 because we only
                    ;; repackage sources for that JDK. Sources from one JDK are
                    ;; not compatible with other JDK for our test purposes.
@@ -79,6 +79,8 @@
              :cljs {:dependencies [[org.clojure/clojurescript "1.11.132"]]
                     :test-paths ["test-cljs"]}
 
+             :spec2 {:source-paths ["submodules/spec-alpha2/src/main/clojure"]}
+
              :test ~(merge
                      dev-test-common-profile
                      ;; Initialize the cache verbosely, as usual, so that possible issues can be more easily diagnosed:
@@ -107,17 +109,12 @@
                          :plugins  [[jonase/eastwood "1.4.0"]]
                          :eastwood {:ignored-faults {:unused-ret-vals-in-try {orchard.java {:line 84}
                                                                               orchard.java.parser-next-test true}}
-                                    :exclude-namespaces ~(cond-> []
-                                                           jdk8?
-                                                           (conj 'orchard.java.parser
-                                                                 'orchard.java.parser-test
-                                                                 'orchard.java.parser-utils
-                                                                 'orchard.java.parser-next
-                                                                 'orchard.java.parser-next-test)
-
-                                                           (or (not jdk8?)
-                                                               (not= "true"
-                                                                     (System/getenv "ENRICH_CLASSPATH")))
-                                                           (conj 'orchard.java.legacy-parser))}}
+                                    :exclude-namespaces ~(if jdk8?
+                                                           '[orchard.java.parser
+                                                             orchard.java.parser-test
+                                                             orchard.java.parser-utils
+                                                             orchard.java.parser-next
+                                                             orchard.java.parser-next-test]
+                                                           '[orchard.java.legacy-parser])}}
 
              :deploy {:source-paths [".circleci/deploy"]}})
