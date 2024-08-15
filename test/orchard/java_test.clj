@@ -43,8 +43,7 @@
           (is (-> (source-info 'java.util.Collection) :line)) ; interface
           (is (-> (source-info 'java.util.AbstractCollection) :line)) ; abstract class
           (is (-> (source-info 'java.lang.Thread$UncaughtExceptionHandler) :line)) ; nested interface
-          (is (-> (source-info 'java.net.Authenticator$RequestorType) :line)) ; nested enum
-          (is (-> (source-info 'java.sql.ClientInfoStatus) :line)))) ; top-level enum
+          (is (-> (source-info 'java.net.Authenticator$RequestorType) :line)))) ; nested enum
 
       (testing "Source parsing"
         (testing "for Clojure classes"

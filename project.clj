@@ -1,16 +1,15 @@
-(def jdk8? (->> "java.version" System/getProperty (re-find #"^1.8.")))
+(def jdk8? (= (System/getProperty "java.specification.version") "1.8"))
+(def jdk21? (= (System/getProperty "java.specification.version") "21"))
 
 ;; Needed to be added onto classpath to test Java parser functionality.
-(def jdk-sources-archive
+(def jdk-21-sources-archive
   (delay
-   (let [java-home (System/getProperty "java.home")
-         src-archive-paths [(clojure.java.io/file java-home "src.zip")
-                            (clojure.java.io/file java-home "lib" "src.zip")
-                            (clojure.java.io/file java-home ".." "src.zip")]
-         src-zip (some #(when (.exists %) %) src-archive-paths)]
-     (assert src-zip (str "src.zip was not found in " java-home))
-     (println "Found JDK sources archive:" src-zip)
-     (str src-zip))))
+    (let [src-zip (clojure.java.io/file "base-src.zip")]
+      (if (.exists src-zip)
+        (do (println "Found JDK sources:" src-zip)
+            [src-zip])
+        (do (println "base-src.zip not found. Run `make base-src.zip` to properly run all the tests.")
+            nil)))))
 
 ;; Needed to run eastwood on JDK8.
 (def tools-jar
@@ -30,7 +29,10 @@
                    [nubank/matcher-combinators "3.9.1"
                     :exclusions [org.clojure/clojure]]]
    :source-paths (cond-> ["submodules/spec-alpha2/src/main/clojure" "test-java"]
-                   (not jdk8?) (conj @jdk-sources-archive))
+                   ;; We only include sources with JDK21 because we only
+                   ;; repackage sources for that JDK. Sources from one JDK are
+                   ;; not compatible with other JDK for our test purposes.
+                   jdk21? (into @jdk-21-sources-archive))
    :resource-paths ["test-resources"]
    :test-paths ["test"]
    :java-source-paths ["test-java"]})
@@ -84,8 +86,8 @@
                       ["-Dorchard.initialize-cache.silent=false"
                        "-Dorchard.internal.test-suite-running=true"]
                       :resource-paths ["test-resources"
-                                       "not-a.jar"
                                        "test-java-invalid"
+                                       "not-a.jar"
                                        "does-not-exist.jar"]})
 
              :parser-next {:jvm-opts ["--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED"
