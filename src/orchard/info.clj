@@ -5,7 +5,6 @@
    [orchard.cljs.analysis :as cljs-ana]
    [orchard.cljs.meta :as cljs-meta]
    [orchard.java :as java]
-   [orchard.java.classpath :as cp]
    [orchard.java.resource :as resource]
    [orchard.meta :as m]
    [orchard.misc :as misc]))
@@ -158,8 +157,7 @@
      meta
 
      (merge (when-let [file-path (:file meta)]
-              {:file (cond-> file-path
-                       (misc/boot-project?) cp/classpath-file-relative-path)})))))
+              {:file file-path})))))
 
 (defn info
   "Provide the info map for the input ns and sym.

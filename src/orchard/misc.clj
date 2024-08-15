@@ -9,20 +9,6 @@
 (defn os-windows? []
   (.startsWith (System/getProperty "os.name") "Windows"))
 
-(defn boot-fake-classpath
-  "Retrieve Boot's fake classpath.
-  When using Boot, fake.class.path contains the original directories with source
-  files, which makes it way more useful than the real classpath.
-  See https://github.com/boot-clj/boot/issues/249 for details."
-  []
-  (System/getProperty "fake.class.path"))
-
-(defn boot-project?
-  "Check whether we're dealing with a Boot project.
-  We figure this by checking for the presence of Boot's fake classpath."
-  []
-  (not (nil? (boot-fake-classpath))))
-
 (defn url?
   "Check whether the argument is an url"
   [u]

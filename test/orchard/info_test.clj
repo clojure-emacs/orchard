@@ -454,17 +454,10 @@
                      :doc "catch-clause => (catch classname name expr*)\n  finally-clause => (finally expr*)\n\n  Catches and handles Java exceptions.",
                      :name finally,
                      :special-form true,
-                     :url "https://clojure.org/special_forms#finally"}]
-      (testing "- boot project"
-        (with-redefs [orchard.misc/boot-project? (constantly true)]
-          (let [i (info/info* params)]
-            (is (= expected (select-keys i [:ns :name :doc :forms :special-form :url])))
-            (is (nil? (:file i))))))
-
-      (testing "- no boot project"
-        (let [i (info/info* params)]
-          (is (= expected (select-keys i [:ns :name :doc :forms :special-form :url])))
-          (is (nil? (:file i))))))))
+                     :url "https://clojure.org/special_forms#finally"}
+          i (info/info* params)]
+      (is (= expected (select-keys i [:ns :name :doc :forms :special-form :url])))
+      (is (nil? (:file i))))))
 
 (deftest file-resolution-no-defs-issue-75-test
   (testing "File resolves, issue #75"
@@ -720,20 +713,6 @@
            (-> '{:ns orchard.info}
                (info/normalize-params)
                (select-keys [:ns :unqualified-sym]))))))
-
-(deftest boot-file-resolution-test
-  ;; this checks the files on the classpath soo you need the test-resources
-  ;; and specifically test-resources/orchard/test_ns.cljc
-  ;;
-  ;; Note that :file in :meta is left untouched
-  (when cljs-available?
-    (with-redefs [orchard.misc/boot-project? (constantly true)]
-      (is (= '{:ns orchard.test-ns
-               :name x
-               :file "orchard/test_ns.cljc"}
-             (-> (merge @*cljs-params* '{:ns orchard.test-ns :sym x})
-                 (info/info*)
-                 (select-keys [:ns :name :file])))))))
 
 (deftest indirect-vars-cljs
   (when cljs-available?
