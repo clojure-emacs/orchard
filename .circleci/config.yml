@@ -61,6 +61,10 @@ commands:
         default: "1"
     steps:
       - run:
+          name: Install wget
+          command: |
+            apt-get update && apt-get install -y wget unzip zip
+      - run:
           name: Checkout submodules
           command: make submodules
       - run:
@@ -77,6 +81,7 @@ commands:
           paths:
             - ~/.m2
             - .cpcache
+            - base-src.zip
           key: cache-<< parameters.cache_version >>-<< parameters.clojure_version >>-{{ checksum "/tmp/clojure_cache_seed" }}
 
 jobs:

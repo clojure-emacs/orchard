@@ -22,7 +22,19 @@ ENRICH_CLASSPATH_VERSION="1.18.2"
 resources/clojuredocs/export.edn:
 curl -o $@ https://github.com/clojure-emacs/clojuredocs-export-edn/raw/master/exports/export.compact.edn
 
-test: clean submodules .EXPORT_ALL_VARIABLES
+# We need Java sources to test Java parsing functionality, but the Docker images
+# we use on CircleCI doesn't include src.zip. So we have to download them from
+# Github and repackage in a form that is resemblant to src.zip from normal
+# distributions.
+base-src.zip:
+	wget https://github.com/adoptium/jdk21u/archive/refs/tags/jdk-21.0.5+3.zip -O full-src.zip
+	unzip -q full-src.zip
+	cp -r jdk21u-*/src/java.base/share/classes java.base
+	cp -r jdk21u-*/src/java.desktop/share/classes java.desktop
+	zip -qr base-src.zip java.base java.desktop
+	rm -rf java.base java.desktop jdk21u-* full-src.zip
+
+test: clean submodules base-src.zip .EXPORT_ALL_VARIABLES
 	@if [[ "$$PARSER_TARGET" == "parser-next" ]] ; then \
 		lein with-profile $(TEST_PROFILES),+$(CLOJURE_VERSION),+parser-next test; \
 	elif [[ "$$PARSER_TARGET" == "parser" ]] ; then \

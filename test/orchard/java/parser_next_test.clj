@@ -26,7 +26,7 @@
         (parse-java "orchard/java/UnderscoreClass.java" nil)
         (assert false)
         (catch Exception e
-          (is (-> e ex-data :out (string/includes? "'_' is a keyword, and may not be used as an identifier"))))))))
+          (is (-> e ex-data :out (string/includes? "unnamed variables are a preview feature and are disabled by default"))))))))
 
 (when @@java/parser-next-available?
   (deftest source-info-test
@@ -93,13 +93,19 @@
 
 (when @@java/parser-next-available?
   (deftest doc-fragments-test
-    (is (= [{:type "text",
-             :content
-             "Returns an estimate of the number of active threads in the current\nthread's "}
-            {:type "html", :content "<pre>java.lang.ThreadGroup</pre> "}
+    (is (= [{:type "text", :content "Returns an estimate of the number of "}
+            {:type "html", :content "<pre>#isAlive()</pre> "}
             {:type "text",
              :content
-             " and its\nsubgroups. Recursively iterates over all subgroups in the current\nthread's thread group.\n\nThe value returned is only an estimate because the number of\nthreads may change dynamically while this method traverses internal\ndata structures, and might be affected by the presence of certain\nsystem threads. This method is intended primarily for debugging\nand monitoring purposes."}]
+             "
+platform threads in the current thread's thread group and its subgroups.
+Virtual threads are not included in the estimate.
+
+The value returned is only an estimate because the number of
+threads may change dynamically while this method traverses internal
+data structures, and might be affected by the presence of certain
+system threads. This method is intended primarily for debugging
+and monitoring purposes."}]
            (-> `Thread
                source-info
                (get-in [:members 'activeCount [] :doc-fragments])))
