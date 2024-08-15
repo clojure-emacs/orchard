@@ -9,7 +9,7 @@
    (orchard.java DummyClass)))
 
 (when (System/getenv "CI")
-  (println "has-enriched-classpath?" (pr-str util/has-enriched-classpath?)))
+  (println "JDK sources present?" (pr-str util/jdk-sources-present?)))
 
 (def source-info
   (when (>= misc/java-api-version 9)
@@ -28,8 +28,7 @@
         (catch Exception e
           (is (-> e ex-data :out (string/includes? "'_' is a keyword, and may not be used as an identifier"))))))))
 
-(when (and util/has-enriched-classpath?
-           @@java/parser-next-available?)
+(when @@java/parser-next-available?
   (deftest source-info-test
     (is (class? DummyClass))
 
@@ -92,8 +91,7 @@
         (is (re-find #"jar:file:/.*/.m2/repository/org/clojure/clojure/.*/clojure-.*-sources.jar!/clojure/lang/RT.java"
                      (str (:resource-url rt-info))))))))
 
-(when (and util/has-enriched-classpath?
-           @@java/parser-next-available?)
+(when @@java/parser-next-available?
   (deftest doc-fragments-test
     (is (= [{:type "text",
              :content
@@ -133,8 +131,7 @@
           (is (not (string/includes? s "<a")))
           (is (not (string/includes? s "<a href"))))))))
 
-(when (and util/has-enriched-classpath?
-           @@java/parser-next-available?)
+(when @@java/parser-next-available?
   (deftest smoke-test
     (let [annotations #{'java.lang.Override
                         'java.lang.Deprecated

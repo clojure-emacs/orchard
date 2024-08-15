@@ -10,7 +10,7 @@
   (when (>= misc/java-api-version 9)
     (misc/require-and-resolve 'orchard.java.parser/source-info)))
 
-(when (and source-info util/has-enriched-classpath?)
+(when source-info
   (deftest source-info-test
     (is (class? DummyClass))
 

@@ -18,7 +18,7 @@
 (javadoc/add-remote-javadoc "com.amazonaws." "http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/")
 (javadoc/add-remote-javadoc "org.apache.kafka." "https://kafka.apache.org/090/javadoc/")
 
-(when util/has-enriched-classpath?
+(when util/jdk-sources-present?
   (deftest source-info-test
     (let [resolve-src (comp (fnil io/resource "-none-") :file source-info)]
       (testing "Source file resolution"
@@ -123,7 +123,7 @@
                         {:reflector-arities reflector-arities
                          :only-in-full full-arities})))))))))))
 
-(when util/has-enriched-classpath?
+(when util/jdk-sources-present?
   (deftest class-info-test
     (let [c1 (class-info 'clojure.lang.Agent)
           c2 (class-info 'clojure.lang.Range$BoundsCheck)
@@ -158,7 +158,7 @@
           (is (seq (:doc-fragments thread-class-info)))
           (is (seq (:doc-first-sentence-fragments thread-class-info))))))))
 
-(when util/has-enriched-classpath?
+(when util/jdk-sources-present?
   (deftest member-info-test
     (let [m1 (member-info 'clojure.lang.PersistentHashMap 'assoc)
           m2 (member-info 'java.util.AbstractCollection 'non-existent-member)
@@ -457,7 +457,7 @@
                  (or returns
                      (= n class-symbol))))))
 
-(when (and util/has-enriched-classpath?
+(when (and util/jdk-sources-present?
            @@sut/parser-next-available?)
   (deftest reflect-and-source-info-match
     (testing "reflect and source info structurally match, allowing a meaningful deep-merge of both"
@@ -505,7 +505,7 @@
               (is (not-any? nil? all-argnames)
                   "The deep-merge went ok"))))))))
 
-(when (and util/has-enriched-classpath?
+(when (and util/jdk-sources-present?
            @@sut/parser-next-available?)
   (deftest annotated-arglists-test
     (doseq [class-symbol (class-corpus)
@@ -533,7 +533,7 @@
             (is (not (string/includes? s "^java.util.function.Function java.util.function.Function")))
             (assert (is (not (string/includes? s "java.lang"))))))))))
 
-(when (and util/has-enriched-classpath?
+(when (and util/jdk-sources-present?
            @@sut/parser-next-available?)
   (deftest *analyze-sources*-test
     (with-redefs [cache (LruMap. 100)]
