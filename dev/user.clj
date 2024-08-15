@@ -15,7 +15,5 @@
   (->> "java.version" System/getProperty (re-find #"^1.8.")))
 
 (cond->> ["dev" "src" "test"]
-  jdk8?       (into ["src-jdk8"])
-  (not jdk8?) (into ["src-newer-jdks"
-                     "test-newer-jdks"])
+  (not jdk8?) (into ["test-newer-jdks"])
   true        (apply set-refresh-dirs))

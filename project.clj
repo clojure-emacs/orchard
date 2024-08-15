@@ -22,7 +22,7 @@
 
   :jvm-opts ["-Dclojure.main.report=stderr"]
 
-  :source-paths ["src" "src-jdk8" "src-newer-jdks"]
+  :source-paths ["src"]
   :test-paths ~(cond-> ["test"]
                  (not jdk8?)
                  (conj "test-newer-jdks"))
