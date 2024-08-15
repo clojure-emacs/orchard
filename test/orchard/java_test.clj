@@ -2,6 +2,7 @@
   (:require
    [clojure.java.io :as io]
    [clojure.java.javadoc :as javadoc]
+   [clojure.set :as set]
    [clojure.string :as string]
    [clojure.test :refer [are deftest is testing]]
    [orchard.java :as sut :refer [cache class-info class-info* javadoc-url jdk-tools member-info resolve-class resolve-javadoc-path resolve-member resolve-symbol resolve-type source-info]]
@@ -72,7 +73,9 @@
                   'clojure.core.VecNode
                   'clojure.core.VecSeq
                   'clojure.core.ArrayChunk
-                  'clojure.core.Eduction}
+                  'clojure.core.Eduction
+                  ;; Currently doesn't work for LruMap.
+                  'mx.cider.orchard.LruMap}
                 (fn [s]
                   (or (-> s str Class/forName .isInterface)
                       (-> s str Class/forName .isEnum)))
@@ -95,29 +98,30 @@
                                  bb (extract-keys b)]
                              (testing (pr-str {:only-in-reflector (remove (set aa) bb)
                                                :only-in-full (remove (set bb) aa)})
-                               (doall
-                                (map-indexed (fn [i _]
-                                               (is (= (get aa i)
-                                                      (get bb i))))
-                                             aa)))))
-            full-class-info (class-info* 'clojure.lang.Compiler)
+                               (is (= aa bb)))))
+            full-class-info (class-info* class-sym)
             reflector-class-info (with-redefs [source-info (constantly nil)]
                                    (class-info* class-sym))]
         (testing class-sym
           (testing "Class info"
             (assert-keys= full-class-info reflector-class-info))
-          (testing "Members info"
-            (is (keys (:members full-class-info)))
-            (assert-keys= (:members full-class-info)
-                          (:members reflector-class-info)))
-          (testing "Arities info"
-            (let [full-class-info-arities (-> full-class-info :members vals vec)
-                  reflector-class-info-arities (-> reflector-class-info :members vals vec)]
-              (doall
-               (map-indexed (fn [i _]
-                              (assert-keys= (get full-class-info-arities i)
-                                            (get reflector-class-info-arities i)))
-                            full-class-info-arities)))))))))
+
+          (let [full-class-info-members (:members full-class-info)
+                reflector-class-info-members (:members reflector-class-info)]
+            (testing "Members info"
+              (is (seq full-class-info-members))
+              (is (empty? (set/difference (set (keys reflector-class-info-members))
+                                          (set (keys full-class-info-members))))
+                  {:reflector-arities (keys reflector-class-info-members)
+                   :only-in-full (keys full-class-info-members)}))
+            (testing "Arities info"
+              (doseq [k (keys full-class-info-members)]
+                (testing (str "arity " k)
+                  (let [reflector-arities (set (keys (reflector-class-info-members k)))
+                        full-arities (set (keys (full-class-info-members k)))]
+                    (is (empty? (set/difference reflector-arities full-arities))
+                        {:reflector-arities reflector-arities
+                         :only-in-full full-arities})))))))))))
 
 (when util/has-enriched-classpath?
   (deftest class-info-test

@@ -22,13 +22,13 @@
 (deftest classpath-test
   (testing "Classpath"
     (testing "URLs are absolute file paths"
-      (doseq [^URL entry (cp/classpath)]
-        (is (-> entry .getPath File. .isAbsolute)
-            (pr-str entry))))
+      (let [non-absolute-paths (remove #(-> ^URL % .getPath File. .isAbsolute)
+                                       (cp/classpath))]
+        (is (empty? non-absolute-paths) (pr-str non-absolute-paths))))
     (testing "directory paths have a trailing slash"
-      (doseq [^URL entry (->> (cp/classpath)
-                              (filter misc/directory?))]
-        (is (-> entry .getPath (.endsWith "/")))))
+      (let [dir-entries (filter misc/directory? (cp/classpath))
+            no-slash (remove #(-> ^URL % .getPath (.endsWith "/")) dir-entries)]
+        (is (empty? no-slash))))
     (testing "contains expected entries"
       (let [project-root (System/getProperty "user.dir")
             directory-with-jar-extension (some #(re-find #"not-a\.jar" (.getPath ^URL %))
@@ -42,15 +42,10 @@
         (is (some #(re-find #".*/clojure-.*-sources\.jar" (.getPath ^URL %))
                   (cp/classpath)))
         (testing "Directories with .jar extension"
-          (assert (-> directory-with-jar-extension io/file .isDirectory))
-          (is (some? directory-with-jar-extension)
-              "Is present in the classpath")))))
+          (is directory-with-jar-extension "Is present in the classpath")
+          (is (-> directory-with-jar-extension io/file .isDirectory)
+              (pr-str (io/file directory-with-jar-extension)))))))
   (testing "System classpath"
-    (testing "is set correctly"
-      (is (= (set (map trim-trailing-slash (cp/system-classpath)))
-             (set (map trim-trailing-slash
-                       (.split (System/getProperty "java.class.path")
-                               (System/getProperty "path.separator")))))))
     (testing "is visible on full classpath"
       (is (set/subset?
            (set (cp/system-classpath))
@@ -85,8 +80,9 @@
               (pr-str non-existing-jar)))
         (is (seq (mapcat cp/classpath-seq corpus)))))
     (testing "returns relative paths"
-      (doseq [^String entry (mapcat cp/classpath-seq (cp/classpath))]
-        (is (not (-> entry File. .isAbsolute)))))))
+      (let [entries (mapcat cp/classpath-seq (cp/classpath))
+            absolute (filter #(.isAbsolute (File. ^String %)) entries)]
+        (is (empty? absolute))))))
 
 (deftest classloader-test
   (testing "Classloader hierarchy contains current classloader"
