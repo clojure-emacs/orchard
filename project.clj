@@ -1,5 +1,40 @@
 (def jdk8? (->> "java.version" System/getProperty (re-find #"^1.8.")))
 
+;; Needed to be added onto classpath to test Java parser functionality.
+(def jdk-sources-archive
+  (delay
+   (let [java-home (System/getProperty "java.home")
+         src-archive-paths [(clojure.java.io/file java-home "src.zip")
+                            (clojure.java.io/file java-home "lib" "src.zip")
+                            (clojure.java.io/file java-home ".." "src.zip")]
+         src-zip (some #(when (.exists %) %) src-archive-paths)]
+     (assert src-zip (str "src.zip was not found in " java-home))
+     (println "Found JDK sources archive:" src-zip)
+     (str src-zip))))
+
+;; Needed to run eastwood on JDK8.
+(def tools-jar
+  (delay
+    (let [java-home (System/getProperty "java.home")
+          tools-jar-paths [(clojure.java.io/file java-home "tools.jar")
+                           (clojure.java.io/file java-home "lib" "tools.jar")
+                           (clojure.java.io/file java-home ".." "tools.jar")
+                           (clojure.java.io/file java-home ".." "lib" "tools.jar")]
+          tools-jar (some #(when (.exists %) %) tools-jar-paths)]
+      (assert tools-jar (str "tools.jar was not found in " java-home))
+      (println "Found tools.jar:" tools-jar)
+      (str tools-jar))))
+
+(def dev-test-common-profile
+  {:dependencies '[[org.clojure/java.classpath "1.1.0"]
+                   [nubank/matcher-combinators "3.9.1"
+                    :exclusions [org.clojure/clojure]]]
+   :source-paths (cond-> ["submodules/spec-alpha2/src/main/clojure" "test-java"]
+                   (not jdk8?) (conj @jdk-sources-archive))
+   :resource-paths ["test-resources"]
+   :test-paths ["test"]
+   :java-source-paths ["test-java"]})
+
 (defproject cider/orchard (or (not-empty (System/getenv "PROJECT_VERSION"))
                               "0.0.0")
   :description "A fertile ground for Clojure tooling"
@@ -42,47 +77,32 @@
              :cljs {:dependencies [[org.clojure/clojurescript "1.11.132"]]
                     :test-paths ["test-cljs"]}
 
-             :test {:dependencies [[org.clojure/java.classpath "1.1.0"]
-                                   [nubank/matcher-combinators "3.9.1"
-                                    :exclusions [org.clojure/clojure]]]
-                    :resource-paths ["test-resources"
-                                     "not-a.jar"
-                                     "test-java-invalid"
-                                     "does-not-exist.jar"]
-                    :java-source-paths ["test-java"]
-                    ;; Initialize the cache verbosely, as usual, so that possible issues can be more easily diagnosed:
-                    :jvm-opts
-                    ["-Dorchard.initialize-cache.silent=false"
-                     "-Dorchard.internal.test-suite-running=true"]
-                    :test-paths ["test"]}
+             :test ~(merge
+                     dev-test-common-profile
+                     ;; Initialize the cache verbosely, as usual, so that possible issues can be more easily diagnosed:
+                     {:jvm-opts
+                      ["-Dorchard.initialize-cache.silent=false"
+                       "-Dorchard.internal.test-suite-running=true"]
+                      :resource-paths ["test-resources"
+                                       "not-a.jar"
+                                       "test-java-invalid"
+                                       "does-not-exist.jar"]})
 
-             ;; Running the tests with enrich-classpath doing its thing isn't compatible with `lein test`,
-             ;; So we use cognitect.test-runner instead.
-             :cognitest {:dependencies [[org.clojure/tools.namespace "1.5.0"
-                                         :exclusions [org.clojure/clojure]]
-                                        [org.clojure/tools.cli "1.1.230"]]
-                         :source-paths ["submodules/test-runner/src"]
-                         ;; This piece of middleware dynamically adds the test paths to a cognitect.test-runner main invocation.
-                         :middleware [~(do
-                                         (defn add-cognitest [{:keys [test-paths] :as project}]
-                                           (assert (seq test-paths))
-                                           (let [cmd (-> ["cognitect.test-runner"]
-                                                         (into (interleave (repeat "--dir") test-paths))
-                                                         (conj "--namespace-regex" (pr-str ".*")))]
-                                             (assoc-in project [:enrich-classpath :main] (clojure.string/join " " cmd))))
-                                         `add-cognitest)]}
+             :parser-next {:jvm-opts ["--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED"
+                                      "--add-opens=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED"]}
 
              ;; Development tools
-             :dev {:dependencies [[org.clojure/tools.namespace "1.5.0"]]
-                   :source-paths ["dev" "submodules/spec-alpha2/src/main/clojure"]
-                   :resource-paths ["test-resources"]}
+             :dev ~(-> dev-test-common-profile
+                       (update :source-paths conj "dev")
+                       (update :dependencies conj '[org.clojure/tools.namespace "1.5.0"]))
 
              :cljfmt {:plugins [[lein-cljfmt "0.9.2"]]
                       :cljfmt {:indents {merge-meta [[:inner 0]]}}}
 
              :clj-kondo {:plugins [[com.github.clj-kondo/lein-clj-kondo "2023.07.13"]]}
 
-             :eastwood  {:plugins  [[jonase/eastwood "1.4.0"]]
+             :eastwood  {:source-paths ~(if jdk8? [@tools-jar] [])
+                         :plugins  [[jonase/eastwood "1.4.0"]]
                          :eastwood {:ignored-faults {:unused-ret-vals-in-try {orchard.java {:line 84}
                                                                               orchard.java.parser-next-test true}}
                                     :exclude-namespaces ~(cond-> []

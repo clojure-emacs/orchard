@@ -535,7 +535,7 @@
 (deftest info-java-test
   (is (info/info-java 'clojure.lang.Atom 'swap)))
 
-(when util/has-enriched-classpath?
+(when util/jdk-sources-present?
   (deftest info-java-member-precedence-test
     (testing "Integer/max - issue #86"
       (let [i (info/info* {:ns 'user :sym 'Integer/max})]

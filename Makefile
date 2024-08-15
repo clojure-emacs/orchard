@@ -22,32 +22,13 @@ ENRICH_CLASSPATH_VERSION="1.18.2"
 resources/clojuredocs/export.edn:
 curl -o $@ https://github.com/clojure-emacs/clojuredocs-export-edn/raw/master/exports/export.compact.edn
 
-OS := $(shell uname)
-
-ifeq ($(OS),Darwin) # macOS
-	SED_INPLACE = -i ''
-else
-	SED_INPLACE = -i
-endif
-
-# The enrich-classpath variant runs the suite twice: once with the add-opens (java.parser-next will be used),
-# one without (java.parser will be used).
 test: clean submodules .EXPORT_ALL_VARIABLES
 	@if [[ "$$PARSER_TARGET" == "parser-next" ]] ; then \
-		bash 'lein' 'update-in' ':plugins' 'conj' "[mx.cider/lein-enrich-classpath \"$(ENRICH_CLASSPATH_VERSION)\"]" '--' 'with-profile' $(TEST_PROFILES),+cognitest,+$(CLOJURE_VERSION) 'update-in' ':middleware' 'conj' 'cider.enrich-classpath.plugin-v2/middleware' '--' 'repl' | grep " -cp " > .test-classpath; \
-		cat .test-classpath; \
-		eval "$$(cat .test-classpath)"; \
-		rm .test-classpath; \
+		lein with-profile $(TEST_PROFILES),+$(CLOJURE_VERSION),+parser-next test; \
 	elif [[ "$$PARSER_TARGET" == "parser" ]] ; then \
-		bash 'lein' 'update-in' ':plugins' 'conj' "[mx.cider/lein-enrich-classpath \"$(ENRICH_CLASSPATH_VERSION)\"]" '--' 'with-profile' $(TEST_PROFILES),+cognitest,+$(CLOJURE_VERSION) 'update-in' ':middleware' 'conj' 'cider.enrich-classpath.plugin-v2/middleware' '--' 'repl' | grep " -cp " > .test-classpath; \
-		cat .test-classpath; \
-		sed $(SED_INPLACE) 's/--add-opens=jdk.compiler\/com.sun.tools.javac.code=ALL-UNNAMED//g' .test-classpath; \
-		sed $(SED_INPLACE) 's/--add-opens=jdk.compiler\/com.sun.tools.javac.tree=ALL-UNNAMED//g' .test-classpath; \
-		cat .test-classpath; \
-		eval "$$(cat .test-classpath)"; \
-		rm .test-classpath; \
+		lein with-profile $(TEST_PROFILES),+$(CLOJURE_VERSION) test; \
 	elif [[ "$$PARSER_TARGET" == "legacy-parser" ]] ; then \
-		lein with-profile -user,-dev,+$(CLOJURE_VERSION),$(TEST_PROFILES) test; \
+		lein with-profile $(TEST_PROFILES),+$(CLOJURE_VERSION) test; \
 	else \
 		echo "PARSER_TARGET unset!"; \
 		exit 1; \
@@ -56,17 +37,17 @@ test: clean submodules .EXPORT_ALL_VARIABLES
 quick-test: test
 
 eastwood:
-	lein with-profile -user,-dev,+$(CLOJURE_VERSION),+eastwood,+deploy,$(TEST_PROFILES) eastwood
+	lein with-profile $(TEST_PROFILES),+$(CLOJURE_VERSION),+eastwood eastwood
 
 cljfmt:
-	lein with-profile -user,-dev,+$(CLOJURE_VERSION),+deploy,+cljfmt cljfmt check
+	lein with-profile -user,-dev,+$(CLOJURE_VERSION),+cljfmt cljfmt check
 
 # Note that -dev is necessary for not hitting OOM errors in CircleCI
 .make_kondo_prep: project.clj .clj-kondo/config.edn
-	lein with-profile -dev,+test,+clj-kondo,+deploy clj-kondo --copy-configs --dependencies --parallel --lint '$$classpath' > $@
+	lein with-profile -dev,+test,+clj-kondo clj-kondo --copy-configs --dependencies --parallel --lint '$$classpath' > $@
 
 kondo: .make_kondo_prep clean
-	lein with-profile -dev,+test,+clj-kondo,+deploy clj-kondo
+	lein with-profile -dev,+test,+clj-kondo clj-kondo
 
 lint: kondo cljfmt eastwood
 
