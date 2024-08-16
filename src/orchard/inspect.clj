@@ -589,16 +589,20 @@
                       (if c
                         (recur (.getSuperclass c) (cons c res))
                         res))
-        memoized-field-val (memoize field-val)
         all-fields (mapcat #(.getDeclaredFields ^Class %) class-chain)
+        field-values (mapv (fn [^Field f]
+                             {:name (symbol (.getName f)), :value (field-val f obj)
+                              :static (Modifier/isStatic (.getModifiers f))})
+                           all-fields)
         {static-accessible        [true true]
          non-static-accessible    [false true]
          static-nonaccessible     [true false]
          non-static-nonaccessible [false false]}
-        (group-by (fn [^Field f]
-                    [(Modifier/isStatic (.getModifiers f))
-                     (not= ::access-denied (memoized-field-val f obj))])
-                  all-fields)
+        (group-by (fn [{:keys [static value]}]
+                    ;; Be careful to use identical? instead of = because an
+                    ;; object might not implement equiv().
+                    [static (not (identical? ::access-denied value))])
+                  field-values)
         ;; This is fine like this for now. If this condp ever grows bigger,
         ;; consider refactoring it into something polymorphic.
         printed (cond
@@ -612,21 +616,22 @@
                   (shorten-member-string (str obj) (.getDeclaringClass ^Field obj))
 
                   :else (print/print-str obj))]
-    (letfn [(render-fields [inspector section-name fields]
-              (if (seq fields)
+    (letfn [(render-fields [inspector section-name field-values]
+              (if (seq field-values)
                 (-> inspector
                     (render-section-header section-name)
                     (indent)
-                    (render-map-values (->> fields
-                                            (map (fn [^Field f]
-                                                   (let [v (memoized-field-val f obj)]
-                                                     [(-> f .getName symbol)
-                                                      (if (= v ::access-denied)
-                                                        ;; This is a special value that can be detected client-side:
-                                                        (symbol "<non-inspectable value>")
-                                                        v)])))
-                                            (into (sorted-map)))
-                                       false)
+                    (render-map-values
+                     (->> field-values
+                          (map (fn [{:keys [name value]}]
+                                 [name
+                                  (if (identical? value ::access-denied)
+                                    ;; This is a special value that can be
+                                    ;; detected client-side:
+                                    (symbol "<non-inspectable value>")
+                                    value)]))
+                          (into (sorted-map)))
+                     false)
                     (unindent))
                 inspector))]
       (cond-> inspector
