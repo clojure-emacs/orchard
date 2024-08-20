@@ -76,7 +76,7 @@
 ;; JDK8, the legacy parser may be removed.
 
 (def parser-available-exception
-  "The exception found, if any, while trying to load `orchard.java.parser-next`."
+  "The exception found, if any, while trying to load any of the parser namespaces."
   (atom nil))
 
 (def parser-next-available?
@@ -98,29 +98,40 @@
               (reset! parser-available-exception e)
               false))))))
 
+(def ^:private parser-next-source-info
+  (delay
+    (misc/require-and-resolve 'orchard.java.parser-next/source-info)))
+
+(def ^:private jdk11-parser-source-info
+  (delay
+    (when (>= misc/java-api-version 9)
+      (try (let [f (misc/require-and-resolve 'orchard.java.parser/source-info)]
+             (when (f `String)
+               f))
+           (catch Throwable e
+             (reset! parser-available-exception e)
+             nil)))))
+
+(def ^:private legacy-parser-source-info
+  (delay
+    (when jdk-tools
+      (try (let [f (misc/require-and-resolve 'orchard.java.legacy-parser/source-info)]
+             (when (f `String)
+               f))
+           (catch Throwable e
+             (reset! parser-available-exception e)
+             nil)))))
+
 (defn source-info*
   "When a Java parser is available, return class info from its parsed source;
   otherwise return nil."
   [& args]
   (let [choose (fn []
-                 (cond
-                   @@parser-next-available?
-                   (do (require '[orchard.java.parser-next])
-                       (resolve 'orchard.java.parser-next/source-info))
-
-                   (>= misc/java-api-version 9)
-                   (do (require '[orchard.java.parser])
-                       (resolve 'orchard.java.parser/source-info))
-
-                   (not jdk-tools)
-                   (constantly nil)
-
-                   :else
-                   (do
-                     (require '[orchard.java.legacy-parser])
-                     (resolve 'orchard.java.legacy-parser/source-info))))]
+                 (or (and @@parser-next-available? @parser-next-source-info)
+                     @jdk11-parser-source-info
+                     @legacy-parser-source-info))]
     (try
-      (when-let [f (choose)] ;; `resolve` may return nil, for some reason
+      (when-let [f (choose)]
         (apply f args))
       (catch IllegalAccessError e
         (if-not @@parser-next-available?
