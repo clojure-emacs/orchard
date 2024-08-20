@@ -110,7 +110,8 @@
                          :eastwood {:ignored-faults {:unused-ret-vals-in-try {orchard.java {:line 84}
                                                                               orchard.java.parser-next-test true}}
                                     :exclude-namespaces ~(if jdk8?
-                                                           '[orchard.java.parser
+                                                           '[orchard.java.modules
+                                                             orchard.java.parser
                                                              orchard.java.parser-test
                                                              orchard.java.parser-utils
                                                              orchard.java.parser-next

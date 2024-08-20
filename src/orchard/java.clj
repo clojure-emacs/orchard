@@ -139,13 +139,11 @@
   (source-info* class))
 
 ;; As of Java 11, Javadoc URLs begin with the module name.
-(def module-name
-  "On JDK9+, return module name from the class if present; otherwise return nil"
-  ;; NOTE This function exists in the parser namespace for conditional
-  ;; loading on JDK9+; it does not require parsing.
-  (if (>= misc/java-api-version 9)
-    (misc/require-and-resolve 'orchard.java.parser-utils/module-name)
-    (constantly nil)))
+(defn module-name
+  "On JDK11+, return module name from the class if present; otherwise return nil"
+  [klass]
+  (when (>= misc/java-api-version 9)
+    ((misc/require-and-resolve 'orchard.java.modules/module-name) klass)))
 
 (defn javadoc-url
   "Return the relative `.html` javadoc path and member fragment."

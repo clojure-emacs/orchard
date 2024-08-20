@@ -3,7 +3,8 @@
   {:added "0.15.0"}
   (:require
    [clojure.java.io :as io]
-   [clojure.string :as string])
+   [clojure.string :as string]
+   [orchard.java.modules :as modules])
   (:import
    (java.io StringWriter)
    (javax.lang.model.element VariableElement)
@@ -87,10 +88,12 @@
   {:name (-> f .getSimpleName str symbol)
    :type (-> f .asType (typesym env))})
 
+;; Left for backward compatibility, callers are free to invoke
+;; `orchard.java.modules/module-name` directly.
 (defn module-name
   "Return the module name, or nil if modular"
   [klass]
-  (some-> klass ^Class resolve .getModule .getName))
+  (modules/module-name klass))
 
 (defn source-path
   "Return the relative `.java` source path for the top-level class."
