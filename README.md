@@ -1,4 +1,4 @@
-[![CircleCI](https://circleci.com/gh/clojure-emacs/orchard/tree/master.svg?style=svg)](https://circleci.com/gh/clojure-emacs/orchard/tree/master)
+[![CircleCI](https://img.shields.io/circleci/build/github/clojure-emacs/orchard/master.svg)](https://circleci.com/gh/clojure-emacs/orchard/tree/master)
 [![Coverage](https://codecov.io/gh/clojure-emacs/orchard/branch/master/graph/badge.svg)](https://codecov.io/gh/clojure-emacs/orchard/)
 [![Clojars Project](https://img.shields.io/clojars/v/cider/orchard.svg)](https://clojars.org/cider/orchard)
 [![cljdoc badge](https://cljdoc.org/badge/cider/orchard)](https://cljdoc.org/d/cider/orchard/CURRENT)
@@ -62,7 +62,7 @@ Probably down the road we'll provide var-friendly versions of most functions as 
 
 ### REPL Agnostic
 
-No matter whether you're using nREPL, a socket REPL, unrepl or prepl, Orchard has your back. nREPL clients might
+No matter whether you're using nREPL, a socket REPL, or prepl, Orchard has your back. nREPL clients might
 opt to wrap some of the Orchard functionality in middleware for convenience (as `cider-nrepl` does), but they
 can just eval away if they please.
 
