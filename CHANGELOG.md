@@ -2,9 +2,11 @@
 
 ## master (unreleased)
 
+## 0.27.0 (2024-08-21)
+
 * [#285](https://github.com/clojure-emacs/orchard/issues/285): **BREAKING:** Remove special handling of Boot classpath.
 * [#287](https://github.com/clojure-emacs/orchard/issues/287): Inspector: don't crash when field contains non-equiv()able value.
-* [#288](https://github.com/clojure-emacs/orchard/issues/288): Java: don't crash when loading if none of the parsers could be correctly initialized.
+* [#288](https://github.com/clojure-emacs/orchard/issues/288): Java: don't crash when loading on Java 11+ JRE.
 
 ## 0.26.3 (2024-08-14)
 
