@@ -23,7 +23,7 @@
 
 ;;; ## JDK Compatibility
 ;; This namespace is compatible with JDK8 and below. It requires that
-;; `tools.jar` be on the classpath. A newer parser compatible with JDK9+ exists
+;; `tools.jar` be on the classpath. A newer parser compatible with JDK11+ exists
 ;; as a separate namespace.
 
 ;;; ## Java Source Analysis

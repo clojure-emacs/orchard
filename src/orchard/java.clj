@@ -31,13 +31,13 @@
 ;; project's dev dependencies. The core Java API classes are the exception to
 ;; this, since these are external to lein/maven dependency management. For
 ;; these, `enrich-classpath` searches the JDK directory and add the source classpath entry
-;; manually, if available. Prior to JDK9, parsing source files also requires
+;; manually, if available. On JDK8, parsing source files also requires
 ;; having `tools.jar` on the classpath.
 
 (defn ^:deprecated jdk-find
   "Search common JDK path configurations for a specified file name and return a
   URL if found. This accommodates `java.home` being set to either the JDK root
-  (JDK9+) or a JRE directory within this (JDK 8), and searches both the home and
+  (JDK11+) or a JRE directory within this (JDK 8), and searches both the home and
   `lib` directories."
   [_]
   nil)
@@ -69,7 +69,7 @@
 
 ;;; ## Source Analysis
 ;;
-;; Java parser support is available for JDK9+ and JDK8 and below via separate
+;; Java parser support is available for JDK11+ and JDK8 via separate
 ;; namespaces, `java.parser` and `java.legacy-parser`. The former uses only
 ;; external JDK APIs and supports modular (Jigsaw) sources. The latter uses
 ;; internal APIs out of necessity. Once this project discontinues support for

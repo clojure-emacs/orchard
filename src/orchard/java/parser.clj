@@ -19,7 +19,7 @@
 
 ;;; ## JDK Compatibility
 ;;
-;; This namespace requires JDK9+.
+;; This namespace requires JDK11+.
 
 ;;; ## Java Source Analysis
 ;;
