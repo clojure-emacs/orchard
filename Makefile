@@ -3,7 +3,7 @@
 
 # Set bash instead of sh for the @if [[ conditions,
 # and use the usual safety flags:
-SHELL = /bin/bash -Eeu
+SHELL = /bin/bash -Ee
 
 HOME=$(shell echo $$HOME)
 CLOJURE_VERSION ?= 1.11
