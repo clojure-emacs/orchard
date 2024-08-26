@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+* [#290](https://github.com/clojure-emacs/orchard/issues/290): Java: initialize parsers if JDK classes aren't present.
+
 ## 0.27.0 (2024-08-21)
 
 * [#285](https://github.com/clojure-emacs/orchard/issues/285): **BREAKING:** Remove special handling of Boot classpath.

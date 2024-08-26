@@ -28,7 +28,7 @@
   {:dependencies '[[org.clojure/java.classpath "1.1.0"]
                    [nubank/matcher-combinators "3.9.1"
                     :exclusions [org.clojure/clojure]]]
-   :source-paths (cond-> ["test-java"]
+   :source-paths (cond-> ["test-java" "java"]
                    ;; We only include sources with JDK21 because we only
                    ;; repackage sources for that JDK. Sources from one JDK are
                    ;; not compatible with other JDK for our test purposes.

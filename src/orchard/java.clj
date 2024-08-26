@@ -92,7 +92,7 @@
              (do
                ;; require the whole namespace in case there's some other source of problems (e.g. some other missing `opens`)
                (require 'orchard.java.parser-next)
-               ((resolve 'orchard.java.parser-next/source-info) `String :throw))
+               ((resolve 'orchard.java.parser-next/source-info) `LruMap :throw))
              true)
             (catch Throwable e
               (reset! parser-available-exception e)
@@ -106,7 +106,7 @@
   (delay
     (when (>= misc/java-api-version 9)
       (try (let [f (misc/require-and-resolve 'orchard.java.parser/source-info)]
-             (when (f `String)
+             (when (f `LruMap)
                f))
            (catch Throwable e
              (reset! parser-available-exception e)
@@ -116,7 +116,7 @@
   (delay
     (when jdk-tools
       (try (let [f (misc/require-and-resolve 'orchard.java.legacy-parser/source-info)]
-             (when (f `String)
+             (when (f `LruMap)
                f))
            (catch Throwable e
              (reset! parser-available-exception e)
