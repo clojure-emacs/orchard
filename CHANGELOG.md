@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+## 0.27.1 (2024-08-27)
+
 * [#290](https://github.com/clojure-emacs/orchard/issues/290): Java: initialize parsers if JDK classes aren't present.
 
 ## 0.27.0 (2024-08-21)
