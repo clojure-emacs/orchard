@@ -82,7 +82,7 @@
 (def parser-next-available?
   (delay ;; avoid the side-effects at compile-time
     (atom ;; make the result mutable - this is helpful in case the detection below wasn't sufficient
-     (and (>= misc/java-api-version 9)
+     (and (>= misc/java-api-version 17) ;; parser-next doesn't work correctly on JDK11
           (try
             ;; indicates that the classes are available
             ;; however it does not indicate if necessary `add-opens=...` JVM flag is in place:
