@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+* [#292](https://github.com/clojure-emacs/orchard/issues/290): Inspector/debugger: fix map entries being spliced in non-map collections when printed.
+
 ## 0.27.1 (2024-08-27)
 
 * [#290](https://github.com/clojure-emacs/orchard/issues/290): Java: initialize parsers if JDK classes aren't present.
