@@ -25,7 +25,6 @@
       (instance? Number x)            :scalar
       (instance? Keyword x)           :scalar
       (instance? Symbol x)            :scalar
-      (instance? Map$Entry x)         :map-entry
       (instance? Map x)               :map
       (instance? IPersistentVector x) :vector
       (instance? List x)              :list
@@ -43,34 +42,47 @@
   "Maximum total size of the resulting string."
   Integer/MAX_VALUE)
 
-(defn- print-coll [^TruncatingStringWriter w, ^Iterable x, ^String sep
-                   ^String prefix, ^String suffix]
-  (let [level *print-level*]
-    (when-not (nil? level)
-      (set! *print-level* (dec level)))
-    (try
-      (let [^Iterable iterable (if (instance? Iterable x) x (seq x))
-            it (.iterator iterable)]
-        (if (.hasNext it)
-          (do (.write w prefix)
-              (if (or (nil? level) (pos? level))
-                (do (print (.next it) w)
-                    (loop [remaining (unchecked-dec
-                                      (long (or *print-length* Long/MAX_VALUE)))]
-                      (when (.hasNext it)
-                        (.write w sep)
-                        (if (> remaining 0)
-                          (do (print (.next it) w)
-                              (recur (unchecked-dec remaining)))
-                          ;; There are more items but we reached the limit.
-                          (.write w "...")))))
-                ;; Special case: ran out of nesting levels.
-                (.write w "..."))
-              (.write w suffix))
-          ;; Special case: collection has zero elements.
-          (print-method x w)))
-      (finally (when-not (nil? level)
-                 (set! *print-level* level))))))
+(defn- print-coll-item
+  "Print an item in the context of a collection. When printing a map, don't print
+  `[]` characters around map entries."
+  [^TruncatingStringWriter w, x, map?]
+  (if (and map? (instance? Map$Entry x))
+    (do (print (.getKey ^Map$Entry x) w)
+        (.write w " ")
+        (print (.getValue ^Map$Entry x) w))
+    (print x w)))
+
+(defn- print-coll
+  ([w x sep prefix suffix]
+   (print-coll w x sep prefix suffix false))
+  ([^TruncatingStringWriter w, ^Iterable x, ^String sep, ^String prefix,
+    ^String suffix, map?]
+   (let [level *print-level*]
+     (when-not (nil? level)
+       (set! *print-level* (dec level)))
+     (try
+       (let [^Iterable iterable (if (instance? Iterable x) x (seq x))
+             it (.iterator iterable)]
+         (if (.hasNext it)
+           (do (.write w prefix)
+               (if (or (nil? level) (pos? level))
+                 (do (print-coll-item w (.next it) map?)
+                     (loop [remaining (unchecked-dec
+                                       (long (or *print-length* Long/MAX_VALUE)))]
+                       (when (.hasNext it)
+                         (.write w sep)
+                         (if (> remaining 0)
+                           (do (print-coll-item w (.next it) map?)
+                               (recur (unchecked-dec remaining)))
+                           ;; There are more items but we reached the limit.
+                           (.write w "...")))))
+                 ;; Special case: ran out of nesting levels.
+                 (.write w "..."))
+               (.write w suffix))
+           ;; Special case: collection has zero elements.
+           (print-method x w)))
+       (finally (when-not (nil? level)
+                  (set! *print-level* level)))))))
 
 (defmethod print nil [_ ^TruncatingStringWriter w]
   (.write w "nil"))
@@ -92,13 +104,8 @@
 (defmethod print :scalar [^Object x, ^TruncatingStringWriter w]
   (.write w (.toString x)))
 
-(defmethod print :map-entry [^Map$Entry x, ^TruncatingStringWriter w]
-  (print (.getKey x) w)
-  (.write w " ")
-  (print (.getValue x) w))
-
 (defmethod print :persistent-map [x w]
-  (print-coll w x ", " "{" "}"))
+  (print-coll w x ", " "{" "}" true))
 
 (defmethod print :vector [x w]
   (print-coll w x " " "[" "]"))
@@ -115,7 +122,7 @@
     (let [;; If the map is a Clojure map, don't take the entrySet but iterate
           ;; directly as the order might be important.
           coll (if (instance? IPersistentMap x) x (.entrySet ^Map x))]
-      (print-coll w coll ", " "{" "}"))))
+      (print-coll w coll ", " "{" "}" true))))
 
 (defmethod print :array [x, ^TruncatingStringWriter w]
   (let [ct (.getName (or (.getComponentType (class x)) Object))
