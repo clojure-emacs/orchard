@@ -65,15 +65,15 @@
 
   :javac-options ["-Xlint:unchecked"]
 
-  :profiles {:provided {:dependencies [[org.clojure/clojure "1.11.3"]
-                                       [org.clojure/clojure "1.11.3" :classifier "sources"]]}
+  :profiles {:provided {:dependencies [[org.clojure/clojure "1.12.0"]
+                                       [org.clojure/clojure "1.12.0" :classifier "sources"]]}
 
              :1.10 {:dependencies [[org.clojure/clojure "1.10.3"]
                                    [org.clojure/clojure "1.10.3" :classifier "sources"]]}
-             :1.11 {:dependencies [[org.clojure/clojure "1.11.3"]
-                                   [org.clojure/clojure "1.11.3" :classifier "sources"]]}
-             :1.12 {:dependencies [[org.clojure/clojure "LATEST"]
-                                   [org.clojure/clojure "LATEST" :classifier "sources"]]}
+             :1.11 {:dependencies [[org.clojure/clojure "1.11.4"]
+                                   [org.clojure/clojure "1.11.4" :classifier "sources"]]}
+             :1.12 {:dependencies [[org.clojure/clojure "1.12.0"]
+                                   [org.clojure/clojure "1.12.0" :classifier "sources"]]}
 
              ;; Needed to test how Orchard behaves with Clojurescript on classpath.
              :cljs {:dependencies [[org.clojure/clojurescript "1.11.132"]]
