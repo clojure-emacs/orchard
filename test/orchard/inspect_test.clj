@@ -1409,6 +1409,14 @@
                     "Component Type: " (:value "byte" 1)
                     (:newline)
                     (:newline))
+                  (header rendered))))
+    (let [rendered (-> (java.util.HashMap.) inspect render)]
+      (is (match? '("Class: "
+                    (:value "java.util.HashMap" 0)
+                    (:newline)
+                    "Count: " "0"
+                    (:newline)
+                    (:newline))
                   (header rendered))))))
 
 (deftest object-view-mode-test
