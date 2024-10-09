@@ -72,6 +72,7 @@
 
 (defn- counted-length [obj]
   (cond (instance? clojure.lang.Counted obj) (count obj)
+        (instance? Map obj) (.size ^Map obj)
         (array? obj) (java.lang.reflect.Array/getLength obj)))
 
 (defn- pagination-info

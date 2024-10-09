@@ -2,9 +2,11 @@
 
 ## master (unreleased)
 
+* [#293](https://github.com/clojure-emacs/orchard/issues/293): Inspector: show HashMap size in the header.
+
 ## 0.27.2 (2024-08-28)
 
-* [#292](https://github.com/clojure-emacs/orchard/issues/290): Inspector/debugger: fix map entries being spliced in non-map collections when printed.
+* [#292](https://github.com/clojure-emacs/orchard/issues/292): Inspector/debugger: fix map entries being spliced in non-map collections when printed.
 
 ## 0.27.1 (2024-08-27)
 
