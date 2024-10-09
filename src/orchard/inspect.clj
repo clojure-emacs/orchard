@@ -73,7 +73,11 @@
 (defn- counted-length [obj]
   (cond (instance? clojure.lang.Counted obj) (count obj)
         (instance? Map obj) (.size ^Map obj)
-        (array? obj) (java.lang.reflect.Array/getLength obj)))
+        (array? obj) (java.lang.reflect.Array/getLength obj)
+        ;; Count small lazy collections <= 10 elements (arbitrary).
+        (sequential? obj) (let [bc (bounded-count 11 obj)]
+                            (when (<= bc 10)
+                              bc))))
 
 (defn- pagination-info
   "Calculate if the object should be paginated given the page size. Return a map

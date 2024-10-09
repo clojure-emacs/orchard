@@ -3,6 +3,7 @@
 ## master (unreleased)
 
 * [#293](https://github.com/clojure-emacs/orchard/issues/293): Inspector: show HashMap size in the header.
+* [#294](https://github.com/clojure-emacs/orchard/issues/294): Inspector: count small lazy collections.
 
 ## 0.27.2 (2024-08-28)
 

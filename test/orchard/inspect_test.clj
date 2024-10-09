@@ -1417,6 +1417,14 @@
                     "Count: " "0"
                     (:newline)
                     (:newline))
+                  (header rendered))))
+    (let [rendered (-> (cons 1 (cons 2 nil)) inspect render)]
+      (is (match? '("Class: "
+                    (:value "clojure.lang.Cons" 0)
+                    (:newline)
+                    "Count: " "2"
+                    (:newline)
+                    (:newline))
                   (header rendered))))))
 
 (deftest object-view-mode-test
