@@ -127,11 +127,11 @@ and monitoring purposes."}]
                         source-info
                         (get-in [:members
                                  'format
-                                 ['java.util.Locale 'java.lang.String 'java.lang.Object]
+                                 ['java.util.Locale 'java.lang.String (symbol "java.lang.Object[]")]
                                  :doc-fragments])
                         (->> (map :content)))
           s (string/join fragments)]
-      (assert (seq fragments))
+      (is (seq fragments))
       (testing "Flattens links, since they can't be clicked from most Orchard clients"
         (testing s
           (is (not (string/includes? s "<a")))
