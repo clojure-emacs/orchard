@@ -164,6 +164,4 @@
   (string/replace s "$" "."))
 
 (defn remove-type-param [s]
-  (-> s
-      (string/replace #"<.*" "")
-      (string/replace #"\[.*" "")))
+  (string/replace s #"<.*>" ""))

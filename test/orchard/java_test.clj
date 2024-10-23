@@ -534,6 +534,15 @@
 
 (when (and util/jdk-sources-present?
            @@sut/parser-next-available?)
+  (deftest array-arg-doc-test
+    (testing "Regression test for #278"
+      (is (= "^Path [^String first, ^String[] more]"
+             (get-in (sut/class-info* 'java.nio.file.Path)
+                     [:members 'of ['java.lang.String (symbol "java.lang.String[]")]
+                      :annotated-arglists]))))))
+
+(when (and util/jdk-sources-present?
+           @@sut/parser-next-available?)
   (deftest *analyze-sources*-test
     (with-redefs [cache (LruMap. 100)]
       (binding [sut/*analyze-sources* false]

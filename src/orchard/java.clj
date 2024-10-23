@@ -183,27 +183,26 @@
 
 (defn typesym
   [o]
-  (when o (symbol (reflect/typename o))))
+  (some-> o reflect/typename symbol))
 
 (defprotocol Reflected
   (reflect-info [o]))
 
-(defn- format-as-non-generic [argtypes]
-  (->> argtypes
-       (mapv (fn [s]
-               ;; make the format match with that of `parser-next`:
-               (some-> s
-                       str
-                       (string/replace "$" ".")
-                       (string/replace #"\[.*" "")
-                       symbol)))))
+(defn- format-like-parser-next [argtypes]
+  ;; make the format match with that of `parser-next`:
+  (mapv #(some-> %
+                 str
+                 (string/replace "$" ".")
+                 symbol
+                 typesym)
+        argtypes))
 
 (extend-protocol Reflected
   Constructor
   (reflect-info [c]
     (let [argtypes (mapv typesym (:parameter-types c))]
       {:argtypes argtypes
-       :non-generic-argtypes (format-as-non-generic argtypes)
+       :non-generic-argtypes (format-like-parser-next argtypes)
        :throws (mapv typesym (:exception-types c))}))
 
   Method
@@ -211,7 +210,7 @@
     (let [pts (:parameter-types m)
           argtypes (mapv typesym pts)]
       {:argtypes argtypes
-       :non-generic-argtypes (format-as-non-generic argtypes)
+       :non-generic-argtypes (format-like-parser-next argtypes)
        :parameter-types pts
        :throws (mapv typesym (:exception-types m))
        :returns (typesym (:return-type m))}))

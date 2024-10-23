@@ -2,6 +2,7 @@
 
 ## master (unreleased)
 
+* [#278](https://github.com/clojure-emacs/orchard/issues/278): Java: correctly display array arguments in docs.
 * [#293](https://github.com/clojure-emacs/orchard/issues/293): Inspector: show HashMap size in the header.
 * [#294](https://github.com/clojure-emacs/orchard/issues/294): Inspector: count small lazy collections.
 
