@@ -25,25 +25,18 @@
    [orchard.java.parser-utils :refer [module-name parse-java parse-variable-element position source-path typesym]]
    [orchard.misc :as misc])
   (:import
-   (com.sun.source.doctree DocCommentTree)
+   (com.sun.source.doctree BlockTagTree DocCommentTree EndElementTree
+                           LinkTree LiteralTree ParamTree ReturnTree
+                           StartElementTree TextTree ThrowsTree)
    (javax.lang.model.element Element ElementKind ExecutableElement TypeElement VariableElement)
+   (javax.lang.model.type ArrayType TypeKind TypeVariable)
    (jdk.javadoc.doclet DocletEnvironment)))
 
-(defn dispatch [node _stack _found-closing-tags-types]
-  (cond
-    (instance? com.sun.tools.javac.tree.DCTree$DCParam node)
-    ::param
-
-    (instance? com.sun.tools.javac.tree.DCTree$DCThrows node)
-    ::throws
-
-    (instance? com.sun.tools.javac.tree.DCTree$DCReturn node)
-    ::return
-
-    (->> node class ancestors (some #{com.sun.tools.javac.tree.DCTree$DCBlockTag}))
-    ::discard
-
-    :else (class node)))
+(let [interfaces [ParamTree ThrowsTree ReturnTree BlockTagTree EndElementTree
+                  LinkTree LiteralTree StartElementTree TextTree]]
+  (defn dispatch [node _stack _found-closing-tags-types]
+    (or (some #(when (instance? % node) %) interfaces)
+        ::default)))
 
 (defmulti process-node #'dispatch
   :default ::default)
@@ -73,7 +66,7 @@
 
 (def nbsp "&nbsp;")
 
-(defmethod process-node ::param [^com.sun.tools.javac.tree.DCTree$DCParam node stack found-closing-tags-types]
+(defmethod process-node ParamTree [^ParamTree node stack found-closing-tags-types]
   (let [{:keys [stack result]} (reduce node-reducer
                                        {:stack stack
                                         :result []
@@ -85,7 +78,7 @@
                         :content (format "<i>Param</i>%s<pre>%s</pre>:%s" nbsp (.getName node) nbsp)}]
                       result])]))
 
-(defmethod process-node ::return [^com.sun.tools.javac.tree.DCTree$DCReturn node stack found-closing-tags-types]
+(defmethod process-node ReturnTree [^ReturnTree node stack found-closing-tags-types]
   (let [{:keys [stack result]} (reduce node-reducer
                                        {:stack stack
                                         :result []
@@ -97,7 +90,7 @@
                         :content (format "<i>Returns</i>:%s" nbsp)}]
                       result])]))
 
-(defmethod process-node ::throws [^com.sun.tools.javac.tree.DCTree$DCThrows node stack found-closing-tags-types]
+(defmethod process-node ThrowsTree [^ThrowsTree node stack found-closing-tags-types]
   (let [{:keys [stack result]} (reduce node-reducer
                                        {:stack stack
                                         :result []
@@ -109,11 +102,11 @@
                         :content (format "<i>Throws</i>:%s<pre>%s</pre>:%s" nbsp (.getExceptionName node) nbsp)}]
                       result])]))
 
-(defmethod process-node ::discard [_node stack _]
+(defmethod process-node BlockTagTree [_node stack _]
   ;; omit the tag - it makes the docstring larger on docstring UIs:
   [stack []])
 
-(defmethod process-node com.sun.tools.javac.tree.DCTree$DCLiteral [^com.sun.tools.javac.tree.DCTree$DCLiteral node stack _]
+(defmethod process-node LiteralTree [^LiteralTree node stack _]
   (let [^String tag-name (-> node .getKind .tagName)
         body (-> node .getBody .getBody)]
     [stack
@@ -123,9 +116,7 @@
        [{:type "text"
          :content body}])]))
 
-(defmethod process-node com.sun.tools.javac.tree.DCTree$DCStartElement [^com.sun.tools.javac.tree.DCTree$DCStartElement node
-                                                                        stack
-                                                                        found-closing-tags-types]
+(defmethod process-node StartElementTree [^StartElementTree node stack found-closing-tags-types]
   (let [v (-> node .getName str)
         self-closing? (or (.isSelfClosing node)
                           (and (#{"p" "hr" "li"} v)
@@ -147,9 +138,7 @@
        [{:type "html"
          :content (str node)}])]))
 
-(defmethod process-node com.sun.tools.javac.tree.DCTree$DCEndElement [^com.sun.tools.javac.tree.DCTree$DCEndElement node
-                                                                      stack
-                                                                      _]
+(defmethod process-node EndElementTree [^EndElementTree node stack _]
   [(cond-> stack
      (seq stack) pop)
    [(if (-> node .getName str (.equals "a"))
@@ -158,14 +147,14 @@
       {:type "html"
        :content (str node)})]])
 
-(defmethod process-node com.sun.tools.javac.tree.DCTree$DCText [node stack _]
+(defmethod process-node TextTree [^TextTree node stack _]
   [stack (if (empty? stack)
            [{:type "text"
              :content (str node)}]
            [{:type "html"
              :content (str node)}])])
 
-(defmethod process-node com.sun.tools.javac.tree.DCTree$DCLink [^com.sun.tools.javac.tree.DCTree$DCLink node stack _]
+(defmethod process-node LinkTree [^LinkTree node stack _]
   [stack
    [{:type "html"
      :content (format "<pre>%s</pre> " (-> node .getReference .getSignature))}]])
@@ -221,9 +210,8 @@
         full-body-raw (some->> comment-tree .getFullBody)
         block-tags-raw (some->> comment-tree .getBlockTags)
         found-closing-tags-types (into #{}
-                                       (comp (filter (comp #{com.sun.tools.javac.tree.DCTree$DCEndElement} class))
-                                             (map (fn [^com.sun.tools.javac.tree.DCTree$DCEndElement e]
-                                                    (-> e .getName str))))
+                                       (keep #(when (instance? EndElementTree %)
+                                                (str (.getName ^EndElementTree %))))
                                        (into (vec full-body-raw)
                                              (vec block-tags-raw)))
         full-body (some->> full-body-raw
@@ -254,33 +242,35 @@
 
 (defn parse-executable-element [^ExecutableElement m env]
   (let [parameters (.getParameters m)
-        type->sym #(-> ^VariableElement % .asType (typesym env))]
+        type->sym #(-> ^VariableElement % .asType (typesym env))
+        upper-bound #(if (instance? TypeVariable %)
+                       (.getUpperBound ^TypeVariable %)
+                       %)]
     {:name (if (= (.getKind m) ElementKind/CONSTRUCTOR)
              (-> m .getEnclosingElement (typesym env)) ; class name
              (-> m .getSimpleName str symbol))         ; method name
      :type (-> m .getReturnType (typesym env))
      :argtypes (mapv type->sym parameters)
-     :non-generic-argtypes (mapv (fn [^com.sun.tools.javac.code.Symbol element]
-                                   (let [ast (-> element .asType)
-                                         ast-str (-> ast .getKind str)
-                                         best (when (or (.equals ast-str "TYPEVAR")
-                                                        (.equals ast-str "ARRAY"))
-                                                (some-> (or (when (instance? com.sun.tools.javac.code.Type$ArrayType
-                                                                             ast)
-                                                              (-> ^com.sun.tools.javac.code.Type$ArrayType ast
-                                                                  .getComponentType
-                                                                  .getUpperBound))
-                                                            (some-> ast .getUpperBound)
-                                                            (some-> ast .getOriginalType))
-                                                        str
-                                                        misc/remove-type-param
-                                                        symbol))]
-                                     (some-> (or best
-                                                 (type->sym element))
-                                             str
-                                             (string/replace "$" ".")
-                                             symbol)))
-                                 parameters)
+     :non-generic-argtypes
+     (mapv (fn [^Element element]
+             (let [type (.asType element)
+                   kind (.getKind type)
+                   best (some-> (cond (= kind TypeKind/ARRAY)
+                                      (or (some-> (upper-bound (.getComponentType ^ArrayType type))
+                                                  (str "[]"))
+                                          type)
+
+                                      (= kind TypeKind/TYPEVAR)
+                                      (upper-bound type))
+                                str
+                                misc/remove-type-param
+                                symbol)]
+               (some-> (or best
+                           (type->sym element))
+                       str
+                       (string/replace "$" ".")
+                       symbol)))
+           parameters)
      :argnames (mapv #(-> ^VariableElement % .getSimpleName str symbol) (.getParameters m))}))
 
 (extend-protocol Parsed

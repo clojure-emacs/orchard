@@ -79,28 +79,20 @@
   "The exception found, if any, while trying to load any of the parser namespaces."
   (atom nil))
 
+(def ^:private parser-next-source-info
+  (delay
+    (when (>= misc/java-api-version 11)
+      (try (let [f (misc/require-and-resolve 'orchard.java.parser-next/source-info)]
+             (when (f `LruMap :throw)
+               f))
+           (catch Throwable e
+             (reset! parser-available-exception e)
+             nil)))))
+
 (def parser-next-available?
   (delay ;; avoid the side-effects at compile-time
     (atom ;; make the result mutable - this is helpful in case the detection below wasn't sufficient
-     (and (>= misc/java-api-version 17) ;; parser-next doesn't work correctly on JDK11
-          (try
-            ;; indicates that the classes are available
-            ;; however it does not indicate if necessary `add-opens=...` JVM flag is in place:
-            (and
-             (Class/forName "com.sun.tools.javac.tree.DCTree$DCBlockTag")
-             (Class/forName "com.sun.tools.javac.code.Type$ArrayType")
-             (do
-               ;; require the whole namespace in case there's some other source of problems (e.g. some other missing `opens`)
-               (require 'orchard.java.parser-next)
-               ((resolve 'orchard.java.parser-next/source-info) `LruMap :throw))
-             true)
-            (catch Throwable e
-              (reset! parser-available-exception e)
-              false))))))
-
-(def ^:private parser-next-source-info
-  (delay
-    (misc/require-and-resolve 'orchard.java.parser-next/source-info)))
+     (some? @parser-next-source-info))))
 
 (def ^:private jdk11-parser-source-info
   (delay
