@@ -13,7 +13,7 @@
 ;; Needed to be added onto classpath to test Java parser functionality.
 (def sources-archive
   (delay
-    (let [src-zip (jdk-find "src.zip")]
+    (let [src-zip (clojure.java.io/file "src.zip") #_(jdk-find "src.zip")]
       (if (.exists src-zip)
         (do (println "Found JDK sources:" src-zip)
             [src-zip])

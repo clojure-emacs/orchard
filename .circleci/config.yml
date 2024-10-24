@@ -63,10 +63,16 @@ commands:
       - run:
           name: Install wget
           command: |
-            apt-get update && apt-get install -y wget unzip zip
+            apt-get update && apt-get install -y wget unzip zip docker.io
       - run:
           name: Checkout submodules
           command: make submodules
+      - setup_remote_docker
+      - run:
+          command: |
+            CONTAINER_ID=$(docker create sapmachine:23.0.1-ubuntu-noble)
+            docker cp $CONTAINER_ID:/usr/lib/jvm/sapmachine-23/lib/src.zip ./
+            docker rm $CONTAINER_ID
       - run:
           name: Generate Cache Checksum
           command: |
