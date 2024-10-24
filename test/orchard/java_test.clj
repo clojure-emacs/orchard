@@ -5,15 +5,11 @@
    [clojure.set :as set]
    [clojure.string :as string]
    [clojure.test :refer [are deftest is testing]]
-   [orchard.java :as sut :refer [cache class-info class-info* javadoc-url jdk-tools member-info resolve-class resolve-javadoc-path resolve-member resolve-symbol resolve-type source-info]]
+   [orchard.java :as sut :refer [cache class-info class-info* javadoc-url member-info resolve-class resolve-javadoc-path resolve-member resolve-symbol resolve-type source-info]]
    [orchard.misc :as misc]
    [orchard.test.util :as util])
   (:import
    (mx.cider.orchard LruMap)))
-
-(def modern-java? (>= misc/java-api-version 9))
-
-(def jdk-parser? (or modern-java? jdk-tools))
 
 (javadoc/add-remote-javadoc "com.amazonaws." "http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/")
 (javadoc/add-remote-javadoc "org.apache.kafka." "https://kafka.apache.org/090/javadoc/")
@@ -166,7 +162,7 @@
           m5 (member-info 'java.lang.Class 'forName)
           m6 (member-info 'java.util.AbstractMap 'finalize)
           m7 (member-info 'java.util.HashMap 'finalize)
-          m8 (member-info `Thread 'resume)]
+          m8 (member-info `Thread 'isDaemon)]
       (testing "Member"
         (testing "source file"
           (is (string? (:file m1)))
