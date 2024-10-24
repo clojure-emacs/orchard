@@ -1,10 +1,19 @@
 (def jdk8? (= (System/getProperty "java.specification.version") "1.8"))
 (def jdk21? (= (System/getProperty "java.specification.version") "21"))
 
+(defn- jdk-find [f]
+  (let [home (clojure.java.io/file (System/getProperty "java.home"))
+        parent (.getParentFile home)
+        paths [(clojure.java.io/file home f)
+               (clojure.java.io/file home "lib" f)
+               (clojure.java.io/file parent f)
+               (clojure.java.io/file parent "lib" f)]]
+    (some #(when (.canRead %) %) paths)))
+
 ;; Needed to be added onto classpath to test Java parser functionality.
-(def jdk-21-sources-archive
+(def sources-archive
   (delay
-    (let [src-zip (clojure.java.io/file "base-src.zip")]
+    (let [src-zip (jdk-find "src.zip")]
       (if (.exists src-zip)
         (do (println "Found JDK sources:" src-zip)
             [src-zip])
@@ -14,13 +23,8 @@
 ;; Needed to run eastwood on JDK8.
 (def tools-jar
   (delay
-    (let [java-home (System/getProperty "java.home")
-          tools-jar-paths [(clojure.java.io/file java-home "tools.jar")
-                           (clojure.java.io/file java-home "lib" "tools.jar")
-                           (clojure.java.io/file java-home ".." "tools.jar")
-                           (clojure.java.io/file java-home ".." "lib" "tools.jar")]
-          tools-jar (some #(when (.exists %) %) tools-jar-paths)]
-      (assert tools-jar (str "tools.jar was not found in " java-home))
+    (let [tools-jar (jdk-find "tools.jar")]
+      (assert tools-jar (str "tools.jar was not found in" (System/getProperty "java.home")))
       (println "Found tools.jar:" tools-jar)
       (str tools-jar))))
 
@@ -29,10 +33,13 @@
                    [nubank/matcher-combinators "3.9.1"
                     :exclusions [org.clojure/clojure]]]
    :source-paths (cond-> ["test-java" "java"]
+                   jdk8? (conj @tools-jar)
                    ;; We only include sources with JDK21 because we only
                    ;; repackage sources for that JDK. Sources from one JDK are
                    ;; not compatible with other JDK for our test purposes.
-                   jdk21? (into @jdk-21-sources-archive))
+                   true (into @sources-archive)
+                   ;; jdk21? (into @jdk-21-sources-archive)
+                   )
    :resource-paths ["test-resources"]
    :test-paths ["test"]
    :java-source-paths ["test-java"]})
