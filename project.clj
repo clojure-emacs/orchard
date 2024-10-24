@@ -1,15 +1,21 @@
-(def jdk8? (= (System/getProperty "java.specification.version") "1.8"))
-(def jdk21? (= (System/getProperty "java.specification.version") "21"))
+(def jdk-version
+  (let [v (System/getProperty "java.specification.version")]
+    (if (.contains v ".") 8 (Integer/parseInt v))))
+(def jdk8? (= jdk-version 8))
 
 ;; Needed to be added onto classpath to test Java parser functionality.
-(def jdk-21-sources-archive
+(def jdk-sources-archive
   (delay
-    (let [src-zip (clojure.java.io/file "base-src.zip")]
-      (if (.exists src-zip)
-        (do (println "Found JDK sources:" src-zip)
-            [src-zip])
-        (do (println "base-src.zip not found. Run `make base-src.zip` to properly run all the tests.")
-            nil)))))
+    (when (>= jdk-version 11)
+      (when-let [requested-src-version (System/getenv "JDK_SRC_VERSION")]
+        (let [zip-path (format "base-src-%s.zip" requested-src-version)
+              src-zip (clojure.java.io/file zip-path)]
+          (if (.exists src-zip)
+            (do (println "Found JDK sources:" src-zip)
+                [src-zip])
+            (do (println (format "%s not found. Run `make %s` to properly run all the tests."
+                                 zip-path zip-path))
+                nil)))))))
 
 ;; Needed to run eastwood on JDK8.
 (def tools-jar
@@ -32,7 +38,7 @@
                    ;; We only include sources with JDK21 because we only
                    ;; repackage sources for that JDK. Sources from one JDK are
                    ;; not compatible with other JDK for our test purposes.
-                   jdk21? (into @jdk-21-sources-archive))
+                   (>= jdk-version 11) (into @jdk-sources-archive))
    :resource-paths ["test-resources"]
    :test-paths ["test"]
    :java-source-paths ["test-java"]})

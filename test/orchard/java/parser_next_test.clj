@@ -8,8 +8,9 @@
   (:import
    (orchard.java DummyClass)))
 
-(when (System/getenv "CI")
-  (println "JDK sources present?" (pr-str util/jdk-sources-present?)))
+(when (and (System/getenv "CI") (>= misc/java-api-version 11))
+  (deftest sources-should-be-present-on-ci
+    (is util/jdk-sources-present?)))
 
 (def source-info
   (when (>= misc/java-api-version 9)
@@ -93,22 +94,16 @@
 
 (when (and @@java/parser-next-available? util/jdk-sources-present?)
   (deftest doc-fragments-test
-    (is (= [{:type "text", :content "Returns an estimate of the number of "}
-            {:type "html", :content "<pre>#isAlive()</pre> "}
-            {:type "text",
-             :content
-             "
-platform threads in the current thread's thread group and its subgroups.
-Virtual threads are not included in the estimate.
-
-The value returned is only an estimate because the number of
-threads may change dynamically while this method traverses internal
-data structures, and might be affected by the presence of certain
-system threads. This method is intended primarily for debugging
-and monitoring purposes."}]
-           (-> `Thread
+    (is (= [{:type "text", :content "Inserts the specified element at the tail of this queue if it is
+possible to do so immediately without exceeding the queue's capacity,
+returning "}
+            {:type "html", :content "<pre>true</pre> "}
+            {:type "text", :content " upon success and throwing an\n"}
+            {:type "html", :content "<pre>IllegalStateException</pre> "}
+            {:type "text", :content " if this queue is full."}]
+           (-> 'java.util.concurrent.ArrayBlockingQueue
                source-info
-               (get-in [:members 'activeCount [] :doc-fragments])))
+               (get-in [:members 'add '[java.lang.Object] :doc-fragments])))
         "Returns a data structure with carefully managed whitespace location")
 
     (is (some #{{:type "text", :content " permission as well as\n"}}

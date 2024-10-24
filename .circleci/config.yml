@@ -48,16 +48,13 @@ commands:
     parameters:
       steps:
         type: steps
-      clojure_version:
-        description: Will be used as part of the cache key
-        type: string
       files:
         description: Files to consider when creating the cache key
         type: string
         default: "deps.edn project.clj"
       cache_version:
         type: string
-        description: "Change this value to force a cache update"
+        description: "Key used to identify unique cache"
         default: "1"
     steps:
       - run:
@@ -75,14 +72,17 @@ commands:
               find . -name $file -exec cat {} +
             done | sha256sum | awk '{print $1}' > /tmp/clojure_cache_seed
       - restore_cache:
-          key: cache-<< parameters.cache_version >>-<< parameters.clojure_version >>-{{ checksum "/tmp/clojure_cache_seed" }}
+          key: cache-<< parameters.cache_version >>-{{ checksum "/tmp/clojure_cache_seed" }}
       - steps: << parameters.steps >>
       - save_cache:
           paths:
             - ~/.m2
             - .cpcache
-            - base-src.zip
-          key: cache-<< parameters.cache_version >>-<< parameters.clojure_version >>-{{ checksum "/tmp/clojure_cache_seed" }}
+            - base-src-jdk11.zip
+            - base-src-jdk17.zip
+            - base-src-jdk21.zip
+            - base-src-jdk23.zip
+          key: cache-<< parameters.cache_version >>-{{ checksum "/tmp/clojure_cache_seed" }}
 
 jobs:
 
@@ -100,8 +100,7 @@ jobs:
     steps:
       - checkout
       - with_cache:
-          cache_version: "lint_v1"
-          clojure_version: << parameters.clojure_version >>
+          cache_version: "lint_v1_<< parameters.clojure_version >>"
           steps:
             - run:
                 name: Running cljfmt
@@ -125,8 +124,7 @@ jobs:
     steps:
       - checkout
       - with_cache:
-          clojure_version: << parameters.clojure_version >>
-          cache_version: "eastwood_v1"
+          cache_version: "eastwood_v1_<< parameters.clojure_version >>"
           steps:
             # Eastwood is run for every Clojure and JDK version because its
             # results are sensitive to the code in the runtime.
@@ -160,11 +158,11 @@ jobs:
     executor: << parameters.jdk_version >>
     environment:
       CLOJURE_VERSION: << parameters.clojure_version >>
+      JDK_SRC_VERSION: << parameters.jdk_version >>
     steps:
       - checkout
       - with_cache:
-          clojure_version: << parameters.clojure_version >>
-          cache_version: test_v1_<< parameters.command >>
+          cache_version: "test_v1_<< parameters.clojure_version >>_<< parameters.jdk_version >>_<< parameters.command >>"
           steps:
             - run:
                 name: Running tests (make << parameters.command >>)
