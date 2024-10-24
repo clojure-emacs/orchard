@@ -157,14 +157,9 @@ jobs:
       clojure_version:
         description: Version of Clojure to test against
         type: string
-      parser_target:
-        description: The Java parser to be exercised
-        type: string
-        default: parser
     executor: << parameters.jdk_version >>
     environment:
       CLOJURE_VERSION: << parameters.clojure_version >>
-      PARSER_TARGET: << parameters.parser_target >>
     steps:
       - checkout
       - with_cache:
@@ -180,9 +175,12 @@ jobs:
 # - run tests against the target matrix
 # - kondo, eastwood and cljfmt
 
-tags_filter: &tags_filter
-  tags:
-    only: /^v\d+\.\d+\.\d+(-alpha\d+)?$/
+run_always: &run_always
+  filters:
+    branches:
+      only: /.*/
+    tags:
+      only: /.*/
 
 workflows:
   version: 2.1
@@ -197,23 +195,16 @@ workflows:
             parameters:
               jdk_version: [jdk8, jdk11, jdk17, jdk23]
               clojure_version: ["1.10", "1.11", "1.12"]
-          filters:
-            branches:
-              only: /.*/
-            <<: *tags_filter
+          <<: *run_always
       - test:
           # We have source for JDK21, so with this JDK version we also perform
-          # Java parser tests (for both regular parser and parser-next).
+          # Java parser tests.
           matrix:
             alias: "test_with_sources"
             parameters:
               jdk_version: [jdk21]
               clojure_version: ["1.10", "1.11", "1.12"]
-              parser_target: ["parser", "parser-next"]
-          filters:
-            branches:
-              only: /.*/
-            <<: *tags_filter
+          <<: *run_always
       - test:
           # Sanity check that we don't have a requirement for Clojurescript or
           # spec-alpha2 being on the classpath.
@@ -223,10 +214,7 @@ workflows:
               jdk_version: [jdk23]
               clojure_version: ["1.12"]
               command: ["test-no-extra-deps"]
-          filters:
-            branches:
-              only: /.*/
-            <<: *tags_filter
+          <<: *run_always
       # Eastwood output partly depends on Clojure and JDK version it is run on,
       # so selectively test with several versions of those.
       - eastwood:
@@ -235,15 +223,9 @@ workflows:
             parameters:
               jdk_version: [jdk8, jdk23]
               clojure_version: ["1.11", "1.12"]
-          filters:
-            branches:
-              only: /.*/
-            <<: *tags_filter
+          <<: *run_always
       - lint:
-          filters:
-            branches:
-              only: /.*/
-            <<: *tags_filter
+          <<: *run_always
       - deploy:
           requires:
             - test
@@ -254,4 +236,5 @@ workflows:
           filters:
             branches:
               ignore: /.*/
-            <<: *tags_filter
+            tags:
+              only: /^v\d+\.\d+\.\d+(-alpha\d+)?$/

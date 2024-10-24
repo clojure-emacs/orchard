@@ -35,11 +35,7 @@ base-src.zip:
 	rm -rf java.base java.desktop jdk21u-* full-src.zip
 
 test: clean submodules base-src.zip .EXPORT_ALL_VARIABLES
-	@if [[ "$$PARSER_TARGET" == "parser-next" ]] ; then \
-		lein with-profile $(TEST_PROFILES),+$(CLOJURE_VERSION),+parser-next test; \
-	else \
-		lein with-profile $(TEST_PROFILES),+$(CLOJURE_VERSION) test; \
-	fi
+	lein with-profile $(TEST_PROFILES),+$(CLOJURE_VERSION) test
 
 # Sanity check that we don't break if Clojurescript or Spec2 aren't present.
 test-no-extra-deps:
