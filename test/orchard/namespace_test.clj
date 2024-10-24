@@ -72,30 +72,15 @@
     (is (seq corpus))
     (doseq [s corpus]
       (is (symbol? s))
-      (when-not ('#{com.sun.tools.javadoc.RootDocImpl ;; classes on the project can be JDK dependent
-                    com.sun.tools.javadoc.ModifierFilter
-                    com.sun.tools.javadoc.Messager
-                    com.sun.tools.javadoc.JavadocTool
-                    com.sun.tools.javadoc.JavadocEnter
-                    com.sun.tools.javadoc.DocEnv
-                    com.sun.javadoc.Type
-                    com.sun.javadoc.Tag
-                    com.sun.javadoc.RootDoc
-                    com.sun.javadoc.Parameter
-                    com.sun.javadoc.MethodDoc
-                    com.sun.javadoc.FieldDoc
-                    com.sun.javadoc.Doc
-                    com.sun.javadoc.ConstructorDoc
-                    com.sun.javadoc.ClassDoc
-                    jdk.javadoc.doclet.Doclet
-                    jdk.javadoc.doclet.DocletEnvironment
-                    com.sun.source.tree.ClassTree
-                    com.sun.tools.javac.tree.JCTree
-                    com.sun.tools.javac.util.Abort
-                    com.sun.tools.javac.util.Context
-                    com.sun.tools.javac.util.List
-                    com.sun.source.doctree.DocCommentTree}
-                 s)
+      ;; Exclude classes that are JDK-dependent.
+      (when-not (some #(string/starts-with? (name s) %)
+                      ["com.sun.tools.javadoc."
+                       "com.sun.javadoc."
+                       "jdk.javadoc.doclet."
+                       "com.sun.source.tree.ClassTree"
+                       "com.sun.tools.javac.tree.JCTree"
+                       "com.sun.tools.javac.util."
+                       "com.sun.source.doctree."])
         (is (-> s eval class?)
             (pr-str s))))))
 

@@ -91,7 +91,7 @@
         (is (re-find #"jar:file:/.*/.m2/repository/org/clojure/clojure/.*/clojure-.*-sources.jar!/clojure/lang/RT.java"
                      (str (:resource-url rt-info))))))))
 
-(when @@java/parser-next-available?
+(when (and @@java/parser-next-available? util/jdk-sources-present?)
   (deftest doc-fragments-test
     (is (= [{:type "text", :content "Returns an estimate of the number of "}
             {:type "html", :content "<pre>#isAlive()</pre> "}
@@ -137,7 +137,7 @@ and monitoring purposes."}]
           (is (not (string/includes? s "<a")))
           (is (not (string/includes? s "<a href"))))))))
 
-(when @@java/parser-next-available?
+(when (and @@java/parser-next-available? util/jdk-sources-present?)
   (deftest smoke-test
     (let [annotations #{'java.lang.Override
                         'java.lang.Deprecated

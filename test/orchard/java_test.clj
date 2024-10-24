@@ -530,7 +530,7 @@
             (is (not (string/includes? s "^Object Object")))
             (is (not (string/includes? s "^function.Function java.util.function.Function")))
             (is (not (string/includes? s "^java.util.function.Function java.util.function.Function")))
-            (assert (is (not (string/includes? s "java.lang"))))))))))
+            (is (not (string/includes? s "java.lang")))))))))
 
 (when (and util/jdk-sources-present?
            @@sut/parser-next-available?)
