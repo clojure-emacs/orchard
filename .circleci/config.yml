@@ -26,9 +26,9 @@ executors:
     docker:
       - image: clojure:temurin-21-lein-2.11.2-noble
     <<: *defaults
-  jdk22:
+  jdk23:
     docker:
-      - image: clojure:temurin-22-lein-2.11.2-noble
+      - image: clojure:temurin-23-lein-2.11.2-noble
     <<: *defaults
 
 # Runs a given set of steps, with some standard pre- and post-
@@ -195,7 +195,7 @@ workflows:
           matrix:
             alias: "test"
             parameters:
-              jdk_version: [jdk8, jdk11, jdk17, jdk22]
+              jdk_version: [jdk8, jdk11, jdk17, jdk23]
               clojure_version: ["1.10", "1.11", "1.12"]
           filters:
             branches:
@@ -220,8 +220,8 @@ workflows:
           matrix:
             alias: "test_no_extra_deps"
             parameters:
-              jdk_version: [jdk22]
-              clojure_version: ["1.11"]
+              jdk_version: [jdk23]
+              clojure_version: ["1.12"]
               command: ["test-no-extra-deps"]
           filters:
             branches:
@@ -233,7 +233,7 @@ workflows:
           matrix:
             alias: "eastwood"
             parameters:
-              jdk_version: [jdk8, jdk22]
+              jdk_version: [jdk8, jdk23]
               clojure_version: ["1.11", "1.12"]
           filters:
             branches:
