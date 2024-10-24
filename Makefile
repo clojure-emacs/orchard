@@ -1,4 +1,4 @@
-.PHONY: submodules test quick-test docs eastwood cljfmt kondo install deploy clean lein-repl repl lint .EXPORT_ALL_VARIABLES
+.PHONY: submodules test quick-test docs eastwood cljfmt kondo install deploy clean lein-repl repl lint
 .DEFAULT_GOAL := install
 
 # Set bash instead of sh for the @if [[ conditions,
@@ -26,19 +26,31 @@ curl -o $@ https://github.com/clojure-emacs/clojuredocs-export-edn/raw/master/ex
 # we use on CircleCI doesn't include src.zip. So we have to download them from
 # Github and repackage in a form that is resemblant to src.zip from normal
 # distributions.
-base-src.zip:
-	wget https://github.com/adoptium/jdk21u/archive/refs/tags/jdk-21.0.5+3.zip -O full-src.zip
-	unzip -q full-src.zip
-	cp -r jdk21u-*/src/java.base/share/classes java.base
-	cp -r jdk21u-*/src/java.desktop/share/classes java.desktop
-	zip -qr base-src.zip java.base java.desktop
-	rm -rf java.base java.desktop jdk21u-* full-src.zip
 
-test: clean submodules base-src.zip .EXPORT_ALL_VARIABLES
+base-src-jdk8.zip:
+	echo 'Currently not testing with sources for JDK8.'
+
+base-src-jdk11.zip:
+	bash download-jdk-sources.sh https://github.com/adoptium/jdk11u/archive/refs/tags/jdk-11.0.25+9.zip jdk11 $@
+
+base-src-jdk17.zip:
+	bash download-jdk-sources.sh https://github.com/adoptium/jdk17u/archive/refs/tags/jdk-17.0.13+11.zip jdk17 $@
+
+base-src-jdk21.zip:
+	bash download-jdk-sources.sh https://github.com/adoptium/jdk21u/archive/refs/tags/jdk-21.0.5+3.zip jdk21 $@
+
+base-src-jdk23.zip:
+	bash download-jdk-sources.sh https://github.com/adoptium/jdk23u/archive/refs/tags/jdk-23.0.1+11.zip jdk23 $@
+
+# Placeholder job for When JDK_SRC_VERSION is unset.
+base-src-.zip:
+	echo 'JDK_SRC_VERSION is unset.'
+
+test: base-src-$(JDK_SRC_VERSION).zip submodules clean
 	lein with-profile $(TEST_PROFILES),+$(CLOJURE_VERSION) test
 
 # Sanity check that we don't break if Clojurescript or Spec2 aren't present.
-test-no-extra-deps:
+test-no-extra-deps: base-src-$(JDK_SRC_VERSION).zip
 	lein with-profile -user,-dev,+test,+$(CLOJURE_VERSION) test
 
 quick-test: test
