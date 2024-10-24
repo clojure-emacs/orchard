@@ -23,10 +23,10 @@
   (deftest parse-java-test
     (testing "Throws an informative exception on invalid code"
       (try
-        (parse-java "orchard/java/UnderscoreClass.java" nil)
+        (parse-java "orchard/java/InvalidClass.java" nil)
         (assert false)
         (catch Exception e
-          (is (-> e ex-data :out (string/includes? "unnamed variables are a preview feature and are disabled by default"))))))))
+          (is (-> e ex-data :out (string/includes? "illegal start of expression"))))))))
 
 (when @@java/parser-next-available?
   (deftest source-info-test
@@ -156,11 +156,10 @@ and monitoring purposes."}]
           (is (contains? info :doc))
           (is (contains? info :doc-fragments))
           (is (contains? info :doc-first-sentence-fragments))
-          (assert (contains? info :members))
+          (is (contains? info :members))
           (let [v (mapcat vals (vals members))]
             (when-not (#{`Cloneable} class-sym)
-              (assert (seq v)
-                      (pr-str class-sym)))
+              (is (seq v) (pr-str class-sym)))
             (doseq [m v]
               (is (contains? m :doc))
               (is (contains? m :doc-fragments))

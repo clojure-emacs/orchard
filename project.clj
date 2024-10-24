@@ -92,9 +92,6 @@
                                        "not-a.jar"
                                        "does-not-exist.jar"]})
 
-             :parser-next {:jvm-opts ["--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED"
-                                      "--add-opens=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED"]}
-
              ;; Development tools
              :dev ~(-> dev-test-common-profile
                        (update :source-paths conj "dev")
