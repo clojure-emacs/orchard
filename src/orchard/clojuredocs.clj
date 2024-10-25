@@ -6,6 +6,7 @@
    [clojure.edn :as edn]
    [clojure.java.io :as io]
    [clojure.string :as string]
+   [orchard.misc :refer [with-lock]]
    [orchard.util.os :as os])
   (:import
    (java.net URI)
@@ -13,7 +14,7 @@
    (java.util.concurrent.locks ReentrantLock)))
 
 (def cache (atom {}))
-(def ^:private ^ReentrantLock lock
+(def ^:private lock
   "Lock to prevent concurrent loading and parsing of Clojuredocs data and writing
   it into cache. This lock provides only efficiency benefits and is not
   necessary for correct behavior as accessing atom that contains immutable data
@@ -66,14 +67,13 @@
   {:added "0.5"}
   []
   ;; Prevent multiple threads from trying to load the cache simultaneously.
-  (.lock lock)
-  (try (when (empty? @cache)
-         (let [cache-file (io/file cache-file-name)]
-           (load-cache-file!
-            (if (.exists cache-file)
-              cache-file
-              (io/resource "clojuredocs/export.edn")))))
-       (finally (.unlock lock))))
+  (with-lock lock
+    (when (empty? @cache)
+      (let [cache-file (io/file cache-file-name)]
+        (load-cache-file!
+         (if (.exists cache-file)
+           cache-file
+           (io/resource "clojuredocs/export.edn")))))))
 
 (defn update-cache!
   "Load exported docs file from ClojureDocs, and store it as a cache.
@@ -84,10 +84,9 @@
    (update-cache! default-edn-file-url))
   ([export-edn-url]
    (let [cache-file (io/file cache-file-name)]
-     (.lock lock)
-     (try (write-cache-file! export-edn-url)
-          (load-cache-file! cache-file)
-          (finally (.unlock lock))))))
+     (with-lock lock
+       (write-cache-file! export-edn-url)
+       (load-cache-file! cache-file)))))
 
 (defn clean-cache!
   "Clean the cached ClojureDocs export file and the in memory cache."

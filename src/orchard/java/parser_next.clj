@@ -28,6 +28,7 @@
    (com.sun.source.doctree BlockTagTree DocCommentTree EndElementTree
                            LinkTree LiteralTree ParamTree ReturnTree
                            StartElementTree TextTree ThrowsTree)
+   (java.util.concurrent.locks ReentrantLock)
    (javax.lang.model.element Element ElementKind ExecutableElement TypeElement VariableElement)
    (javax.lang.model.type ArrayType TypeKind TypeVariable)
    (jdk.javadoc.doclet DocletEnvironment)))
@@ -298,7 +299,7 @@
   (parse-info* [o env]
     (parse-variable-element o env)))
 
-(def lock (Object.))
+(def ^:private lock (ReentrantLock.))
 
 (defn source-info
   "If the source for the Java class is available on the classpath, parse it
@@ -307,7 +308,7 @@
   same structure as that of `orchard.java/reflect-info`."
   [klass]
   {:pre [(symbol? klass)]}
-  (locking lock ;; the jdk.javadoc.doclet classes aren't meant for concurrent modification/access.
+  (misc/with-lock lock ;; the jdk.javadoc.doclet classes aren't meant for concurrent modification/access.
     (when-let [path (source-path klass)]
       (when-let [^DocletEnvironment root (parse-java path (module-name klass))]
         (try
