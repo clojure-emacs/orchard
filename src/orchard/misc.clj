@@ -4,7 +4,9 @@
   (:require
    [clojure.java.io :as io]
    [clojure.string :as string]
-   [orchard.util.io :as util.io]))
+   [orchard.util.io :as util.io])
+  (:import
+   (java.util.concurrent.locks ReentrantLock)))
 
 (defn os-windows? []
   (.startsWith (System/getProperty "os.name") "Windows"))
@@ -67,6 +69,14 @@
   (if-let [n (and sym (name sym))]
     (as-sym n)
     sym))
+
+(defmacro with-lock
+  "Like `clojure.core/locking`, but for java.util.concurrent.locks.Lock."
+  [lock & body]
+  `(let [^ReentrantLock l# ~lock]
+     (.lock l#)
+     (try ~@body
+          (finally (.unlock l#)))))
 
 (defn update-vals
   "Update the values of map `m` via the function `f`."
