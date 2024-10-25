@@ -8,19 +8,21 @@
   (:import
    (orchard.java DummyClass)))
 
-(when (and (System/getenv "CI") (>= misc/java-api-version 11))
+(def ^:private jdk11+? (>= misc/java-api-version 11))
+
+(when (and jdk11+? (System/getenv "CI"))
   (deftest sources-should-be-present-on-ci
     (is util/jdk-sources-present?)))
 
 (def source-info
-  (when (>= misc/java-api-version 9)
+  (when jdk11+?
     (misc/require-and-resolve 'orchard.java.parser-next/source-info)))
 
 (def parse-java
-  (when (>= misc/java-api-version 9)
+  (when jdk11+?
     (misc/require-and-resolve 'orchard.java.parser-utils/parse-java)))
 
-(when @@java/parser-next-available?
+(when jdk11+?
   (deftest parse-java-test
     (testing "Throws an informative exception on invalid code"
       (try
@@ -29,7 +31,7 @@
         (catch Exception e
           (is (-> e ex-data :out (string/includes? "illegal start of expression"))))))))
 
-(when @@java/parser-next-available?
+(when jdk11+?
   (deftest source-info-test
     (is (class? DummyClass))
 
@@ -92,7 +94,7 @@
         (is (re-find #"jar:file:/.*/.m2/repository/org/clojure/clojure/.*/clojure-.*-sources.jar!/clojure/lang/RT.java"
                      (str (:resource-url rt-info))))))))
 
-(when (and @@java/parser-next-available? util/jdk-sources-present?)
+(when (and jdk11+? util/jdk-sources-present?)
   (deftest doc-fragments-test
     (is (= [{:type "text", :content "Inserts the specified element at the tail of this queue if it is
 possible to do so immediately without exceeding the queue's capacity,
@@ -132,7 +134,7 @@ returning "}
           (is (not (string/includes? s "<a")))
           (is (not (string/includes? s "<a href"))))))))
 
-(when (and @@java/parser-next-available? util/jdk-sources-present?)
+(when (and jdk11+? util/jdk-sources-present?)
   (deftest smoke-test
     (let [annotations #{'java.lang.Override
                         'java.lang.Deprecated

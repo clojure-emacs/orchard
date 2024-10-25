@@ -11,6 +11,8 @@
   (:import
    (mx.cider.orchard LruMap)))
 
+(def ^:private jdk11+? (>= misc/java-api-version 11))
+
 (javadoc/add-remote-javadoc "com.amazonaws." "http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/")
 (javadoc/add-remote-javadoc "org.apache.kafka." "https://kafka.apache.org/090/javadoc/")
 
@@ -148,7 +150,7 @@
             (is (class-info sym))))
         (testing "that doesn't exist"
           (is (nil? c3))))
-      (when @@sut/parser-next-available?
+      (when jdk11+?
         (testing "Doc fragments"
           (is (seq (:doc-fragments thread-class-info)))
           (is (seq (:doc-first-sentence-fragments thread-class-info))))))))
@@ -190,7 +192,7 @@
           (testing (-> m6 :doc pr-str)
             (is (-> m6 :doc (string/starts-with? "Called by the garbage collector on an object when garbage collection"))
                 "Contains doc that is clearly defined in Object (the superclass)")))
-        (when @@sut/parser-next-available?
+        (when jdk11+?
           (testing "Doc fragments"
             (testing "For a field"
               (is (seq (:doc-fragments m4)))
@@ -452,8 +454,7 @@
                  (or returns
                      (= n class-symbol))))))
 
-(when (and util/jdk-sources-present?
-           @@sut/parser-next-available?)
+(when (and util/jdk-sources-present? jdk11+?)
   (deftest reflect-and-source-info-match
     (testing "reflect and source info structurally match, allowing a meaningful deep-merge of both"
       (let [extract-arities (fn [info]
@@ -500,8 +501,7 @@
               (is (not-any? nil? all-argnames)
                   "The deep-merge went ok"))))))))
 
-(when (and util/jdk-sources-present?
-           @@sut/parser-next-available?)
+(when (and util/jdk-sources-present? jdk11+?)
   (deftest annotated-arglists-test
     (doseq [class-symbol (class-corpus)
             :let [info (sut/class-info* class-symbol)
@@ -528,8 +528,7 @@
             (is (not (string/includes? s "^java.util.function.Function java.util.function.Function")))
             (is (not (string/includes? s "java.lang")))))))))
 
-(when (and util/jdk-sources-present?
-           @@sut/parser-next-available?)
+(when (and util/jdk-sources-present? jdk11+?)
   (deftest array-arg-doc-test
     (testing "Regression test for #278"
       (is (= "^Path [^String first, ^String[] more]"
@@ -537,8 +536,7 @@
                      [:members 'of ['java.lang.String (symbol "java.lang.String[]")]
                       :annotated-arglists]))))))
 
-(when (and util/jdk-sources-present?
-           @@sut/parser-next-available?)
+(when (and util/jdk-sources-present? jdk11+?)
   (deftest *analyze-sources*-test
     (with-redefs [cache (LruMap. 100)]
       (binding [sut/*analyze-sources* false]
