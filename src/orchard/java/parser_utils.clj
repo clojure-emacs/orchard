@@ -11,6 +11,42 @@
    (javax.tools DocumentationTool DocumentationTool$DocumentationTask ToolProvider)
    (jdk.javadoc.doclet Doclet DocletEnvironment)))
 
+;;; ## Java Parsing
+;;
+;; The Java Compiler API provides in-process access to the Javadoc compiler.
+;; Unlike the standard Java compiler which it extends, the Javadoc compiler
+;; preserves docstrings (obviously), as well as source position and argument
+;; names in its parse tree -- pieces we're after to augment reflection info.
+;;
+;; A few notes:
+;;
+;; 1. The compiler API `call` method is side-effect oriented; it returns only a
+;;    boolean indicating success. To use the result parse tree, we store this in
+;;    an atom.
+;;
+;; 2. The `result` atom must be scoped at the namespace level because a Doclet
+;;    is specified by passing a class name rather than an instance; hence, we
+;;    can't close over a local varaible in reify: `result` must be in scope when
+;;    the methods of a *new* instance of the Doclet class are called.
+;;
+;; 3. To compile an individual source that is defined as part of a module, the
+;;    compiler must be told to "patch" the module, and the source
+;;    `JavaFileobject`'s location must match the argument to the
+;;    "--patch-module" option.
+;;
+;;    It's not clear how to make the "--patch-module" option work with a source
+;;    loaded from memory or a jar file; its syntax seems file system oriented.
+;;    Moreover, if the `StandardJavaFileManager` resolves a file, the
+;;    "--patch-module" option is matched, but if the exact same file is passed
+;;    as a proxy-ed `Simplejavafileobject` with an identical URI, the
+;;    compiler's internal `Enter` class doesn't see this as matcing the
+;;    "--patch-module" option. To accommodate this, the jar file entry is
+;;    written to a temp file and passed to the compiler from disk. Design-wise,
+;;    this is admittedly imperfect, but the performance cost is low and it works.
+
+;; This atom must be in top-level, not a local in `parse-java`, otherwise the
+;; reify will capture it as a closure and thus will no longer have 0-arg
+;; constructor, and the latter is required.
 (def result (atom nil))
 
 (defn parse-java

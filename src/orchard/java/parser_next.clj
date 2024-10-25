@@ -1,5 +1,5 @@
 (ns orchard.java.parser-next
-  "Source and docstring info for Java classes and members.
+  "Source and docstring info for Java classes and members. Requires JDK11+.
 
   Leaves `:doc` untouched.
 
@@ -305,30 +305,25 @@
   and return info to supplement reflection. Specifically, this includes source
   file and position, docstring, and argument name info. Info returned has the
   same structure as that of `orchard.java/reflect-info`."
-  [klass & [throw?]]
+  [klass]
   {:pre [(symbol? klass)]}
   (locking lock ;; the jdk.javadoc.doclet classes aren't meant for concurrent modification/access.
-    (try
-      (when-let [path (source-path klass)]
-        (when-let [^DocletEnvironment root (parse-java path (module-name klass))]
-          (try
-            (let [path-resource (io/resource path)]
-              (assoc (some #(when (#{ElementKind/CLASS
-                                     ElementKind/INTERFACE
-                                     ElementKind/ENUM}
-                                   (.getKind ^Element %))
-                              (let [info (parse-info % root)]
-                                (when (= (:class info) klass)
-                                  info)))
-                           (.getIncludedElements root))
-                     ;; relative path on the classpath
-                     :file path
-                     ;; Legacy key. Please do not remove - we don't do breaking changes!
-                     :path (.getPath path-resource)
-                     ;; Full URL, e.g. file:.. or jar:...
-                     :resource-url path-resource))
-            (finally (.close (.getJavaFileManager root))))))
-      (catch Throwable e
-        (when (or throw?
-                  (= "true" (System/getProperty "orchard.internal.test-suite-running")))
-          (throw e))))))
+    (when-let [path (source-path klass)]
+      (when-let [^DocletEnvironment root (parse-java path (module-name klass))]
+        (try
+          (let [path-resource (io/resource path)]
+            (assoc (some #(when (#{ElementKind/CLASS
+                                   ElementKind/INTERFACE
+                                   ElementKind/ENUM}
+                                 (.getKind ^Element %))
+                            (let [info (parse-info % root)]
+                              (when (= (:class info) klass)
+                                info)))
+                         (.getIncludedElements root))
+                   ;; relative path on the classpath
+                   :file path
+                   ;; Legacy key. Please do not remove - we don't do breaking changes!
+                   :path (.getPath path-resource)
+                   ;; Full URL, e.g. file:.. or jar:...
+                   :resource-url path-resource))
+          (finally (.close (.getJavaFileManager root))))))))
