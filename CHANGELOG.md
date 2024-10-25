@@ -3,7 +3,8 @@
 ## master (unreleased)
 
 * [#278](https://github.com/clojure-emacs/orchard/issues/278): Java: correctly display array arguments in docs.
-* [#278](https://github.com/clojure-emacs/orchard/issues/278): Java: make parser-next work without `--add-opens`.
+* [#297](https://github.com/clojure-emacs/orchard/issues/297): Java: make parser-next work without `--add-opens`.
+* [#298](https://github.com/clojure-emacs/orchard/issues/298): Java: remove `orchard.java.parser` in favor of parser-next.
 * [#293](https://github.com/clojure-emacs/orchard/issues/293): Inspector: show HashMap size in the header.
 * [#294](https://github.com/clojure-emacs/orchard/issues/294): Inspector: count small lazy collections.
 

@@ -70,38 +70,23 @@
 ;;; ## Source Analysis
 ;;
 ;; Java parser support is available for JDK11+ and JDK8 via separate
-;; namespaces, `java.parser` and `java.legacy-parser`. The former uses only
+;; namespaces, `java.parser-next` and `java.legacy-parser`. The former uses only
 ;; external JDK APIs and supports modular (Jigsaw) sources. The latter uses
 ;; internal APIs out of necessity. Once this project discontinues support for
 ;; JDK8, the legacy parser may be removed.
 
-(def parser-available-exception
-  "The exception found, if any, while trying to load any of the parser namespaces."
+(def parser-exception
+  "The exception found, if any, when running any parser."
   (atom nil))
 
 (def ^:private parser-next-source-info
   (delay
     (when (>= misc/java-api-version 11)
       (try (let [f (misc/require-and-resolve 'orchard.java.parser-next/source-info)]
-             (when (f `LruMap :throw)
-               f))
-           (catch Throwable e
-             (reset! parser-available-exception e)
-             nil)))))
-
-(def parser-next-available?
-  (delay ;; avoid the side-effects at compile-time
-    (atom ;; make the result mutable - this is helpful in case the detection below wasn't sufficient
-     (some? @parser-next-source-info))))
-
-(def ^:private jdk11-parser-source-info
-  (delay
-    (when (>= misc/java-api-version 9)
-      (try (let [f (misc/require-and-resolve 'orchard.java.parser/source-info)]
              (when (f `LruMap)
                f))
            (catch Throwable e
-             (reset! parser-available-exception e)
+             (reset! parser-exception e)
              nil)))))
 
 (def ^:private legacy-parser-source-info
@@ -111,35 +96,20 @@
              (when (f `LruMap)
                f))
            (catch Throwable e
-             (reset! parser-available-exception e)
+             (reset! parser-exception e)
              nil)))))
 
-(defn source-info*
-  "When a Java parser is available, return class info from its parsed source;
-  otherwise return nil."
-  [& args]
-  (let [choose (fn []
-                 (or (and @@parser-next-available? @parser-next-source-info)
-                     @jdk11-parser-source-info
-                     @legacy-parser-source-info))]
-    (try
-      (when-let [f (choose)]
-        (apply f args))
-      (catch IllegalAccessError e
-        (if-not @@parser-next-available?
-          (throw e)
-          (do
-            ;; if there was an IllegalAccessError, the parser was mistakenly detected as available,
-            ;; so we update the detection and retry:
-            (reset! @parser-next-available? false)
-            (reset! parser-available-exception e)
-            (apply (choose) args)))))))
-
 (defn source-info
-  "Ensure that JDK sources are visible on the classpath if present, and return
-  class info from its parsed source if available."
-  [class]
-  (source-info* class))
+  "Try to return class info from its parsed source if the source is available.
+  Returns nil in case of any errors."
+  [class-symbol]
+  (try
+    (when-let [f (or @parser-next-source-info @legacy-parser-source-info)]
+      (f class-symbol))
+    (catch Throwable e
+      (reset! parser-exception e)
+      (when (= (System/getProperty "orchard.internal.test-suite-running") "true")
+        (throw e)))))
 
 ;; As of Java 11, Javadoc URLs begin with the module name.
 (defn module-name
