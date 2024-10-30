@@ -117,6 +117,4 @@
                                                              orchard.java.parser-utils
                                                              orchard.java.parser-next
                                                              orchard.java.parser-next-test]
-                                                           '[orchard.java.legacy-parser])}}
-
-             :deploy {:source-paths [".circleci/deploy"]}})
+                                                           '[orchard.java.legacy-parser])}}})

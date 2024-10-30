@@ -73,6 +73,11 @@ lint: kondo cljfmt eastwood
 # Deployment is performed via CI by creating a git tag prefixed with "v".
 # Please do not deploy locally as it skips various measures.
 deploy: check-env clean
+	@if ! echo "$(CIRCLE_TAG)" | grep -q "^v"; then \
+		echo "[Error] CIRCLE_TAG $(CIRCLE_TAG) must start with 'v'."; \
+		exit 1; \
+	fi
+	export PROJECT_VERSION=$$(echo "$(CIRCLE_TAG)" | sed 's/^v//'); \
 	lein with-profile -user,-dev,+$(CLOJURE_VERSION),-provided deploy clojars
 
 # Usage: PROJECT_VERSION=99.99 make install
