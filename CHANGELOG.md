@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+## 0.28.0 (2024-10-31)
+
 * [#278](https://github.com/clojure-emacs/orchard/issues/278): Java: correctly display array arguments in docs.
 * [#297](https://github.com/clojure-emacs/orchard/issues/297): Java: make parser-next work without `--add-opens`.
 * [#298](https://github.com/clojure-emacs/orchard/issues/298): Java: remove `orchard.java.parser` in favor of parser-next.
