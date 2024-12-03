@@ -29,10 +29,9 @@
 ;; Java source files are resolved from the classpath. For library dependencies,
 ;; this simply entails having the corresponding source artifacts in the
 ;; project's dev dependencies. The core Java API classes are the exception to
-;; this, since these are external to lein/maven dependency management. For
-;; these, `enrich-classpath` searches the JDK directory and add the source classpath entry
-;; manually, if available. On JDK8, parsing source files also requires
-;; having `tools.jar` on the classpath.
+;; this, since these are external to lein/maven dependency management. Hence,
+;; JDK sources have to be put onto the classpath explicitly (e.g., manually or
+;; with `enrich-classpath`).
 
 (defn ^:deprecated jdk-find
   "Search common JDK path configurations for a specified file name and return a
@@ -69,11 +68,7 @@
 
 ;;; ## Source Analysis
 ;;
-;; Java parser support is available for JDK11+ and JDK8 via separate
-;; namespaces, `java.parser-next` and `java.legacy-parser`. The former uses only
-;; external JDK APIs and supports modular (Jigsaw) sources. The latter uses
-;; internal APIs out of necessity. Once this project discontinues support for
-;; JDK8, the legacy parser may be removed.
+;; Java parser support is available for JDK11+ via `java.parser-next`.
 
 (def parser-exception
   "The exception found, if any, when running any parser."
@@ -83,16 +78,9 @@
   (delay
     (when (>= misc/java-api-version 11)
       (try (let [f (misc/require-and-resolve 'orchard.java.parser-next/source-info)]
-             (when (f `LruMap)
-               f))
-           (catch Throwable e
-             (reset! parser-exception e)
-             nil)))))
-
-(def ^:private legacy-parser-source-info
-  (delay
-    (when jdk-tools
-      (try (let [f (misc/require-and-resolve 'orchard.java.legacy-parser/source-info)]
+             ;; We try parsing LruMap.java as a litmus test for whether the
+             ;; parser works. We can be sure that LruMap.java is on the
+             ;; classpath because we pack it into the final Orchard jar.
              (when (f `LruMap)
                f))
            (catch Throwable e
@@ -104,7 +92,7 @@
   Returns nil in case of any errors."
   [class-symbol]
   (try
-    (when-let [f (or @parser-next-source-info @legacy-parser-source-info)]
+    (when-let [f @parser-next-source-info]
       (f class-symbol))
     (catch Throwable e
       (reset! parser-exception e)

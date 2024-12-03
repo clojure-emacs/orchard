@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+* [#278](https://github.com/clojure-emacs/orchard/pull/301): **BREAKING:** Drop support for Java sources parsing on JDK8.
+
 ## 0.28.0 (2024-10-31)
 
 * [#278](https://github.com/clojure-emacs/orchard/issues/278): Java: correctly display array arguments in docs.
