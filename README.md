@@ -75,6 +75,10 @@ Documentation for the master branch as well as tagged releases are available
 
 **orchard requires Clojure 1.10+ and Java 8+.**
 
+> [!NOTE]  
+> Java 8 is soft-deprecated in Orchard. Core Orchard funcitonality continues to work on JDK8, but these following features don't:
+> - Java sources parsing
+
 Just add `orchard` as a dependency and start hacking.
 
 ```clojure

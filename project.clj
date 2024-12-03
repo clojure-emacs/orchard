@@ -17,19 +17,6 @@
                                  zip-path zip-path))
                 nil)))))))
 
-;; Needed to run eastwood on JDK8.
-(def tools-jar
-  (delay
-    (let [java-home (System/getProperty "java.home")
-          tools-jar-paths [(clojure.java.io/file java-home "tools.jar")
-                           (clojure.java.io/file java-home "lib" "tools.jar")
-                           (clojure.java.io/file java-home ".." "tools.jar")
-                           (clojure.java.io/file java-home ".." "lib" "tools.jar")]
-          tools-jar (some #(when (.exists %) %) tools-jar-paths)]
-      (assert tools-jar (str "tools.jar was not found in " java-home))
-      (println "Found tools.jar:" tools-jar)
-      (str tools-jar))))
-
 (def dev-test-common-profile
   {:dependencies '[[org.clojure/java.classpath "1.1.0"]
                    [nubank/matcher-combinators "3.9.1"
@@ -108,13 +95,11 @@
 
              :clj-kondo {:plugins [[com.github.clj-kondo/lein-clj-kondo "2023.07.13"]]}
 
-             :eastwood  {:source-paths ~(if jdk8? [@tools-jar] [])
-                         :plugins  [[jonase/eastwood "1.4.0"]]
+             :eastwood  {:plugins  [[jonase/eastwood "1.4.0"]]
                          :eastwood {:ignored-faults {:unused-ret-vals-in-try {orchard.java {:line 84}
                                                                               orchard.java.parser-next-test true}}
-                                    :exclude-namespaces ~(if jdk8?
+                                    :exclude-namespaces ~(when jdk8?
                                                            '[orchard.java.modules
                                                              orchard.java.parser-utils
                                                              orchard.java.parser-next
-                                                             orchard.java.parser-next-test]
-                                                           '[orchard.java.legacy-parser])}}})
+                                                             orchard.java.parser-next-test])}}})

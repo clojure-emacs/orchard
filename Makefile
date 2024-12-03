@@ -28,7 +28,7 @@ curl -o $@ https://github.com/clojure-emacs/clojuredocs-export-edn/raw/master/ex
 # distributions.
 
 base-src-jdk8.zip:
-	echo 'Currently not testing with sources for JDK8.'
+	echo 'Placeholder. We dont parse sources on JDK8.'
 
 base-src-jdk11.zip:
 	bash download-jdk-sources.sh https://github.com/adoptium/jdk11u/archive/refs/tags/jdk-11.0.25+9.zip jdk11 $@
