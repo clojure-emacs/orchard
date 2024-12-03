@@ -20,7 +20,7 @@
 
 (def parse-java
   (when jdk11+?
-    (misc/require-and-resolve 'orchard.java.parser-utils/parse-java)))
+    (misc/require-and-resolve 'orchard.java.parser-next/parse-java)))
 
 (when jdk11+?
   (deftest parse-java-test
