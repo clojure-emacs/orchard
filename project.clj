@@ -100,6 +100,5 @@
                                                                               orchard.java.parser-next-test true}}
                                     :exclude-namespaces ~(when jdk8?
                                                            '[orchard.java.modules
-                                                             orchard.java.parser-utils
                                                              orchard.java.parser-next
                                                              orchard.java.parser-next-test])}}})
