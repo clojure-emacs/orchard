@@ -75,8 +75,9 @@ Documentation for the master branch as well as tagged releases are available
 
 **orchard requires Clojure 1.10+ and Java 8+.**
 
-> [!NOTE]  
-> Java 8 is soft-deprecated in Orchard. Core Orchard funcitonality continues to work on JDK8, but these following features don't:
+> [!NOTE]
+>
+> Java 8 is soft-deprecated in Orchard since version 0.29. Core Orchard funcitonality continues to work on JDK 8, but these following features don't:
 > - Java sources parsing
 
 Just add `orchard` as a dependency and start hacking.
@@ -120,7 +121,9 @@ So far, Orchard follows these options, which can be specified as Java system pro
 
 To run the CI tasks locally use:
 
-`make test cljfmt kondo eastwood`
+``` shell
+make test cljfmt kondo eastwood
+```
 
 ## History
 
@@ -148,9 +151,9 @@ clients can make of use of the general functionality contained in
 
 ### Development
 
-enrich-classpath is important for development of Java-related features in Orchard, since it makes the Java sources available. Certain features parse those Java sources as a source of information.
+`enrich-classpath` is important for development of Java-related features in Orchard, since it makes the Java sources available. Certain features parse those Java sources as a source of information.
 
-You can fire up a repl (and nrepl server) that uses cider-nrepl and enrich-classpath like so:
+You can fire up a REPL (and nREPL server) that uses `cider-nrepl` and `enrich-classpath` like so:
 
 ```bash
 # or `make lein-repl`
