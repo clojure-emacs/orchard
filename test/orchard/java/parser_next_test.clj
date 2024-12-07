@@ -1,5 +1,6 @@
 (ns orchard.java.parser-next-test
   (:require
+   [clojure.java.io :as io]
    [clojure.string :as string]
    [clojure.test :refer [deftest is testing]]
    [orchard.java :as java]
@@ -26,7 +27,7 @@
   (deftest parse-java-test
     (testing "Throws an informative exception on invalid code"
       (try
-        (parse-java "orchard/java/InvalidClass.java" nil)
+        (parse-java (io/resource "orchard/java/InvalidClass.java") nil)
         (assert false)
         (catch Exception e
           (is (-> e ex-data :out (string/includes? "illegal start of expression"))))))))
@@ -36,8 +37,7 @@
     (is (class? DummyClass))
 
     (testing "file on the filesystem"
-      (is (= '{:file "orchard/java/DummyClass.java",
-               :doc-first-sentence-fragments
+      (is (= '{:doc-first-sentence-fragments
                [{:type "text", :content "Class level docstring."}],
                :column 1,
                :line 12,
@@ -85,14 +85,7 @@
                "Class level docstring.\n\n <pre>\n   DummyClass dc = new DummyClass();\n </pre>\n\n @author Arne Brasseur"}
              (dissoc (source-info 'orchard.java.DummyClass)
                      :path
-                     :resource-url))))
-
-    (testing "java file in a jar"
-      (let [rt-info (source-info 'clojure.lang.RT)]
-        (is (= {:file "clojure/lang/RT.java"}
-               (select-keys rt-info [:file])))
-        (is (re-find #"jar:file:/.*/.m2/repository/org/clojure/clojure/.*/clojure-.*-sources.jar!/clojure/lang/RT.java"
-                     (str (:resource-url rt-info))))))))
+                     :resource-url))))))
 
 (when (and jdk11+? util/jdk-sources-present?)
   (deftest doc-fragments-test

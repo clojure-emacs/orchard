@@ -151,13 +151,7 @@
         meta    (cond
                   (= dialect :clj)  (clj-meta params)
                   (= dialect :cljs) (cljs-meta params))]
-
-    ;; TODO: Split the responsibility of finding meta and normalizing the meta map.
-    (some->
-     meta
-
-     (merge (when-let [file-path (:file meta)]
-              {:file file-path})))))
+    meta))
 
 (defn info
   "Provide the info map for the input ns and sym.

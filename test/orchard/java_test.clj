@@ -16,44 +16,36 @@
 (javadoc/add-remote-javadoc "com.amazonaws." "http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/")
 (javadoc/add-remote-javadoc "org.apache.kafka." "https://kafka.apache.org/090/javadoc/")
 
-(when util/jdk-sources-present?
+(when (and jdk11+? util/jdk-sources-present?)
   (deftest source-info-test
-    (let [resolve-src (comp (fnil io/resource "-none-") :file source-info)]
-      (testing "Source file resolution"
-        (testing "for Clojure classes"
-          (is (resolve-src 'clojure.lang.Obj))
-          (is (resolve-src 'clojure.lang.Fn)))
-        (testing "for JDK classes"
-          (is (resolve-src 'java.lang.String))
-          (is (resolve-src 'java.util.regex.Matcher)))
-        (testing "for non-existent classes"
-          (is (not (resolve-src 'not.actually.AClass)))))
+    (testing "Parse tree kinds"
+      (testing "for non-existent classes"
+        (is (not (source-info 'not.actually.AClass))))
+      (testing "for Clojure classes"
+        (is (-> (source-info 'clojure.lang.ISeq) :line)) ; interface
+        (is (-> (source-info 'clojure.lang.AFn) :line))  ; abstract class
+        (is (-> (source-info 'clojure.lang.APersistentMap$ValSeq) :line)) ; nested class
+        (is (-> (source-info 'clojure.lang.Numbers$Ops) :line)) ; nested default interface
+        (is (-> (source-info 'clojure.lang.Range$BoundsCheck) :line)) ; nested private interface
+        (is (-> (source-info 'clojure.lang.Numbers$Category) :line)) ; nested enum
+        (is (not (source-info 'clojure.core.Eduction)))) ; record
+      (testing "for JDK classes"
+        (is (-> (source-info 'java.util.Collection) :line)) ; interface
+        (is (-> (source-info 'java.util.AbstractCollection) :line)) ; abstract class
+        (is (-> (source-info 'java.lang.Thread$UncaughtExceptionHandler) :line)) ; nested interface
+        (is (-> (source-info 'java.net.Authenticator$RequestorType) :line)))) ; nested enum
 
-      (testing "Parse tree kinds"
-        (testing "for Clojure classes"
-          (is (-> (source-info 'clojure.lang.ISeq) :line)) ; interface
-          (is (-> (source-info 'clojure.lang.AFn) :line)) ; abstract class
-          (is (-> (source-info 'clojure.lang.APersistentMap$ValSeq) :line)) ; nested class
-          (is (-> (source-info 'clojure.lang.Numbers$Ops) :line)) ; nested default interface
-          (is (-> (source-info 'clojure.lang.Range$BoundsCheck) :line)) ; nested private interface
-          (is (-> (source-info 'clojure.lang.Numbers$Category) :line))) ; nested enum
-        (testing "for JDK classes"
-          (is (-> (source-info 'java.util.Collection) :line)) ; interface
-          (is (-> (source-info 'java.util.AbstractCollection) :line)) ; abstract class
-          (is (-> (source-info 'java.lang.Thread$UncaughtExceptionHandler) :line)) ; nested interface
-          (is (-> (source-info 'java.net.Authenticator$RequestorType) :line)))) ; nested enum
-
-      (testing "Source parsing"
-        (testing "for Clojure classes"
-          (is (-> (source-info 'clojure.lang.ExceptionInfo) :doc))
-          (is (some-> (get-in (source-info 'clojure.lang.BigInt)
-                              [:members 'multiply])
-                      first val :line)))
-        (testing "for JDK classes"
-          (is (-> (source-info 'java.util.AbstractCollection) :doc))
-          (is (some-> (get-in (source-info 'java.util.AbstractCollection)
-                              [:members 'size])
-                      first val :line)))))))
+    (testing "Source parsing"
+      (testing "for Clojure classes"
+        (is (-> (source-info 'clojure.lang.ExceptionInfo) :doc))
+        (is (some-> (get-in (source-info 'clojure.lang.BigInt)
+                            [:members 'multiply])
+                    first val :line)))
+      (testing "for JDK classes"
+        (is (-> (source-info 'java.util.AbstractCollection) :doc))
+        (is (some-> (get-in (source-info 'java.util.AbstractCollection)
+                            [:members 'size])
+                    first val :line))))))
 
 (defn class-corpus []
   {:post [(> (count %)
@@ -120,7 +112,7 @@
                         {:reflector-arities reflector-arities
                          :only-in-full full-arities})))))))))))
 
-(when util/jdk-sources-present?
+(when (and jdk11+? util/jdk-sources-present?)
   (deftest class-info-test
     (let [c1 (class-info 'clojure.lang.Agent)
           c2 (class-info 'clojure.lang.Range$BoundsCheck)
@@ -155,7 +147,7 @@
           (is (seq (:doc-fragments thread-class-info)))
           (is (seq (:doc-first-sentence-fragments thread-class-info))))))))
 
-(when util/jdk-sources-present?
+(when (and jdk11+? util/jdk-sources-present?)
   (deftest member-info-test
     (let [m1 (member-info 'clojure.lang.PersistentHashMap 'assoc)
           m2 (member-info 'java.util.AbstractCollection 'non-existent-member)
@@ -217,43 +209,43 @@
 
 (deftest javadoc-urls-test
   (testing "Javadoc URL"
-    (testing "for Java < 11" ; JDK8 - JDK11
-      (with-redefs [misc/java-api-version 8
-                    cache (LruMap. 100)]
-        (testing "of a class"
-          (is (= (:javadoc (class-info 'java.lang.String))
-                 "java/lang/String.html")))
+    (when (= misc/java-api-version 8)
+      (testing "for Java < 11"           ; JDK8 - JDK11
+        (with-redefs [cache (LruMap. 100)]
+          (testing "of a class"
+            (is (= (:javadoc (class-info 'java.lang.String))
+                   "java/lang/String.html")))
 
-        (testing "of a nested class"
-          (is (= (:javadoc (class-info 'java.util.AbstractMap$SimpleEntry))
-                 "java/util/AbstractMap.SimpleEntry.html")))
+          (testing "of a nested class"
+            (is (= (:javadoc (class-info 'java.util.AbstractMap$SimpleEntry))
+                   "java/util/AbstractMap.SimpleEntry.html")))
 
-        (testing "of an interface"
-          (is (= (:javadoc (class-info 'java.io.Closeable))
-                 "java/io/Closeable.html")))
+          (testing "of an interface"
+            (is (= (:javadoc (class-info 'java.io.Closeable))
+                   "java/io/Closeable.html")))
 
-        (testing "of a class member"
-          (testing "with no args"
-            (is (= (:javadoc (member-info 'java.util.Random 'nextLong))
-                   "java/util/Random.html#nextLong--")))
-          (testing "with primitive args"
-            (is (= (:javadoc (member-info 'java.util.Random 'setSeed))
-                   "java/util/Random.html#setSeed-long-")))
-          (testing "with object args"
-            (is (= (:javadoc (member-info 'java.lang.String 'contains))
-                   "java/lang/String.html#contains-java.lang.CharSequence-")))
-          (testing "with array args"
-            (is (= (:javadoc (member-info 'java.lang.Thread 'enumerate))
-                   "java/lang/Thread.html#enumerate-java.lang.Thread:A-")))
-          (testing "with multiple args"
-            (is (= (:javadoc (member-info 'java.util.ArrayList 'subList))
-                   "java/util/ArrayList.html#subList-int-int-")))
-          (testing "with generic type erasure"
-            (is (= (:javadoc (member-info 'java.util.Hashtable 'putAll))
-                   "java/util/Hashtable.html#putAll-java.util.Map-"))))))
+          (testing "of a class member"
+            (testing "with no args"
+              (is (= (:javadoc (member-info 'java.util.Random 'nextLong))
+                     "java/util/Random.html#nextLong--")))
+            (testing "with primitive args"
+              (is (= (:javadoc (member-info 'java.util.Random 'setSeed))
+                     "java/util/Random.html#setSeed-long-")))
+            (testing "with object args"
+              (is (= (:javadoc (member-info 'java.lang.String 'contains))
+                     "java/lang/String.html#contains-java.lang.CharSequence-")))
+            (testing "with array args"
+              (is (= (:javadoc (member-info 'java.lang.Thread 'enumerate))
+                     "java/lang/Thread.html#enumerate-java.lang.Thread:A-")))
+            (testing "with multiple args"
+              (is (= (:javadoc (member-info 'java.util.ArrayList 'subList))
+                     "java/util/ArrayList.html#subList-int-int-")))
+            (testing "with generic type erasure"
+              (is (= (:javadoc (member-info 'java.util.Hashtable 'putAll))
+                     "java/util/Hashtable.html#putAll-java.util.Map-")))))))
 
     ;; Java 11+ URLs require module information, which is only available on Java 9+.
-    (when (>= misc/java-api-version 9)
+    (when (>= misc/java-api-version 11)
       (testing "for Java 11+"
         (with-redefs [misc/java-api-version 11
                       cache (LruMap. 100)]

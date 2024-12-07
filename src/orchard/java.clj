@@ -7,6 +7,7 @@
    [clojure.reflect :as reflect]
    [clojure.string :as string]
    [orchard.java.resource :as resource]
+   [orchard.java.source-files :as src-files]
    [orchard.misc :as misc]
    [orchard.util.io :as util.io])
   (:import
@@ -90,35 +91,42 @@
 (defn source-info
   "Try to return class info from its parsed source if the source is available.
   Returns nil in case of any errors."
-  [class-symbol]
-  (try
-    (when-let [f @parser-next-source-info]
-      (f class-symbol))
-    (catch Throwable e
-      (reset! parser-exception e)
-      (when (= (System/getProperty "orchard.internal.test-suite-running") "true")
-        (throw e)))))
+  ([class-symbol]
+   ;; Arity for backward compatibility.
+   (let [klass (resolve class-symbol)
+         url (some-> klass src-files/class->source-file-url)]
+     (when url
+       (source-info klass url))))
+  ([klass source-url]
+   (try
+     (when-let [f @parser-next-source-info]
+       (f klass source-url))
+     (catch Throwable e
+       (reset! parser-exception e)
+       (when (= (System/getProperty "orchard.internal.test-suite-running") "true")
+         (throw e))))))
 
 ;; As of Java 11, Javadoc URLs begin with the module name.
 (defn module-name
   "On JDK11+, return module name from the class if present; otherwise return nil"
-  [klass]
-  (when (>= misc/java-api-version 9)
-    ((misc/require-and-resolve 'orchard.java.modules/module-name) klass)))
+  [class-or-sym]
+  (when (>= misc/java-api-version 11)
+    ((misc/require-and-resolve 'orchard.java.modules/module-name) class-or-sym)))
 
 (defn javadoc-url
   "Return the relative `.html` javadoc path and member fragment."
   ([class]
-   (let [maybe-module (when (>= misc/java-api-version 11)
-                        (some-> (module-name class) (str "/")))]
-     (str maybe-module
-          (-> (string/replace (str class) "." "/")
-              (string/replace "$" "."))
-          ".html")))
+   (let [url (str (-> (string/replace (str class) "." "/")
+                      (string/replace "$" "."))
+                  ".html")
+         ;; As of Java 11, Javadoc URLs begin with the module name.
+         module (module-name class)]
+     (cond->> url
+       module (format "%s/%s" module))))
   ([class member argtypes]
    (str (javadoc-url class) "#" member
         (when argtypes
-          (if (<= misc/java-api-version 9) ; argtypes were munged before Java 10
+          (if (< misc/java-api-version 11) ; argtypes were munged before Java 11
             (str "-" (string/join "-" (map #(string/replace % #"\[\]" ":A") argtypes)) "-")
             (str "(" (string/join "," argtypes) ")"))))))
 
@@ -281,14 +289,22 @@
   first by name, and then by argument types to list all overloads."
   [class]
   (when-let [^Class c (try
-                        (Class/forName (str class)) ;; NOTE: we don't pass the `false` argumnt since that complicates the analysis for deftype/defrecord classes.
+                        ;; NOTE: we don't pass the `false` argument since that
+                        ;; complicates the analysis for deftype/defrecord
+                        ;; classes.
+                        (Class/forName (str class))
                         (catch Exception _)
                         (catch NoClassDefFoundError _)
                         (catch LinkageError _))]
     (let [package (some-> c package symbol)
+          relative-source-path (src-files/class->sourcefile-path c)
+          source-file-url (src-files/class->source-file-url c)
           {:keys [members] :as result} (misc/deep-merge (reflect-info (reflection-for c))
-                                                        (when *analyze-sources*
-                                                          (source-info class))
+                                                        (when source-file-url
+                                                          {:file relative-source-path
+                                                           :file-url source-file-url})
+                                                        (when (and *analyze-sources* source-file-url)
+                                                          (source-info c source-file-url))
                                                         {:name       (-> c .getSimpleName symbol)
                                                          :class      (-> c .getName symbol)
                                                          :package    package
@@ -307,6 +323,10 @@
                                                                  (dissoc :non-generic-argtypes)))]))
                                                  arities)]))
                             members)))))
+
+#_(class-info* `Thread)
+#_(class-info* 'clojure.lang.PersistentList)
+#_(class-info* 'mx.cider.orchard.LruMap)
 
 ;;; ## Class Metadata Caching
 ;;
@@ -399,6 +419,7 @@
             (assoc :class class
                    :member member
                    :file (:file c)
+                   :file-url (:file-url c)
                    :annotated-arglists (mapv :annotated-arglists siblings)
                    :arglists (mapv (partial extract-arglist static?)
                                    siblings)
