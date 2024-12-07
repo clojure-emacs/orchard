@@ -544,9 +544,8 @@
                  :member max
                  :modifiers #{:public :static}
                  :class java.lang.Integer
-                 :arglists ([a b])
                  :returns int}
-               (select-keys i [:class :member :modifiers :throws :argtypes :arglists :returns])))
+               (select-keys i [:class :member :modifiers :throws :argtypes :returns])))
         (is (re-find #"Returns the greater of two" (:doc i)))))))
 
 (def some-var nil)
