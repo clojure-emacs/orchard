@@ -1,4 +1,4 @@
-.PHONY: submodules test docs eastwood cljfmt kondo install deploy clean lein-repl repl lint
+.PHONY: submodules test docs eastwood cljfmt kondo install deploy clean lint copy-sources-to-jdk
 .DEFAULT_GOAL := install
 
 # Set bash instead of sh for the @if [[ conditions,
@@ -28,7 +28,8 @@ curl -o $@ https://github.com/clojure-emacs/clojuredocs-export-edn/raw/master/ex
 # distributions.
 
 base-src-jdk8.zip:
-	echo 'Placeholder. We dont parse sources on JDK8.'
+	# echo 'Placeholder. We dont parse sources on JDK8.'
+	touch $@
 
 base-src-jdk11.zip:
 	bash download-jdk-sources.sh https://github.com/adoptium/jdk11u/archive/refs/tags/jdk-11.0.25+9.zip jdk11 $@
@@ -42,15 +43,18 @@ base-src-jdk21.zip:
 base-src-jdk23.zip:
 	bash download-jdk-sources.sh https://github.com/adoptium/jdk23u/archive/refs/tags/jdk-23.0.1+11.zip jdk23 $@
 
+copy-sources-to-jdk: base-src-$(JDK_SRC_VERSION).zip
+	mkdir -p $(JAVA_HOME)/lib && cp base-src-$(JDK_SRC_VERSION).zip $(JAVA_HOME)/lib/src.zip
+
 # Placeholder job for When JDK_SRC_VERSION is unset.
 base-src-.zip:
 	echo 'JDK_SRC_VERSION is unset.'
 
-test: base-src-$(JDK_SRC_VERSION).zip submodules clean
+test: copy-sources-to-jdk submodules clean
 	lein with-profile $(TEST_PROFILES),+$(CLOJURE_VERSION) test
 
 # Sanity check that we don't break if Clojurescript or Spec2 aren't present.
-test-no-extra-deps: base-src-$(JDK_SRC_VERSION).zip
+test-no-extra-deps: copy-sources-to-jdk
 	lein with-profile -user,-dev,+test,+$(CLOJURE_VERSION) test
 
 eastwood:

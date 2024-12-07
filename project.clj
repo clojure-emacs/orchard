@@ -3,29 +3,11 @@
     (if (.contains v ".") 8 (Integer/parseInt v))))
 (def jdk8? (= jdk-version 8))
 
-;; Needed to be added onto classpath to test Java parser functionality.
-(def jdk-sources-archive
-  (delay
-    (when (>= jdk-version 11)
-      (when-let [requested-src-version (System/getenv "JDK_SRC_VERSION")]
-        (let [zip-path (format "base-src-%s.zip" requested-src-version)
-              src-zip (clojure.java.io/file zip-path)]
-          (if (.exists src-zip)
-            (do (println "Found JDK sources:" src-zip)
-                [src-zip])
-            (do (println (format "%s not found. Run `make %s` to properly run all the tests."
-                                 zip-path zip-path))
-                nil)))))))
-
 (def dev-test-common-profile
   {:dependencies '[[org.clojure/java.classpath "1.1.0"]
                    [nubank/matcher-combinators "3.9.1"
                     :exclusions [org.clojure/clojure]]]
-   :source-paths (cond-> ["test-java" "java"]
-                   ;; We only include sources with JDK21 because we only
-                   ;; repackage sources for that JDK. Sources from one JDK are
-                   ;; not compatible with other JDK for our test purposes.
-                   (>= jdk-version 11) (into @jdk-sources-archive))
+   :source-paths ["test-java" "java"]
    :resource-paths ["test-resources"]
    :test-paths ["test"]
    :java-source-paths ["test-java"]})

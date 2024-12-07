@@ -1,9 +1,8 @@
 (ns orchard.test.util
-  (:require [clojure.java.io :as io]))
+  (:require [orchard.java.source-files :as src-files]))
 
 (def jdk-sources-present?
-  (boolean (or (io/resource "java/lang/Thread.java")
-               (io/resource "java.base/java/lang/Thread.java"))))
+  (boolean (src-files/class->source-file-url Thread)))
 
 (defn imported-classes [ns-sym]
   {:post [(seq %)]}
