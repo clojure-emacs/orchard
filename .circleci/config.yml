@@ -88,13 +88,10 @@ jobs:
 
   lint:
     parameters:
-      jdk_version:
-        type: string
-        default: jdk21
       clojure_version:
         type: string
-        default: "1.11"
-    executor: << parameters.jdk_version >>
+        default: "1.12"
+    executor: jdk21
     environment:
       CLOJURE_VERSION: << parameters.clojure_version >>
     steps:
@@ -117,6 +114,7 @@ jobs:
         type: string
       clojure_version:
         type: string
+        default: "1.12"
     executor: << parameters.jdk_version >>
     environment:
       CLOJURE_VERSION: << parameters.clojure_version >>
@@ -184,22 +182,10 @@ workflows:
   ci-test-matrix:
     jobs:
       - test:
-          # Regular tests for all Clojure and JDK versions (except JDK21, see
-          # below). This matrix doesn't perform parser tests because we don't
-          # have JDK sources here.
           matrix:
             alias: "test"
             parameters:
-              jdk_version: [jdk8, jdk11, jdk17, jdk23]
-              clojure_version: ["1.10", "1.11", "1.12"]
-          <<: *run_always
-      - test:
-          # We have source for JDK21, so with this JDK version we also perform
-          # Java parser tests.
-          matrix:
-            alias: "test_with_sources"
-            parameters:
-              jdk_version: [jdk21]
+              jdk_version: [jdk8, jdk11, jdk17, jdk21, jdk23]
               clojure_version: ["1.10", "1.11", "1.12"]
           <<: *run_always
       - test:
@@ -212,21 +198,19 @@ workflows:
               clojure_version: ["1.12"]
               command: ["test-no-extra-deps"]
           <<: *run_always
-      # Eastwood output partly depends on Clojure and JDK version it is run on,
+      # Eastwood output partly depends on JDK version it is run on,
       # so selectively test with several versions of those.
       - eastwood:
           matrix:
             alias: "eastwood"
             parameters:
               jdk_version: [jdk8, jdk23]
-              clojure_version: ["1.11", "1.12"]
           <<: *run_always
       - lint:
           <<: *run_always
       - deploy:
           requires:
             - test
-            - test_with_sources
             - test_no_extra_deps
             - eastwood
             - lint

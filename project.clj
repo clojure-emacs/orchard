@@ -93,9 +93,9 @@
              :cljfmt {:plugins [[lein-cljfmt "0.9.2"]]
                       :cljfmt {:indents {merge-meta [[:inner 0]]}}}
 
-             :clj-kondo {:plugins [[com.github.clj-kondo/lein-clj-kondo "2023.07.13"]]}
+             :clj-kondo {:plugins [[com.github.clj-kondo/lein-clj-kondo "2024.11.14"]]}
 
-             :eastwood  {:plugins  [[jonase/eastwood "1.4.0"]]
+             :eastwood  {:plugins  [[jonase/eastwood "1.4.3"]]
                          :eastwood {:ignored-faults {:unused-ret-vals-in-try {orchard.java {:line 84}
                                                                               orchard.java.parser-next-test true}}
                                     :exclude-namespaces ~(when jdk8?

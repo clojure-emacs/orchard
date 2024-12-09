@@ -1,4 +1,4 @@
-.PHONY: submodules test quick-test docs eastwood cljfmt kondo install deploy clean lein-repl repl lint
+.PHONY: submodules test docs eastwood cljfmt kondo install deploy clean lein-repl repl lint
 .DEFAULT_GOAL := install
 
 # Set bash instead of sh for the @if [[ conditions,
@@ -53,19 +53,13 @@ test: base-src-$(JDK_SRC_VERSION).zip submodules clean
 test-no-extra-deps: base-src-$(JDK_SRC_VERSION).zip
 	lein with-profile -user,-dev,+test,+$(CLOJURE_VERSION) test
 
-quick-test: test
-
 eastwood:
 	lein with-profile $(TEST_PROFILES),+$(CLOJURE_VERSION),+eastwood eastwood
 
 cljfmt:
 	lein with-profile -user,-dev,+$(CLOJURE_VERSION),+cljfmt cljfmt check
 
-# Note that -dev is necessary for not hitting OOM errors in CircleCI
-.make_kondo_prep: project.clj .clj-kondo/config.edn
-	lein with-profile -dev,+test,+clj-kondo clj-kondo --copy-configs --dependencies --parallel --lint '$$classpath' > $@
-
-kondo: .make_kondo_prep clean
+kondo: clean
 	lein with-profile -dev,+test,+clj-kondo clj-kondo
 
 lint: kondo cljfmt eastwood
