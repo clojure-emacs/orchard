@@ -3,7 +3,6 @@
 /checkouts
 /classes
 .javac
-.enrich-classpath-lein-repl
 /gh-pages
 /unzipped-jdk-source
 /target

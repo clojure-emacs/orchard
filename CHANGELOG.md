@@ -2,7 +2,8 @@
 
 ## master (unreleased)
 
-* [#278](https://github.com/clojure-emacs/orchard/pull/301): **BREAKING:** Drop support for Java sources parsing on JDK8.
+* [#301](https://github.com/clojure-emacs/orchard/pull/301): **BREAKING:** Drop support for Java sources parsing on JDK8.
+* [#303](https://github.com/clojure-emacs/orchard/pull/303): Rework Java sources discovery.
 
 ## 0.28.0 (2024-10-31)
 
