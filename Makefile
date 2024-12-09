@@ -9,16 +9,6 @@ HOME=$(shell echo $$HOME)
 CLOJURE_VERSION ?= 1.11
 TEST_PROFILES ?= "-user,-dev,+test,+spec2,+cljs"
 
-# The Lein profiles that will be selected for `lein-repl`.
-# Feel free to upgrade this, or to override it with an env var named LEIN_PROFILES.
-# Expected format: "+dev,+test"
-# Don't use spaces here.
-LEIN_PROFILES ?= "+dev,+test,+1.11,+cljs"
-
-# The enrich-classpath version to be injected.
-# Feel free to upgrade this.
-ENRICH_CLASSPATH_VERSION="1.18.2"
-
 resources/clojuredocs/export.edn:
 curl -o $@ https://github.com/clojure-emacs/clojuredocs-export-edn/raw/master/exports/export.compact.edn
 
@@ -85,32 +75,15 @@ install: clean check-install-env
 clean:
 	lein with-profile -user,-dev clean
 
-submodules: submodules/test-runner/deps.edn
+submodules: submodules/spec-alpha2/deps.edn
 
-submodules/test-runner/deps.edn:
+submodules/spec-alpha2/deps.edn:
 	git submodule init
 	git submodule update
 
 .javac: $(wildcard test-java/orchard/*.clj)
 	lein with-profile +test javac
 	touch $@
-
-# Create and cache a `java` command. project.clj is mandatory; the others are optional but are taken into account for cache recomputation.
-# It's important not to silence with step with @ syntax, so that Enrich progress can be seen as it resolves dependencies.
-.enrich-classpath-lein-repl: .javac submodules Makefile project.clj $(wildcard checkouts/*/project.clj) $(wildcard deps.edn) $(wildcard $(HOME)/.clojure/deps.edn) $(wildcard profiles.clj) $(wildcard $(HOME)/.lein/profiles.clj) $(wildcard $(HOME)/.lein/profiles.d) $(wildcard /etc/leiningen/profiles.clj)
-	bash 'lein' 'update-in' ':plugins' 'conj' "[mx.cider/lein-enrich-classpath \"$(ENRICH_CLASSPATH_VERSION)\"]" '--' 'with-profile' $(LEIN_PROFILES) 'update-in' ':middleware' 'conj' 'cider.enrich-classpath.plugin-v2/middleware' '--' 'repl' | grep " -cp " > $@
-
-# Launches a repl, falling back to vanilla lein repl if something went wrong during classpath calculation.
-lein-repl: .enrich-classpath-lein-repl
-	@if grep --silent " -cp " .enrich-classpath-lein-repl; then \
-		export YOURKIT_SESSION_NAME="$(basename $(PWD))"; \
-		eval "$$(cat .enrich-classpath-lein-repl) --interactive"; \
-	else \
-		echo "Falling back to lein repl... (you can avoid further falling back by removing .enrich-classpath-lein-repl)"; \
-		lein with-profiles $(LEIN_PROFILES) repl; \
-	fi
-
-repl: lein-repl
 
 check-env:
 ifndef CLOJARS_USERNAME
