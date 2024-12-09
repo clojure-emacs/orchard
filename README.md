@@ -89,11 +89,30 @@ Just add `orchard` as a dependency and start hacking.
 Consult the [API documentation](https://cljdoc.org/d/cider/orchard/CURRENT) to get a better idea about the
 functionality that's provided.
 
-#### Using `enrich-classpath` for best results
+## Dealing with Java sources
 
-There are features that Orchard intends to provide (especially, those related to Java interaction) which need to assume a pre-existing initial classpath that already has various desirable items, such as the JDK sources, third-party sources, special jars such as `tools` (for JDK8), a given project's own Java sources... all that is a domain in itself, which is why our [enrich-classpath](https://github.com/clojure-emacs/enrich-classpath) project does it.
+Orchard interacts with Java source files (`.java` files) in several ways:
 
-For getting the most out of Orchard, it is therefore recommended/necessary to use `enrich-classpath`. Please refer to its installation/usage instructions.
+- Locates the Java source files to enable the "jump to definition" functionality.
+  - Also enables "jump to file:line" from the printed stacktrace (a CIDER feature).
+- Parses Java sources to extract additional information about Java interop
+  targets (constructors, methods).
+  - Allows jumping directly to method definition in the Java source file.
+  - Extends the documentation for interop targets with Javadoc comments, exact
+    method argument names.
+
+Currently, Orchard is able to find Java source files in the following places:
+
+- On the classpath.
+- In the `src.zip` archive that comes together with most JDK distributions.
+- For clases that come from Maven-downloaded dependencies — in the special
+  `-sources.jar` artifact that resides next to the main artifact in the `~/.m2`
+  directory. The sources artifact has to be downloaded ahead of time, for
+  example, by [enrich-classpath](https://github.com/clojure-emacs/enrich-classpath).
+
+If the source file can be located, this is usually enough for basic "jump to
+source" functionality. For a more precise "jump to definition" and for
+Javadoc-based documentation, Orcard will attempt to parse the source file.
 
 #### `xref/fn-deps` and `xref/fn-refs` limitations
 
@@ -151,14 +170,10 @@ clients can make of use of the general functionality contained in
 
 ### Development
 
-`enrich-classpath` is important for development of Java-related features in Orchard, since it makes the Java sources available. Certain features parse those Java sources as a source of information.
-
-You can fire up a REPL (and nREPL server) that uses `cider-nrepl` and `enrich-classpath` like so:
-
-```bash
-# or `make lein-repl`
-make repl
-```
+Having JDK sources archive (`$JAVA_HOME/lib/src.zip`) is important for
+development of Java-related features in Orchard. Certain features parse those
+Java sources as a source of information. The archive doesn't need to be on the
+classpath, it just need to exist in the distribution.
 
 You can install Orchard locally like this:
 
