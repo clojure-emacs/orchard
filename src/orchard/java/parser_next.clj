@@ -23,12 +23,16 @@
    [clojure.java.io :as io]
    [clojure.string :as string]
    [orchard.java.modules :as modules]
+   [orchard.java.source-files :as src-files]
    [orchard.misc :as misc])
   (:import
    (com.sun.source.doctree BlockTagTree DocCommentTree EndElementTree
                            LinkTree LiteralTree ParamTree ReturnTree
                            StartElementTree TextTree ThrowsTree)
    (java.io StringWriter)
+   (java.net URL)
+   (java.nio.file Files)
+   (java.nio.file.attribute FileAttribute)
    (java.util.concurrent.locks ReentrantLock)
    (javax.lang.model.element Element ElementKind ExecutableElement TypeElement VariableElement)
    (javax.lang.model.type ArrayType TypeKind TypeVariable)
@@ -74,44 +78,44 @@
 (def ^:private result (atom nil))
 
 (defn- parse-java
-  "Load and parse the resource path, returning a `DocletEnvironment` object."
-  [path module]
-  (when-let [res (io/resource path)]
-    (let [tmpdir   (System/getProperty "java.io.tmpdir")
-          tmpfile  (io/file tmpdir (.getName (io/file path)))
-          ^DocumentationTool compiler (ToolProvider/getSystemDocumentationTool)
-          sources  (-> (.getStandardFileManager compiler nil nil nil)
-                       (.getJavaFileObjectsFromFiles [tmpfile]))
-          doclet   (class (reify Doclet
-                            (init [_this _ _]
-                              (reset! result nil))
+  "Load and parse the resource url, returning a `DocletEnvironment` object."
+  [^URL url, module]
+  (let [fname    (.getName (io/file (.getFile url)))
+        tmpdir   (.toFile (Files/createTempDirectory "tmp" (into-array FileAttribute [])))
+        tmpfile  (io/file tmpdir fname)
+        ^DocumentationTool compiler (ToolProvider/getSystemDocumentationTool)
+        sources  (-> (.getStandardFileManager compiler nil nil nil)
+                     (.getJavaFileObjectsFromFiles [tmpfile]))
+        doclet   (class (reify Doclet
+                          (init [_this _ _]
+                            (reset! result nil))
 
-                            (run [_this root]
-                              (reset! result root)
-                              true)
+                          (run [_this root]
+                            (reset! result root)
+                            true)
 
-                            (getSupportedOptions [_this]
-                              #{})))
-          out      (StringWriter.) ; discard compiler messages
-          opts     (apply conj ["--show-members" "private"
-                                "--show-types" "private"
-                                "--show-packages" "all"
-                                "--show-module-contents" "all"
-                                "-quiet"]
-                          (when module
-                            ["--patch-module" (str module "=" tmpdir)]))
-          slurped (slurp res)
-          _ (spit tmpfile slurped)
-          ^DocumentationTool$DocumentationTask task (.getTask compiler out nil nil doclet opts sources)]
-      (try
-        (if (false? (.call task))
-          (throw (ex-info "Failed to parse Java source code"
-                          {:path path
-                           :module module
-                           :out (str out)}))
-          @result)
-        (finally
-          (.delete tmpfile))))))
+                          (getSupportedOptions [_this]
+                            #{})))
+        out      (StringWriter.)        ; discard compiler messages
+        opts     (apply conj ["--show-members" "private"
+                              "--show-types" "private"
+                              "--show-packages" "all"
+                              "--show-module-contents" "all"
+                              "-quiet"]
+                        (when module
+                          ["--patch-module" (str module "=" tmpdir)]))
+        slurped (slurp url)
+        _ (spit tmpfile slurped)
+        task (.getTask compiler out nil nil doclet opts sources)]
+    (try
+      (if (false? (.call ^DocumentationTool$DocumentationTask task))
+        (throw (ex-info "Failed to parse Java source code"
+                        {:path url
+                         :module module
+                         :out (str out)}))
+        @result)
+      (finally
+        (.delete tmpdir)))))
 
 ;;; ## Java Parse Tree Traversal
 ;;
@@ -147,18 +151,6 @@
 (defn- parse-variable-element [^VariableElement f env]
   {:name (-> f .getSimpleName str symbol)
    :type (-> f .asType (typesym env))})
-
-(defn- source-path
-  "Return the relative `.java` source path for the top-level class."
-  [klass]
-  (when-let [^Class cls (resolve klass)]
-    (let [path (-> (.getName cls)
-                   (string/replace #"\$.*" "")
-                   (string/replace "." "/")
-                   (str ".java"))]
-      (if-let [module (-> cls .getModule .getName)]
-        (str module "/" path)
-        path))))
 
 (let [interfaces [ParamTree ThrowsTree ReturnTree BlockTagTree EndElementTree
                   LinkTree LiteralTree StartElementTree TextTree]]
@@ -429,29 +421,34 @@
 (def ^:private lock (ReentrantLock.))
 
 (defn source-info
-  "If the source for the Java class is available on the classpath, parse it
+  "Given a URL to a Java source file (either on classpath or on disk), parse it
   and return info to supplement reflection. Specifically, this includes source
-  file and position, docstring, and argument name info. Info returned has the
-  same structure as that of `orchard.java/reflect-info`."
-  [klass]
-  {:pre [(symbol? klass)]}
-  (misc/with-lock lock ;; the jdk.javadoc.doclet classes aren't meant for concurrent modification/access.
-    (when-let [path (source-path klass)]
-      (when-let [^DocletEnvironment root (parse-java path (modules/module-name klass))]
-        (try
-          (let [path-resource (io/resource path)]
-            (assoc (some #(when (#{ElementKind/CLASS
-                                   ElementKind/INTERFACE
-                                   ElementKind/ENUM}
-                                 (.getKind ^Element %))
-                            (let [info (parse-info % root)]
-                              (when (= (:class info) klass)
-                                info)))
-                         (.getIncludedElements root))
-                   ;; relative path on the classpath
-                   :file path
-                   ;; Legacy key. Please do not remove - we don't do breaking changes!
-                   :path (.getPath path-resource)
-                   ;; Full URL, e.g. file:.. or jar:...
-                   :resource-url path-resource))
-          (finally (.close (.getJavaFileManager root))))))))
+  file position, docstring, and argument name info. Info returned has the same
+  structure as that of `orchard.java/reflect-info`."
+  ([class-sym]
+   ;; This arity is left for backward compatibility.
+   (let [klass (resolve class-sym)
+         src-url (src-files/class->source-file-url klass)]
+     (when src-url
+       (source-info klass src-url))))
+  ([^Class klass, source-url]
+   {:pre [(class? klass)]}
+   (misc/with-lock lock ;; the jdk.javadoc.doclet classes aren't meant for concurrent modification/access.
+     (let [class-sym (symbol (.getName klass))
+           ^DocletEnvironment root (parse-java source-url (modules/module-name klass))]
+       (when root
+         (try
+           (some #(when (#{ElementKind/CLASS
+                           ElementKind/INTERFACE
+                           ElementKind/ENUM}
+                         (.getKind ^Element %))
+                    (let [info (parse-info % root)]
+                      (when (= (:class info) class-sym)
+                        info)))
+                 (.getIncludedElements root))
+           (finally (.close (.getJavaFileManager root)))))))))
+
+#_(source-info `Thread)
+#_(source-info 'mx.cider.orchard.LruMap)
+#_(source-info 'clojure.lang.PersistentVector)
+#_(source-info 'clojure.core.Eduction)
