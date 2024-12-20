@@ -71,46 +71,80 @@
                 (fn [s]
                   (->> s str (re-find #"(Exception|Error)$")))))))
 
-(deftest map-structure-test
-  (testing "Parsed map structure = reflected map structure"
-    (doseq [class-sym (conj (class-corpus) 'clojure.lang.Compiler)]
-      (let [excluded-cols #{:file :line :column :doc :argnames :non-generic-argtypes :annotated-arglists
-                            :doc-first-sentence-fragments :doc-fragments :doc-block-tags-fragments :argtypes :path :resource-url}
-            extract-keys (fn [x]
-                           (->> excluded-cols
-                                (apply dissoc x)
-                                (keys)
-                                (set)
-                                (sort-by pr-str)))
-            assert-keys= (fn [a b]
-                           (let [aa (extract-keys a)
-                                 bb (extract-keys b)]
-                             (testing (pr-str {:only-in-reflector (remove (set aa) bb)
-                                               :only-in-full (remove (set bb) aa)})
-                               (is (= aa bb)))))
-            full-class-info (class-info* class-sym)
-            reflector-class-info (with-redefs [source-info (constantly nil)]
-                                   (class-info* class-sym))]
-        (testing class-sym
-          (testing "Class info"
-            (assert-keys= full-class-info reflector-class-info))
+(defn extract-method-arities [class-symbol info]
+  {:pre [(symbol? class-symbol)]}
+  (->> (-> info
+           :members
+           vals)
+       (map vals)
+       (reduce into)
+       ;; Only methods/constructors (and not fields) have arglists:
+       (filter (fn [{:keys [returns] n :name}]
+                 (or returns
+                     (= n class-symbol))))))
 
-          (let [full-class-info-members (:members full-class-info)
-                reflector-class-info-members (:members reflector-class-info)]
-            (testing "Members info"
-              (is (seq full-class-info-members))
-              (is (empty? (set/difference (set (keys reflector-class-info-members))
-                                          (set (keys full-class-info-members))))
-                  {:reflector-arities (keys reflector-class-info-members)
-                   :only-in-full (keys full-class-info-members)}))
-            (testing "Arities info"
-              (doseq [k (keys full-class-info-members)]
-                (testing (str "arity " k)
-                  (let [reflector-arities (set (keys (reflector-class-info-members k)))
-                        full-arities (set (keys (full-class-info-members k)))]
-                    (is (empty? (set/difference reflector-arities full-arities))
-                        {:reflector-arities reflector-arities
-                         :only-in-full full-arities})))))))))))
+(when (and jdk11+? util/jdk-sources-present?)
+  (deftest map-structure-test
+    (testing "Parsed map structure = reflected map structure"
+      (doseq [class-sym (conj (class-corpus) 'clojure.lang.Compiler)]
+        (testing class-sym
+          (let [excluded-cols #{:file :line :column :doc :argnames :non-generic-argtypes :annotated-arglists
+                                :doc-first-sentence-fragments :doc-fragments :doc-block-tags-fragments :argtypes :path :resource-url}
+                extract-keys (fn [x]
+                               (->> excluded-cols
+                                    (apply dissoc x)
+                                    (keys)
+                                    (set)
+                                    (sort-by pr-str)))
+                assert-keys= (fn [a b]
+                               (let [aa (extract-keys a)
+                                     bb (extract-keys b)]
+                                 (testing (pr-str {:only-in-reflector (remove (set aa) bb)
+                                                   :only-in-full (remove (set bb) aa)})
+                                   (is (= aa bb)))))
+                full-class-info (class-info* class-sym)
+                reflector-class-info (with-redefs [source-info (constantly nil)]
+                                       (class-info* class-sym))
+                arities (extract-method-arities class-sym full-class-info)
+                all-annotated-arglists (->> arities
+                                            (map (fn [{:keys [annotated-arglists]
+                                                       n :name}]
+                                                   [annotated-arglists
+                                                    (= n class-sym)])))]
+            (testing "Class info"
+              (assert-keys= full-class-info reflector-class-info))
+
+            (let [full-class-info-members (:members full-class-info)
+                  reflector-class-info-members (:members reflector-class-info)]
+              (testing "Members info"
+                (is (seq full-class-info-members))
+                (is (empty? (set/difference (set (keys reflector-class-info-members))
+                                            (set (keys full-class-info-members))))
+                    {:reflector-arities (keys reflector-class-info-members)
+                     :only-in-full (keys full-class-info-members)}))
+              (testing "Arities info"
+                (doseq [k (keys full-class-info-members)]
+                  (testing (str "arity " k)
+                    (let [reflector-arities (set (keys (reflector-class-info-members k)))
+                          full-arities (set (keys (full-class-info-members k)))]
+                      (is (empty? (set/difference reflector-arities full-arities))
+                          {:reflector-arities reflector-arities
+                           :only-in-full full-arities}))))))
+
+            (is (pos? (count all-annotated-arglists)))
+            (doseq [[s constructor?] all-annotated-arglists]
+              (is (string? s))
+              (testing s
+                (if constructor?
+                  (is (re-find #"^\[" s))
+                  (is (re-find #"\^.*\[" s)))
+                ;; Assert that the format doesn't include past bugs:
+                (is (not (string/includes? s "<")))
+                (is (not (string/includes? s "^Object java.lang.Object")))
+                (is (not (string/includes? s "^Object Object")))
+                (is (not (string/includes? s "^function.Function java.util.function.Function")))
+                (is (not (string/includes? s "^java.util.function.Function java.util.function.Function")))
+                (is (not (string/includes? s "java.lang")))))))))))
 
 (when (and jdk11+? util/jdk-sources-present?)
   (deftest class-info-test
@@ -434,18 +468,6 @@
          (subs s (inc (.lastIndexOf s "."))))
     s))
 
-(defn extract-method-arities [class-symbol info]
-  {:pre [(symbol? class-symbol)]}
-  (->> (-> info
-           :members
-           vals)
-       (map vals)
-       (reduce into)
-       ;; Only methods/constructors (and not fields) have arglists:
-       (filter (fn [{:keys [returns] n :name}]
-                 (or returns
-                     (= n class-symbol))))))
-
 (when (and util/jdk-sources-present? jdk11+?)
   (deftest reflect-and-source-info-match
     (testing "reflect and source info structurally match, allowing a meaningful deep-merge of both"
@@ -453,72 +475,29 @@
                               (->> info :members vals (map keys) (reduce into)
                                    (remove nil?) ;; fields
                                    (sort-by pr-str)))]
-        (require 'orchard.java.parser-next)
         (doseq [class-symbol (class-corpus)
-                :let [f @(resolve 'orchard.java.parser-next/source-info)
-                      source-info (f class-symbol)
+                :let [src-info (source-info class-symbol)
                       reflect-info (sut/reflect-info (#'sut/reflection-for (eval class-symbol)))
-                      arities-from-source (extract-arities source-info)
+                      arities-from-source (extract-arities src-info)
                       arities-from-reflector (extract-arities reflect-info)]]
           (testing class-symbol
-            (assert (= (count arities-from-source)
-                       (count arities-from-reflector))
-                    [class-symbol
-                     (count arities-from-source)
-                     (count arities-from-reflector)
-                     :source (sort-by pr-str arities-from-source)
-                     :reflector (sort-by pr-str arities-from-reflector)])
-            (assert (or (pos? (count arities-from-source))
-                        (pos? (count arities-from-reflector)))
-                    class-symbol)
-            (doall (map-indexed (fn [i x]
-                                  (is (= x
-                                         (nth arities-from-reflector i)))
-                                  (doseq [s x
-                                          :let [s (-> s str (string/replace "[]" ""))]]
-                                    (assert (is (or (#{"byte" "short" "int" "long" "float" "double" "char" "boolean" "void"}
-                                                     s)
-                                                    (try
-                                                      (Class/forName s)
-                                                      (catch Exception _
-                                                        (Class/forName (replace-last-dot s)))))
-                                                "The "))))
-                                arities-from-source))
-            (assert (is (= arities-from-source
-                           arities-from-reflector)))
+            (is (pos? (count arities-from-source)))
+            (is (= arities-from-source arities-from-reflector))
+            (doseq [arity arities-from-source]
+              (doseq [s arity
+                      :let [s (-> s str (string/replace "[]" ""))]]
+                (when-not (#{"byte" "short" "int" "long" "float" "double" "char" "boolean" "void"}
+                           s)
+                  (is (try
+                        (Class/forName s)
+                        (catch Exception _
+                          (Class/forName (replace-last-dot s)))))
+                  "The ")))
 
-            (let [arities-data (extract-method-arities class-symbol (misc/deep-merge reflect-info source-info))
-                  all-argnames (map :argnames arities-data)]
-              (assert (pos? (count all-argnames)))
-              (is (not-any? nil? all-argnames)
+            (let [arities-data (extract-method-arities class-symbol (misc/deep-merge reflect-info src-info))]
+              (is (pos? (count arities-data)))
+              (is (every? :argnames arities-data)
                   "The deep-merge went ok"))))))))
-
-(when (and util/jdk-sources-present? jdk11+?)
-  (deftest annotated-arglists-test
-    (doseq [class-symbol (class-corpus)
-            :let [info (sut/class-info* class-symbol)
-                  arities (extract-method-arities class-symbol info)
-                  all-annotated-arglists (->> arities
-                                              (map (fn [{:keys [annotated-arglists]
-                                                         n :name}]
-                                                     [annotated-arglists
-                                                      (= n class-symbol)])))]]
-      (testing class-symbol
-        (assert (pos? (count all-annotated-arglists))
-                class-symbol)
-        (doseq [[s constructor?] all-annotated-arglists]
-          (assert (is (string? s)))
-          (testing s
-            (if constructor?
-              (is (re-find #"^\[" s))
-              (is (re-find #"\^.*\[" s)))
-            ;; Assert that the format doesn't include past bugs:
-            (is (not (string/includes? s "<")))
-            (is (not (string/includes? s "^Object java.lang.Object")))
-            (is (not (string/includes? s "^Object Object")))
-            (is (not (string/includes? s "^function.Function java.util.function.Function")))
-            (is (not (string/includes? s "^java.util.function.Function java.util.function.Function")))
-            (is (not (string/includes? s "java.lang")))))))))
 
 (when (and util/jdk-sources-present? jdk11+?)
   (deftest array-arg-doc-test
