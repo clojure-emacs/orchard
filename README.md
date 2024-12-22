@@ -114,7 +114,46 @@ If the source file can be located, this is usually enough for basic "jump to
 source" functionality. For a more precise "jump to definition" and for
 Javadoc-based documentation, Orcard will attempt to parse the source file.
 
-#### `xref/fn-deps` and `xref/fn-refs` limitations
+## Configuration options
+
+So far, Orchard follows these options, which can be specified as Java system properties
+(which means that end users can choose to set them globally without fiddling with tooling internals):
+
+* `"-Dorchard.initialize-cache.silent=true"` (default: `true`)
+  * if `false`, the _class info cache_ initialization may print warnings (possibly spurious ones).
+
+## Development
+
+Having JDK sources archive (`$JAVA_HOME/lib/src.zip`) is important for
+development of Java-related features in Orchard. Certain features parse those
+Java sources as a source of information. The archive doesn't need to be on the
+classpath, it just need to exist in the distribution.
+
+You can install Orchard locally like this:
+
+```
+PROJECT_VERSION=99.99 make install
+```
+
+For releasing to [Clojars](https://clojars.org/):
+
+```
+git tag -a vX.Y.Z -m "Release X.Y.Z"
+git push --tags
+git push
+```
+
+### Tests and formatting
+
+To run the CI tasks locally use:
+
+``` shell
+make test cljfmt kondo eastwood
+```
+
+## Caveats and Known Issues
+
+### `xref/fn-deps` and `xref/fn-refs` limitations
 
 These functions use a Clojure compiler implementation detail to find references to other function var dependencies.
 
@@ -127,22 +166,6 @@ The important implications from this are:
 * redefining function vars that include lambdas will still return the dependencies of the old plus the new ones
 ([explanation](https://lukas-domagala.de/blog/clojure-compiler-class-cache.html))
 * does not work on AoT compiled functions
-
-## Configuration options
-
-So far, Orchard follows these options, which can be specified as Java system properties
-(which means that end users can choose to set them globally without fiddling with tooling internals):
-
-* `"-Dorchard.initialize-cache.silent=true"` (default: `true`)
-  * if `false`, the _class info cache_ initialization may print warnings (possibly spurious ones).
-
-## Tests and formatting
-
-To run the CI tasks locally use:
-
-``` shell
-make test cljfmt kondo eastwood
-```
 
 ## History
 
@@ -167,27 +190,6 @@ This project is an effort to prevent repeating the mistakes of the
 past - `cider-nrepl` was split into two libraries, so that non-nREPL
 clients can make of use of the general functionality contained in
 `cider-nrepl` (e.g. things like `apropos`, `inspect`, etc).
-
-### Development
-
-Having JDK sources archive (`$JAVA_HOME/lib/src.zip`) is important for
-development of Java-related features in Orchard. Certain features parse those
-Java sources as a source of information. The archive doesn't need to be on the
-classpath, it just need to exist in the distribution.
-
-You can install Orchard locally like this:
-
-```
-PROJECT_VERSION=99.99 make install
-```
-
-For releasing to [Clojars](https://clojars.org/):
-
-```
-git tag -a vX.Y.Z -m "Release X.Y.Z"
-git push --tags
-git push
-```
 
 ## License
 
