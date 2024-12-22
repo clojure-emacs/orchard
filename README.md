@@ -167,6 +167,14 @@ The important implications from this are:
 ([explanation](https://lukas-domagala.de/blog/clojure-compiler-class-cache.html))
 * does not work on AoT compiled functions
 
+### Java 8 support
+
+As noted earlier Java 8 is soft-deprecated in Orchard since version 0.29. Core Orchard funcitonality continues to work on JDK 8, but the following features don't:
+
+- Java sources parsing
+
+We are aware that some people are stuck using Java 8 and we'll keep supporting for as long as we can, but it's no longer a priority for us that every feature works with Java 8.
+
 ## History
 
 Originally [SLIME][] was the most
