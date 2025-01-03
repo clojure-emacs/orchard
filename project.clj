@@ -66,9 +66,7 @@
                                        "does-not-exist.jar"]})
 
              ;; Development tools
-             :dev ~(-> dev-test-common-profile
-                       (update :source-paths conj "dev")
-                       (update :dependencies conj '[org.clojure/tools.namespace "1.5.0"]))
+             :dev ~dev-test-common-profile
 
              :cljfmt {:plugins [[lein-cljfmt "0.9.2"]]
                       :cljfmt {:indents {merge-meta [[:inner 0]]}}}
