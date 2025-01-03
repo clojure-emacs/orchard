@@ -83,7 +83,7 @@ Documentation for the master branch as well as tagged releases are available
 Just add `orchard` as a dependency and start hacking.
 
 ```clojure
-[cider/orchard "0.29.0"]
+[cider/orchard "0.29.1"]
 ```
 
 Consult the [API documentation](https://cljdoc.org/d/cider/orchard/CURRENT) to get a better idea about the
@@ -201,7 +201,7 @@ clients can make of use of the general functionality contained in
 
 ## License
 
-Copyright © 2018-2024 Bozhidar Batsov & contributors
+Copyright © 2018-2025 Bozhidar Batsov & contributors
 
 Distributed under the Eclipse Public License either version 1.0 or (at
 your option) any later version.

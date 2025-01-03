@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+## 0.29.1 (2025-01-03)
+
 * [#307](https://github.com/clojure-emacs/orchard/pull/307): Java: convert backslashes to forward slashes on Windows.
 
 ## 0.29.0 (2024-12-31)
