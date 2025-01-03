@@ -498,23 +498,3 @@
                   (zipmap ["java." "javax." "org.ietf.jgss." "org.omg." "org.w3c.dom." "org.xml.sax"]
                           (repeat (javadoc-base-url misc/java-api-version)))))
       path))
-
-(defn- initialize-cache!* []
-  (doseq [class [`Thread `String 'java.io.File]]
-    (class-info class)))
-
-(def initialize-cache-silently?
-  "Should `#'cache-initializer` refrain from printing to `System/out`?"
-  (= "true" (System/getProperty "orchard.initialize-cache.silent" "true")))
-
-(def ^:private initialize-cache!
-  (cond-> initialize-cache!*
-    initialize-cache-silently? util.io/wrap-silently))
-
-(def cache-initializer
-  "Cache info for a few classes.
-  This also warms up the cache for some underlying, commonly needed classes (e.g. `Object`).
-
-  This is a def for allowing others to wait for this workload to complete (can be useful sometimes)."
-  (delay ;; NOTE: this used to be a `future`, but that can cause odd issues.
-    (initialize-cache!)))

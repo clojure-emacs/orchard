@@ -10,7 +10,7 @@
    [orchard.test-ns]
    [orchard.test.util :as util]))
 
-@java/cache-initializer ;; make tests more deterministic
+(java/source-info 'mx.cider.orchard.LruMap) ;; make tests more deterministic
 
 (def cljs-available?
   (let [sym 'orchard.cljs.test-env

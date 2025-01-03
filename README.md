@@ -114,14 +114,6 @@ If the source file can be located, this is usually enough for basic "jump to
 source" functionality. For a more precise "jump to definition" and for
 Javadoc-based documentation, Orcard will attempt to parse the source file.
 
-## Configuration options
-
-So far, Orchard follows these options, which can be specified as Java system properties
-(which means that end users can choose to set them globally without fiddling with tooling internals):
-
-* `"-Dorchard.initialize-cache.silent=true"` (default: `true`)
-  * if `false`, the _class info cache_ initialization may print warnings (possibly spurious ones).
-
 ## Development
 
 Having JDK sources archive (`$JAVA_HOME/lib/src.zip`) is important for
