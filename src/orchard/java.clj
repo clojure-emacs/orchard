@@ -93,10 +93,15 @@
   Returns nil in case of any errors."
   ([class-symbol]
    ;; Arity for backward compatibility.
-   (let [klass (resolve class-symbol)
-         url (some-> klass src-files/class->source-file-url)]
-     (when url
-       (source-info klass url))))
+   (try
+     (let [klass (resolve class-symbol)
+           url (some-> klass src-files/class->source-file-url)]
+       (when url
+         (source-info klass url)))
+     (catch Throwable e
+       (reset! parser-exception e)
+       (when (= (System/getProperty "orchard.internal.test-suite-running") "true")
+         (throw e)))))
   ([klass source-url]
    (try
      (when-let [f @parser-next-source-info]
