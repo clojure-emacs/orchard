@@ -1,4 +1,4 @@
-.PHONY: submodules test eastwood cljfmt kondo install deploy clean lint copy-sources-to-jdk
+.PHONY: test eastwood cljfmt kondo install deploy clean lint copy-sources-to-jdk
 .DEFAULT_GOAL := install
 
 # Set bash instead of sh for the @if [[ conditions,
@@ -7,7 +7,7 @@ SHELL = /bin/bash -Ee
 
 HOME=$(shell echo $$HOME)
 CLOJURE_VERSION ?= 1.11
-TEST_PROFILES ?= "-user,-dev,+test,+spec2,+cljs"
+TEST_PROFILES ?= "-user,-dev,+test,+cljs"
 
 resources/clojuredocs/export.edn:
 curl -o $@ https://github.com/clojure-emacs/clojuredocs-export-edn/raw/master/exports/export.compact.edn
@@ -40,10 +40,10 @@ copy-sources-to-jdk: base-src-$(JDK_SRC_VERSION).zip
 base-src-.zip:
 	echo 'JDK_SRC_VERSION is unset.'
 
-test: copy-sources-to-jdk submodules clean
+test: copy-sources-to-jdk clean
 	lein with-profile $(TEST_PROFILES),+$(CLOJURE_VERSION) test
 
-# Sanity check that we don't break if Clojurescript or Spec2 aren't present.
+# Sanity check that we don't break if Clojurescript isn't present.
 test-no-extra-deps: copy-sources-to-jdk
 	lein with-profile -user,-dev,+test,+$(CLOJURE_VERSION) test
 
@@ -74,12 +74,6 @@ install: clean check-install-env
 
 clean:
 	lein with-profile -user,-dev clean
-
-submodules: submodules/spec-alpha2/deps.edn
-
-submodules/spec-alpha2/deps.edn:
-	git submodule init
-	git submodule update
 
 .javac: $(wildcard test-java/orchard/*.clj)
 	lein with-profile +test javac

@@ -1,3 +1,0 @@
-[submodule "submodules/spec-alpha2"]
-	path = submodules/spec-alpha2
-	url = https://github.com/clojure/spec-alpha2
