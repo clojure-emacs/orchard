@@ -47,7 +47,8 @@
         "Absent a current namespace, clojure.* should be first."))
 
   (testing "Removal of namespaces with `exclude-regexps`"
-    (is (not-any? #(re-find #".*orchard" (str (namespace (symbol (:name %)))))
+    (is (not-any? #(some-> (namespace (symbol (:name %)))
+                           (string/includes? "orchard"))
                   (find-symbols {:var-query
                                  {:ns-query
                                   {:exclude-regexps
