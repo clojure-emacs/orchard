@@ -2,7 +2,6 @@
   "Info for Java classes and members"
   {:author "Jeff Valk"}
   (:require
-   [clojure.java.io :as io]
    [clojure.java.javadoc :as javadoc]
    [clojure.reflect :as reflect]
    [clojure.string :as string]
@@ -13,7 +12,6 @@
   (:import
    (clojure.lang IPersistentMap)
    (clojure.reflect Constructor Field JavaReflector Method)
-   (java.net JarURLConnection)
    (java.util Map)
    (mx.cider.orchard LruMap)))
 
@@ -21,40 +19,13 @@
 ;;
 ;; Getting class and member info (i.e. type hierarchy, method names,
 ;; argument/return types, etc) is straightforward using reflection; this
-;; provides the basis of Java metadata support. When the source is available
-;; (and a Java parser is too), we supplement reflection with source analysis to
-;; get file, line, and column info, as well as docstrings and argument names.
-
-;;; ## Classpath
+;; provides the basis of Java metadata support. When the source is available (on
+;; JDK11+), we supplement reflection with source analysis to get file, line, and
+;; column info, as well as docstrings and argument names.
 ;;
-;; Java source files are resolved from the classpath. For library dependencies,
-;; this simply entails having the corresponding source artifacts in the
-;; project's dev dependencies. The core Java API classes are the exception to
-;; this, since these are external to lein/maven dependency management. Hence,
-;; JDK sources have to be put onto the classpath explicitly (e.g., manually or
-;; with `enrich-classpath`).
-
-(defn ^:deprecated jdk-find
-  "Search common JDK path configurations for a specified file name and return a
-  URL if found. This accommodates `java.home` being set to either the JDK root
-  (JDK11+) or a JRE directory within this (JDK 8), and searches both the home and
-  `lib` directories."
-  [_]
-  nil)
-
-(def ^:deprecated jdk-sources nil)
-
-(def jdk-tools
-  "The `tools.jar` path, for JDK8 and earlier. If found on the existing
-  classpath, this is the corresponding classpath entry. Otherwise, if available,
-  this is added to the classpath."
-  (when-not (>= misc/java-api-version 9)
-    (some-> (io/resource "com/sun/javadoc/Doc.class")
-            ^JarURLConnection (. openConnection)
-            (. getJarFileURL))))
-
-(defn ^:deprecated ensure-jdk-sources
-  [])
+;; Java source files can be resolved either from the classpath, from JDK
+;; distribution directory, on from Maven source dependencies. See
+;; `orchard.java.source-files` for the details.
 
 ;;; ## Javadoc URLs
 ;;
