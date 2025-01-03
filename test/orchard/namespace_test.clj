@@ -28,7 +28,6 @@
                  orchard.java-test
                  orchard.java.classpath
                  orchard.java.classpath-test
-                 orchard.java.classpath-test.third-party-compat-test
                  orchard.java.resource
                  orchard.java.resource-test
                  orchard.lru-map-test
