@@ -2,6 +2,9 @@
 
 ## master (unreleased)
 
+* [#309](https://github.com/clojure-emacs/orchard/pull/309): **BREAKING:** Remove deprecated functions from orchard.java (`jdk-find`, `jdk-sources`, `jdk-tools`, `ensure-jdk-sources`).
+* [#309](https://github.com/clojure-emacs/orchard/pull/309): **BREAKING:** Remove `orchard.java/cache-initializer`.
+
 ## 0.29.1 (2025-01-03)
 
 * [#307](https://github.com/clojure-emacs/orchard/pull/307): Java: convert backslashes to forward slashes on Windows.
