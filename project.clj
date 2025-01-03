@@ -4,8 +4,7 @@
 (def jdk8? (= jdk-version 8))
 
 (def dev-test-common-profile
-  {:dependencies '[[org.clojure/java.classpath "1.1.0"]
-                   [nubank/matcher-combinators "3.9.1"
+  {:dependencies '[[nubank/matcher-combinators "3.9.1"
                     :exclusions [org.clojure/clojure]]]
    :source-paths ["test-java" "java"]
    :resource-paths ["test-resources"]
