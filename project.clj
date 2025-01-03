@@ -53,8 +53,6 @@
              :cljs {:dependencies [[org.clojure/clojurescript "1.11.132"]]
                     :test-paths ["test-cljs"]}
 
-             :spec2 {:source-paths ["submodules/spec-alpha2/src/main/clojure"]}
-
              :test ~(merge
                      dev-test-common-profile
                      ;; Initialize the cache verbosely, as usual, so that possible issues can be more easily diagnosed:

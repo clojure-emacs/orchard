@@ -62,9 +62,6 @@ commands:
           command: |
             apt-get update && apt-get install -y wget unzip zip
       - run:
-          name: Checkout submodules
-          command: make submodules
-      - run:
           name: Generate Cache Checksum
           command: |
             for file in << parameters.files >>
