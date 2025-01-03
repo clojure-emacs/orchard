@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+* [#307](https://github.com/clojure-emacs/orchard/pull/307): Java: convert backslashes to forward slashes on Windows.
+
 ## 0.29.0 (2024-12-31)
 
 * [#301](https://github.com/clojure-emacs/orchard/pull/301): **BREAKING:** Drop support for Java sources parsing on JDK8.

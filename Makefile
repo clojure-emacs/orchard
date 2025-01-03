@@ -1,4 +1,4 @@
-.PHONY: submodules test docs eastwood cljfmt kondo install deploy clean lint copy-sources-to-jdk
+.PHONY: submodules test eastwood cljfmt kondo install deploy clean lint copy-sources-to-jdk
 .DEFAULT_GOAL := install
 
 # Set bash instead of sh for the @if [[ conditions,
