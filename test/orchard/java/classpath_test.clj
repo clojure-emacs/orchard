@@ -31,7 +31,7 @@
         (is (empty? no-slash))))
     (testing "contains expected entries"
       (let [project-root (System/getProperty "user.dir")
-            directory-with-jar-extension (some #(re-find #"not-a\.jar" (.getPath ^URL %))
+            directory-with-jar-extension (some #(when (re-find #"not-a\.jar" (.getPath ^URL %)) %)
                                                (cp/classpath))]
         (is (some #(= (str (io/file project-root "src")) %)
                   (map trim-trailing-slash (cp/classpath))))

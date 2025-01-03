@@ -6,10 +6,10 @@
 (def dev-test-common-profile
   {:dependencies '[[nubank/matcher-combinators "3.9.1"
                     :exclusions [org.clojure/clojure]]]
-   :source-paths ["test-java" "java"]
+   :source-paths ["test-resources/java"]
    :resource-paths ["test-resources"]
    :test-paths ["test"]
-   :java-source-paths ["test-java"]})
+   :java-source-paths ["test-resources/java"]})
 
 (defproject cider/orchard (or (not-empty (System/getenv "PROJECT_VERSION"))
                               "0.0.0")
@@ -33,7 +33,7 @@
 
   :jvm-opts ["-Dclojure.main.report=stderr"]
 
-  :source-paths ["src"]
+  :source-paths ["src" "java"]
   :test-paths ["test"]
   :java-source-paths ["java"]
 
@@ -61,8 +61,8 @@
                      {:jvm-opts
                       ["-Dorchard.internal.test-suite-running=true"]
                       :resource-paths ["test-resources"
-                                       "test-java-invalid"
-                                       "not-a.jar"
+                                       "test-resources/not-a.jar"
+                                       "test-resources/java-invalid"
                                        "does-not-exist.jar"]})
 
              ;; Development tools
