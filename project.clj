@@ -59,8 +59,7 @@
                      dev-test-common-profile
                      ;; Initialize the cache verbosely, as usual, so that possible issues can be more easily diagnosed:
                      {:jvm-opts
-                      ["-Dorchard.initialize-cache.silent=false"
-                       "-Dorchard.internal.test-suite-running=true"]
+                      ["-Dorchard.internal.test-suite-running=true"]
                       :resource-paths ["test-resources"
                                        "test-java-invalid"
                                        "not-a.jar"
