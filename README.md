@@ -107,8 +107,23 @@ Currently, Orchard is able to find Java source files in the following places:
 - In the `src.zip` archive that comes together with most JDK distributions.
 - For clases that come from Maven-downloaded dependencies — in the special
   `-sources.jar` artifact that resides next to the main artifact in the `~/.m2`
-  directory. The sources artifact has to be downloaded ahead of time, for
-  example, by [enrich-classpath](https://github.com/clojure-emacs/enrich-classpath).
+  directory. The sources artifact has to be downloaded ahead of time.
+
+Orchard provides
+`orchard.java.source-files/download-sources-jar-for-coordinates` function to
+download the sources by invoking a subprocess with one of the supported build
+tools (Clojure CLI or Leiningen). You can call this function at any point of
+time on your own. Alternatively, you can bind the dynamic variable
+`orchard.java.source-files/*download-sources-jar-fn*` to a function which
+accepts a Class object, and Orchard will call this function automatically when
+it fails to locate a Java source file for the class. Usage example:
+
+```clj
+(binding [src-files/*download-sources-jar-fn*
+          #(src-files/download-sources-jar-for-coordinates
+            (src-files/infer-maven-coordinates-for-class %))]
+  (class->source-file-url <class-arg>))
+```
 
 If the source file can be located, this is usually enough for basic "jump to
 source" functionality. For a more precise "jump to definition" and for
