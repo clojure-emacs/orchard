@@ -275,30 +275,31 @@
     (let [package (some-> c package symbol)
           relative-source-path (src-files/class->sourcefile-path c)
           source-file-url (src-files/class->source-file-url c)
-          {:keys [members] :as result} (misc/deep-merge (reflect-info (reflection-for c))
-                                                        (when source-file-url
-                                                          {:file relative-source-path
-                                                           :file-url source-file-url})
-                                                        (when (and *analyze-sources* source-file-url)
-                                                          (source-info c source-file-url))
-                                                        {:name       (-> c .getSimpleName symbol)
-                                                         :class      (-> c .getName symbol)
-                                                         :package    package
-                                                         :super      (-> c .getSuperclass typesym)
-                                                         :interfaces (map typesym (.getInterfaces c))
-                                                         :javadoc    (javadoc-url class)})]
-      (assoc result
-             :members (into {}
-                            (map (fn [[method arities]]
-                                   [method (into {}
-                                                 (map (fn [[k arity]]
-                                                        [k (let [static? (:static (:modifiers arity))]
-                                                             (-> arity
-                                                                 (assoc :annotated-arglists
-                                                                        (extract-annotated-arglists static? package arity))
-                                                                 (dissoc :non-generic-argtypes)))]))
-                                                 arities)]))
-                            members)))))
+          result (misc/deep-merge (reflect-info (reflection-for c))
+                                  (when source-file-url
+                                    {:file relative-source-path
+                                     :file-url source-file-url})
+                                  (when (and *analyze-sources* source-file-url)
+                                    (source-info c source-file-url))
+                                  {:name       (-> c .getSimpleName symbol)
+                                   :class      (-> c .getName symbol)
+                                   :package    package
+                                   :super      (-> c .getSuperclass typesym)
+                                   :interfaces (map typesym (.getInterfaces c))
+                                   :javadoc    (javadoc-url class)})]
+      (update result :members
+              (fn [members]
+                (into {}
+                      (map (fn [[method arities]]
+                             [method (into {}
+                                           (map (fn [[k arity]]
+                                                  [k (let [static? (:static (:modifiers arity))]
+                                                       (-> arity
+                                                           (assoc :annotated-arglists
+                                                                  (extract-annotated-arglists static? package arity))
+                                                           (dissoc :non-generic-argtypes)))]))
+                                           arities)]))
+                      members))))))
 
 #_(class-info* `Thread)
 #_(class-info* 'clojure.lang.PersistentList)
@@ -327,27 +328,21 @@
   overloads."
   [class]
   (let [cached (.get cache class)
-        info (if cached
-               (:info cached)
-               (class-info* class))
-        resource (:resource-url info)
-        last-modified (if (or (nil? resource)
-                              (util.io/url-to-file-within-archive? resource))
-                        0
-                        (util.io/last-modified-time resource))
-        stale (not= last-modified (:last-modified cached))
-        ;; If last-modified in cache mismatches last-modified of the file,
-        ;; regenerate class-info.
-        info (if (and cached stale)
-               (class-info* class)
-               info)]
-    (when (and
-           ;; Only cache full values that possibly were slowly computed.
-           ;; It would be a mistake to cache the fast values, letting them shadow a full computation:
-           *analyze-sources*
-           (or (not cached) stale))
-      (.put cache class {:info info, :last-modified last-modified}))
-    info))
+        file-url (-> cached :info :file-url)
+        last-modified (some-> file-url util.io/last-modified-time)
+        ;; Cache is valid only if the cached info discovered a valid file-url,
+        ;; and the modified date of that file matches the remembered date.
+        cache-valid? (and file-url (= last-modified (:last-modified cached)))]
+    (if cache-valid?
+      (:info cached)
+
+      (let [{:keys [file-url] :as info} (class-info* class)]
+        ;; Only cache value if we discovered the source file and analyzed it.
+        (when (and *analyze-sources* file-url)
+          (.put cache class
+                {:info info
+                 :last-modified (util.io/last-modified-time file-url)}))
+        info))))
 
 ;;; ## Class/Member Info
 ;;
