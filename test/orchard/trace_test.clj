@@ -1,5 +1,6 @@
 (ns orchard.trace-test
   (:require
+   [clojure.edn]
    [clojure.test :as t :refer [is are deftest]]
    [orchard.trace :as sut]
    [orchard.trace-test.sample-ns :as sample-ns]))
@@ -246,3 +247,14 @@
 └─→ 89
 "
          (with-out-str (sample-ns/fibo2 0 1 10)))))
+
+(defn function-that-prints []
+  (let [example-data (into {} (map #(vector % :val) (range 1000)))
+        example-edn (pr-str example-data)]
+    (clojure.edn/read-string example-edn)))
+
+(deftest dont-restrict-printing-within-wrapped-function-test
+  (is (map? (function-that-prints)))
+  (sut/trace-var* 'orchard.trace-test/function-that-prints)
+  (is (map? (function-that-prints))
+      "Map is read back correctly, so it was printed in full."))
