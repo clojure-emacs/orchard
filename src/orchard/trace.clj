@@ -37,24 +37,29 @@
 (defn- trace-indent []
   (string/join (repeat *depth* "│ ")))
 
+(defmacro ^:private limit-printing [& body]
+  ;; Good defaults for orchard.print.
+  `(binding [*print-length* 100
+             *print-level* 5
+             print/*max-atom-length* 150
+             print/*max-total-length* 10000]
+     ~@body))
+
 (defn- trace-fn-call [name f args]
   ;; Good defaults for orchard.print.
-  (binding [*print-length* 100
-            *print-level* 5
-            print/*max-atom-length* 150
-            print/*max-total-length* 10000]
-    (println (trace-indent))
-    (println
-     (funcall-to-string (str name) (map print/print-str args)
-                        (trace-indent)))
-    (let [value (binding [*depth* (inc *depth*)]
-                  (apply f args))
-          res-prefix "└─→ "
-          value-str (print/print-str value)]
-      (binding [*depth* (inc *depth*)]
-        (println (trace-indent)))
-      (println (str (trace-indent) res-prefix value-str))
-      value)))
+  (limit-printing
+   (println (trace-indent))
+   (println
+    (funcall-to-string (str name) (map print/print-str args)
+                       (trace-indent))))
+  (let [value (binding [*depth* (inc *depth*)]
+                (apply f args))
+        res-prefix "└─→ "]
+    (limit-printing
+     (binding [*depth* (inc *depth*)]
+       (println (trace-indent)))
+     (println (str (trace-indent) res-prefix (print/print-str value))))
+    value))
 
 (defn- resolve-var ^clojure.lang.Var [v]
   (if (var? v) v (resolve v)))
