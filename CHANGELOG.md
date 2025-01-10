@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+## 0.30.0 (2025-01-10)
+
 * [#310](https://github.com/clojure-emacs/orchard/pull/310): Java: add functions for downloading 3rd-party Java sources from Maven.
 * [#309](https://github.com/clojure-emacs/orchard/pull/309): **BREAKING:** Remove deprecated functions from orchard.java (`jdk-find`, `jdk-sources`, `jdk-tools`, `ensure-jdk-sources`).
 * [#309](https://github.com/clojure-emacs/orchard/pull/309): **BREAKING:** Remove `orchard.java/cache-initializer`.
