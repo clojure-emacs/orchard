@@ -277,8 +277,13 @@
           source-file-url (src-files/class->source-file-url c)
           result (misc/deep-merge (reflect-info (reflection-for c))
                                   (when source-file-url
-                                    {:file relative-source-path
-                                     :file-url source-file-url})
+                                    ;; :file is the original historic key.
+                                    ;; :file-url was added later and is used by
+                                    ;; CIDER more now. Both have the same value
+                                    ;; for compatibility.
+                                    {:file     source-file-url
+                                     :file-url source-file-url
+                                     :resource relative-source-path})
                                   (when (and *analyze-sources* source-file-url)
                                     (source-info c source-file-url))
                                   {:name       (-> c .getSimpleName symbol)
@@ -289,17 +294,16 @@
                                    :javadoc    (javadoc-url class)})]
       (update result :members
               (fn [members]
-                (into {}
-                      (map (fn [[method arities]]
-                             [method (into {}
-                                           (map (fn [[k arity]]
-                                                  [k (let [static? (:static (:modifiers arity))]
-                                                       (-> arity
-                                                           (assoc :annotated-arglists
-                                                                  (extract-annotated-arglists static? package arity))
-                                                           (dissoc :non-generic-argtypes)))]))
-                                           arities)]))
-                      members))))))
+                (misc/update-vals
+                 (fn [arities]
+                   (misc/update-vals
+                    #(let [static? (:static (:modifiers %))]
+                       (-> %
+                           (assoc :annotated-arglists
+                                  (extract-annotated-arglists static? package %))
+                           (dissoc :non-generic-argtypes)))
+                    arities))
+                 members))))))
 
 #_(class-info* `Thread)
 #_(class-info* 'clojure.lang.PersistentList)

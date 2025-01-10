@@ -1,6 +1,5 @@
 (ns orchard.java-test
   (:require
-   [clojure.java.io :as io]
    [clojure.java.javadoc :as javadoc]
    [clojure.set :as set]
    [clojure.string :as string]
@@ -154,11 +153,9 @@
           thread-class-info (class-info `Thread)]
       (testing "Class"
         (testing "source file"
-          (is (string? (:file c1)))
-          (is (io/resource (:file c1))))
+          (is (misc/url? (:file c1))))
         (testing "source file for nested class"
-          (is (string? (:file c2)))
-          (is (io/resource (:file c2))))
+          (is (misc/url? (:file c2))))
         (testing "member info"
           (is (map? (:members c1)))
           (is (every? map? (vals (:members c1))))
@@ -193,8 +190,7 @@
           m8 (member-info `Thread 'isDaemon)]
       (testing "Member"
         (testing "source file"
-          (is (string? (:file m1)))
-          (is (io/resource (:file m1))))
+          (is (misc/url? (:file m1))))
         (testing "line number"
           (is (number? (:line m1))))
         (testing "arglists"
