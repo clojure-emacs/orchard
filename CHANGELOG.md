@@ -6,6 +6,7 @@
 * [#309](https://github.com/clojure-emacs/orchard/pull/309): **BREAKING:** Remove deprecated functions from orchard.java (`jdk-find`, `jdk-sources`, `jdk-tools`, `ensure-jdk-sources`).
 * [#309](https://github.com/clojure-emacs/orchard/pull/309): **BREAKING:** Remove `orchard.java/cache-initializer`.
 * [#311](https://github.com/clojure-emacs/orchard/pull/311): Trace: fix the printing inside the wrapped function to be truncated.
+* [#313](https://github.com/clojure-emacs/orchard/pull/313): Java: make `class-info*` return absolute paths in `:file` key.
 
 ## 0.29.1 (2025-01-03)
 

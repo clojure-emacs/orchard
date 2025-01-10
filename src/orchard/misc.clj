@@ -81,16 +81,16 @@
 (defn update-vals
   "Update the values of map `m` via the function `f`."
   [f m]
-  (reduce (fn [acc [k v]]
-            (assoc acc k (f v)))
-          {} m))
+  (reduce-kv (fn [acc k v]
+               (assoc acc k (f v)))
+             {} m))
 
 (defn update-keys
   "Update the keys of map `m` via the function `f`."
   [f m]
-  (reduce (fn [acc [k v]]
-            (assoc acc (f k) v))
-          {} m))
+  (reduce-kv (fn [acc k v]
+               (assoc acc (f k) v))
+             {} m))
 
 (defn deep-merge
   "Merge maps recursively. When vals are not maps, last value wins."
