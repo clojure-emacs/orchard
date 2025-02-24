@@ -80,12 +80,12 @@
 (defn- combine-archive-url ^URL [^File archive, relative-filename]
   ;; Even though the JDK stores sources in a zip archive, we still use this
   ;; function that prefixes the URL with jar:. This is fine.
-  (io/as-url (format "jar:file:%s!/%s"
-                     ;; Replace backslashes with forward slashes. Needed on
-                     ;; Windows. Forward slashes would still work there, while
-                     ;; backslashes are forbidden in URLs.
-                     (string/replace archive "\\" "/")
-                     relative-filename)))
+  (try
+    (let [uri-str (str (.toURI archive))]
+      (when (string/starts-with? uri-str "file:")
+        (io/as-url (format "jar:%s!/%s" uri-str relative-filename))))
+    ;; Exceptions might happen when creating an URL, protect users from them.
+    (catch java.net.MalformedURLException _)))
 
 (defn- locate-source-url-in-jdk-sources
   "Try to find the source file for `klass` in sources included with JDK."
