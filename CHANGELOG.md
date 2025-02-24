@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+* [#316](https://github.com/clojure-emacs/orchard/pull/316): Java: properly convert file path that contains spaces or backslashes to URI.
+
 ## 0.30.0 (2025-01-10)
 
 * [#310](https://github.com/clojure-emacs/orchard/pull/310): Java: add functions for downloading 3rd-party Java sources from Maven.
