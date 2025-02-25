@@ -4,12 +4,15 @@
    [clojure.set :as set]
    [clojure.string :as string]
    [clojure.test :refer [deftest is testing]]
+   [matcher-combinators.matchers :as m]
    [orchard.java]
    [orchard.java.classpath :as cp]
    [orchard.misc :as misc])
   (:import
    (java.io File)
    (java.net URL)))
+
+(require 'matcher-combinators.test) ;; for `match?`
 
 ;; Simple normalization for string compare. Classpath URLs have trailing
 ;; slashes; classpath entries specified at JVM launch may or may not.
@@ -33,14 +36,11 @@
       (let [project-root (System/getProperty "user.dir")
             directory-with-jar-extension (some #(when (re-find #"not-a\.jar" (.getPath ^URL %)) %)
                                                (cp/classpath))]
-        (is (some #(= (str (io/file project-root "src")) %)
-                  (map trim-trailing-slash (cp/classpath))))
-        (is (some #(= (str (io/file project-root "test")) %)
-                  (map trim-trailing-slash (cp/classpath))))
-        (is (some #(re-find #".*/clojure-.*\.jar" (.getPath ^URL %))
-                  (cp/classpath)))
-        (is (some #(re-find #".*/clojure-.*-sources\.jar" (.getPath ^URL %))
-                  (cp/classpath)))
+        (is (match? (m/embeds [(trim-trailing-slash (io/as-url (io/file project-root "src")))
+                               (trim-trailing-slash (.getPath (io/as-url (io/file project-root "test"))))
+                               #".*/clojure-.*\.jar"
+                               #".*/clojure-.*-sources\.jar"])
+                    (map trim-trailing-slash (cp/classpath))))
         (testing "Directories with .jar extension"
           (is directory-with-jar-extension "Is present in the classpath")
           (is (-> directory-with-jar-extension io/file .isDirectory)

@@ -7,37 +7,28 @@
   (:import (java.io File)
            (java.net URL)))
 
-(defn- trim-leading-separator
-  "Trim the java.io.File/separator at the beginning of s."
-  [^String s]
-  (if (.startsWith s java.io.File/separator)
-    (subs s 1)
-    s))
-
 (defn project-resources
   "Get a list of classpath resources, i.e. files that are not clojure/java source
   or class files. Only consider classpath entries that are directories, does not
   consider jars."
   []
-  (mapcat
-   (fn [^File directory]
-     (->> directory
-          (file-seq)
-          (filter (memfn ^File isFile))
-          (map (fn [^File file]
-                 (let [relpath (-> file
-                                   (.getPath)
-                                   (.replaceFirst
-                                    (.getPath directory)
-                                    "")
-                                   (trim-leading-separator))]
-                   {:root directory
-                    :file file
-                    :relpath relpath
-                    :url (io/as-url file)})))
-          (remove #(.startsWith ^String (:relpath %) "META-INF/"))
-          (remove #(re-matches #".*\.(clj[cs]?|java|class)" (:relpath %)))))
-   (filter (memfn ^File isDirectory) (map io/as-file (cp/classpath (cp/context-classloader))))))
+  (->> (cp/classpath (cp/context-classloader))
+       (map io/as-file)
+       (filter (memfn ^File isDirectory))
+       (mapcat
+        (fn [^File directory]
+          (->> (file-seq directory)
+               (filter (memfn ^File isFile))
+               (map (fn [^File file]
+                      (let [relpath (.getPath
+                                     (.relativize (.toURI directory)
+                                                  (.toURI file)))]
+                        {:root directory
+                         :file file
+                         :relpath relpath
+                         :url (io/as-url file)})))
+               (remove #(.startsWith ^String (:relpath %) "META-INF/"))
+               (remove #(re-matches #".*\.(clj[cs]?|java|class)" (:relpath %))))))))
 
 (defn resource-full-path ^URL [relative-path]
   (io/resource relative-path (cp/context-classloader)))
