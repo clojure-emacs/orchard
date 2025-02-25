@@ -1,24 +1,15 @@
 (ns orchard.inspect-test
   (:require
-   [clojure.data :as data]
-   [clojure.edn :as edn]
-   [clojure.java.io :as io]
-   [clojure.java.shell :as shell]
-   [clojure.pprint :as pprint]
    [clojure.string :as string]
-   [clojure.test :as t :refer [are deftest is testing]]
+   [clojure.test :refer [deftest is testing]]
    [clojure.walk :as walk]
    [matcher-combinators.matchers :as matchers]
    [orchard.inspect :as inspect]
-   [orchard.meta :as m]
-   [orchard.misc :refer [java-api-version]]
-   [orchard.misc :as misc])
+   [orchard.misc :as misc :refer [java-api-version]])
   (:import
-   (java.io File)
    (orchard.java PrivateFieldClass)))
 
-;; for `match?`
-(require 'matcher-combinators.test)
+(require 'matcher-combinators.test) ;; for `match?`
 
 (defn- demunge-str [s]
   (-> s
@@ -34,65 +25,6 @@
                      (demunge-fn form)
                      form))
                  rendered)))
-
-(defn- render-plain [x]
-  (cond (and (seq? x) (keyword? (first x)))
-        (let [[type value & args] x]
-          (case type
-            :newline "\n"
-            :value (format "%s <%s>" value (string/join "," args))))
-        (seq? x)
-        (string/join "" (map render-plain x))
-        :else (str x)))
-
-(defn- diff-text [expected actual]
-  (when (zero? (:exit (shell/sh "git" "--version")))
-    (let [actual-file (File/createTempFile "actual" ".txt")
-          expected-file (File/createTempFile "expected" ".txt")]
-      (spit actual-file (render-plain actual))
-      (spit expected-file (render-plain expected))
-      (try (let [{:keys [exit out err] :as result}
-                 (shell/sh "git" "diff"
-                           (if (= "dumb" (System/getenv "TERM")) "--no-color" "--color")
-                           "--minimal"
-                           "--no-index"
-                           (str actual-file) (str expected-file))]
-             (case exit
-               (0 1) out
-               (ex-info "Failed to call diff" result)))
-           (finally
-             (io/delete-file actual-file)
-             (io/delete-file expected-file))))))
-
-(defn- test-message [msg expected actual]
-  (let [expected-text (render-plain expected)
-        actual-text (render-plain actual)]
-    (with-out-str
-      (println (format "Inspect test failed" (when msg (str ": " msg))))
-      (let [diff (diff-text expected actual)]
-        (when-not (string/blank? diff)
-          (println)
-          (println "=== Text Diff ===\n")
-          (println diff)))
-      (let [[only-in-expected only-in-actual both] (data/diff expected actual)]
-        (when (seq only-in-expected)
-          (println)
-          (println "=== Expected data diff ===\n")
-          (pprint/pprint only-in-expected))
-        (when (seq only-in-actual)
-          (println)
-          (println "=== Actual data diff ===\n")
-          (pprint/pprint only-in-actual)))
-      (when-not (= expected-text actual-text)
-        (when expected
-          (println)
-          (println "=== Expected text ===\n")
-          (println expected-text))
-        (when actual
-          (println)
-          (println "=== Actual text ===\n")
-          (println actual-text)
-          (println))))))
 
 (def nil-result
   '("nil" (:newline)))

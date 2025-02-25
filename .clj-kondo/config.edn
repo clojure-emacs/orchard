@@ -1,10 +1,9 @@
-{:output            {:progress      true
-                     :exclude-files ["analysis.cljc" "meta.cljc" "inspect_test.clj" "print_test.clj"]}
+{:output            {:progress true}
  :config-in-comment {:linters {:unused-value         {:level :off}
                                :unresolved-namespace {:level :off}}}
  :linters           {:unused-private-var {:level   :warning
                                           :exclude [orchard.query-test/a-private orchard.query-test/docd-fn]}
+                     :unresolved-symbol  {:exclude [(clojure.test/is [match?])]}
                      :consistent-alias   {:aliases {clojure.string string}}
                      ;; Enable this opt-in linter:
-                     :unsorted-required-namespaces
-                     {:level :warning}}}
+                     :unsorted-required-namespaces {:level :warning}}}
