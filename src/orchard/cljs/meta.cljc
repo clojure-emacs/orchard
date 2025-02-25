@@ -31,6 +31,7 @@
           :name (:name meta)
           :ns (:name meta)}))
 
+#_{:clj-kondo/ignore [:unused-binding]}
 (defn normalize-macro-ns
   "Normalize cljs namespace macro metadata to look like clj."
   [env var]
@@ -66,8 +67,8 @@
   "Normalize cljs macro metadata to look like a clj var."
   [meta]
   (-> meta
-      (merge (:meta meta))
-      (merge (select-keys meta [:file :ns :name])) ;; :file is more accurate than in :meta
+      (merge (:meta meta)
+             (select-keys meta [:file :ns :name])) ;; :file is more accurate than in :meta
       (update :arglists unquote-1)))
 
 (defn scoped-var-meta

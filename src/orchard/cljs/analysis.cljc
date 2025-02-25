@@ -92,6 +92,7 @@
   (and (:impls var)
        (not (:protocol-symbol var))))
 
+#_{:clj-kondo/ignore [:unused-private-var]}
 (defn- macro?
   [[_ var]]
   (:macro (meta var)))
@@ -112,6 +113,7 @@
        (filter (every-pred named? public? (complement foreign-protocol?)))
        (into {})))
 
+#_{:clj-kondo/ignore [:unused-binding]}
 (defn public-macros
   "Given a namespace return all the public var analysis maps. Analogous to
   clojure.core/ns-publics but returns var analysis maps not vars.
@@ -218,6 +220,7 @@
                    (get aliases sym-ns sym-ns)))]
         (find-symbol-meta env ns (misc/name-sym sym))))))
 
+#_{:clj-kondo/ignore [:unresolved-namespace]}
 (defn special-meta
   "Given a special symbol, gets the analyzer metadata."
   [_ sym]
