@@ -2,6 +2,7 @@
   (:require
    [clojure.edn]
    [clojure.test :as t :refer [is are deftest]]
+   [orchard.test.util :refer [with-out-str-rn]]
    [orchard.trace :as sut]
    [orchard.trace-test.sample-ns :as sample-ns]))
 
@@ -53,24 +54,24 @@
 
 (deftest basic-test
   (run! sut/trace-var* vars)
-  (is (= expected-trace-result (with-out-str (sample-ns/qux arg1 arg2))))
+  (is (= expected-trace-result (with-out-str-rn (sample-ns/qux arg1 arg2))))
 
   (run! sut/untrace-var* vars)
-  (is (= "" (with-out-str (sample-ns/qux arg1 arg2))))
+  (is (= "" (with-out-str-rn (sample-ns/qux arg1 arg2))))
 
   (run! sut/trace-var* vars)
   (sut/untrace-var* #'sample-ns/foo)
-  (is (= expected-trace-result-no-foo (with-out-str (sample-ns/qux arg1 arg2))))
+  (is (= expected-trace-result-no-foo (with-out-str-rn (sample-ns/qux arg1 arg2))))
 
   (sut/trace-ns* 'orchard.trace-test.sample-ns)
-  (is (= expected-trace-result (with-out-str (sample-ns/qux arg1 arg2))))
+  (is (= expected-trace-result (with-out-str-rn (sample-ns/qux arg1 arg2))))
 
   (sut/untrace-ns* 'orchard.trace-test.sample-ns)
-  (is (= "" (with-out-str (sample-ns/qux arg1 arg2))))
+  (is (= "" (with-out-str-rn (sample-ns/qux arg1 arg2))))
 
   (sut/trace-ns* 'orchard.trace-test.sample-ns)
   (sut/untrace-all)
-  (is (= "" (with-out-str (sample-ns/qux arg1 arg2)))))
+  (is (= "" (with-out-str-rn (sample-ns/qux arg1 arg2)))))
 
 (deftest fibo-test
   (sut/trace-ns* 'orchard.trace-test.sample-ns)
@@ -136,7 +137,7 @@
 │ 
 └─→ 8
 "
-         (with-out-str (sample-ns/fibo 5))))
+         (with-out-str-rn (sample-ns/fibo 5))))
 
   (is (= "
 (orchard.trace-test.sample-ns/fibo 5)
@@ -199,7 +200,7 @@
 │ 
 └─→ 8
 "
-         (with-out-str (sample-ns/fibo 5))))
+         (with-out-str-rn (sample-ns/fibo 5))))
 
   (is (= "
 (orchard.trace-test.sample-ns/fibo2 0 1 10)
@@ -246,7 +247,7 @@
 │ 
 └─→ 89
 "
-         (with-out-str (sample-ns/fibo2 0 1 10)))))
+         (with-out-str-rn (sample-ns/fibo2 0 1 10)))))
 
 (defn function-that-prints []
   (let [example-data (into {} (map #(vector % :val) (range 1000)))
