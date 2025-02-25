@@ -2,6 +2,9 @@ version: 2.1
 
 # Default settings for executors
 
+orbs:
+  win: circleci/windows@5.0.0
+
 defaults: &defaults
   working_directory: ~/repo
   environment:
@@ -80,6 +83,13 @@ commands:
             - base-src-jdk21.zip
             - base-src-jdk23.zip
           key: cache-<< parameters.cache_version >>-{{ checksum "/tmp/clojure_cache_seed" }}
+
+  setup-windows:
+    steps:
+      - checkout
+      - run:
+          name: Install Leiningen
+          command: choco install lein
 
 jobs:
 
@@ -162,6 +172,18 @@ jobs:
                 name: Running tests (make << parameters.command >>)
                 command: make << parameters.command >>
 
+  test_windows:
+    description: |
+      Run tests on MS-Windows using the system's JDK version and Clojure 1.12.
+    executor: win/default
+    steps:
+      - setup-windows
+      - run:
+          name: Running tests on Windows
+          command: |
+            java -version; if(-not $?){exit 9}
+            lein with-profile "-user,-dev,+test,+cljs,+1.12" test; if(-not $?){exit 9}
+
 # The ci-test-matrix does the following:
 #
 # - run tests against the target matrix
@@ -195,6 +217,8 @@ workflows:
               clojure_version: ["1.12"]
               command: ["test-no-extra-deps"]
           <<: *run_always
+      - test_windows:
+          <<: *run_always
       # Eastwood output partly depends on JDK version it is run on,
       # so selectively test with several versions of those.
       - eastwood:
@@ -209,6 +233,7 @@ workflows:
           requires:
             - test
             - test_no_extra_deps
+            - test_windows
             - eastwood
             - lint
           filters:
