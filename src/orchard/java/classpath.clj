@@ -26,10 +26,6 @@
   ([]
    (classloaders (context-classloader))))
 
-(defn ^:deprecated modifiable-classloader
-  ([_])
-  ([]))
-
 (defn set-classloader!
   "Sets the current classloader for the current thread."
   [^ClassLoader loader]
@@ -60,12 +56,6 @@
         (distinct)))
   ([]
    (classpath (context-classloader))))
-
-(defn ^:deprecated add-classpath!
-  "Adds the URL to the classpath and returns it if successful, or nil otherwise,
-  ensuring that a modifiable classloader is available."
-  [_]
-  nil)
 
 ;;; Classpath resources
 

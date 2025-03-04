@@ -2,6 +2,11 @@
 
 ## master (unreleased)
 
+* [#317](https://github.com/clojure-emacs/orchard/pull/317): **BREAKING:** Remove deprecated functions:
+   - `orchard.namespace/read-namespace`, `orchard.namespace/ensure-namespace`
+   - `orchard.meta/var-meta-whitelist`
+   - `orchard.inspect/set-page-size`, `orchard.inspect/set-max-atom-length`, `orchard.inspect/set-max-value-length`, `orchard.inspect/set-max-coll-size`, `orchard.inspect/set-max-nested-depth`
+
 ## 0.30.1 (2025-02-24)
 
 * [#316](https://github.com/clojure-emacs/orchard/pull/316): Java: properly convert file path that contains spaces or backslashes to URI.
