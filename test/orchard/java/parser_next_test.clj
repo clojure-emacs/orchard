@@ -17,11 +17,11 @@
 
 (def source-info
   (when jdk11+?
-    (misc/require-and-resolve 'orchard.java.parser-next/source-info)))
+    (requiring-resolve 'orchard.java.parser-next/source-info)))
 
 (def parse-java
   (when jdk11+?
-    (misc/require-and-resolve 'orchard.java.parser-next/parse-java)))
+    (requiring-resolve 'orchard.java.parser-next/parse-java)))
 
 (when jdk11+?
   (deftest parse-java-test
