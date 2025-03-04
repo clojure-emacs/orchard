@@ -55,12 +55,6 @@
            (every-pred ns-form? ns-form->ns-name)
            ns-form->ns-name))
 
-(defn read-namespace
-  "Returns the namespace name from the first top-level `ns` form in the file."
-  {:deprecated "0.19"}
-  [url]
-  (read-ns-name url))
-
 (defn read-ns-form
   "Returns the first top-level `ns` form in the file."
   {:added "0.19"}
@@ -86,11 +80,6 @@
   [ns]
   (try (doto (symbol ns) require)
        (catch Exception _)))
-
-(defn ^:deprecated ensure-namespace
-  "Renamed - please use `#'ensure-namespace!` instead."
-  [ns]
-  (ensure-namespace! ns))
 
 ;;; Filters
 

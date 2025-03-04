@@ -817,31 +817,6 @@
   []
   (start nil))
 
-(defn ^:deprecated set-page-size
-  "Use `refresh` instead."
-  [inspector new-page-size]
-  (refresh inspector {:page-size new-page-size}))
-
-(defn ^:deprecated set-max-atom-length
-  "Use `refresh` instead."
-  [inspector max-atom-length]
-  (refresh inspector {:max-atom-length max-atom-length}))
-
-(defn ^:deprecated set-max-value-length
-  "Use `refresh` instead."
-  [inspector max-value-length]
-  (refresh inspector {:max-value-length max-value-length}))
-
-(defn ^:deprecated set-max-coll-size
-  "Use `refresh` instead."
-  [inspector max-coll-size]
-  (refresh inspector {:max-coll-size max-coll-size}))
-
-(defn ^:deprecated set-max-nested-depth
-  "Use `refresh` instead."
-  [inspector max-nested-depth]
-  (refresh inspector {:max-nested-depth max-nested-depth}))
-
 (defn inspect-print
   "Get a human readable printout of rendered sequence."
   [x]

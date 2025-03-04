@@ -236,9 +236,6 @@
   [:ns :name :doc :file :arglists :forms :macro :special-form
    :protocol :line :column :static :added :deprecated :resource :style/indent :indent])
 
-(def ^:deprecated var-meta-whitelist
-  var-meta-allowlist)
-
 ;; TODO: Split the responsibility of finding meta and normalizing the meta map.
 (defn var-meta
   "Return a map of metadata for var v.
