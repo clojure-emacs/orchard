@@ -6,6 +6,7 @@
    - `orchard.namespace/read-namespace`, `orchard.namespace/ensure-namespace`
    - `orchard.meta/var-meta-whitelist`
    - `orchard.inspect/set-page-size`, `orchard.inspect/set-max-atom-length`, `orchard.inspect/set-max-value-length`, `orchard.inspect/set-max-coll-size`, `orchard.inspect/set-max-nested-depth`
+* [#318](https://github.com/clojure-emacs/orchard/pull/318): **BREAKING:** Remove no longer used functions: `orchard.misc/lazy-seq?`, `orchard.misc/safe-count`, `orchard.misc/normalize-subclass`, `orchard.misc/remove-type-param`.
 
 ## 0.30.1 (2025-02-24)
 

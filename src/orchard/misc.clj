@@ -158,20 +158,3 @@
     (fn [& args]
       (when resolved-fn
         (apply resolved-fn args)))))
-
-(defn lazy-seq?
-  "Return true if `x` is a lazy seq, otherwise false."
-  [x]
-  (and (seq? x) (not (counted? x))))
-
-(defn safe-count
-  "Call `clojure.core/count` on `x` if it is a collection, but not a lazy seq."
-  [x]
-  (when (and (coll? x) (not (lazy-seq? x)))
-    (count x)))
-
-(defn normalize-subclass [s]
-  (string/replace s "$" "."))
-
-(defn remove-type-param [s]
-  (string/replace s #"<.*>" ""))
