@@ -137,14 +137,12 @@
   [ns]
   (instance? clojure.lang.Namespace ns))
 
-;; Drop this in favor of clojure.core/requiring-resolve at some point?
-
 (defn require-and-resolve
-  "Try to require the namespace and get a var for the symbol, return the var's
-  value if successful, nil if not."
+  "Like `clojure.core/requiring-resolve`, but doesn't throw exception if namespace
+  was not found or failed to load. Also, returns derefs the resolved var."
   {:added "0.5"}
   [sym]
-  (try (require (-> sym namespace symbol))
+  (try (some-> sym requiring-resolve var-get)
        (var-get (resolve sym))
        (catch Exception _)))
 

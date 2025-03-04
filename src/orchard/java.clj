@@ -49,7 +49,7 @@
 (def ^:private parser-next-source-info
   (delay
     (when (>= misc/java-api-version 11)
-      (try (let [f (misc/require-and-resolve 'orchard.java.parser-next/source-info)]
+      (try (let [f (requiring-resolve 'orchard.java.parser-next/source-info)]
              ;; We try parsing LruMap.java as a litmus test for whether the
              ;; parser works. We can be sure that LruMap.java is on the
              ;; classpath because we pack it into the final Orchard jar.
@@ -87,7 +87,7 @@
   "On JDK11+, return module name from the class if present; otherwise return nil"
   [class-or-sym]
   (when (>= misc/java-api-version 11)
-    ((misc/require-and-resolve 'orchard.java.modules/module-name) class-or-sym)))
+    ((requiring-resolve 'orchard.java.modules/module-name) class-or-sym)))
 
 (defn javadoc-url
   "Return the relative `.html` javadoc path and member fragment."
