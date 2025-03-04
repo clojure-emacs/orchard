@@ -383,7 +383,7 @@
                                       (= kind TypeKind/TYPEVAR)
                                       (upper-bound type))
                                 str
-                                misc/remove-type-param
+                                (string/replace #"<.*>" "") ;; Remove generics
                                 symbol)]
                (some-> (or best
                            (type->sym element))

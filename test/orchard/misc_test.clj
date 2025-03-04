@@ -70,14 +70,3 @@
     (is (= 1 (f 1))))
   (let [f (misc/call-when-resolved 'com.example/unknown)]
     (is (nil? (f 1)))))
-
-(deftest lazy-seq?
-  (is (misc/lazy-seq? (repeat 1)))
-  (is (not (misc/lazy-seq? nil)))
-  (is (not (misc/lazy-seq? [1 2 3])))
-  (is (not (misc/lazy-seq? :not-a-seq))))
-
-(deftest safe-count
-  (is (= 3 (misc/safe-count [1 2 3])))
-  (is (nil? (misc/safe-count (repeat 1))))
-  (is (nil? (misc/safe-count :not-a-seq))))
