@@ -334,20 +334,6 @@
 ;; specific query: type information for a class name, and member information for
 ;; a class/member combination.
 
-(defn type-info
-  "For the class or interface symbol, return Java type info. If the type has
-  defined constructors, the line and column returned will be for the first of
-  these for more convenient `jump` navigation."
-  [class]
-  (let [info (class-info class)
-        ctor (->> (get-in info [:members class])
-                  (vals)
-                  (sort-by :line)
-                  (filter :line)
-                  (first))]
-    (merge (dissoc info :members)
-           (select-keys ctor [:line :column]))))
-
 (defn member-info
   "For the class and member symbols, return Java member info. If the member is
   overloaded, line number and javadoc signature are that of the first overload.
@@ -413,42 +399,63 @@
          (keep #(member-info (-> ^Class % .getName symbol) sym))
          (distinct))))
 
-(defn trim-one-dot
-  [s]
-  (string/replace s #"^\.|\.$" ""))
+(defn resolve-constructor
+  "Given namespace and classname symbols, search the first constructor for the
+  given class and return its info."
+  [ns class-sym]
+  (when-let [info (resolve-class ns class-sym)]
+    (when-let [ctors (->> (get-in info [:members (:class info)])
+                          vals
+                          (sort-by :line)
+                          seq)]
+      (merge (dissoc info :members)
+             (select-keys (some #(when (:line %) %) ctors)
+                          [:line :column])))))
 
 (defn resolve-symbol
-  "Return the info map for a Java member symbol.
+  "Return the info map for a Java member symbol. The following Java symbols are
+  supported:
+  - Java classes (`Thread` and `java.lang.Thread`)
+  - Java classes with module prefix (`java.base/java.lang.Thread`)
+  - constructors (`Thread.` and `java.lang.Thread.`)
+  - static members (`Thread/currentThread`)
+  - instance members for classes imported into `ns` (`.start`)
+  - qualified instance members (`Thread/.start`)
+  - Java-style printed member references (`clojure.lang.AFn.run`)
 
-  Constructors and static calls are resolved to the class
-  unambiguously. Instance members are resolved unambiguously if defined
-  by only one imported class. If multiple imported classes have a member
-  by that name, a map of class names to member info is returned as
-  `:candidates`."
+  If multiple imported classes have a non-qualified instance member by that
+  name, a map of class names to member info is returned as `:candidates`."
   [ns sym]
   {:pre [(every? symbol? [ns sym])]}
-  (let [sym (-> sym str trim-one-dot)
-        sym* (symbol sym)
-        [class static-member] (->> (string/split sym #"/" 2)
-                                   (map #(when % (symbol %))))]
-    (if-let [c (resolve-class ns class)]
-      (when static-member
-        (member-info (:class c) static-member))     ; SomeClass/methodCall
-      (when-let [ms (seq (resolve-member ns sym*))] ; methodCall
-        (if (= 1 (count ms))
-          (first ms)
-          {:candidates (zipmap (map :class ms) ms)})))))
+  (let [s (str sym)]
+    (or (when-let [[_ klass] (re-matches #"(.+)\." s)]
+          (resolve-constructor ns (symbol klass)))
 
-(defn resolve-type
-  "Return type info, for a Java class, interface or record."
-  [ns sym]
-  (let [sym (-> sym str trim-one-dot)
-        sym-split (->> (string/split sym #"/" 2)
-                       (map #(when % (symbol %))))]
-    (some->> (first sym-split)
-             (resolve-class ns)
-             :class
-             type-info)))
+        (resolve-class ns (symbol s)) ;; When s is a class symbol
+
+        (when-let [[_ instance-member] (re-matches #"\.(.+)" s)]
+          (let [ms (->> (resolve-member ns (symbol instance-member))
+                        (remove #(:static (:modifiers %))))]
+            (condp = (count ms)
+              0 nil
+              1 (first ms)
+              {:candidates (zipmap (map :class ms) ms)})))
+
+        (when-let [[_ klass member] (re-matches #"(.+)/\.?([^/]+)" s)]
+          (when-let [c (resolve-class ns (symbol klass))]
+            (member-info (:class c) (symbol member))))
+
+        ;; Special case: java classes with module prefix.
+        (when-let [[_ klass] (re-matches #"[^/]+/([^/]+)" s)]
+          (resolve-class ns (symbol klass)))
+
+        ;; Special case: java methods that are printed in stacktraces and look
+        ;; like this: clojure.lang.AFn.run or java.base/java.lang.Thread.run
+        (when-let [[_ klass member] (re-matches #"(?:[^/]+/)?(.+)\.([^\.]+)" s)]
+          (when-let [c (resolve-class ns (symbol klass))]
+            (member-info (:class c) (symbol member)))))))
+
+;;;; Online Javadoc
 
 (defn javadoc-base-url
   "Re-implementation of `clojure.java.javadoc/*core-java-api*` because it doesn't

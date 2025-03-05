@@ -4,7 +4,7 @@
    [clojure.set :as set]
    [clojure.string :as string]
    [clojure.test :refer [are deftest is testing]]
-   [orchard.java :as sut :refer [cache class-info class-info* javadoc-url member-info resolve-class resolve-javadoc-path resolve-member resolve-symbol resolve-type source-info]]
+   [orchard.java :as sut :refer [cache class-info class-info* javadoc-url member-info resolve-class resolve-javadoc-path resolve-member resolve-symbol source-info]]
    [orchard.misc :as misc]
    [orchard.test.util :as util])
   (:import
@@ -406,9 +406,20 @@
 (deftest symbol-resolution-test
   (let [ns (ns-name *ns*)]
     (testing "Symbol resolution"
+      (testing "of classes"
+        (is (= 'java.lang.String (:class (resolve-symbol ns 'String)))))
+      (testing "of deftype in clojure.core"
+        (is (= 'clojure.core.Eduction (:class (resolve-symbol 'clojure.core 'Eduction)))))
+      (testing "of constructors"
+        (is (= 'java.lang.String (:class (resolve-symbol ns 'String.)))))
       (testing "of unambiguous instance members"
         (is (= 'java.lang.SecurityManager
-               (:class (resolve-symbol ns 'checkPackageDefinition)))))
+               (:class (resolve-symbol ns '.checkPackageDefinition))))
+        (is (nil? (:class (resolve-symbol ns '.currentThread)))
+            "Shouldn't resolve since Thread/currentThread is a static method"))
+      (testing "of qualified instance members"
+        (is (= 'java.lang.Thread
+               (:class (resolve-symbol ns 'Thread/.start)))))
       (testing "of candidate instance members"
         (is (every? #(= 'toString (:member %))
                     (vals (:candidates (resolve-symbol ns 'toString))))))
@@ -416,6 +427,21 @@
         (is (= 'forName (:member (resolve-symbol ns 'Class/forName)))))
       (testing "of static fields"
         (is (= 'TYPE (:member (resolve-symbol ns 'Void/TYPE)))))
+      (testing "of java-style printed members"
+        (is (= (resolve-symbol ns 'Thread/.start)
+               (resolve-symbol ns 'Thread.start)))
+        (is (= (resolve-symbol ns 'Thread/currentThread)
+               (resolve-symbol ns 'Thread.currentThread)))
+        (is (= (resolve-symbol ns 'clojure.lang.Compiler$DefExpr/.eval)
+               (resolve-symbol ns 'clojure.lang.Compiler$DefExpr.eval)))
+        (is (= 'clojure.lang.Compiler$DefExpr
+               (:class (resolve-symbol ns 'clojure.lang.Compiler$DefExpr.eval)))))
+      (testing "of module-prefixed classes"
+        (is (= (resolve-symbol ns 'java.lang.Thread)
+               (resolve-symbol ns 'java.base/java.lang.Thread))))
+      (testing "of java-style printed members with module prefix"
+        (is (= (resolve-symbol ns 'java.lang.Thread/.run)
+               (resolve-symbol ns 'java.base/java.lang.Thread.run))))
 
       (testing "equality of qualified vs unqualified"
         (testing "classes"
@@ -429,15 +455,22 @@
                  (resolve-symbol ns 'Class/forName))))
         (testing "static fields"
           (is (= (resolve-symbol ns 'java.lang.Void/TYPE)
-                 (resolve-symbol ns 'Void/TYPE)))))
+                 (resolve-symbol ns 'Void/TYPE))))
+        (testing "qualified members"
+          (is (= (resolve-symbol ns 'Thread/.start)
+                 (resolve-symbol ns 'java.lang.Thread/.start))))
+        (testing "java-style printed members"
+          (is (= (resolve-symbol ns 'Thread.start)
+                 (resolve-symbol ns 'java.lang.Thread.start)))
+          (is (= (resolve-symbol ns 'Thread.currentThread)
+                 (resolve-symbol ns 'java.lang.Thread.currentThread)))))
 
-      (testing "equality of dotted"
-        (testing "constructor syntax"
-          (is (= (resolve-symbol ns 'Exception)
-                 (resolve-symbol ns 'Exception.))))
-        (testing "method syntax"
-          (is (= (resolve-symbol ns 'toString)
-                 (resolve-symbol ns '.toString)))))
+      (when util/jdk-sources-present?
+        (testing "class and constructor resolve to different lines"
+          (is (not= (:line (resolve-symbol ns 'java.lang.String))
+                    (:line (resolve-symbol ns 'java.lang.String.))))
+          (is (not= (:line (resolve-symbol ns 'Thread))
+                    (:line (resolve-symbol ns 'Thread.))))))
 
       (testing "of things that shouldn't resolve"
         (is (nil? (resolve-symbol ns 'MissingUnqualifiedClass)))
@@ -449,13 +482,6 @@
         (is (nil? (resolve-symbol ns 'missingMethod)))
         (is (nil? (resolve-symbol ns '.missingDottedMethod)))
         (is (nil? (resolve-symbol ns '.random.bunch/of$junk)))))))
-
-(deftest type-resolution-test
-  (testing "Type resolution"
-    (testing "of Java classes/constructors in any namespace"
-      (is (= 'java.lang.String (:class (resolve-type (ns-name *ns*) 'String)))))
-    (testing "of deftype in clojure.core"
-      (is (= 'clojure.core.Eduction (:class (resolve-type 'clojure.core 'Eduction)))))))
 
 (defn- replace-last-dot [^String s]
   (if (re-find #"(.*\.)" s)
