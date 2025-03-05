@@ -63,10 +63,8 @@
      (m/special-sym-meta sym)
      ;; it's a var
      (some-> ns (m/resolve-var sym) (m/var-meta var-meta-allowlist))
-     ;; it's a Java constructor/static member symbol
+     ;; it's a Java class/constructor/member symbol
      (some-> ns (java/resolve-symbol sym))
-     ;; it's a Java class/record type symbol
-     (some-> ns (java/resolve-type unqualified-sym))
      ;; it's an alias for another ns
      (some-> ns (m/resolve-aliases) (get sym) (m/ns-meta))
      ;; We use :unqualified-sym *exclusively* here because because our :ns is
@@ -147,11 +145,10 @@
    only applies to `:clj` since for `:cljs` there's no allowlisting)."
   [params]
   (let [params  (normalize-params params)
-        dialect (:dialect params)
-        meta    (cond
-                  (= dialect :clj)  (clj-meta params)
-                  (= dialect :cljs) (cljs-meta params))]
-    meta))
+        dialect (:dialect params)]
+    (cond
+      (= dialect :clj)  (clj-meta params)
+      (= dialect :cljs) (cljs-meta params))))
 
 (defn info
   "Provide the info map for the input ns and sym.
