@@ -191,6 +191,24 @@
                             (select-keys [:ns :name :arglists :doc])
                             (update :ns ns-name))))))))
 
+(let [a 1]
+  (defn- closed-over [] a))
+(closed-over)
+
+(deftest info-munged-printed-var-test
+  (is (= 'str
+         (:name (info/info 'orchard.test-ns 'clojure.core$str))))
+  (is (= 'str
+         (:name (info/info 'orchard.test-ns 'clojure.core$str.invoke))))
+  (is (= 'str
+         (:name (info/info 'orchard.test-ns 'clojure.core$str$fn__12.doInvoke))))
+  (is (= 'str
+         (:name (info/info 'orchard.test-ns (symbol "clojure.core/str/fn--12")))))
+  (is (= 'closed-over
+         (:name (info/info 'orchard.test-ns 'orchard.info_test$eval17939$closed_over__17940.invokeStatic))))
+  (is (= 'closed-over
+         (:name (info/info 'orchard.test-ns (symbol "orchard.info-test/eval17939/closed_over--17940"))))))
+
 (deftest info-unqualified-sym-and-namespace-test
   (testing "Resolution from current namespace"
     (when cljs-available?
@@ -410,13 +428,13 @@
 
       (when cljs-available?
         (testing "- :cljs"
-          (is (= (take 3 (repeat expected))
+          (is (= (repeat 3 expected)
                  (->> params
                       (map #(info/info* (merge @*cljs-params* %)))
                       (map #(select-keys % [:ns :name :arglists :macro :file])))))))
 
       (testing "- :clj"
-        (is (= [{}, expected, {}]
+        (is (= (repeat 3 expected)
                (->> params
                     (map #(info/info* %))
                     (map #(select-keys % [:ns :name :arglists :macro :file])))))))))

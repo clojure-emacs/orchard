@@ -405,9 +405,7 @@
                    (mapv #(parse-info % env))
                    ;; Index by name, argtypes. Args for fields are nil.
                    (group-by :name)
-                   (reduce (fn [ret [n ms]]
-                             (assoc ret n (zipmap (mapv :non-generic-argtypes ms) ms)))
-                           {}))})
+                   (misc/update-vals #(zipmap (mapv :non-generic-argtypes %) %)))})
 
   ExecutableElement ;; => method, constructor
   (parse-info* [o env]
