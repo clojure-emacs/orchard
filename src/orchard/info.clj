@@ -63,6 +63,8 @@
      (m/special-sym-meta sym)
      ;; it's a var
      (some-> ns (m/resolve-var sym) (m/var-meta var-meta-allowlist))
+     ;; it's a munged printed var or .invoke method of a Clojure function
+     (some-> (m/resolve-munged-printed-var sym) (m/var-meta var-meta-allowlist))
      ;; it's a Java class/constructor/member symbol
      (some-> ns (java/resolve-symbol sym))
      ;; it's an alias for another ns

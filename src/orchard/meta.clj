@@ -11,7 +11,7 @@
    [orchard.namespace :as ns]
    [orchard.spec :as spec])
   (:import
-   (clojure.lang LineNumberingPushbackReader Namespace Var)))
+   (clojure.lang Compiler LineNumberingPushbackReader Namespace Var)))
 
 ;;; ## Extractors
 
@@ -118,6 +118,26 @@
   {:pre [(symbol? ns)]}
   (when-let [ns (find-ns ns)]
     (ns-aliases ns)))
+
+(defn resolve-munged-printed-var
+  "Given a printed munged representation of Clojure function, try to resolve it as
+  a var. Supports the following representations:
+  - clojure.core$str
+  - clojure.core$str.invoke
+  - clojure.main$repl$fn__9119.invoke (resolves to named var, not internal lambda)
+  - some.ns$eval1234$closing_over_fn__12345.invoke"
+  [sym]
+  (let [demunged (-> (Compiler/demunge (str sym))
+                     (string/replace #"--\d+" ""))
+        [_ wo-method] (re-matches #"(.+?)(?:\.(?:invoke|invokeStatic|doInvoke))?"
+                                  demunged)
+        [ns-str name-str] (->> (string/split wo-method #"/")
+                               (remove #(re-matches #"eval\d+" %)))
+        ns (some-> ns-str symbol find-ns)
+        resolved (when (and ns name-str)
+                   (ns-resolve ns (symbol name-str)))]
+    (when (var? resolved)
+      resolved)))
 
 ;; Even if things like catch or finally aren't clojure special
 ;; symbols we want to be able to talk about them.
