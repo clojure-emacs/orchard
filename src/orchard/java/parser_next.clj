@@ -97,15 +97,14 @@
                           (getSupportedOptions [_this]
                             #{})))
         out      (StringWriter.)        ; discard compiler messages
-        opts     (apply conj ["--show-members" "private"
-                              "--show-types" "private"
-                              "--show-packages" "all"
-                              "--show-module-contents" "all"
-                              "-quiet"]
-                        (when module
-                          ["--patch-module" (str module "=" tmpdir)]))
-        slurped (slurp url)
-        _ (spit tmpfile slurped)
+        opts     (concat ["--show-members" "private"
+                          "--show-types" "private"
+                          "--show-packages" "all"
+                          "--show-module-contents" "all"
+                          "-quiet"]
+                         (when module
+                           ["--patch-module" (str module "=" tmpdir)]))
+        _ (spit tmpfile (slurp url))
         task (.getTask compiler out nil nil doclet opts sources)]
     (try
       (if (false? (.call ^DocumentationTool$DocumentationTask task))
@@ -428,7 +427,7 @@
   ([class-sym]
    ;; This arity is left for backward compatibility.
    (let [klass (resolve class-sym)
-         src-url (src-files/class->source-file-url klass)]
+         src-url (some-> klass src-files/class->source-file-url)]
      (when src-url
        (source-info klass src-url))))
   ([^Class klass, source-url]

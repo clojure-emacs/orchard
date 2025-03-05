@@ -5,12 +5,9 @@
    [clojure.string :as string :refer [replace-first]]
    [clojure.test :refer [are deftest is testing use-fixtures]]
    [orchard.info :as info]
-   [orchard.java :as java]
    [orchard.misc :as misc]
    [orchard.test-ns]
    [orchard.test.util :as util]))
-
-(java/source-info 'mx.cider.orchard.LruMap) ;; make tests more deterministic
 
 (def cljs-available?
   (let [sym 'orchard.cljs.test-env
