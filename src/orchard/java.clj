@@ -47,40 +47,19 @@
   (atom nil))
 
 (def ^:private parser-next-source-info
-  (delay
-    (when (>= misc/java-api-version 11)
-      (try (let [f (requiring-resolve 'orchard.java.parser-next/source-info)]
-             ;; We try parsing LruMap.java as a litmus test for whether the
-             ;; parser works. We can be sure that LruMap.java is on the
-             ;; classpath because we pack it into the final Orchard jar.
-             (when (f `LruMap)
-               f))
-           (catch Throwable e
-             (reset! parser-exception e)
-             nil)))))
+  (when (>= misc/java-api-version 11)
+    (requiring-resolve 'orchard.java.parser-next/source-info)))
 
 (defn source-info
   "Try to return class info from its parsed source if the source is available.
   Returns nil in case of any errors."
   ([class-symbol]
    ;; Arity for backward compatibility.
-   (try
-     (let [klass (resolve class-symbol)
-           url (some-> klass src-files/class->source-file-url)]
-       (when url
-         (source-info klass url)))
-     (catch Throwable e
-       (reset! parser-exception e)
-       (when (= (System/getProperty "orchard.internal.test-suite-running") "true")
-         (throw e)))))
+   (when parser-next-source-info
+     (parser-next-source-info class-symbol)))
   ([klass source-url]
-   (try
-     (when-let [f @parser-next-source-info]
-       (f klass source-url))
-     (catch Throwable e
-       (reset! parser-exception e)
-       (when (= (System/getProperty "orchard.internal.test-suite-running") "true")
-         (throw e))))))
+   (when parser-next-source-info
+     (parser-next-source-info klass source-url))))
 
 ;; As of Java 11, Javadoc URLs begin with the module name.
 (defn module-name
@@ -285,7 +264,8 @@
                                      :file-url source-file-url
                                      :resource relative-source-path})
                                   (when (and *analyze-sources* source-file-url)
-                                    (source-info c source-file-url))
+                                    (try (source-info c source-file-url)
+                                         (catch Exception _)))
                                   {:name       (-> c .getSimpleName symbol)
                                    :class      (-> c .getName symbol)
                                    :package    package
