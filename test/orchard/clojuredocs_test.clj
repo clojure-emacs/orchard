@@ -13,7 +13,7 @@
   (-> (Instant/now) .getEpochSecond (* 1000)))
 
 (defn- create-dummy-cache-file [& [timestamp]]
-  (let [cache-file (io/file docs/cache-file-name)]
+  (let [cache-file docs/cache-file]
     (.. cache-file
         getParentFile
         mkdirs)
@@ -22,7 +22,7 @@
       (cond-> timestamp (.setLastModified timestamp)))))
 
 (defn- clojuredocs-test-fixture [f]
-  (with-redefs [docs/cache-file-name "target/clojuredocs/export.edn"]
+  (with-redefs [docs/cache-file (io/file "target/clojuredocs/export.edn")]
     (docs/clean-cache!)
     (f)
     (docs/clean-cache!)))
@@ -30,7 +30,7 @@
 (use-fixtures :each clojuredocs-test-fixture)
 
 (deftest load-docs-if-not-loaded!-test
-  (let [cache-file (io/file docs/cache-file-name)]
+  (let [cache-file docs/cache-file]
     (testing "bundled"
       (is (not (.exists cache-file)))
       (is (empty? @docs/cache))
@@ -66,7 +66,7 @@
       (docs/clean-cache!))))
 
 (deftest update-cache!-no-cache-file-test
-  (let [cache-file (io/file docs/cache-file-name)]
+  (let [cache-file docs/cache-file]
     (testing "accessible to remote export.edn"
       (is (not (.exists cache-file)))
       (is (empty? @docs/cache))
@@ -86,7 +86,7 @@
       (is (empty? @docs/cache)))))
 
 (deftest update-cache!-non-existing-url-test
-  (let [cache-file (io/file docs/cache-file-name)]
+  (let [cache-file docs/cache-file]
     (is (not (.exists cache-file)))
     (is (empty? @docs/cache))
     (is (thrown? Exception (docs/update-cache! "file:/not/existing/file.edn")))
@@ -94,7 +94,7 @@
     (is (empty? @docs/cache))))
 
 (deftest update-cache!-existing-cache-file-test
-  (let [cache-file (io/file docs/cache-file-name)]
+  (let [cache-file docs/cache-file]
     (testing "no cached documentation"
       (create-dummy-cache-file now)
       (reset! docs/cache {})
@@ -119,7 +119,7 @@
 (deftest clean-cache!-test
   (create-dummy-cache-file)
   (reset! docs/cache {:dummy "not-empty-dummy-data"})
-  (let [cache-file (io/file docs/cache-file-name)]
+  (let [cache-file docs/cache-file]
     (is (.exists cache-file))
     (is (seq @docs/cache))
     (docs/clean-cache!)
