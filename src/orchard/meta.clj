@@ -3,7 +3,7 @@
   (:require
    [clojure.java.io :as io]
    [clojure.pprint :as pprint]
-   [clojure.string :as string]
+   [clojure.string :as str]
    [clojure.walk :as walk]
    [orchard.cljs.analysis :as cljs-ana]
    [orchard.clojuredocs :as cljdocs]
@@ -21,13 +21,13 @@
   (if (seq? description)
     (str "(" (->> description
                   (map #(with-out-str (pprint/pprint %)))
-                  string/join
-                  string/trim-newline)
+                  str/join
+                  str/trim-newline)
          ")")
     (->>  description
           pprint/pprint
           with-out-str
-          string/trim-newline)))
+          str/trim-newline)))
 
 (defn format-spec
   "Return sequence of [role spec-description] pairs."
@@ -52,7 +52,7 @@
   entry pointing to https://clojure.org/..."
   [info]
   (if-let [url (cond
-                 (not (string/blank? (:url info)))
+                 (not (str/blank? (:url info)))
                  (str "https://clojure.org/" (:url info))
 
                  (:special-form info)
@@ -128,10 +128,10 @@
   - some.ns$eval1234$closing_over_fn__12345.invoke"
   [sym]
   (let [demunged (-> (Compiler/demunge (str sym))
-                     (string/replace #"--\d+" ""))
+                     (str/replace #"--\d+" ""))
         [_ wo-method] (re-matches #"(.+?)(?:\.(?:invoke|invokeStatic|doInvoke))?"
                                   demunged)
-        [ns-str name-str] (->> (string/split wo-method #"/")
+        [ns-str name-str] (->> (str/split wo-method #"/")
                                (remove #(re-matches #"eval\d+" %)))
         ns (some-> ns-str symbol find-ns)
         resolved (when (and ns name-str)
@@ -297,10 +297,10 @@
        "(not documented)"))
   ([n v]
    (->> (-> (var-doc v)
-            (string/replace #"\s+" " ") ; normalize whitespace
-            (string/split #"(?<=\.) ")) ; split sentences
+            (str/replace #"\s+" " ") ; normalize whitespace
+            (str/split #"(?<=\.) ")) ; split sentences
         (take n)
-        (string/join " "))))
+        (str/join " "))))
 
 (defn var-code
   "Find the source of the var `v`.

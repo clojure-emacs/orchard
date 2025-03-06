@@ -4,6 +4,5 @@
  :linters           {:unused-private-var {:level   :warning
                                           :exclude [orchard.query-test/a-private orchard.query-test/docd-fn]}
                      :unresolved-symbol  {:exclude [(clojure.test/is [match?])]}
-                     :consistent-alias   {:aliases {clojure.string string}}
                      ;; Enable this opt-in linter:
                      :unsorted-required-namespaces {:level :warning}}}

@@ -1,5 +1,5 @@
 (ns orchard.test.util
-  (:require clojure.string
+  (:require [clojure.string :as str]
             [orchard.java.source-files :as src-files]))
 
 (def jdk-sources-present?
@@ -14,4 +14,4 @@
   "Like `with-out-str`, but replaces Windows' CR+LF with LF."
   [& body]
   `(let [s# (with-out-str ~@body)]
-     (clojure.string/replace s# "\r\n" "\n")))
+     (str/replace s# "\r\n" "\n")))

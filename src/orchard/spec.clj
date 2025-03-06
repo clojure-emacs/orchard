@@ -2,7 +2,7 @@
   (:require
    [clojure.pprint :as pp]
    [clojure.spec.alpha :as spec1]
-   [clojure.string :as string]
+   [clojure.string :as str]
    [clojure.walk :as walk]
    [orchard.misc :as misc]))
 
@@ -135,7 +135,7 @@
   "Given a string like \"clojure.core/let\" or \":user/email\" returns
   the associated spec in the registry, if there is one."
   [s]
-  (let [[spec-ns spec-kw] (string/split s #"/")]
+  (let [[spec-ns spec-kw] (str/split s #"/")]
     (if (.startsWith ^String spec-ns ":")
       (get-spec (keyword (subs spec-ns 1) spec-kw))
       (get-spec (symbol s)))))

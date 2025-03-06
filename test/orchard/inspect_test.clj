@@ -1,6 +1,6 @@
 (ns orchard.inspect-test
   (:require
-   [clojure.string :as string]
+   [clojure.string :as str]
    [clojure.test :refer [deftest is testing]]
    [clojure.walk :as walk]
    [matcher-combinators.matchers :as matchers]
@@ -13,8 +13,8 @@
 
 (defn- demunge-str [s]
   (-> s
-      (string/replace #"(?i)\$([a-z-]+)__([0-9]+)(@[a-f0-9]+)?" "\\$$1")
-      (string/replace #"(?i)(fn|eval)--([0-9]+)" "$1")))
+      (str/replace #"(?i)\$([a-z-]+)__([0-9]+)(@[a-f0-9]+)?" "\\$$1")
+      (str/replace #"(?i)(fn|eval)--([0-9]+)" "$1")))
 
 (defn- demunge
   ([rendered]

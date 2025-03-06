@@ -4,7 +4,7 @@
   {:author "Oleksandr Yakushev"
    :added "0.29"}
   (:require [clojure.java.io :as io]
-            [clojure.string :as string]
+            [clojure.string :as str]
             [orchard.misc :as misc])
   (:import (java.io File IOException)
            (java.net URL)))
@@ -44,14 +44,14 @@
   (let [module (when (>= misc/java-api-version 11)
                  ((requiring-resolve 'orchard.java.modules/module-name) klass))
         classfile-name (-> (.getName klass)
-                           (string/replace #"\$.*" "") ;; Drop internal class.
-                           (string/replace "." "/")
+                           (str/replace #"\$.*" "") ;; Drop internal class.
+                           (str/replace "." "/")
                            (str ".class"))]
     (cond->> classfile-name
       module (format "%s/%s" module))))
 
 (defn- classfile-path->sourcefile-path [classfile-name]
-  (string/replace classfile-name #"\.class$" ".java"))
+  (str/replace classfile-name #"\.class$" ".java"))
 
 (defn class->sourcefile-path
   "Infer a relative path to a source file of the given `klass`."
@@ -82,7 +82,7 @@
   ;; function that prefixes the URL with jar:. This is fine.
   (try
     (let [uri-str (str (.toURI archive))]
-      (when (string/starts-with? uri-str "file:")
+      (when (str/starts-with? uri-str "file:")
         (io/as-url (format "jar:%s!/%s" uri-str relative-filename))))
     ;; Exceptions might happen when creating an URL, protect users from them.
     (catch java.net.MalformedURLException _)))
@@ -169,7 +169,7 @@
                             (recur (cons name acc) parent)
                             acc)))]
       {:artifact artifact
-       :group    (string/join "." group-parts)
+       :group    (str/join "." group-parts)
        :version  version})))
 
 #_(infer-maven-coordinates-for-class clojure.lang.PersistentVector)
@@ -192,14 +192,14 @@
 #_(download-sources-using-invoke-tool (infer-maven-coordinates-for-class clojure.lang.PersistentVector))
 
 (defn- run-subprocess [args]
-  (println "[Orchard] Invoking subprocess:" (string/join " " args))
+  (println "[Orchard] Invoking subprocess:" (str/join " " args))
   (let [process (.start (ProcessBuilder. ^java.util.List args))]
     (.waitFor process)
     (let [out (slurp (.getInputStream process))
           err (slurp (.getErrorStream process))]
-      (when-not (string/blank? out)
+      (when-not (str/blank? out)
         (println out))
-      (when-not (string/blank? err)
+      (when-not (str/blank? err)
         (binding [*out* *err*] (println err))))
     (.exitValue process)))
 

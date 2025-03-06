@@ -2,7 +2,7 @@
   (:require
    [clojure.java.io :as io]
    [clojure.set :as set]
-   [clojure.string :as string :refer [replace-first]]
+   [clojure.string :as str :refer [replace-first]]
    [clojure.test :refer [are deftest is testing use-fixtures]]
    [orchard.info :as info]
    [orchard.misc :as misc]
@@ -11,7 +11,7 @@
 
 (def cljs-available?
   (let [sym 'orchard.cljs.test-env
-        fname (-> sym str (string/replace "." "/") (string/replace "-" "_") (str ".cljc"))]
+        fname (-> sym str (str/replace "." "/") (str/replace "-" "_") (str ".cljc"))]
     (assert (some-> fname io/resource io/as-file .exists)
             (format "The %s file can be required to begin with" fname))
     (try
@@ -49,7 +49,7 @@
                    :tag function
                    :arglists nil}
                  (select-keys i [:ns :name :record :type :tag :arglists])))
-          (is (string/includes? (:file i) "test_ns"))))))
+          (is (str/includes? (:file i) "test_ns"))))))
 
   (testing "- :clj"
     (let [i (info/info 'orchard.test-ns 'TestType)]
@@ -73,7 +73,7 @@
                    :tag function
                    :arglists nil}
                  (select-keys i [:ns :name :record :type :tag :arglists])))
-          (is (string/includes? (:file i) "test_ns")))))
+          (is (str/includes? (:file i) "test_ns")))))
 
     (testing "- :clj"
       (let [i (info/info 'orchard.test-ns 'TestRecord)]
@@ -133,11 +133,11 @@
         (testing "- :cljs"
           (let [i (info/info* (merge @*cljs-params* params))]
             (is (= expected (select-keys i [:ns :name :arglists])))
-            (is (string/includes? (:file i) "test_ns_dep")))))
+            (is (str/includes? (:file i) "test_ns_dep")))))
       (testing "- :clj"
         (let [i (info/info* params)]
           (is (= expected (select-keys i [:ns :name :arglists])))
-          (is (string/includes? (:file i) "test_ns_dep")))
+          (is (str/includes? (:file i) "test_ns_dep")))
         (testing "`:var-meta-allowlist`"
           (is (= {:ns 'orchard.test-ns-dep
                   :custom/meta 1
@@ -242,7 +242,7 @@
                  :ns orchard.test-ns
                  :name issue-28}
                (select-keys i [:arglists :line :column :ns :name])))
-        (is (string/includes? (:file i) "orchard/test_ns"))))))
+        (is (str/includes? (:file i) "orchard/test_ns"))))))
 
 (deftest info-ns-as-sym-test
   (testing "Only namespace as qualified symbol"
@@ -255,11 +255,11 @@
         (testing "- :cljs"
           (let [i (info/info* (merge @*cljs-params* params))]
             (is (= expected (select-keys i [:line :doc :name :ns])))
-            (is (string/includes? (:file i) "orchard/test_ns")))))
+            (is (str/includes? (:file i) "orchard/test_ns")))))
       (testing "- :clj"
         (let [i (info/info* params)]
           (is (= expected (select-keys i [:line :doc :name :ns])))
-          (is (string/includes? (:file i) "orchard/test_ns"))))
+          (is (str/includes? (:file i) "orchard/test_ns"))))
 
       (when cljs-available?
         ;; is how the info middleware sends it
@@ -271,7 +271,7 @@
                      :name orchard.test-ns
                      :line 1}
                    (select-keys i [:line :name :ns])))
-            (is (string/includes? (:file i) "orchard/test_ns"))))))))
+            (is (str/includes? (:file i) "orchard/test_ns"))))))))
 
 (deftest info-ns-dependency-as-sym-test
   (testing "Namespace dependency"
@@ -284,11 +284,11 @@
         (testing "- :cljs"
           (let [i (info/info* (merge @*cljs-params* params))]
             (is (= expected (select-keys i [:line :doc :name :ns])))
-            (is (string/includes? (:file i) "orchard/test_ns_dep")))))
+            (is (str/includes? (:file i) "orchard/test_ns_dep")))))
       (testing "- :clj"
         (let [i (info/info* params)]
           (is (= expected (select-keys i [:line :doc :name :ns])))
-          (is (string/includes? (:file i) "orchard/test_ns_dep"))))
+          (is (str/includes? (:file i) "orchard/test_ns_dep"))))
 
       ;; is how the info middleware sends it
       (when cljs-available?
@@ -301,7 +301,7 @@
                      :doc "Dependency of test-ns namespace"
                      :line 1}
                    (select-keys i [:line :name :doc :ns])))
-            (is (string/includes? (:file i) "orchard/test_ns_dep"))))))))
+            (is (str/includes? (:file i) "orchard/test_ns_dep"))))))))
 
 (deftest info-cljs-core-namespace-test
   (testing "Namespace itself but cljs.core"
@@ -323,12 +323,12 @@
         (testing "- :cljs"
           (let [i (info/info* (merge @*cljs-params* params))]
             (is (= expected (select-keys i [:ns :name :doc :arglists :line])))
-            (is (string/includes? (:file i) "orchard/test_ns_dep")))))
+            (is (str/includes? (:file i) "orchard/test_ns_dep")))))
 
       (testing "- :clj"
         (let [i (info/info* params)]
           (is (= expected (select-keys i [:ns :name :doc :arglists :line])))
-          (is (string/includes? (:file i) "orchard/test_ns_dep")))))))
+          (is (str/includes? (:file i) "orchard/test_ns_dep")))))))
 
 (deftest info-namespace-macro-test
   (testing "Macro namespace"
@@ -613,13 +613,13 @@
       (let [reply      (info/javadoc-info "java/lang/StringBuilder.html#capacity()")
             url        (:javadoc reply)
             exp-suffix "/docs/api/java/lang/StringBuilder.html#capacity()"]
-        (is (string/includes? url exp-suffix))))
+        (is (str/includes? url exp-suffix))))
 
     (testing "Javadoc 1.8 format"
       (let [reply      (info/javadoc-info "java/lang/StringBuilder.html#capacity--")
             url        (:javadoc reply)
             exp-suffix "/docs/api/java/lang/StringBuilder.html#capacity--"]
-        (is (string/includes? url exp-suffix)))))
+        (is (str/includes? url exp-suffix)))))
 
   (testing "Get general URL for a clojure javadoc"
     (let [reply    (info/javadoc-info "clojure/java/io.clj")
@@ -739,7 +739,7 @@
                                          info/info*
                                          (select-keys [:arglists :doc])
                                          (update :doc (fn [s]
-                                                        (some-> s string/split-lines first))))))
+                                                        (some-> s str/split-lines first))))))
                               true)
         'indirect1 '{:arglists ([] [a b c]), :doc "Docstring"}
         'indirect2 '{:arglists ([s match replacement]),

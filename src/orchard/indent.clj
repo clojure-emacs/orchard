@@ -2,7 +2,7 @@
   "`:style/indent` inference."
   (:require
    [clojure.set :as set]
-   [clojure.string :as string])
+   [clojure.string :as str])
   (:import
    (java.util List)))
 
@@ -115,7 +115,7 @@
                                                                            (find clojure-mode-indents-fuzzy macro-name)
                                                                            (->> clojure-mode-indents-fuzzy
                                                                                 (some (fn [[k _v :as entry]]
-                                                                                        (when (string/includes? macro-name k)
+                                                                                        (when (str/includes? macro-name k)
                                                                                           entry)))))
         one-arglist? (-> arglists count (= 1))
         def-like? (re-find #"^def" macro-name)

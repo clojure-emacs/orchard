@@ -1,6 +1,6 @@
 (ns ^{:doc "Dependency of test-ns namespace"} orchard.test-ns-dep
   (:require
-   [clojure.string :as string]))
+   [clojure.string :as str]))
 
 (defn foo-in-dep
   {:custom/meta 1}
@@ -9,4 +9,4 @@
 
 (def x ::dep-namespaced-keyword)
 
-(def referred string/trim)
+(def referred str/trim)

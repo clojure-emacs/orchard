@@ -10,7 +10,7 @@
   Pretty wild, right?"
   (:require
    [clojure.core.protocols :refer [datafy nav]]
-   [clojure.string :as string]
+   [clojure.string :as str]
    [orchard.print :as print])
   (:import
    (java.lang.reflect Constructor Field Method Modifier)
@@ -556,7 +556,7 @@
 (defn- render-indent-str-lines [inspector s]
   (reduce #(-> (render-indent %1 (str %2))
                (render-ln))
-          inspector (string/split-lines s)))
+          inspector (str/split-lines s)))
 
 (defmethod inspect :string [inspector ^java.lang.String obj]
   (-> (render-class-name inspector obj)
@@ -581,13 +581,13 @@
   ;; Ugly as hell, but easier than reimplementing all custom printing that
   ;; java.lang.reflect does.
   (as-> member-string s
-    (string/replace s #"[\w\.]+\.(\w+\()" "$1") ;; remove class from method name
-    (string/replace s #"[\w\.]+\.(\w+)$" "$1") ;; remove class from field name
+    (str/replace s #"[\w\.]+\.(\w+\()" "$1") ;; remove class from method name
+    (str/replace s #"[\w\.]+\.(\w+)$" "$1") ;; remove class from field name
     ;; Class might not have a canonical name, as per `.getCanonicalName` doc.
     (if-let [canonical (.getCanonicalName class)]
-      (string/replace s canonical (.getSimpleName class))
+      (str/replace s canonical (.getSimpleName class))
       s)
-    (string/replace s #"java.lang.([A-Z])" "$1")))
+    (str/replace s #"java.lang.([A-Z])" "$1")))
 
 (defmethod inspect :default [inspector obj]
   (let [class-chain (loop [c (class obj), res ()]
@@ -763,7 +763,7 @@
     (if (and (seq path) (not-any? #(= % '<unknown>) path))
       (-> (render-section-header inspector "Path")
           (indent)
-          (render-indent (string/join " " (:path inspector)))
+          (render-indent (str/join " " (:path inspector)))
           (unindent))
       inspector)))
 
