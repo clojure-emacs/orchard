@@ -5,10 +5,10 @@
   (:require
    [clojure.edn :as edn]
    [clojure.java.io :as io]
-   [clojure.string :as string]
    [orchard.misc :refer [with-lock]]
    [orchard.util.os :as os])
   (:import
+   (java.io File)
    (java.net URI)
    (javax.net.ssl HttpsURLConnection)
    (java.util.concurrent.locks ReentrantLock)))
@@ -22,11 +22,8 @@
   (ReentrantLock.))
 (def default-edn-file-url
   "https://github.com/clojure-emacs/clojuredocs-export-edn/raw/master/exports/export.compact.edn")
-(def cache-file-name
-  (string/join os/file-separator [(os/cache-dir)
-                                  "orchard"
-                                  "clojuredocs"
-                                  "export.edn"]))
+(def ^File cache-file
+  (io/file (os/cache-dir) "orchard" "clojuredocs" "export.edn"))
 
 (def http-timeout
   "Timeout in milliseconds for connecting to a URL and reading the content."
@@ -50,13 +47,13 @@
     (slurp resource)))
 
 (defn- write-cache-file! [url]
-  (.. (io/file cache-file-name)
+  (.. cache-file
       getParentFile
       mkdirs)
-  (spit cache-file-name (slurp-with-timeout url http-timeout)))
+  (spit cache-file (slurp-with-timeout url http-timeout)))
 
-(defn- load-cache-file! [cache-file]
-  (reset! cache (-> cache-file
+(defn- load-cache-file! [file]
+  (reset! cache (-> file
                     slurp
                     edn/read-string))
   true)
@@ -69,11 +66,10 @@
   ;; Prevent multiple threads from trying to load the cache simultaneously.
   (with-lock lock
     (when (empty? @cache)
-      (let [cache-file (io/file cache-file-name)]
-        (load-cache-file!
-         (if (.exists cache-file)
-           cache-file
-           (io/resource "clojuredocs/export.edn")))))))
+      (load-cache-file!
+       (if (.exists cache-file)
+         cache-file
+         (io/resource "clojuredocs/export.edn"))))))
 
 (defn update-cache!
   "Load exported docs file from ClojureDocs, and store it as a cache.
@@ -83,16 +79,15 @@
   ([]
    (update-cache! default-edn-file-url))
   ([export-edn-url]
-   (let [cache-file (io/file cache-file-name)]
-     (with-lock lock
-       (write-cache-file! export-edn-url)
-       (load-cache-file! cache-file)))))
+   (with-lock lock
+     (write-cache-file! export-edn-url)
+     (load-cache-file! cache-file))))
 
 (defn clean-cache!
   "Clean the cached ClojureDocs export file and the in memory cache."
   {:added "0.5"}
   []
-  (.delete (io/file cache-file-name))
+  (.delete cache-file)
   (reset! cache {}))
 
 (defn get-doc
