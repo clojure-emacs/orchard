@@ -1,7 +1,7 @@
 (ns orchard.namespace-test
   (:require
    [clojure.java.io :as io]
-   [clojure.string :as string]
+   [clojure.string :as str]
    [clojure.test :refer [are deftest is testing]]
    [orchard.misc :as misc]
    [orchard.namespace :as sut]))
@@ -61,7 +61,7 @@
                   '(ns orchard.namespace-test
                      (:require
                       [clojure.java.io :as io]
-                      [clojure.string :as string]
+                      [clojure.string :as str]
                       [clojure.test :refer [are deftest is testing]]
                       [orchard.misc :as misc]
                       [orchard.namespace :as sut]))])))
@@ -72,7 +72,7 @@
     (doseq [s corpus]
       (is (symbol? s))
       ;; Exclude classes that are JDK-dependent.
-      (when-not (some #(string/starts-with? (name s) %)
+      (when-not (some #(str/starts-with? (name s) %)
                       ["com.sun.tools.javadoc."
                        "com.sun.javadoc."
                        "jdk.javadoc.doclet."
@@ -95,8 +95,8 @@
   tests that follows"
   [url]
   (let [string (str url)
-        upper (string/upper-case string)
-        lower (string/lower-case string)]
+        upper (str/upper-case string)
+        lower (str/lower-case string)]
     (io/as-url
      (if (= string lower) upper lower))))
 

@@ -21,7 +21,7 @@
   {:added "0.15.0"}
   (:require
    [clojure.java.io :as io]
-   [clojure.string :as string]
+   [clojure.string :as str]
    [orchard.java.modules :as modules]
    [orchard.java.source-files :as src-files]
    [orchard.misc :as misc])
@@ -126,12 +126,12 @@
   "Using parse tree info, return the type's name equivalently to the `typesym`
   function in `orchard.java`."
   ([n ^DocletEnvironment env]
-   (let [t (string/replace (str n) #"<.*>" "") ; drop generics
+   (let [t (str/replace (str n) #"<.*>" "") ; drop generics
          util (.getElementUtils env)]
      (if-let [c (.getTypeElement util t)]
        (let [pkg (str (.getPackageOf util c) ".")
-             cls (-> (string/replace-first t pkg "")
-                     (string/replace "." "$"))]
+             cls (-> (str/replace-first t pkg "")
+                     (str/replace "." "$"))]
          (symbol (str pkg cls))) ; classes
        (symbol t)))))            ; primitives
 
@@ -294,15 +294,15 @@
           xs))
 
 (defn remove-left-margin [s]
-  (->> (string/split s #"\r?\n" -1) ;; split-lines without losing trailing newlines
+  (->> (str/split s #"\r?\n" -1) ;; split-lines without losing trailing newlines
        (map-indexed (fn [i s]
                       (let [first? (zero? i)
-                            blank? (string/blank? s)]
+                            blank? (str/blank? s)]
                         (cond-> s
                           (and (not first?)
                                (not blank?))
-                          (string/replace #"^ +" "")))))
-       (string/join "\n")))
+                          (str/replace #"^ +" "")))))
+       (str/join "\n")))
 
 (defn cleanup-whitespace [fragments]
   (into []
@@ -311,13 +311,13 @@
                    :as x}]
                (let [text? (= content-type "text")]
                  (assoc x :content (-> content
-                                       (string/replace #"^  +" " ")
-                                       (string/replace #"  +$" " ")
-                                       (string/replace #"\s*\n+\s*\n+\s*" "\n\n")
-                                       (string/replace #"\n +$" "\n")
+                                       (str/replace #"^  +" " ")
+                                       (str/replace #"  +$" " ")
+                                       (str/replace #"\s*\n+\s*\n+\s*" "\n\n")
+                                       (str/replace #"\n +$" "\n")
                                        (cond-> text? remove-left-margin
-                                               text? (string/replace #"^ +\." ".")
-                                               text? (string/replace #"^ +," ",")))))))
+                                               text? (str/replace #"^ +\." ".")
+                                               text? (str/replace #"^ +," ",")))))))
         fragments))
 
 (defn docstring
@@ -345,7 +345,7 @@
                                                             :found-closing-tags-types
                                                             found-closing-tags-types))
                                 :result)]
-    {:doc (some-> env .getElementUtils (.getDocComment e) string/trim)
+    {:doc (some-> env .getElementUtils (.getDocComment e) str/trim)
      :doc-first-sentence-fragments (-> first-sentence coalesce cleanup-whitespace)
      :doc-fragments (-> full-body coalesce cleanup-whitespace)
      :doc-block-tags-fragments (-> block-tags coalesce cleanup-whitespace)}))
@@ -382,12 +382,12 @@
                                       (= kind TypeKind/TYPEVAR)
                                       (upper-bound type))
                                 str
-                                (string/replace #"<.*>" "") ;; Remove generics
+                                (str/replace #"<.*>" "") ;; Remove generics
                                 symbol)]
                (some-> (or best
                            (type->sym element))
                        str
-                       (string/replace "$" ".")
+                       (str/replace "$" ".")
                        symbol)))
            parameters)
      :argnames (mapv #(-> ^VariableElement % .getSimpleName str symbol) (.getParameters m))}))

@@ -2,7 +2,7 @@
   (:require
    [clojure.java.io :as io]
    [clojure.set :as set]
-   [clojure.string :as string]
+   [clojure.string :as str]
    [clojure.test :refer [deftest is testing]]
    [matcher-combinators.matchers :as m]
    [orchard.java]
@@ -20,7 +20,7 @@
   (let [s (if (instance? URL x)
             (.getPath ^URL x)
             x)]
-    (string/replace s #"/$" "")))
+    (str/replace s #"/$" "")))
 
 (deftest classpath-test
   (testing "Classpath"

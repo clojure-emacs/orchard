@@ -1,7 +1,7 @@
 (ns orchard.java.parser-next-test
   (:require
    [clojure.java.io :as io]
-   [clojure.string :as string]
+   [clojure.string :as str]
    [clojure.test :refer [deftest is testing]]
    [orchard.java :as java]
    [orchard.misc :as misc]
@@ -30,7 +30,7 @@
         (parse-java (io/resource "orchard/java/InvalidClass.java") nil)
         (assert false)
         (catch Exception e
-          (is (-> e ex-data :out (string/includes? "illegal start of expression"))))))))
+          (is (-> e ex-data :out (str/includes? "illegal start of expression"))))))))
 
 (when jdk11+?
   (deftest source-info-test
@@ -120,12 +120,12 @@ returning "}
                                  ['java.util.Locale 'java.lang.String (symbol "java.lang.Object[]")]
                                  :doc-fragments])
                         (->> (map :content)))
-          s (string/join fragments)]
+          s (str/join fragments)]
       (is (seq fragments))
       (testing "Flattens links, since they can't be clicked from most Orchard clients"
         (testing s
-          (is (not (string/includes? s "<a")))
-          (is (not (string/includes? s "<a href"))))))))
+          (is (not (str/includes? s "<a")))
+          (is (not (str/includes? s "<a href"))))))))
 
 (when (and jdk11+? util/jdk-sources-present?)
   (deftest smoke-test

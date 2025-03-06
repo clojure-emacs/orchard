@@ -1,7 +1,7 @@
 (ns orchard.trace
   "Faster and prettier reimplementation of `clojure.tools.trace` with unnecessary
   parts removed. Used for tracing function invocations and their results."
-  (:require [clojure.string :as string]
+  (:require [clojure.string :as str]
             [orchard.print :as print]))
 
 ;;;; Internals
@@ -35,7 +35,7 @@
 (def ^:private ^:dynamic *depth* 0)
 
 (defn- trace-indent []
-  (string/join (repeat *depth* "│ ")))
+  (str/join (repeat *depth* "│ ")))
 
 (defmacro ^:private limit-printing [& body]
   ;; Good defaults for orchard.print.

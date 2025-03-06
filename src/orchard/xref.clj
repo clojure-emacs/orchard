@@ -5,7 +5,7 @@
   (:require
    [clojure.repl :as repl]
    [clojure.set :as set]
-   [clojure.string :as string]
+   [clojure.string :as str]
    [orchard.query :as q]))
 
 (defn- var->fn [var-ref]
@@ -74,7 +74,7 @@
           ;; prefixes names of lambdas with the name of its surrounding function class
           deps (into #{}
                      (comp (filter (fn [[k _v]]
-                                     (clojure.string/includes? k f-class-name)))
+                                     (str/includes? k f-class-name)))
                            (map (fn [[_k value]]
                                   (.get ^java.lang.ref.Reference value)))
                            (mapcat fn-deps-class))
@@ -155,7 +155,7 @@
 
   ;; returns all classes in this ns, even repl eval'd
   (let [f-class-name "orchard.xref" #_(-> orchard.xref/fn-deps .getClass .getName)
-        classes (into #{} (comp (filter (fn [[k _v]] (clojure.string/includes? k f-class-name)))
+        classes (into #{} (comp (filter (fn [[k _v]] (str/includes? k f-class-name)))
                                 (map (fn [[_k v]] (.get ^java.lang.ref.Reference v))))
                       class-cache)]
     classes)

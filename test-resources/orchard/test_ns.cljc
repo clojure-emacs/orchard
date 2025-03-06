@@ -1,7 +1,7 @@
 (ns ^{:doc "A test namespace"} orchard.test-ns
   (:refer-clojure :exclude [replace unchecked-byte while])
   (:require
-   [clojure.string :as string :refer [replace]]
+   [clojure.string :as str :refer [replace]]
    [orchard.test-no-defs :as no-defs]
    [orchard.test-ns-dep :as test-dep :refer [foo-in-dep referred]])
   #?(:clj  (:require [orchard.test-macros :as test-macros :refer [my-add]])
@@ -37,7 +37,7 @@
   replace)
 
 (def indirect3
-  string/capitalize)
+  str/capitalize)
 
 (def indirect4
   clojure.string/includes?)

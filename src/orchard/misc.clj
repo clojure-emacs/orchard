@@ -3,7 +3,7 @@
   (:refer-clojure :exclude [update-keys update-vals])
   (:require
    [clojure.java.io :as io]
-   [clojure.string :as string]
+   [clojure.string :as str]
    [orchard.util.io :as util.io])
   (:import
    (java.util.concurrent.locks ReentrantLock)))
@@ -105,7 +105,7 @@
   "Parse a Java version string according to JEP 223 and return the appropriate
   version."
   [java-ver]
-  (try (let [[major minor _] (string/split java-ver #"\.")
+  (try (let [[major minor _] (str/split java-ver #"\.")
              major (Integer/parseInt major)]
          (if (> major 1)
            major
@@ -129,7 +129,7 @@
   [sym]
   (some-> sym
           str
-          (string/replace #"\$macros" "")
+          (str/replace #"\$macros" "")
           symbol))
 
 (defn ns-obj?

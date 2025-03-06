@@ -4,7 +4,7 @@
   (:require
    [clojure.java.javadoc :as javadoc]
    [clojure.reflect :as reflect]
-   [clojure.string :as string]
+   [clojure.string :as str]
    [orchard.java.resource :as resource]
    [orchard.java.source-files :as src-files]
    [orchard.misc :as misc]
@@ -71,8 +71,8 @@
 (defn javadoc-url
   "Return the relative `.html` javadoc path and member fragment."
   ([class]
-   (let [url (str (-> (string/replace (str class) "." "/")
-                      (string/replace "$" "."))
+   (let [url (str (-> (str/replace (str class) "." "/")
+                      (str/replace "$" "."))
                   ".html")
          ;; As of Java 11, Javadoc URLs begin with the module name.
          module (module-name class)]
@@ -82,8 +82,8 @@
    (str (javadoc-url class) "#" member
         (when argtypes
           (if (< misc/java-api-version 11) ; argtypes were munged before Java 11
-            (str "-" (string/join "-" (map #(string/replace % #"\[\]" ":A") argtypes)) "-")
-            (str "(" (string/join "," argtypes) ")"))))))
+            (str "-" (str/join "-" (map #(str/replace % #"\[\]" ":A") argtypes)) "-")
+            (str "(" (str/join "," argtypes) ")"))))))
 
 ;;; ## Class Metadata Assembly
 ;;
@@ -105,7 +105,7 @@
   ;; make the format match with that of `parser-next`:
   (mapv #(some-> %
                  str
-                 (string/replace "$" ".")
+                 (str/replace "$" ".")
                  symbol
                  typesym)
         argtypes))
@@ -193,12 +193,12 @@
         sb (StringBuilder.)
         package-re (when package
                      (re-pattern (str "^"
-                                      (string/replace package "." "\\.")
+                                      (str/replace package "." "\\.")
                                       "\\.")))
         shorten (fn [s]
                   (cond-> s
-                    package (string/replace package-re "")
-                    true (string/replace #"^java\.lang\." "")))
+                    package (str/replace package-re "")
+                    true (str/replace #"^java\.lang\." "")))
         fill-arglist!
         (fn []
           (into []

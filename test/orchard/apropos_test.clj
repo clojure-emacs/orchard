@@ -1,7 +1,7 @@
 (ns orchard.apropos-test
   (:require
    [clojure.repl :as repl]
-   [clojure.string :as string]
+   [clojure.string :as str]
    [clojure.test :refer [are deftest is testing]]
    [orchard.apropos :as sut :refer [find-symbols]]
    [orchard.meta :refer [var-name var-doc]]))
@@ -48,7 +48,7 @@
 
   (testing "Removal of namespaces with `exclude-regexps`"
     (is (not-any? #(some-> (namespace (symbol (:name %)))
-                           (string/includes? "orchard"))
+                           (str/includes? "orchard"))
                   (find-symbols {:var-query
                                  {:ns-query
                                   {:exclude-regexps
@@ -59,7 +59,7 @@
    (apropos-first v nil))
   ([v search-ns]
    (->> (find-symbols
-         (cond-> {:var-query {:search (re-pattern (string/escape v {\* "\\*"}))}}
+         (cond-> {:var-query {:search (re-pattern (str/escape v {\* "\\*"}))}}
            search-ns
            (assoc-in [:var-query :ns-query :exactly] [search-ns])))
         (filter #(= (:name %) (if search-ns (format "%s/%s" search-ns v) v)))

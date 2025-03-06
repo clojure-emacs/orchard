@@ -4,7 +4,7 @@
    :added "0.5"}
   (:refer-clojure :exclude [all-ns find-ns find-var ns-aliases ns-resolve])
   (:require
-   [clojure.string :as string]
+   [clojure.string :as str]
    [orchard.misc :as misc]))
 
 (defn all-ns [{namespaces :cljs.analyzer/namespaces}]
@@ -210,7 +210,7 @@
   * a var that is alias-qualified e.g. `foo/bar`."
   [env ns sym]
   (let [[referred-var-ns referred-var-symbol :as referred]
-        (some-> env (referred-vars ns) (get sym) (str) (string/split #"/") (->> (map symbol)))]
+        (some-> env (referred-vars ns) (get sym) (str) (str/split #"/") (->> (map symbol)))]
     (if referred
       (find-symbol-meta env referred-var-ns referred-var-symbol)
       (let [sym-ns (some-> sym namespace symbol)

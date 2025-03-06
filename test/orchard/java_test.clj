@@ -2,7 +2,7 @@
   (:require
    [clojure.java.javadoc :as javadoc]
    [clojure.set :as set]
-   [clojure.string :as string]
+   [clojure.string :as str]
    [clojure.test :refer [are deftest is testing]]
    [orchard.java :as sut :refer [cache class-info class-info* javadoc-url member-info resolve-class resolve-javadoc-path resolve-member resolve-symbol source-info]]
    [orchard.misc :as misc]
@@ -138,12 +138,12 @@
                   (is (re-find #"^\[" s))
                   (is (re-find #"\^.*\[" s)))
                 ;; Assert that the format doesn't include past bugs:
-                (is (not (string/includes? s "<")))
-                (is (not (string/includes? s "^Object java.lang.Object")))
-                (is (not (string/includes? s "^Object Object")))
-                (is (not (string/includes? s "^function.Function java.util.function.Function")))
-                (is (not (string/includes? s "^java.util.function.Function java.util.function.Function")))
-                (is (not (string/includes? s "java.lang")))))))))))
+                (is (not (str/includes? s "<")))
+                (is (not (str/includes? s "^Object java.lang.Object")))
+                (is (not (str/includes? s "^Object Object")))
+                (is (not (str/includes? s "^function.Function java.util.function.Function")))
+                (is (not (str/includes? s "^java.util.function.Function java.util.function.Function")))
+                (is (not (str/includes? s "java.lang")))))))))))
 
 (when (and jdk11+? util/jdk-sources-present?)
   (deftest class-info-test
@@ -212,7 +212,7 @@
         (testing "implemented on ancestor superclass"
           (is (not= 'java.lang.Object (:class m7)))
           (testing (-> m6 :doc pr-str)
-            (is (-> m6 :doc (string/starts-with? "Called by the garbage collector on an object when garbage collection"))
+            (is (-> m6 :doc (str/starts-with? "Called by the garbage collector on an object when garbage collection"))
                 "Contains doc that is clearly defined in Object (the superclass)")))
         (when jdk11+?
           (testing "Doc fragments"
@@ -507,7 +507,7 @@
             (is (= arities-from-source arities-from-reflector))
             (doseq [arity arities-from-source]
               (doseq [s arity
-                      :let [s (-> s str (string/replace "[]" ""))]]
+                      :let [s (-> s str (str/replace "[]" ""))]]
                 (when-not (#{"byte" "short" "int" "long" "float" "double" "char" "boolean" "void"}
                            s)
                   (is (try
