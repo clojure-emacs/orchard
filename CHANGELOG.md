@@ -8,6 +8,7 @@
    - `orchard.inspect/set-page-size`, `orchard.inspect/set-max-atom-length`, `orchard.inspect/set-max-value-length`, `orchard.inspect/set-max-coll-size`, `orchard.inspect/set-max-nested-depth`
 * [#318](https://github.com/clojure-emacs/orchard/pull/318): **BREAKING:** Remove no longer used functions: `orchard.misc/lazy-seq?`, `orchard.misc/safe-count`, `orchard.misc/normalize-subclass`, `orchard.misc/remove-type-param`.
 * [#320](https://github.com/clojure-emacs/orchard/pull/320): Info: recognize printed Java classes/methods and munged Clojure functions in stacktrace outputs.
+* [#322](https://github.com/clojure-emacs/orchard/pull/322): Stacktrace: bring back `orchard.stacktrace` for stacktrace analysis (copied from `haystack.analyzer` and improved).
 
 ## 0.30.1 (2025-02-24)
 
