@@ -87,6 +87,11 @@
     "#Delay[<pending>]" (delay 1)
     "#Delay[1]" (doto (delay 1) deref)
     "#Delay[<failed>]" (let [d (delay (/ 1 0))] (try @d (catch Exception _)) d)
+    #"#Error\[clojure.lang.ExceptionInfo \"Boom\" \"orchard.print_test.+\"\]" (ex-info "Boom" {})
+    #"#Error\[clojure.lang.ExceptionInfo \"Boom\" \{:a 1\} \"orchard.print_test.+\"\]" (ex-info "Boom" {:a 1})
+    #"#Error\[java.lang.RuntimeException \"Runtime!\" \"orchard.print_test.+\"\]" (RuntimeException. "Runtime!")
+    #"#Error\[java.lang.RuntimeException \"Outer: Inner\" \"orchard.print_test.+\"\]" (RuntimeException. "Outer"
+                                                                                                         (RuntimeException. "Inner"))
     "#function[clojure.core/str]" str))
 
 (deftest print-writer-limits
