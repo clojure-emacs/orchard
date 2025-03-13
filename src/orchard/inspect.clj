@@ -62,6 +62,8 @@
     (instance? Class obj) :class
     (instance? clojure.lang.Namespace obj) :namespace
     (instance? clojure.lang.ARef obj) :aref
+    (instance? Throwable obj) :throwable
+    (instance? StackTraceElement obj) :stack-trace-element
     (.isArray (class obj)) :array
     :else (or (:inspector-tag (meta obj))
               (type obj))))
@@ -703,6 +705,50 @@
                               #(vector (.getName ^Method %)
                                        (.toGenericString ^Method %)))
         (render-datafy))))
+
+(defn- render-stacktrace-cause [inspector ^Throwable cause]
+  (as-> inspector ins
+    (render-indent ins (.getMessage cause))
+    (render-ln ins)
+    (render-indent ins)
+    (render-value ins (class cause))
+    (if-let [first-frame (first (.getStackTrace cause))]
+      (-> ins
+          (render " at ")
+          (render-value first-frame))
+      ins)
+    (render-ln ins)
+    (if-let [data (not-empty (ex-data cause))]
+      (-> ins
+          (indent)
+          (render-value-maybe-expand data)
+          (unindent))
+      ins)))
+
+(defmethod inspect :throwable [inspector ^Throwable obj]
+  (let [causes (vec (take-while some? (iterate #(.getCause ^Throwable %) obj)))
+        root-cause ^Throwable (peek causes)]
+    (as-> inspector ins
+      (render-labeled-value ins "Class" (class obj))
+      (render-indent ins "Message: " (.getMessage obj))
+      (render-ln ins)
+      (render-section-header ins "Causes")
+      (indent ins)
+      (render-stacktrace-cause ins (first causes))
+      (reduce #(render-stacktrace-cause (render-ln %1) %2) ins (rest causes))
+      (unindent ins)
+      (render-section-header ins "Trace")
+      (indent ins)
+      (render-items ins (.getStackTrace root-cause) false 0 false)
+      (unindent ins)
+      (render-datafy ins))))
+
+(defmethod inspect :stack-trace-element [inspector ^StackTraceElement obj]
+  (-> inspector
+      (render-labeled-value "Class" (class obj))
+      (render-section-header "Contents")
+      (indent)
+      (render-items (StackTraceElement->vec obj) false 0 false)))
 
 (defmethod inspect :aref [inspector ^clojure.lang.ARef obj]
   (let [val (deref obj)]

@@ -1277,13 +1277,17 @@
         (is (match? '("Class: "
                       (:value "clojure.lang.ExceptionInfo" 0)
                       (:newline)
-                      "Value: "
-                      (:value
-                       "#error {\n :cause \"BOOM\"\n :data {}\n :via\n [{:type clojure.lang.ExceptionInfo\n   :message \"BOOM\"\n   :data {}}]\n :trace\n []}"
-                       1)
+                      "Message: " "BOOM"
                       (:newline)
                       (:newline))
                     (header rendered))))
+      (testing "renders a causes section"
+        (is (match? '("--- Causes:"
+                      (:newline)
+                      "  " "BOOM" (:newline)
+                      "  " (:value "clojure.lang.ExceptionInfo" 1) (:newline)
+                      (:newline))
+                    (section "Causes" rendered))))
       (testing "renders the datafy section"
         (is (match? (resolve-syms
                      (if (> java-api-version 8)
@@ -1321,7 +1325,33 @@
                          (:newline)
                          "  " (:value ":data" number?) " = " (:value "{}" number?)
                          (:newline))))
-                    (datafy-section rendered)))))))
+                    (datafy-section rendered))))))
+
+  (testing "exception with multiple causes"
+    (let [rendered (-> (ex-info "Outer" {} (RuntimeException. "Inner"))
+                       inspect render)]
+      (is (match? (resolve-syms
+                   '("--- Causes:"
+                     (:newline)
+                     "  " "Outer" (:newline)
+                     "  " (:value "clojure.lang.ExceptionInfo" number?) " at "
+                     (:value #"orchard.inspect_test\$fn" number?) (:newline)
+                     (:newline)
+                     "  " "Inner" (:newline) "  " (:value "java.lang.RuntimeException" number?) " at "
+                     (:value #"orchard.inspect_test\$fn" number?) (:newline)
+                     (:newline)))
+                  (section "Causes" rendered)))
+      (testing "trace is rendered"
+        (is (match? (matchers/prefix
+                     (resolve-syms
+                      '("--- Trace:"
+                        (:newline)
+                        "  " " 0" ". " (:value #"orchard.inspect_test\$fn" number?) (:newline)
+                        "  " " 1" ". " (:value #"orchard.inspect_test\$fn" number?) (:newline)
+                        "  " " 2" ". " (:value string? number?) (:newline)
+                        "  " " 3" ". " (:value string? number?) (:newline)
+                        "  " " 4" ". " (:value string? number?) (:newline))))
+                    (section "Trace" rendered)))))))
 
 (deftest inspect-eduction-test
   (testing "inspecting eduction shows its object fields"
