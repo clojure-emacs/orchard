@@ -256,24 +256,7 @@
 
   (testing "Does not include `:phase` for vanilla runtime exceptions"
     (is (match? [{:phase nil}]
-                (catch-and-analyze (throw (ex-info "" {}))))))
-
-  (testing "`:compile-like`"
-    (testing "For non-existing fields"
-      (is (match? [{:compile-like "true"}]
-                  (catch-and-analyze (eval '(.-foo ""))))))
-    (testing "For non-existing methods"
-      (is (match? [{:compile-like "true"}]
-                  (catch-and-analyze (eval '(-> "" (.foo 1 2)))))))
-    (testing "For vanilla exceptions"
-      (is (match? [{:compile-like "false"}]
-                  (catch-and-analyze (throw (ex-info "." {}))))))
-    (testing "For vanilla `IllegalArgumentException`s"
-      (is (match? [{:compile-like "false"}]
-                  (catch-and-analyze (throw (IllegalArgumentException. "foo"))))))
-    (testing "For exceptions with a `:phase`"
-      (is (match? [{:compile-like "false"} {:compile-like "false"}]
-                  (catch-and-analyze (eval '(let [1]))))))))
+                (catch-and-analyze (throw (ex-info "" {})))))))
 
 (deftest tooling-frame-name?
   (are [frame-name] (true? (#'sut/tooling-frame-name? frame-name))
