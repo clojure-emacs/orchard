@@ -163,8 +163,20 @@
 (defmethod print TaggedLiteral [x w]
   (print-method x w))
 
-(defmethod print Throwable [x w]
-  (print-method x w))
+(defmethod print Throwable [^Throwable x, ^TruncatingStringWriter w]
+  (.write w "#Error[")
+  (.write w (str (.getName (class x)) " "))
+  (loop [cause x, msg nil]
+    (if cause
+      (recur (.getCause cause) (str msg (when msg ": ") (.getMessage cause)))
+      (print msg w)))
+  (when-let [data (not-empty (ex-data x))]
+    (.write w " ")
+    (print data w))
+  (when-let [first-frame (first (.getStackTrace x))]
+    (.write w " ")
+    (print (str first-frame) w))
+  (.write w "]"))
 
 (defmethod print :default [^Object x, ^TruncatingStringWriter w]
   (.write w (.toString x)))
