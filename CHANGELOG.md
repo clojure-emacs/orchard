@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+## 0.31.0 (2025-03-14)
+
 * [#317](https://github.com/clojure-emacs/orchard/pull/317): **BREAKING:** Remove deprecated functions:
    - `orchard.namespace/read-namespace`, `orchard.namespace/ensure-namespace`
    - `orchard.meta/var-meta-whitelist`
