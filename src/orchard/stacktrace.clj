@@ -5,12 +5,14 @@
    :author "Jeff Valk, Oleksandr Yakushev"}
   (:require
    [clojure.java.io :as io]
+   [clojure.main]
    [clojure.pprint :as pp]
    [clojure.repl :as repl]
    [clojure.spec.alpha :as s]
    [clojure.string :as str]
    [orchard.info :as info]
-   [orchard.java.resource :as resource])
+   [orchard.java.resource :as resource]
+   [orchard.misc :refer [assoc-some]])
   (:import
    (java.io StringWriter)
    (java.net URL)
@@ -166,14 +168,15 @@
     (if (< i 0)
       frames
       (let [frame-name (:name (get frames i))
-            tooling? (or (tooling-frame-name? frame-name)
-                         ;; Everything runs from a Thread, so this frame, if at
-                         ;; the end, is irrelevant. However one can invoke this
-                         ;; method 'by hand', which is why we only skip
-                         ;; consecutive frames that match this.
-                         (and all-tooling-so-far?
-                              (re-find #"^java\.lang\.Thread/run|^java\.util\.concurrent"
-                                       frame-name)))]
+            tooling? (and frame-name
+                          (or (tooling-frame-name? frame-name)
+                              ;; Everything runs from a Thread, so this frame,
+                              ;; if at the end, is irrelevant. However one can
+                              ;; invoke this method 'by hand', which is why we
+                              ;; only skip consecutive frames that match this.
+                              (and all-tooling-so-far?
+                                   (re-find #"^java\.lang\.Thread/run|^java\.util\.concurrent"
+                                            frame-name))))]
         (recur (cond-> frames
                  tooling? (update i flag-frame :tooling))
                (dec i) (and all-tooling-so-far? tooling?))))))
@@ -260,12 +263,13 @@
                       (print-fn % writer)
                       (str writer))
         phase (-> cause-data :data :clojure.error/phase)
-        m {:class (name (:type cause-data))
-           :phase phase
-           :message (:message cause-data)
-           :stacktrace (analyze-stacktrace-data
-                        (cond (seq (:trace cause-data)) (:trace cause-data)
-                              (:at cause-data) [(:at cause-data)]))}]
+        m (-> {:class (name (:type cause-data))
+               :phase phase
+               :message (:message cause-data)
+               :stacktrace (analyze-stacktrace-data
+                            (cond (seq (:trace cause-data)) (:trace cause-data)
+                                  (:at cause-data) [(:at cause-data)]))}
+              (assoc-some :triage (:triage cause-data)))]
     (if-let [data (filter-ex-data (:data cause-data))]
       (if (::s/failure data)
         (assoc m
@@ -280,14 +284,28 @@
                                             :clojure.error/symbol])))
       m)))
 
+(defn- maybe-triage-message
+  "If the exception is a compiler error which carries Spec-based explanation data,
+  transform it into human readable error message string."
+  [exception-data]
+  (try
+    ;; ex-triage may throw an exception if :phase is incorrect
+    (when-let [explanation-data (:clojure.error/spec
+                                 (clojure.main/ex-triage exception-data))]
+      (with-out-str (s/explain-out explanation-data)))
+    (catch Exception _)))
+
 (defn- analyze-causes
   "Analyze the cause chain of the `exception-data` in `Throwable->map` format."
   [exception-data print-fn]
-  (let [causes (vec (:via exception-data))
-        ;; If the first cause lacks :trace, add :trace of the exception there.
-        causes (if (:trace (first causes))
-                 causes
-                 (assoc-in causes [0 :trace] (:trace exception-data)))]
+  (let [triage-message (maybe-triage-message exception-data)
+        causes (update (vec (:via exception-data)) 0
+                       #(cond-> %
+                          ;; If the first cause lacks :trace, add :trace of the
+                          ;; exception there.
+                          (nil? (:trace %)) (assoc :trace (:trace exception-data))
+                          ;; If non-nil, assoc triage-message to first cause.
+                          triage-message (assoc :triage triage-message)))]
     (mapv #(extract-location (analyze-cause % print-fn)) causes)))
 
 (defn analyze

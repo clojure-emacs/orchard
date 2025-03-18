@@ -101,6 +101,11 @@
               (last xs)))]
     (apply f (filter identity xs))))
 
+(defn assoc-some
+  "Assoc key-value to the map `m` if `v` is non-nil."
+  [m k v]
+  (if (nil? v) m (assoc m k v)))
+
 (defn parse-java-version
   "Parse a Java version string according to JEP 223 and return the appropriate
   version."

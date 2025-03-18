@@ -1,6 +1,7 @@
 (ns orchard.stacktrace-test
   (:require
    [clojure.spec.alpha :as s]
+   [clojure.string :as str]
    [clojure.test :refer [are deftest is testing]]
    [matcher-combinators.matchers :as matchers]
    [orchard.stacktrace :as sut]))
@@ -179,6 +180,11 @@
               :clojure.error/phase :macroexpand
               :clojure.error/symbol 'clojure.core/let}
              (:location cause))))))
+
+(deftest ex-triage-test
+  (testing "compilation errors that can be triaged contain :triage message"
+    (is (= "[a] - failed: even-number-of-forms? in: [0] at: [:bindings] spec: :clojure.core.specs.alpha/bindings"
+           (str/trim (:triage (first (catch-and-analyze (eval '(let [a]))))))))))
 
 (deftest test-analyze-throwable
   (testing "shape of analyzed throwable"

@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+* [#325](https://github.com/clojure-emacs/orchard/pull/325): Add `ex-str`-formatted message to analyzed causes.
+
 ## 0.31.0 (2025-03-14)
 
 * [#317](https://github.com/clojure-emacs/orchard/pull/317): **BREAKING:** Remove deprecated functions:
