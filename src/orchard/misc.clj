@@ -1,6 +1,6 @@
 (ns orchard.misc
   ;; These will be added in clojure 1.11:
-  (:refer-clojure :exclude [update-keys update-vals])
+  (:refer-clojure :exclude [update-keys update-vals pmap])
   (:require
    [clojure.java.io :as io]
    [clojure.string :as str]
@@ -161,3 +161,22 @@
     (fn [& args]
       (when resolved-fn
         (apply resolved-fn args)))))
+
+(defn- into! [transient-coll1 transient-coll2]
+  (reduce conj! transient-coll1 (persistent! transient-coll2)))
+
+(defn pmap
+  "Like `clojure.core/pmap`, but uses parallel streams for better efficiency."
+  [f, ^java.util.Collection coll]
+  (-> (.parallelStream coll)
+      (.map (reify java.util.function.Function
+              (apply [_ x] (f x))))
+      (.collect (reify java.util.function.Supplier
+                  (get [_] (volatile! (transient []))))
+                (reify java.util.function.BiConsumer
+                  (accept [_ acc x] (vswap! acc conj! x)))
+                (reify java.util.function.BiConsumer
+                  (accept [_ acc1 acc2]
+                    (vswap! acc1 into! @acc2))))
+      deref
+      persistent!))

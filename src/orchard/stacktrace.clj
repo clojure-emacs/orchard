@@ -12,7 +12,7 @@
    [clojure.string :as str]
    [orchard.info :as info]
    [orchard.java.resource :as resource]
-   [orchard.misc :refer [assoc-some]])
+   [orchard.misc :as misc :refer [assoc-some]])
   (:import
    (java.io StringWriter)
    (java.net URL)
@@ -252,7 +252,7 @@
   "Return the stacktrace as a sequence of maps, each describing a stack frame."
   [trace]
   (when (seq trace)
-    (-> (pmap analyze-frame trace)
+    (-> (misc/pmap analyze-frame trace)
         (flag-duplicates)
         (flag-tooling))))
 
