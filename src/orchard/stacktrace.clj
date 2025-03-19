@@ -3,28 +3,27 @@
   objects and attach extra data to them."
   {:added "0.31"
    :author "Jeff Valk, Oleksandr Yakushev"}
+  (:refer-clojure :exclude [print-str])
   (:require
    [clojure.java.io :as io]
    [clojure.main]
-   [clojure.pprint :as pp]
    [clojure.repl :as repl]
    [clojure.spec.alpha :as s]
    [clojure.string :as str]
    [orchard.info :as info]
    [orchard.java.resource :as resource]
-   [orchard.misc :as misc :refer [assoc-some]])
+   [orchard.misc :as misc :refer [assoc-some]]
+   [orchard.print :as print])
   (:import
-   (java.io StringWriter)
    (java.net URL)
    (java.nio.file Path)))
 
 (def ^:private ^Path cwd-path (.toAbsolutePath (.toPath (io/file ""))))
 
-(defn- pprint-write
-  "We don't use `clojure.pprint/pprint` directly because it appends a newline at
-  the end which we don't want."
-  [value writer]
-  (pp/write value :stream writer))
+(defn- print-str [value]
+  ;; Limit printed collections to 5 items.
+  (binding [*print-length* 5]
+    (print/print-str value)))
 
 ;;; ## Stacktraces
 
@@ -221,18 +220,18 @@
 
 (defn- prepare-spec-data
   "Prepare spec problems for display in user stacktraces. Take in a map `ed` as
-  returned by `clojure.spec.alpha/explain-data` and return a map of pretty
-  printed problems. The content of the returned map is modeled after
+  returned by `clojure.spec.alpha/explain-data` and return a map of printed
+  problems. The content of the returned map is modeled after
   `clojure.spec.alpha/explain-printer`."
-  [ed pprint-str]
+  [ed]
   (let [problems (sort-by #(count (:path %)) (::s/problems ed))]
     {:spec (pr-str (::s/spec ed))
-     :value (pprint-str (::s/value ed))
+     :value (print-str (::s/value ed))
      :problems
      (mapv
       (fn [{:keys [in val pred reason via path] :as prob}]
-        (->> {:in (some-> in not-empty pr-str)
-              :val (pprint-str val)
+        (->> {:in (some-> in not-empty print-str)
+              :val (print-str val)
               :predicate (pr-str (s/abbrev pred))
               :reason reason
               :spec (some-> via not-empty last pr-str)
@@ -243,7 +242,7 @@
                                              ::s/failure} (key %)))
                                  prob)]
                 (when (seq extras)
-                  (pprint-str extras)))}
+                  (print-str extras)))}
              (filter clojure.core/val)
              (into {})))
       problems)}))
@@ -258,11 +257,8 @@
 
 (defn- analyze-cause
   "Analyze the `cause-data` of an exception, in `Throwable->map` format."
-  [cause-data print-fn]
-  (let [pprint-str #(let [writer (StringWriter.)]
-                      (print-fn % writer)
-                      (str writer))
-        phase (-> cause-data :data :clojure.error/phase)
+  [cause-data]
+  (let [phase (-> cause-data :data :clojure.error/phase)
         m (-> {:class (name (:type cause-data))
                :phase phase
                :message (:message cause-data)
@@ -274,9 +270,9 @@
       (if (::s/failure data)
         (assoc m
                :message "Spec assertion failed."
-               :spec (prepare-spec-data data pprint-str))
+               :spec (prepare-spec-data data))
         (assoc m
-               :data (pprint-str data)
+               :data (print-str data)
                :location (select-keys data [:clojure.error/line
                                             :clojure.error/column
                                             :clojure.error/phase
@@ -297,7 +293,7 @@
 
 (defn- analyze-causes
   "Analyze the cause chain of the `exception-data` in `Throwable->map` format."
-  [exception-data print-fn]
+  [exception-data]
   (let [triage-message (maybe-triage-message exception-data)
         causes (update (vec (:via exception-data)) 0
                        #(cond-> %
@@ -306,19 +302,16 @@
                           (nil? (:trace %)) (assoc :trace (:trace exception-data))
                           ;; If non-nil, assoc triage-message to first cause.
                           triage-message (assoc :triage triage-message)))]
-    (mapv #(extract-location (analyze-cause % print-fn)) causes)))
+    (mapv #(extract-location (analyze-cause %)) causes)))
 
 (defn analyze
-  "Return the analyzed cause chain for `exception` beginning with the
-  thrown exception. `exception` can be an instance of `Throwable` or a
-  map in the same format as `Throwable->map`. For `ex-info`
-   exceptions, the response contains a `:data` slot with the pretty
-  printed data. For clojure.spec asserts, the `:spec` slot contains a
-  map of pretty printed components describing spec failures."
-  ([exception]
-   (analyze exception pprint-write))
-  ([exception print-fn]
-   (cond (instance? Throwable exception)
-         (analyze-causes (Throwable->map-with-traces exception) print-fn)
-         (and (map? exception) (:trace exception))
-         (analyze-causes exception print-fn))))
+  "Return the analyzed cause chain for `exception` beginning with the thrown
+  exception. `exception` can be an instance of `Throwable` or a map in the same
+  format as `Throwable->map`. For `ex-info` exceptions, the response contains a
+  `:data` slot with the printed data. For clojure.spec asserts, the `:spec` slot
+  contains a map of printed components describing spec failures."
+  [exception]
+  (cond (instance? Throwable exception)
+        (analyze-causes (Throwable->map-with-traces exception))
+        (and (map? exception) (:trace exception))
+        (analyze-causes exception)))
