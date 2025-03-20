@@ -55,10 +55,7 @@
 
              :test ~(merge
                      dev-test-common-profile
-                     ;; Initialize the cache verbosely, as usual, so that possible issues can be more easily diagnosed:
-                     {:jvm-opts
-                      ["-Dorchard.internal.test-suite-running=true"]
-                      :resource-paths ["test-resources"
+                     {:resource-paths ["test-resources"
                                        "test-resources/not-a.jar"
                                        "test-resources/java-invalid"
                                        "does-not-exist.jar"]})

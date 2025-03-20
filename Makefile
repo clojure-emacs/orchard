@@ -6,7 +6,7 @@
 SHELL = /bin/bash -Ee
 
 HOME=$(shell echo $$HOME)
-CLOJURE_VERSION ?= 1.11
+CLOJURE_VERSION ?= 1.12
 TEST_PROFILES ?= "-user,-dev,+test,+cljs"
 
 resources/clojuredocs/export.edn:
@@ -74,10 +74,6 @@ install: clean check-install-env
 
 clean:
 	lein with-profile -user,-dev clean
-
-.javac: $(wildcard test-java/orchard/*.clj)
-	lein with-profile +test javac
-	touch $@
 
 check-env:
 ifndef CLOJARS_USERNAME
