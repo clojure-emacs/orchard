@@ -11,10 +11,13 @@
 (defn some-random-function [])
 
 (deftest apropos-sort-test
-  (doseq [namespace (all-ns)]
-    (let [vars (->> namespace ns-interns vals)]
-      (is (sut/apropos-sort namespace vars)
-          "Doesn't throw errors"))))
+  (testing "sorts first by the given ns, then clojure namespaces, then the rest, all alphabetically"
+    (is (= [#'some-random-function #'+ #'str #'find-symbols]
+           (sut/apropos-sort (find-ns 'orchard.apropos-test)
+                             [#'str #'find-symbols #'some-random-function #'+]))))
+
+  (testing "doesn't throw errors"
+    (is (sut/apropos-sort *ns* (mapcat (comp vals ns-interns) (all-ns))))))
 
 (deftest var-name-test
   (testing "Returns Var's namespace-qualified name"

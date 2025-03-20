@@ -6,7 +6,7 @@
    [orchard.misc :as misc]
    [orchard.query :as query])
   (:import
-   [clojure.lang MultiFn]))
+   (clojure.lang MultiFn Var)))
 
 ;;; ## Overview
 ;;
@@ -17,20 +17,31 @@
 
 ;;; ## Symbol Search
 
-(defn- safe-comparator [x y]
-  (compare (pr-str x) (pr-str y)))
+(defn- priority-ns? [ns]
+  (some-> ns ns-name name (.startsWith "clojure.")))
 
-(defn- default-comparator [ns clojure-ns?]
-  (fn [x y]
+(defn- default-comparator [this-ns]
+  (fn [^Var x, ^Var y]
     (cond
       (= x y)  0
       (nil? x) 1
       (nil? y) -1
-      (= x ns) -1
-      (= y ns)  1
-      (and (clojure-ns? x) (not (clojure-ns? y))) -1
-      (and (clojure-ns? y) (not (clojure-ns? x)))  1
-      :else (safe-comparator x y))))
+      :else
+      (let [ns1 (when (instance? Var x) (.ns ^Var x))
+            ns2 (when (instance? Var y) (.ns ^Var y))
+            ;; First, vars from the namespace `this-ns`.
+            ;; Then, vars from "priority" namespaces (everything from clojure.*)
+            ;; Finally, all the rest.
+            prio-ns1 (cond (and this-ns (= ns1 this-ns)) 0
+                           (priority-ns? ns1) 1
+                           :else 2)
+            prio-ns2 (cond (and this-ns (= ns2 this-ns)) 0
+                           (priority-ns? ns2) 1
+                           :else 2)
+            c (compare prio-ns1 prio-ns2)]
+        (if (zero? c)
+          (compare (str x) (str y))
+          c)))))
 
 (defn apropos-sort
   "Return a list of vars, ordered with `ns` first,
@@ -39,18 +50,8 @@
   [ns vars]
   (assert (every? (some-fn class? var? symbol?) vars)
           (pr-str vars))
-  (let [clojure-ns? #(.startsWith (str (ns-name %)) "clojure.")
-        key-fn (comp :ns meta)]
-    ;; https://clojure.org/guides/comparators
-    (try
-      (sort-by key-fn (default-comparator ns clojure-ns?) vars)
-      ;; Handle https://github.com/clojure-emacs/orchard/issues/128
-      (catch IllegalArgumentException e
-        (when (System/getProperty "orchard.internal.test-suite-running")
-          ;; Don't accept this exception in our CI - we should fix this if it's reproducible.
-          (throw e))
-        ;; Fallback to a simpler comparator:
-        (sort-by key-fn safe-comparator vars)))))
+  ;; https://clojure.org/guides/comparators
+  (sort (default-comparator ns) vars))
 
 (defn find-symbols
   "Takes a map and returns a list of maps containing name, doc and type.
