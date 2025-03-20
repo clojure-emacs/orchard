@@ -708,7 +708,7 @@
 
 (defn- render-stacktrace-cause [inspector ^Throwable cause]
   (as-> inspector ins
-    (render-indent ins (.getMessage cause))
+    (render-indent ins (or (.getMessage cause) "(No message)"))
     (render-ln ins)
     (render-indent ins)
     (render-value ins (class cause))
