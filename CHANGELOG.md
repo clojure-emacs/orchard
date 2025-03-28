@@ -2,6 +2,10 @@
 
 ## master (unreleased)
 
+* [#328](https://github.com/clojure-emacs/orchard/pull/328): Inspector: display identity hashcode for Java objects.
+
+## 0.31.1 (2025-03-19)
+
 * [#325](https://github.com/clojure-emacs/orchard/pull/325): Add `ex-str`-formatted message to analyzed causes.
 
 ## 0.31.0 (2025-03-14)

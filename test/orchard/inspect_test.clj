@@ -849,21 +849,25 @@
 
 (deftest inspect-java-object-test
   (testing "inspecting any Java object prints its fields"
-    (is (match? '("Class: "
-                  (:value "clojure.lang.TaggedLiteral" 0)
-                  (:newline)
-                  "Value: " (:value "#foo ()" 1)
-                  (:newline)
-                  (:newline)
-                  "--- Instance fields:"
-                  (:newline) "  " (:value "form" 2) " = " (:value "()" 3)
-                  (:newline) "  " (:value "tag" 4) " = " (:value "foo" 5)
-                  (:newline)
-                  (:newline)
-                  "--- Static fields:"
-                  (:newline) "  " (:value "FORM_KW" 6) " = " (:value ":form" 7)
-                  (:newline) "  " (:value "TAG_KW" 8) " = " (:value ":tag" 9)
-                  (:newline))
+    (is (match? (resolve-syms
+                 '("Class: "
+                   (:value "clojure.lang.TaggedLiteral" 0)
+                   (:newline)
+                   "Value: " (:value "#foo ()" 1)
+                   (:newline)
+                   "Identity hash code: "
+                   string? " " string?
+                   (:newline)
+                   (:newline)
+                   "--- Instance fields:"
+                   (:newline) "  " (:value "form" 2) " = " (:value "()" 3)
+                   (:newline) "  " (:value "tag" 4) " = " (:value "foo" 5)
+                   (:newline)
+                   (:newline)
+                   "--- Static fields:"
+                   (:newline) "  " (:value "FORM_KW" 6) " = " (:value ":form" 7)
+                   (:newline) "  " (:value "TAG_KW" 8) " = " (:value ":tag" 9)
+                   (:newline)))
                 (render (inspect (clojure.lang.TaggedLiteral/create 'foo ())))))))
 
 (deftest inspect-path
@@ -1357,13 +1361,17 @@
   (testing "inspecting eduction shows its object fields"
     (let [rendered (-> (eduction (range 10)) inspect render)]
       (testing "renders the header section"
-        (is (match? '("Class: "
-                      (:value "clojure.core.Eduction" 0)
-                      (:newline)
-                      "Value: "
-                      (:value "(0 1 2 3 4 ...)" 1)
-                      (:newline)
-                      (:newline))
+        (is (match? (resolve-syms
+                     '("Class: "
+                       (:value "clojure.core.Eduction" 0)
+                       (:newline)
+                       "Value: "
+                       (:value "(0 1 2 3 4 ...)" 1)
+                       (:newline)
+                       "Identity hash code: "
+                       string? " " string?
+                       (:newline)
+                       (:newline)))
                     (header rendered)))))
 
     (let [rendered (-> (eduction (range 100)) inspect render)]

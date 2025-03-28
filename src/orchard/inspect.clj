@@ -640,10 +640,17 @@
                           (into (sorted-map)))
                      false)
                     (unindent))
-                inspector))]
+                inspector))
+            (render-ident-hashcode [inspector]
+              (let [code (System/identityHashCode obj)]
+                (-> inspector
+                    (render-indent "Identity hash code: " (str code) " "
+                                   (format "(0x%s)" (Integer/toHexString code)))
+                    (render-ln))))]
       (cond-> inspector
         true                           (render-labeled-value "Class" (class obj))
         true                           (render-labeled-value "Value" obj {:display-value printed})
+        true                           (render-ident-hashcode)
         (seq non-static-accessible)    (render-fields "Instance fields" non-static-accessible)
         (seq static-accessible)        (render-fields "Static fields" static-accessible)
         (seq non-static-nonaccessible) (render-fields "Private instance fields" non-static-nonaccessible)
