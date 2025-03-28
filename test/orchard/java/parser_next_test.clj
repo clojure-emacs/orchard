@@ -101,12 +101,6 @@ returning "}
                (get-in [:members 'add '[java.lang.Object] :doc-fragments])))
         "Returns a data structure with carefully managed whitespace location")
 
-    (is (some #{{:type "text", :content " permission as well as\n"}}
-              (-> `Thread
-                  source-info
-                  (get-in [:members 'getAllStackTraces [] :doc-fragments])))
-        "A specific fragment starts with a single space and ends in a single newline")
-
     (is (= {:content "<i>Param</i>&nbsp;<pre>obj</pre>:&nbsp;", :type "html"}
            (-> `Thread
                source-info

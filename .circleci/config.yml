@@ -29,9 +29,9 @@ executors:
     docker:
       - image: clojure:temurin-21-lein-2.11.2-noble
     <<: *defaults
-  jdk23:
+  jdk24:
     docker:
-      - image: clojure:temurin-23-lein-2.11.2-noble
+      - image: clojure:temurin-24-lein-2.11.2-noble
     <<: *defaults
 
 # Runs a given set of steps, with some standard pre- and post-
@@ -81,7 +81,7 @@ commands:
             - base-src-jdk11.zip
             - base-src-jdk17.zip
             - base-src-jdk21.zip
-            - base-src-jdk23.zip
+            - base-src-jdk24.zip
           key: cache-<< parameters.cache_version >>-{{ checksum "/tmp/clojure_cache_seed" }}
 
   setup-windows:
@@ -204,7 +204,7 @@ workflows:
           matrix:
             alias: "test"
             parameters:
-              jdk_version: [jdk8, jdk11, jdk17, jdk21, jdk23]
+              jdk_version: [jdk8, jdk11, jdk17, jdk21, jdk24]
               clojure_version: ["1.10", "1.11", "1.12"]
           <<: *run_always
       - test:
@@ -213,7 +213,7 @@ workflows:
           matrix:
             alias: "test_no_extra_deps"
             parameters:
-              jdk_version: [jdk23]
+              jdk_version: [jdk24]
               clojure_version: ["1.12"]
               command: ["test-no-extra-deps"]
           <<: *run_always
@@ -225,7 +225,7 @@ workflows:
           matrix:
             alias: "eastwood"
             parameters:
-              jdk_version: [jdk8, jdk23]
+              jdk_version: [jdk8, jdk24]
           <<: *run_always
       - lint:
           <<: *run_always
