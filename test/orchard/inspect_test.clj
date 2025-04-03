@@ -5,11 +5,10 @@
    [clojure.walk :as walk]
    [matcher-combinators.matchers :as matchers]
    [orchard.inspect :as inspect]
-   [orchard.misc :as misc :refer [java-api-version]])
+   [orchard.misc :as misc :refer [java-api-version]]
+   [orchard.test.util :refer [is+]])
   (:import
    (orchard.java PrivateFieldClass)))
-
-(require 'matcher-combinators.test) ;; for `match?`
 
 (defn- demunge-str [s]
   (-> s
@@ -28,33 +27,30 @@
 
 ;; Simplifies writing test structures for `match?`.
 
-(defn- resolve-syms [structure]
-  (clojure.walk/postwalk #(if (symbol? %) (deref (resolve %)) %) structure))
-
 (def nil-result
-  '("nil" (:newline)))
+  ["nil" [:newline]])
 
 (def code "(sorted-map :a {:b 1} :c \"a\" :d 'e :f [2 3])")
 
 (def eval-result (eval (read-string code)))
 
 (def inspect-result
-  '("Class: "
-    (:value "clojure.lang.PersistentTreeMap" 0)
-    (:newline)
-    "Count: " "4"
-    (:newline)
-    (:newline)
-    "--- Contents:"
-    (:newline)
-    "  " (:value ":a" 1) " = " (:value "{:b 1}" 2)
-    (:newline)
-    "  " (:value ":c" 3) " = " (:value "\"a\"" 4)
-    (:newline)
-    "  " (:value ":d" 5) " = " (:value "e" 6)
-    (:newline)
-    "  " (:value ":f" 7) " = " (:value "[2 3]" 8)
-    (:newline)))
+  ["Class: "
+   [:value "clojure.lang.PersistentTreeMap" 0]
+   [:newline]
+   "Count: " "4"
+   [:newline]
+   [:newline]
+   "--- Contents:"
+   [:newline]
+   "  " [:value ":a" 1] " = " [:value "{:b 1}" 2]
+   [:newline]
+   "  " [:value ":c" 3] " = " [:value "\"a\"" 4]
+   [:newline]
+   "  " [:value ":d" 5] " = " [:value "e" 6]
+   [:newline]
+   "  " [:value ":f" 7] " = " [:value "[2 3]" 8]
+   [:newline]])
 
 (def long-sequence (range 70))
 (def long-vector (vec (range 70)))
@@ -105,40 +101,40 @@
 
 (deftest nil-test
   (testing "nil renders correctly"
-    (is (match? nil-result
-                (-> nil
-                    inspect
-                    render)))))
+    (is+ nil-result
+         (-> nil
+             inspect
+             render))))
 
 (deftest pop-empty-test
   (testing "popping an empty inspector renders nil"
-    (is (match? nil-result
-                (-> (inspect nil)
-                    inspect/up
-                    render)))))
+    (is+ nil-result
+         (-> (inspect nil)
+             inspect/up
+             render))))
 
 (deftest pop-empty-idempotent-test
   (testing "popping an empty inspector is idempotent"
-    (is (match? nil-result
-                (-> (inspect nil)
-                    inspect/up
-                    inspect/up
-                    render)))))
+    (is+ nil-result
+         (-> (inspect nil)
+             inspect/up
+             inspect/up
+             render))))
 
 (deftest push-empty-test
   (testing "pushing an empty inspector index renders nil"
-    (is (match? nil-result
-                (-> (inspect nil)
-                    (inspect/down 1)
-                    render)))))
+    (is+ nil-result
+         (-> (inspect nil)
+             (inspect/down 1)
+             render))))
 
 (deftest push-empty-idempotent-test
   (testing "pushing an empty inspector index is idempotent"
-    (is (match? nil-result
-                (-> (inspect nil)
-                    (inspect/down 1)
-                    (inspect/down 1)
-                    render)))))
+    (is+ nil-result
+         (-> (inspect nil)
+             (inspect/down 1)
+             (inspect/down 1)
+             render))))
 
 (def any-var 42)
 
@@ -146,74 +142,70 @@
   (testing "inspecting a var"
     (let [rendered (-> #'any-var inspect render)]
       (testing "renders the header"
-        (is (match? (resolve-syms
-                     '("Class: "
-                       (:value "clojure.lang.Var" number?)
-                       (:newline)
-                       "Value: "
-                       (:value "42" number?)
-                       (:newline)
-                       (:newline)))
-                    (header rendered))))
+        (is+ ["Class: "
+              [:value "clojure.lang.Var" 0]
+              [:newline]
+              "Value: "
+              [:value "42" 1]
+              [:newline]
+              [:newline]]
+             (header rendered)))
       (testing "renders the meta information section"
-        (is (match? (resolve-syms
-                     '("--- Meta Information:"
-                       (:newline)
-                       "  " (:value ":line" number?) " = " (:value string? number?)
-                       (:newline)
-                       "  " (:value ":column" number?) " = " (:value string? number?)
-                       (:newline)
-                       "  " (:value ":file" number?) " = " (:value string? number?)
-                       (:newline)
-                       "  " (:value ":name" number?) " = " (:value "any-var" number?)
-                       (:newline)
-                       "  " (:value ":ns" number?) " = " (:value "orchard.inspect-test" number?)
-                       (:newline)
-                       (:newline)))
-                    (section "Meta Information" rendered))))
+        (is+ ["--- Meta Information:"
+              [:newline]
+              "  " [:value ":line" pos?] " = " [:value string? pos?]
+              [:newline]
+              "  " [:value ":column" pos?] " = " [:value string? pos?]
+              [:newline]
+              "  " [:value ":file" pos?] " = " [:value string? pos?]
+              [:newline]
+              "  " [:value ":name" pos?] " = " [:value "any-var" pos?]
+              [:newline]
+              "  " [:value ":ns" pos?] " = " [:value "orchard.inspect-test" pos?]
+              [:newline]
+              [:newline]]
+             (section "Meta Information" rendered)))
       (testing "renders the datafy section"
-        (is (match? (resolve-syms
-                     '("--- Datafy:"
-                       (:newline)
-                       "  " "0" ". " (:value "42" number?)
-                       (:newline)))
-                    (datafy-section rendered)))))))
+        (is+ ["--- Datafy:"
+              [:newline]
+              "  " "0" ". " [:value "42" pos?]
+              [:newline]]
+             (datafy-section rendered))))))
 
 (deftest inspect-expr-test
   (testing "rendering an expr"
-    (is (match? inspect-result
-                (-> eval-result
-                    inspect
-                    render)))))
+    (is+ inspect-result
+         (-> eval-result
+             inspect
+             render))))
 
 (deftest push-test
   (testing "pushing a rendered expr inspector idx"
-    (is (match? (resolve-syms
-                 '("Class: "
-                   (:value "clojure.lang.PersistentArrayMap" number?)
-                   (:newline)
-                   "Count: " "1"
-                   (:newline)
-                   (:newline)
-                   "--- Contents:"
-                   (:newline)
-                   "  " (:value ":b" number?) " = " (:value "1" number?)
-                   (:newline)
-                   (:newline)
-                   "--- Path:"
-                   (:newline)
-                   "  "
-                   ":a"))
-                (-> eval-result inspect (inspect/down 2) render)))))
+    (is+ ["Class: "
+          [:value "clojure.lang.PersistentArrayMap" number?]
+          [:newline]
+          "Count: " "1"
+          [:newline]
+          [:newline]
+          "--- Contents:"
+          [:newline]
+          "  " [:value ":b" number?] " = " [:value "1" number?]
+          [:newline]
+          [:newline]
+          "--- Path:"
+          [:newline]
+          "  "
+          ":a"]
+         (-> eval-result inspect (inspect/down 2) render))))
 
 (deftest pop-test
   (testing "popping a rendered expr inspector"
-    (is (match? inspect-result
-                (-> eval-result
-                    inspect
-                    (inspect/down 2)
-                    inspect/up
-                    render)))))
+    (is+ inspect-result
+         (-> eval-result
+             inspect
+             (inspect/down 2)
+             inspect/up
+             render))))
 
 (deftest pagination-test
   (testing "big collections are paginated"
@@ -322,20 +314,20 @@
         (is (= 4 (:current-page (inspect/up ins)))))))
   (testing "pagination commands are no-ops on non-pageable objects"
     (let [ins (inspect 42)]
-      (is (match? (render ins)
-                  (render (-> ins
-                              inspect/next-page
-                              inspect/next-page
-                              inspect/prev-page
-                              inspect/prev-page)))))
+      (is+ (render ins)
+           (render (-> ins
+                       inspect/next-page
+                       inspect/next-page
+                       inspect/prev-page
+                       inspect/prev-page))))
     ;; Atom deref contents are non-pageable.
     (let [ins (inspect (atom (range 100)))]
-      (is (match? (render ins)
-                  (render (-> ins
-                              inspect/next-page
-                              inspect/next-page
-                              inspect/prev-page
-                              inspect/prev-page)))))))
+      (is+ (render ins)
+           (render (-> ins
+                       inspect/next-page
+                       inspect/next-page
+                       inspect/prev-page
+                       inspect/prev-page))))))
 
 (deftest def-value-test
   (testing "define var with the currently inspected value"
@@ -557,14 +549,14 @@
                   (inspect/next-sibling)
                   :value))))
   (testing "sibling functions work with arrays"
-    (is (match? {:value 35, :pages-stack [1], :path '[(nth 35)]}
-                (-> (byte-array (range 40))
-                    inspect
-                    (inspect/down 33)
-                    (inspect/next-sibling)
-                    (inspect/next-sibling)
-                    (inspect/next-sibling)
-                    (inspect/next-sibling))))))
+    (is+ {:value 35, :pages-stack [1], :path '[(nth 35)]}
+         (-> (byte-array (range 40))
+             inspect
+             (inspect/down 33)
+             (inspect/next-sibling)
+             (inspect/next-sibling)
+             (inspect/next-sibling)
+             (inspect/next-sibling)))))
 
 (deftest path-test
   (let [t {:a (list 1 2 {:b {:c (vec (map (fn [x] {:foo (* x 10)}) (range 100)))}})
@@ -590,119 +582,114 @@
                          render
                          last))))
   (testing "doesn't show path if unknown navigation has happened"
-    (is (= '(:newline) (-> long-map inspect (inspect/down 39) render last)))
-    (is (= '(:newline) (-> long-map inspect (inspect/down 40) (inspect/down 0) render last)))
-    (is (= '(:newline) (-> long-map inspect (inspect/down 40) (inspect/down 0) (inspect/down 1) render last))))
+    (is (= [:newline] (-> long-map inspect (inspect/down 39) render last)))
+    (is (= [:newline] (-> long-map inspect (inspect/down 40) (inspect/down 0) render last)))
+    (is (= [:newline] (-> long-map inspect (inspect/down 40) (inspect/down 0) (inspect/down 1) render last))))
   (testing "doesn't show the path in the top level"
-    (is (= '(:newline) (-> [1 2 3] inspect render last)))))
+    (is (= [:newline] (-> [1 2 3] inspect render last)))))
 
 (deftest inspect-class-fields-test
   (testing "inspecting a class with fields renders correctly"
-    (is (match? (resolve-syms
-                 '("--- Fields:"
-                   (:newline)
-                   "  " (:value "public static final Boolean FALSE" number?)
-                   (:newline)
-                   "  " (:value "public static final Boolean TRUE" number?)
-                   (:newline)
-                   "  " (:value "public static final Class<Boolean> TYPE" number?)
-                   (:newline)
-                   (:newline)))
-                (->> Boolean inspect render (section "Fields")))))
+    (is+ ["--- Fields:"
+          [:newline]
+          "  " [:value "public static final Boolean FALSE" pos?]
+          [:newline]
+          "  " [:value "public static final Boolean TRUE" pos?]
+          [:newline]
+          "  " [:value "public static final Class<Boolean> TYPE" pos?]
+          [:newline]
+          [:newline]]
+         (->> Boolean inspect render (section "Fields"))))
   (testing "inspecting a class without fields renders correctly"
     (is (nil? (-> Object inspect render (section "Fields"))))))
 
 (deftest inspect-coll-test
   (testing "inspect :coll prints contents of the coll"
-    (is (match? (resolve-syms
-                 '("Class: "
-                   (:value "clojure.lang.PersistentVector" number?)
-                   (:newline)
-                   "Count: " "4"
-                   (:newline)
-                   (:newline)
-                   "--- Contents:"
-                   (:newline)
-                   "  " "0" ". " (:value "1" number?)
-                   (:newline)
-                   "  " "1" ". " (:value "2" number?)
-                   (:newline)
-                   "  " "2" ". " (:value "nil" number?)
-                   (:newline)
-                   "  " "3" ". " (:value "3" number?)
-                   (:newline)))
-                (render (inspect [1 2 nil 3])))))
+    (is+ ["Class: "
+          [:value "clojure.lang.PersistentVector" number?]
+          [:newline]
+          "Count: " "4"
+          [:newline]
+          [:newline]
+          "--- Contents:"
+          [:newline]
+          "  " "0" ". " [:value "1" number?]
+          [:newline]
+          "  " "1" ". " [:value "2" number?]
+          [:newline]
+          "  " "2" ". " [:value "nil" number?]
+          [:newline]
+          "  " "3" ". " [:value "3" number?]
+          [:newline]]
+         (render (inspect [1 2 nil 3]))))
 
   (testing "inspect :coll aligns index numbers so that values appear aligned"
-    (is (match? (resolve-syms
-                 '("Class: "
-                   (:value "clojure.lang.PersistentVector" number?)
-                   (:newline)
-                   "Count: " "11"
-                   (:newline)
-                   (:newline)
-                   "--- Contents:"
-                   (:newline)
-                   "  " " 0" ". " (:value "0" number?)
-                   (:newline)
-                   "  " " 1" ". " (:value "1" number?)
-                   (:newline)
-                   "  " " 2" ". " (:value "2" number?)
-                   (:newline)
-                   "  " " 3" ". " (:value "3" number?)
-                   (:newline)
-                   "  " " 4" ". " (:value "4" number?)
-                   (:newline)
-                   "  " " 5" ". " (:value "5" number?)
-                   (:newline)
-                   "  " " 6" ". " (:value "6" number?)
-                   (:newline)
-                   "  " " 7" ". " (:value "7" number?)
-                   (:newline)
-                   "  " " 8" ". " (:value "8" number?)
-                   (:newline)
-                   "  " " 9" ". " (:value "9" number?)
-                   ;; Numbers above have padding, "10" below doesn't.
-                   (:newline)
-                   "  " "10" ". " (:value "10" number?)
-                   (:newline)))
-                (render (inspect (vec (range 11)))))))
+    (is+ ["Class: "
+          [:value "clojure.lang.PersistentVector" number?]
+          [:newline]
+          "Count: " "11"
+          [:newline]
+          [:newline]
+          "--- Contents:"
+          [:newline]
+          "  " " 0" ". " [:value "0" number?]
+          [:newline]
+          "  " " 1" ". " [:value "1" number?]
+          [:newline]
+          "  " " 2" ". " [:value "2" number?]
+          [:newline]
+          "  " " 3" ". " [:value "3" number?]
+          [:newline]
+          "  " " 4" ". " [:value "4" number?]
+          [:newline]
+          "  " " 5" ". " [:value "5" number?]
+          [:newline]
+          "  " " 6" ". " [:value "6" number?]
+          [:newline]
+          "  " " 7" ". " [:value "7" number?]
+          [:newline]
+          "  " " 8" ". " [:value "8" number?]
+          [:newline]
+          "  " " 9" ". " [:value "9" number?]
+          ;; Numbers above have padding, "10" below doesn't.
+          [:newline]
+          "  " "10" ". " [:value "10" number?]
+          [:newline]]
+         (render (inspect (vec (range 11))))))
 
   (testing "inspect :coll aligns index numbers correctly for page size > 100"
     (let [rendered (-> (inspect (vec (range 101)))
                        (set-page-size 200)
                        render)
           tail (take-last 5 rendered)]
-      (is (match? (matchers/prefix
-                   (resolve-syms
-                    '("Class: "
-                      (:value "clojure.lang.PersistentVector" number?)
-                      (:newline)
-                      "Count: " "101"
-                      (:newline)
-                      (:newline)
-                      "--- Contents:"
-                      (:newline)
-                      "  " "  0" ". " (:value "0" number?))))
-                  rendered))
+      (is+ (matchers/prefix
+            ["Class: "
+             [:value "clojure.lang.PersistentVector" number?]
+             [:newline]
+             "Count: " "101"
+             [:newline]
+             [:newline]
+             "--- Contents:"
+             [:newline]
+             "  " "  0" ". " [:value "0" number?]])
+           rendered)
       ;; "  0" has two spaces of padding, "100" below has none.
-      (is (match? (resolve-syms
-                   '("  " "100" ". " (:value "100" number?) (:newline)))
-                  tail)))))
+      (is+ ["  " "100" ". " [:value "100" pos?] [:newline]]
+           tail))))
 
 (deftest inspect-coll-meta-test
   (testing "inspecting a collection with metadata renders the metadata section"
     (testing "renders the meta information section"
       (let [rendered (render (inspect (with-meta [:a :b :c :d :e] {:m 42})))]
-        (is (match? '("--- Meta Information:"
-                      (:newline)
-                      "  "
-                      (:value ":m" 1)
-                      " = "
-                      (:value "42" 2)
-                      (:newline)
-                      (:newline))
-                    (section "Meta Information" rendered)))))
+        (is+ ["--- Meta Information:"
+              [:newline]
+              "  "
+              [:value ":m" 1]
+              " = "
+              [:value "42" 2]
+              [:newline]
+              [:newline]]
+             (section "Meta Information" rendered))))
 
     (testing "meta values can be navigated to"
       (is (= 42 (-> (inspect (with-meta [:a :b :c :d :e] {:m 42}))
@@ -723,13 +710,13 @@
                          inspect
                          (set-page-size 10)
                          render)]
-        (is (match? '("--- Meta Information:"
-                      (:newline)
-                      "  "
-                      (:value "{0 0, 7 7, 1 1, 4 4, 15 15, ...}" 1)
-                      (:newline)
-                      (:newline))
-                    (section "Meta Information" rendered)))))))
+        (is+ ["--- Meta Information:"
+              [:newline]
+              "  "
+              [:value "{0 0, 7 7, 1 1, 4 4, 15 15, ...}" pos?]
+              [:newline]
+              [:newline]]
+             (section "Meta Information" rendered))))))
 
 (deftest inspect-coll-nav-test
   (testing "inspecting a collection extended with the Datafiable and Navigable protocols"
@@ -740,135 +727,135 @@
                   inspect (set-page-size 2))
           rendered (render ins)]
       (testing "renders the content section"
-        (is (match? '("--- Contents:"
-                      (:newline)
-                      "  " "0" ". " (:value "{:x 0}" 1)
-                      (:newline)
-                      "  " "1" ". " (:value "{:x 1}" 2)
-                      (:newline)
-                      "  " "..."
-                      (:newline)
-                      (:newline))
-                    (section "Contents" rendered))))
+        (is+ ["--- Contents:"
+              [:newline]
+              "  " "0" ". " [:value "{:x 0}" pos?]
+              [:newline]
+              "  " "1" ". " [:value "{:x 1}" pos?]
+              [:newline]
+              "  " "..."
+              [:newline]
+              [:newline]]
+             (section "Contents" rendered)))
       (testing "renders the datafy section"
-        (is (match? '("--- Datafy:"
-                      (:newline)
-                      "  " "0" ". " (:value "{:class \"PersistentHashMap\", :x 0}" 3)
-                      (:newline)
-                      "  " "1" ". " (:value "{:class \"PersistentHashMap\", :x 1}" 4)
-                      (:newline)
-                      "  " "..."
-                      (:newline)
-                      (:newline))
-                    (datafy-section rendered))))
+        (is+ ["--- Datafy:"
+              [:newline]
+              "  " "0" ". " [:value "{:class \"PersistentHashMap\", :x 0}" pos?]
+              [:newline]
+              "  " "1" ". " [:value "{:class \"PersistentHashMap\", :x 1}" pos?]
+              [:newline]
+              "  " "..."
+              [:newline]
+              [:newline]]
+             (datafy-section rendered)))
       (testing "renders the page info section"
-        (is (match? '("--- Page Info:"
-                      (:newline)
-                      "  " "Page size: 2, showing page: 1 of ?"
-                      (:newline))
-                    (section "Page Info" rendered))))
+        (is+ ["--- Page Info:"
+              [:newline]
+              "  " "Page size: 2, showing page: 1 of ?"
+              [:newline]]
+             (section "Page Info" rendered)))
       (testing "follows the same pagination rules"
-        (is (match? '("--- Datafy:"
-                      (:newline)
-                      "  " "..."
-                      (:newline)
-                      "  " "4" ". " (:value "{:class \"PersistentHashMap\", :x 4}" 3)
-                      (:newline)
-                      "  " "5" ". " (:value "{:class \"PersistentHashMap\", :x 5}" 4)
-                      (:newline)
-                      "  " "..."
-                      (:newline)
-                      (:newline))
-                    (-> ins
-                        (inspect/next-page)
-                        (inspect/next-page)
-                        render
-                        datafy-section)))))))
+        (is+ ["--- Datafy:"
+              [:newline]
+              "  " "..."
+              [:newline]
+              "  " "4" ". " [:value "{:class \"PersistentHashMap\", :x 4}" pos?]
+              [:newline]
+              "  " "5" ". " [:value "{:class \"PersistentHashMap\", :x 5}" pos?]
+              [:newline]
+              "  " "..."
+              [:newline]
+              [:newline]]
+             (-> ins
+                 (inspect/next-page)
+                 (inspect/next-page)
+                 render
+                 datafy-section))))))
 
 (deftest inspect-configure-length-test
   (testing "inspect respects :max-atom-length and :max-coll-size configuration"
-    (is (match? '("Class: "
-                  (:value "clojure.lang.Persist..." 0)
-                  (:newline)
-                  "Count: " "1"
-                  (:newline)
-                  (:newline)
-                  "--- Contents:"
-                  (:newline)
-                  "  " "0" ". " (:value "[111111 2222 333 ...]" 1)
-                  (:newline))
-                (-> (inspect/start {:max-atom-length 20
-                                    :max-coll-size 3}
-                                   [[111111 2222 333 44 5]])
-                    render))))
+    (is+ ["Class: "
+          [:value "clojure.lang.Persist..." 0]
+          [:newline]
+          "Count: " "1"
+          [:newline]
+          [:newline]
+          "--- Contents:"
+          [:newline]
+          "  " "0" ". " [:value "[111111 2222 333 ...]" 1]
+          [:newline]]
+         (-> (inspect/start {:max-atom-length 20
+                             :max-coll-size 3}
+                            [[111111 2222 333 44 5]])
+             render)))
   (testing "inspect respects :max-value-length configuration"
-    (is (match? '("Class: "
-                  (:value "clojure.lang.PersistentVector" 0)
-                  (:newline)
-                  "Count: " "1"
-                  (:newline)
-                  (:newline)
-                  "--- Contents:"
-                  (:newline)
-                  "  " "0" ". " (:value "(\"long value\" \"long value\" \"long value\" \"long valu..." 1)
-                  (:newline))
-                (-> (inspect/start {:max-value-length 50} [(repeat "long value")])
-                    render))))
+    (is+ ["Class: "
+          [:value "clojure.lang.PersistentVector" 0]
+          [:newline]
+          "Count: " "1"
+          [:newline]
+          [:newline]
+          "--- Contents:"
+          [:newline]
+          "  " "0" ". " [:value "(\"long value\" \"long value\" \"long value\" \"long valu..." 1]
+          [:newline]]
+         (-> (inspect/start {:max-value-length 50} [(repeat "long value")])
+             render)))
+
   (testing "inspect respects :max-value-depth configuration"
-    (is (match? '("Class: "
-                  (:value "clojure.lang.PersistentVector" 0)
-                  (:newline)
-                  "Count: " "1"
-                  (:newline)
-                  (:newline)
-                  "--- Contents:"
-                  (:newline)
-                  "  " "0" ". " (:value "[[[[[[...]]]]]]" 1)
-                  (:newline))
-                (-> (inspect/start {:max-nested-depth 5} [[[[[[[[[[1]]]]]]]]]])
-                    render)))))
+    (is+ ["Class: "
+          [:value "clojure.lang.PersistentVector" 0]
+          [:newline]
+          "Count: " "1"
+          [:newline]
+          [:newline]
+          "--- Contents:"
+          [:newline]
+          "  " "0" ". " [:value "[[[[[[...]]]]]]" 1]
+          [:newline]]
+         (-> (inspect/start {:max-nested-depth 5} [[[[[[[[[[1]]]]]]]]]])
+             render))))
 
 (deftest inspect-java-hashmap-test
   (testing "inspecting java.util.Map descendants prints a key-value coll"
     (let [^java.util.Map the-map {:a 1, :b 2, :c 3}
           rendered (render (inspect (java.util.HashMap. the-map)))
           contents (section "Contents" rendered)]
-      (is (match? (matchers/prefix '("Class: "
-                                     (:value "java.util.HashMap" 0)
-                                     (:newline)
-                                     "Count: " "3"
-                                     (:newline)
-                                     (:newline)))
-                  rendered))
-      (is (match? (matchers/embeds (list "  " (list :value ":a" pos?) " = " (list :value "1" pos?) '(:newline)))
-                  contents))
-      (is (match? (matchers/embeds (list "  " (list :value ":b" pos?) " = " (list :value "2" pos?) '(:newline)))
-                  contents))
-      (is (match? (matchers/embeds (list "  " (list :value ":c" pos?) " = " (list :value "3" pos?) '(:newline)))
-                  contents)))))
+      (is+ (matchers/prefix ["Class: "
+                             [:value "java.util.HashMap" 0]
+                             [:newline]
+                             "Count: " "3"
+                             [:newline]
+                             [:newline]])
+           rendered)
+      (is+ (matchers/embeds ["  " [:value ":a" pos?] " = " [:value "1" pos?] [:newline]])
+           contents)
+      (is+ (matchers/embeds ["  " [:value ":b" pos?] " = " [:value "2" pos?] [:newline]])
+           contents)
+      (is+ (matchers/embeds ["  " [:value ":c" pos?] " = " [:value "3" pos?] [:newline]])
+           contents))))
 
 (deftest inspect-java-object-test
   (testing "inspecting any Java object prints its fields"
-    (is (match? (resolve-syms
-                 '("Class: "
-                   (:value "clojure.lang.TaggedLiteral" 0)
-                   (:newline)
-                   "Value: " (:value "#foo ()" 1)
-                   (:newline)
-                   "Identity hash code: "
-                   string? " " string?
-                   (:newline)
-                   (:newline)
-                   "--- Instance fields:"
-                   (:newline) "  " (:value "form" 2) " = " (:value "()" 3)
-                   (:newline) "  " (:value "tag" 4) " = " (:value "foo" 5)
-                   (:newline)
-                   (:newline)
-                   "--- Static fields:"
-                   (:newline) "  " (:value "FORM_KW" 6) " = " (:value ":form" 7)
-                   (:newline) "  " (:value "TAG_KW" 8) " = " (:value ":tag" 9)
-                   (:newline)))
-                (render (inspect (clojure.lang.TaggedLiteral/create 'foo ())))))))
+    (is+ ["Class: "
+          [:value "clojure.lang.TaggedLiteral" 0]
+          [:newline]
+          "Value: " [:value "#foo ()" 1]
+          [:newline]
+          "Identity hash code: "
+          string? " " string?
+          [:newline]
+          [:newline]
+          "--- Instance fields:"
+          [:newline] "  " [:value "form" 2] " = " [:value "()" 3]
+          [:newline] "  " [:value "tag" 4] " = " [:value "foo" 5]
+          [:newline]
+          [:newline]
+          "--- Static fields:"
+          [:newline] "  " [:value "FORM_KW" 6] " = " [:value ":form" 7]
+          [:newline] "  " [:value "TAG_KW" 8] " = " [:value ":tag" 9]
+          [:newline]]
+         (render (inspect (clojure.lang.TaggedLiteral/create 'foo ()))))))
 
 (deftest inspect-path
   (testing "basic paths"
@@ -933,97 +920,90 @@
 
 (defn- rendered-hier [indents-and-classnames]
   (mapcat (fn [[indent class]]
-            [indent (list :value class number?) '(:newline)])
+            [indent [:value class number?] [:newline]])
           (partition 2 indents-and-classnames)))
 
 (deftest inspect-class-test
   (testing "inspecting the java.lang.Object class"
     (let [rendered (-> Object inspect render)]
       (testing "renders the header section"
-        (is (match? (resolve-syms
-                     '("Name: "
-                       (:value "java.lang.Object" 0) (:newline)
-                       "Class: " (:value "java.lang.Class" 1) (:newline) (:newline)))
-                    (header rendered))))
+        (is+ ["Name: "
+              [:value "java.lang.Object" 0] [:newline]
+              "Class: " [:value "java.lang.Class" 1] [:newline] [:newline]]
+             (header rendered)))
       (testing "renders the constructors section"
-        (is (match? '("--- Constructors:"
-                      (:newline)
-                      "  " (:value "public Object()" 2)
-                      (:newline)
-                      (:newline))
-                    (section "Constructors" rendered))))
+        (is+ ["--- Constructors:"
+              [:newline]
+              "  " [:value "public Object()" 2]
+              [:newline]
+              [:newline]]
+             (section "Constructors" rendered)))
       (testing "renders the methods section"
         (let [methods (section "Methods" rendered)]
-          (is (match? (matchers/prefix (list "--- Methods:"
-                                             '(:newline)))
-                      methods))
-          (doseq [assertion ["public final native Class<?> getClass()"
-                             "public boolean equals(Object)"
-                             "public native int hashCode()"
-                             "public final native void notify()"
-                             "public final native void notifyAll()"
-                             "public String toString()"
-                             "public final void wait() throws InterruptedException"
-                             "public final void wait(long,int) throws InterruptedException"]]
-            (is (match? (matchers/embeds (list "  " (list :value assertion pos?)))
-                        methods)))))
+          (is+ (matchers/embeds [[:value "public final native Class<?> getClass()" pos?]
+                                 [:value "public boolean equals(Object)" pos?]
+                                 [:value "public native int hashCode()" pos?]
+                                 [:value "public final native void notify()" pos?]
+                                 [:value "public final native void notifyAll()" pos?]
+                                 [:value "public String toString()" pos?]
+                                 [:value "public final void wait() throws InterruptedException" pos?]
+                                 [:value "public final void wait(long,int) throws InterruptedException" pos?]])
+               methods)))
       (testing "renders the datafy section"
-        (is (match? (resolve-syms
-                     '("--- Datafy:"
-                       (:newline)
-                       "  " (:value ":flags" pos?) " = " (:value "#{:public}" pos?)
-                       (:newline)
-                       "  " (:value ":members" pos?) " = "
-                       (:value #=(str "{clone [{:name clone, :return-type java.lang.Object, :declaring-class java.lang.Object, "
-                                      ":parameter-types [], :exception-types [java.lang.CloneNotSupportedException], ...}], equals "
-                                      "[{:name equals, :return-type boolean, :declaring-class java.lang.Object, :parameter-types "
-                                      "[java.lang.Object], :exception-types [], ...}], finalize [{:name finalize, :return-type void, "
-                                      ":declaring-class java.lang.Object, :parameter-types [], :exception-types [java.lang.Throwable], "
-                                      "...}], getClass [{:name getClass, :return-type java.lang.Class, :declaring-class java.lang.Object, "
-                                      ":parameter-types [], :exception-types [], ...}], hashCode [{:name hashCode, :return-type int, "
-                                      ":declaring-class java.lang.Object, :parameter-types [], :exception-types [], ...}], ...}")
-                               pos?)
-                       (:newline)
-                       "  " (:value ":name" pos?) " = " (:value "java.lang.Object" pos?)
-                       (:newline)))
-                    (datafy-section rendered))))))
+        (is+ ["--- Datafy:"
+              [:newline]
+              "  " [:value ":flags" pos?] " = " [:value "#{:public}" pos?]
+              [:newline]
+              "  " [:value ":members" pos?] " = "
+              [:value #=(str "{clone [{:name clone, :return-type java.lang.Object, :declaring-class java.lang.Object, "
+                             ":parameter-types [], :exception-types [java.lang.CloneNotSupportedException], ...}], equals "
+                             "[{:name equals, :return-type boolean, :declaring-class java.lang.Object, :parameter-types "
+                             "[java.lang.Object], :exception-types [], ...}], finalize [{:name finalize, :return-type void, "
+                             ":declaring-class java.lang.Object, :parameter-types [], :exception-types [java.lang.Throwable], "
+                             "...}], getClass [{:name getClass, :return-type java.lang.Class, :declaring-class java.lang.Object, "
+                             ":parameter-types [], :exception-types [], ...}], hashCode [{:name hashCode, :return-type int, "
+                             ":declaring-class java.lang.Object, :parameter-types [], :exception-types [], ...}], ...}")
+               pos?]
+              [:newline]
+              "  " [:value ":name" pos?] " = " [:value "java.lang.Object" pos?]
+              [:newline]]
+             (datafy-section rendered)))))
 
   (testing "inspecting the java.lang.Class class"
     (let [rendered (-> Class inspect render)]
       (testing "renders the class hierarchy section"
-        (is (match? (matchers/prefix (resolve-syms
-                                      '("--- Class hierarchy:"
-                                        (:newline)
-                                        "  " (:value "java.lang.Object" number?)
-                                        (:newline)
-                                        "  " (:value "java.io.Serializable" number?)
-                                        (:newline))))
-                    (section "Class hierarchy" rendered))))))
+        (is+ (matchers/prefix ["--- Class hierarchy:"
+                               [:newline]
+                               "  " [:value "java.lang.Object" pos?]
+                               [:newline]
+                               "  " [:value "java.io.Serializable" pos?]
+                               [:newline]])
+             (section "Class hierarchy" rendered)))))
 
   (testing "inspecting the java.io.FileReader  class"
     (let [rendered (-> java.io.FileReader inspect render)]
       (testing "renders the class hierarchy section"
-        (is (match? (concat '("--- Class hierarchy:" (:newline))
-                            (rendered-hier ["  " "java.io.InputStreamReader"
-                                            "    " "java.io.Reader"
-                                            "      " "java.lang.Object"
-                                            "      " "java.io.Closeable"
-                                            "        " "java.lang.AutoCloseable"
-                                            "      " "java.lang.Readable"])
-                            '((:newline)))
-                    (section "Class hierarchy" rendered))))))
+        (is+ (concat ["--- Class hierarchy:" [:newline]]
+                     (rendered-hier ["  " "java.io.InputStreamReader"
+                                     "    " "java.io.Reader"
+                                     "      " "java.lang.Object"
+                                     "      " "java.io.Closeable"
+                                     "        " "java.lang.AutoCloseable"
+                                     "      " "java.lang.Readable"])
+                     [[:newline]])
+             (section "Class hierarchy" rendered)))))
 
   (testing "inspecting the java.lang.ClassValue class"
     (let [rendered (-> java.lang.ClassValue inspect render)]
       (testing "renders the header section"
-        (is (match? '("Name: "
-                      (:value "java.lang.ClassValue" 0) (:newline)
-                      "Class: " (:value "java.lang.Class" 1) (:newline) (:newline))
-                    (header rendered))))
+        (is+ ["Name: "
+              [:value "java.lang.ClassValue" 0] [:newline]
+              "Class: " [:value "java.lang.Class" 1] [:newline] [:newline]]
+             (header rendered)))
       (testing "renders the methods section"
         (let [methods (section "Methods" rendered)]
-          (is (match? (matchers/prefix (list "--- Methods:" '(:newline)))
-                      methods))
+          (is+ (matchers/prefix ["--- Methods:" [:newline]])
+               methods)
           (doseq [assertion ["public boolean equals(Object)"
                              "public T get(Class<?>)"
                              "public final native Class<?> getClass()"
@@ -1034,243 +1014,241 @@
                              "public String toString()"
                              "public final void wait() throws InterruptedException"
                              "public final void wait(long,int) throws InterruptedException"]]
-            (is (match? (matchers/embeds (list "  " (list :value assertion pos?)))
-                        methods)))))))
+            (is+ (matchers/embeds ["  " [:value assertion pos?]])
+                 methods))))))
 
   (testing "inspecting an internal class"
-    (is (match? (resolve-syms
-                 '("--- Fields:"
-                   (:newline) "  "
-                   (:value "public volatile clojure.lang.MethodImplCache __methodImplCache" number?)
-                   (:newline) (:newline)))
-                (section "Fields" (-> clojure.lang.AFunction$1 inspect render))))))
+    (is+ ["--- Fields:"
+          [:newline] "  "
+          [:value "public volatile clojure.lang.MethodImplCache __methodImplCache" pos?]
+          [:newline] [:newline]]
+         (section "Fields" (-> clojure.lang.AFunction$1 inspect render)))))
 
 (deftest inspect-method-test
   (testing "reflect.Method values aren't truncated"
     (let [rendered (-> (.getDeclaredMethod clojure.lang.AFn "invoke"
                                            (into-array Class (repeat 15 Object)))
                        inspect render)]
-      (is (match? (matchers/embeds '((:value "public Object invoke(Object,Object,Object,Object,Object,Object,Object,Object,Object,Object,Object,Object,Object,Object,Object)" 1)))
-                  rendered)))))
+      (is+ (matchers/embeds [[:value "public Object invoke(Object,Object,Object,Object,Object,Object,Object,Object,Object,Object,Object,Object,Object,Object,Object)" 1]])
+           rendered))))
 
 (deftest inspect-atom-test
   (testing "inspecting an atom"
     (let [rendered (-> (atom {:a 1}) inspect render)]
       (testing "renders the header section"
-        (is (match? '("Class: "
-                      (:value "clojure.lang.Atom" 0)
-                      (:newline)
-                      (:newline))
-                    (header rendered))))
+        (is+ ["Class: "
+              [:value "clojure.lang.Atom" 0]
+              [:newline]
+              [:newline]]
+             (header rendered)))
       (testing "renders the deref section"
-        (is (match? '("--- Deref:"
-                      (:newline)
-                      "  " "Class: " (:value "clojure.lang.PersistentArrayMap" 1)
-                      (:newline)
-                      "  " "Count: " "1"
-                      (:newline)
-                      (:newline)
-                      "  --- Contents:"
-                      (:newline)
-                      "    " (:value ":a" 2) " = " (:value "1" 3)
-                      (:newline))
-                    (section "Deref" rendered))))
+        (is+ ["--- Deref:"
+              [:newline]
+              "  " "Class: " [:value "clojure.lang.PersistentArrayMap" 1]
+              [:newline]
+              "  " "Count: " "1"
+              [:newline]
+              [:newline]
+              "  --- Contents:"
+              [:newline]
+              "    " [:value ":a" 2] " = " [:value "1" 3]
+              [:newline]]
+             (section "Deref" rendered)))
       (testing "doesn't render the datafy section"
-        (is (match? nil (datafy-section rendered))))))
+        (is+ nil (datafy-section rendered)))))
 
   (testing "small collection is rendered fully"
-    (is (match? '("--- Deref:"
-                  (:newline)
-                  "  " "Class: " (:value "clojure.lang.LongRange" 1)
-                  (:newline)
-                  "  " "Count: " "3"
-                  (:newline)
-                  (:newline)
-                  "  --- Contents:"
-                  (:newline)
-                  "    " "0" ". " (:value "0" 2)
-                  (:newline)
-                  "    " "1" ". " (:value "1" 3)
-                  (:newline)
-                  "    " "2" ". " (:value "2" 4)
-                  (:newline))
-                (->> (atom (range 3)) inspect render (section "Deref")))))
+    (is+ ["--- Deref:"
+          [:newline]
+          "  " "Class: " [:value "clojure.lang.LongRange" 1]
+          [:newline]
+          "  " "Count: " "3"
+          [:newline]
+          [:newline]
+          "  --- Contents:"
+          [:newline]
+          "    " "0" ". " [:value "0" 2]
+          [:newline]
+          "    " "1" ". " [:value "1" 3]
+          [:newline]
+          "    " "2" ". " [:value "2" 4]
+          [:newline]]
+         (->> (atom (range 3)) inspect render (section "Deref"))))
 
   (testing "larger collection is rendered as a single value"
-    (is (match? '("--- Deref:"
-                  (:newline)
-                  "  " "Class: " (:value "clojure.lang.LongRange" 1)
-                  (:newline)
-                  "  " "Count: " "100" (:newline) (:newline)
-                  "  --- Contents:"
-                  (:newline)
-                  "    " (:value "(0 1 2 3 4 ...)" 2)
-                  (:newline))
-                (->> (atom (range 100)) inspect render (section "Deref")))))
+    (is+ ["--- Deref:"
+          [:newline]
+          "  " "Class: " [:value "clojure.lang.LongRange" 1]
+          [:newline]
+          "  " "Count: " "100" [:newline] [:newline]
+          "  --- Contents:"
+          [:newline]
+          "    " [:value "(0 1 2 3 4 ...)" 2]
+          [:newline]]
+         (->> (atom (range 100)) inspect render (section "Deref"))))
 
   (testing "meta is shown on atoms"
-    (is (match? '("--- Meta Information:"
-                  (:newline)
-                  "  " (:value ":foo" 1) " = " (:value "\"bar\"" 2)
-                  (:newline)
-                  (:newline))
-                (->> (atom [1 2 3] :meta {:foo "bar"}) inspect render (section "Meta Information"))))))
+    (is+ ["--- Meta Information:"
+          [:newline]
+          "  " [:value ":foo" 1] " = " [:value "\"bar\"" 2]
+          [:newline]
+          [:newline]]
+         (->> (atom [1 2 3] :meta {:foo "bar"}) inspect render (section "Meta Information")))))
 
 (deftest inspect-atom-infinite-seq-test
   (testing "inspecting an atom holding an infinite seq"
     (let [rendered (-> (atom (repeat 1)) inspect (set-page-size 3) render)]
       (testing "renders the header section"
-        (is (match? '("Class: "
-                      (:value "clojure.lang.Atom" 0)
-                      (:newline)
-                      (:newline))
-                    (header rendered))))
+        (is+ ["Class: "
+              [:value "clojure.lang.Atom" 0]
+              [:newline]
+              [:newline]]
+             (header rendered)))
       (testing "renders the deref section"
-        (is (match? '("--- Deref:"
-                      (:newline)
-                      "  " "Class: " (:value "clojure.lang.Repeat" 1)
-                      (:newline)
-                      (:newline)
-                      "  --- Contents:"
-                      (:newline)
-                      "    " (:value "(1 1 1 1 1 ...)" 2)
-                      (:newline))
-                    (section "Deref" rendered)))))))
+        (is+ ["--- Deref:"
+              [:newline]
+              "  " "Class: " [:value "clojure.lang.Repeat" 1]
+              [:newline]
+              [:newline]
+              "  --- Contents:"
+              [:newline]
+              "    " [:value "(1 1 1 1 1 ...)" 2]
+              [:newline]]
+             (section "Deref" rendered))))))
 
 (deftest inspect-clojure-string-namespace-test
   (testing "inspecting the clojure.string namespace"
     (let [result (-> (find-ns 'clojure.string) inspect render)]
       (testing "renders the header"
-        (is (match? (resolve-syms
-                     '("Class: "
-                       (:value "clojure.lang.Namespace" number?)
-                       (:newline)
-                       "Count: " string?
-                       (:newline)
-                       (:newline)))
-                    (header result))))
+        (is+ ["Class: "
+              [:value "clojure.lang.Namespace" number?]
+              [:newline]
+              "Count: " string?
+              [:newline]
+              [:newline]]
+             (header result)))
       (testing "renders the meta section"
-        (is (match? '("--- Meta Information:"
-                      (:newline)
-                      "  " (:value ":doc" 1)
-                      " = "
-                      (:value #=(str "\"Clojure String utilities\\n\\nIt is poor form to (:use clojure.string). "
-                                     "Instead, use require\\nwith :as to specify a prefix, e.g.\\n\\n(ns your.namespace.here\\n ...\"") 2)
-                      (:newline)
-                      "  " (:value ":author" 3)
-                      " = "
-                      (:value "\"Stuart Sierra, Stuart Halloway, David Liebke\"" 4)
-                      (:newline)
-                      (:newline))
-                    (section "Meta Information" result))))
+        (is+ ["--- Meta Information:"
+              [:newline]
+              "  " [:value ":doc" pos?]
+              " = "
+              [:value #=(str "\"Clojure String utilities\\n\\nIt is poor form to (:use clojure.string). "
+                             "Instead, use require\\nwith :as to specify a prefix, e.g.\\n\\n(ns your.namespace.here\\n ...\"") pos?]
+              [:newline]
+              "  " [:value ":author" pos?]
+              " = "
+              [:value "\"Stuart Sierra, Stuart Halloway, David Liebke\"" pos?]
+              [:newline]
+              [:newline]]
+             (section "Meta Information" result)))
       (testing "renders the refer from section"
-        (is (match? '("--- Refer from:"
-                      (:newline)
-                      "  "
-                      (:value "clojure.core" 5)
-                      " = "
-                      (:value #=(str "[#'clojure.core/primitives-classnames #'clojure.core/+' #'clojure.core/decimal? "
-                                     "#'clojure.core/restart-agent #'clojure.core/sort-by ...]") 6)
-                      (:newline)
-                      (:newline))
-                    (section "Refer from" result))))
+        (is+ ["--- Refer from:"
+              [:newline]
+              "  "
+              [:value "clojure.core" pos?]
+              " = "
+              [:value #=(str "[#'clojure.core/primitives-classnames #'clojure.core/+' #'clojure.core/decimal? "
+                             "#'clojure.core/restart-agent #'clojure.core/sort-by ...]") pos?]
+              [:newline]
+              [:newline]]
+             (section "Refer from" result)))
       (testing "renders the imports section"
-        (is (match? '("--- Imports:"
-                      (:newline)
-                      "  " (:value #=(str "{Enum java.lang.Enum, "
-                                          "InternalError java.lang.InternalError, "
-                                          "NullPointerException java.lang.NullPointerException, "
-                                          "InheritableThreadLocal java.lang.InheritableThreadLocal, "
-                                          "Class java.lang.Class, ...}") 7)
-                      (:newline)
-                      (:newline))
-                    (section "Imports" result))))
+        (is+ ["--- Imports:"
+              [:newline]
+              "  " [:value #=(str "{Enum java.lang.Enum, "
+                                  "InternalError java.lang.InternalError, "
+                                  "NullPointerException java.lang.NullPointerException, "
+                                  "InheritableThreadLocal java.lang.InheritableThreadLocal, "
+                                  "Class java.lang.Class, ...}") pos?]
+              [:newline]
+              [:newline]]
+             (section "Imports" result)))
       (testing "renders the interns section"
-        (is (match? '("--- Interns:"
-                      (:newline)
-                      "  " (:value #=(str "{ends-with? #'clojure.string/ends-with?, "
-                                          "replace-first-char #'clojure.string/replace-first-char, "
-                                          "capitalize #'clojure.string/capitalize, "
-                                          "reverse #'clojure.string/reverse, join #'clojure.string/join, ...}") 8)
-                      (:newline)
-                      (:newline))
-                    (section "Interns" result))))
+        (is+ ["--- Interns:"
+              [:newline]
+              "  " [:value #=(str "{ends-with? #'clojure.string/ends-with?, "
+                                  "replace-first-char #'clojure.string/replace-first-char, "
+                                  "capitalize #'clojure.string/capitalize, "
+                                  "reverse #'clojure.string/reverse, join #'clojure.string/join, ...}") pos?]
+              [:newline]
+              [:newline]]
+             (section "Interns" result)))
       (testing "renders the datafy from section"
-        (is (match? '("--- Datafy:"
-                      (:newline)
-                      "  " (:value ":name" 9) " = " (:value "clojure.string" 10)
-                      (:newline)
-                      "  " (:value ":publics" 11) " = "
-                      (:value #=(str "{blank? #'clojure.string/blank?, capitalize "
-                                     "#'clojure.string/capitalize, ends-with? #'clojure.string/ends-with?, "
-                                     "escape #'clojure.string/escape, includes? #'clojure.string/includes?, ...}") 12)
-                      (:newline)
-                      "  " (:value ":imports" 13) " = "
-                      (:value #=(str "{AbstractMethodError java.lang.AbstractMethodError, Appendable java.lang.Appendable, "
-                                     "ArithmeticException java.lang.ArithmeticException, ArrayIndexOutOfBoundsException "
-                                     "java.lang.ArrayIndexOutOfBoundsException, ArrayStoreException java.lang.ArrayStoreException, ...}") 14)
-                      (:newline)
-                      "  " (:value ":interns" 15) " = "
-                      (:value #=(str "{blank? #'clojure.string/blank?, capitalize #'clojure.string/capitalize, ends-with? #'clojure.string/ends-with?, "
-                                     "escape #'clojure.string/escape, includes? #'clojure.string/includes?, ...}") 16)
-                      (:newline))
-                    (datafy-section result)))))))
+        (is+ ["--- Datafy:"
+              [:newline]
+              "  " [:value ":name" 9] " = " [:value "clojure.string" pos?]
+              [:newline]
+              "  " [:value ":publics" pos?] " = "
+              [:value #=(str "{blank? #'clojure.string/blank?, capitalize "
+                             "#'clojure.string/capitalize, ends-with? #'clojure.string/ends-with?, "
+                             "escape #'clojure.string/escape, includes? #'clojure.string/includes?, ...}") pos?]
+              [:newline]
+              "  " [:value ":imports" pos?] " = "
+              [:value #=(str "{AbstractMethodError java.lang.AbstractMethodError, Appendable java.lang.Appendable, "
+                             "ArithmeticException java.lang.ArithmeticException, ArrayIndexOutOfBoundsException "
+                             "java.lang.ArrayIndexOutOfBoundsException, ArrayStoreException java.lang.ArrayStoreException, ...}") pos?]
+              [:newline]
+              "  " [:value ":interns" pos?] " = "
+              [:value #=(str "{blank? #'clojure.string/blank?, capitalize #'clojure.string/capitalize, ends-with? #'clojure.string/ends-with?, "
+                             "escape #'clojure.string/escape, includes? #'clojure.string/includes?, ...}") pos?]
+              [:newline]]
+             (datafy-section result))))))
 
 (deftest inspect-datafiable-metadata-extension-test
   (testing "inspecting a map extended with the Datafiable protocol"
     (let [rendered (-> (extend-datafy-class {:name "John Doe"}) inspect render)]
       (testing "renders the header"
-        (is (match? '("Class: "
-                      (:value "clojure.lang.PersistentArrayMap" 0)
-                      (:newline)
-                      "Count: " "1"
-                      (:newline)
-                      (:newline))
-                    (header rendered))))
+        (is+ ["Class: "
+              [:value "clojure.lang.PersistentArrayMap" 0]
+              [:newline]
+              "Count: " "1"
+              [:newline]
+              [:newline]]
+             (header rendered)))
       (testing "renders the meta information section"
-        (is (match? '("--- Meta Information:"
-                      (:newline)
-                      "  "
-                      (:value "clojure.core.protocols/datafy" 1)
-                      " = "
-                      (:value "#function[orchard.inspect-test/extend-datafy-class/fn]" 2)
-                      (:newline)
-                      (:newline))
-                    (demunge (section "Meta Information" rendered)))))
+        (is+ ["--- Meta Information:"
+              [:newline]
+              "  "
+              [:value "clojure.core.protocols/datafy" 1]
+              " = "
+              [:value "#function[orchard.inspect-test/extend-datafy-class/fn]" 2]
+              [:newline]
+              [:newline]]
+             (demunge (section "Meta Information" rendered))))
       (testing "renders the datafy section"
-        (is (match? '("--- Datafy:"
-                      (:newline)
-                      "  " (:value ":name" 5) " = " (:value "\"John Doe\"" 6)
-                      (:newline)
-                      "  " (:value ":class" 7) " = " (:value "\"PersistentArrayMap\"" 8)
-                      (:newline))
-                    (datafy-section rendered)))))))
+        (is+ ["--- Datafy:"
+              [:newline]
+              "  " [:value ":name" pos?] " = " [:value "\"John Doe\"" pos?]
+              [:newline]
+              "  " [:value ":class" pos?] " = " [:value "\"PersistentArrayMap\"" pos?]
+              [:newline]]
+             (datafy-section rendered))))))
 
 (deftest inspect-navigable-metadata-extension-test
   (testing "inspecting a map extended with the Navigable protocol"
     (let [rendered (-> (extend-nav-vector {:name "John Doe"}) inspect render)]
       (testing "renders the header"
-        (is (match? '("Class: "
-                      (:value "clojure.lang.PersistentArrayMap" 0)
-                      (:newline)
-                      "Count: " "1"
-                      (:newline)
-                      (:newline))
-                    (header rendered))))
+        (is+ ["Class: "
+              [:value "clojure.lang.PersistentArrayMap" 0]
+              [:newline]
+              "Count: " "1"
+              [:newline]
+              [:newline]]
+             (header rendered)))
       (testing "renders the meta information section"
-        (is (match? '("--- Meta Information:"
-                      (:newline)
-                      "  " (:value "clojure.core.protocols/nav" 1)
-                      " = " (:value "#function[orchard.inspect-test/extend-nav-vector/fn]" 2)
-                      (:newline)
-                      (:newline))
-                    (demunge (section "Meta Information" rendered)))))
+        (is+ ["--- Meta Information:"
+              [:newline]
+              "  " [:value "clojure.core.protocols/nav" pos?]
+              " = " [:value "#function[orchard.inspect-test/extend-nav-vector/fn]" pos?]
+              [:newline]
+              [:newline]]
+             (demunge (section "Meta Information" rendered))))
       (testing "renders the datafy section"
-        (is (match? '("--- Datafy:"
-                      (:newline)
-                      "  " (:value ":name" 5) " = " (:value "[:name \"John Doe\"]" 6)
-                      (:newline))
-                    (datafy-section rendered)))))))
+        (is+ ["--- Datafy:"
+              [:newline]
+              "  " [:value ":name" pos?] " = " [:value "[:name \"John Doe\"]" pos?]
+              [:newline]]
+             (datafy-section rendered))))))
 
 (deftest inspect-throwable-test
   (testing "inspecting a throwable"
@@ -1278,101 +1256,97 @@
                          (.setStackTrace (into-array StackTraceElement [])))
                        inspect render)]
       (testing "renders the header"
-        (is (match? '("Class: "
-                      (:value "clojure.lang.ExceptionInfo" 0)
-                      (:newline)
-                      "Message: " "BOOM"
-                      (:newline)
-                      (:newline))
-                    (header rendered))))
+        (is+ ["Class: "
+              [:value "clojure.lang.ExceptionInfo" 0]
+              [:newline]
+              "Message: " "BOOM"
+              [:newline]
+              [:newline]]
+             (header rendered)))
       (testing "renders a causes section"
-        (is (match? '("--- Causes:"
-                      (:newline)
-                      "  " "BOOM" (:newline)
-                      "  " (:value "clojure.lang.ExceptionInfo" 1) (:newline)
-                      (:newline))
-                    (section "Causes" rendered))))
+        (is+ ["--- Causes:"
+              [:newline]
+              "  " "BOOM" [:newline]
+              "  " [:value "clojure.lang.ExceptionInfo" 1] [:newline]
+              [:newline]]
+             (section "Causes" rendered)))
       (testing "renders the datafy section"
-        (is (match? (resolve-syms
-                     (if (> java-api-version 8)
-                       '("--- Datafy:"
-                         (:newline)
-                         "  "
-                         (:value ":via" number?)
-                         " = "
-                         (:value
-                          "[{:type clojure.lang.ExceptionInfo, :message \"BOOM\", :data {}}]"
-                          number?)
-                         (:newline)
-                         "  "
-                         (:value ":trace" number?)
-                         " = "
-                         (:value "[]" number?)
-                         (:newline)
-                         "  "
-                         (:value ":cause" number?)
-                         " = "
-                         (:value "\"BOOM\"" number?)
-                         (:newline)
-                         "  "
-                         (:value ":data" number?)
-                         " = "
-                         (:value "{}" number?)
-                         (:newline))
-                       '("--- Datafy:"
-                         (:newline)
-                         "  " (:value ":via" number?) " = " (:value "[{:type clojure.lang.ExceptionInfo, :message \"BOOM\", :data {}}]" number?)
-                         (:newline)
-                         "  " (:value ":trace" number?) " = " (:value "[]" number?)
-                         (:newline)
-                         "  " (:value ":cause" number?) " = " (:value "\"BOOM\"" number?)
-                         (:newline)
-                         "  " (:value ":data" number?) " = " (:value "{}" number?)
-                         (:newline))))
-                    (datafy-section rendered))))))
+        (is+ (if (> java-api-version 8)
+               ["--- Datafy:"
+                [:newline]
+                "  "
+                [:value ":via" number?]
+                " = "
+                [:value
+                 "[{:type clojure.lang.ExceptionInfo, :message \"BOOM\", :data {}}]"
+                 number?]
+                [:newline]
+                "  "
+                [:value ":trace" number?]
+                " = "
+                [:value "[]" number?]
+                [:newline]
+                "  "
+                [:value ":cause" number?]
+                " = "
+                [:value "\"BOOM\"" number?]
+                [:newline]
+                "  "
+                [:value ":data" number?]
+                " = "
+                [:value "{}" number?]
+                [:newline]]
+               ["--- Datafy:"
+                [:newline]
+                "  " [:value ":via" number?] " = " [:value "[{:type clojure.lang.ExceptionInfo, :message \"BOOM\", :data {}}]" number?]
+                [:newline]
+                "  " [:value ":trace" number?] " = " [:value "[]" number?]
+                [:newline]
+                "  " [:value ":cause" number?] " = " [:value "\"BOOM\"" number?]
+                [:newline]
+                "  " [:value ":data" number?] " = " [:value "{}" number?]
+                [:newline]])
+             (datafy-section rendered)))))
 
   (testing "exception with multiple causes"
     (let [rendered (-> (ex-info "Outer" {} (RuntimeException. "Inner"))
                        inspect render)]
-      (is (match? (resolve-syms
-                   '("--- Causes:"
-                     (:newline)
-                     "  " "Outer" (:newline)
-                     "  " (:value "clojure.lang.ExceptionInfo" number?) " at "
-                     (:value #"orchard.inspect_test\$fn" number?) (:newline)
-                     (:newline)
-                     "  " "Inner" (:newline) "  " (:value "java.lang.RuntimeException" number?) " at "
-                     (:value #"orchard.inspect_test\$fn" number?) (:newline)
-                     (:newline)))
-                  (section "Causes" rendered)))
+      (is+ ["--- Causes:"
+            [:newline]
+            "  " "Outer" [:newline]
+            "  " [:value "clojure.lang.ExceptionInfo" number?] " at "
+            [:value #"orchard.inspect_test\$fn" number?] [:newline]
+            [:newline]
+            "  " "Inner" [:newline] "  " [:value "java.lang.RuntimeException" number?] " at "
+            [:value #"orchard.inspect_test\$fn" number?] [:newline]
+            [:newline]]
+           (section "Causes" rendered))
       (testing "trace is rendered"
-        (is (match? (matchers/prefix
-                     (resolve-syms
-                      '("--- Trace:"
-                        (:newline)
-                        "  " " 0" ". " (:value #"orchard.inspect_test\$fn" number?) (:newline)
-                        "  " " 1" ". " (:value #"orchard.inspect_test\$fn" number?) (:newline)
-                        "  " " 2" ". " (:value string? number?) (:newline)
-                        "  " " 3" ". " (:value string? number?) (:newline)
-                        "  " " 4" ". " (:value string? number?) (:newline))))
-                    (section "Trace" rendered)))))))
+        (is+ (matchers/prefix
+              ["--- Trace:"
+               [:newline]
+               "  " " 0" ". " [:value #"orchard.inspect_test\$fn" number?] [:newline]
+               "  " " 1" ". " [:value #"orchard.inspect_test\$fn" number?] [:newline]
+               "  " " 2" ". " [:value string? number?] [:newline]
+               "  " " 3" ". " [:value string? number?] [:newline]
+               "  " " 4" ". " [:value string? number?] [:newline]])
+             (section "Trace" rendered))))))
 
 (deftest inspect-eduction-test
   (testing "inspecting eduction shows its object fields"
     (let [rendered (-> (eduction (range 10)) inspect render)]
       (testing "renders the header section"
-        (is (match? (resolve-syms
-                     '("Class: "
-                       (:value "clojure.core.Eduction" 0)
-                       (:newline)
-                       "Value: "
-                       (:value "(0 1 2 3 4 ...)" 1)
-                       (:newline)
-                       "Identity hash code: "
-                       string? " " string?
-                       (:newline)
-                       (:newline)))
-                    (header rendered)))))
+        (is+ ["Class: "
+              [:value "clojure.core.Eduction" 0]
+              [:newline]
+              "Value: "
+              [:value "(0 1 2 3 4 ...)" 1]
+              [:newline]
+              "Identity hash code: "
+              string? " " string?
+              [:newline]
+              [:newline]]
+             (header rendered))))
 
     (let [rendered (-> (eduction (range 100)) inspect render)]
       (testing "doesn't render page info section"
@@ -1381,47 +1355,47 @@
 (deftest render-counted-length-test
   (testing "inspecting counted collections shows their size upfront"
     (let [rendered (-> (range 10) inspect render)]
-      (is (match? '("Class: "
-                    (:value "clojure.lang.LongRange" 0)
-                    (:newline)
-                    "Count: " "10"
-                    (:newline)
-                    (:newline))
-                  (header rendered))))
+      (is+ ["Class: "
+            [:value "clojure.lang.LongRange" 0]
+            [:newline]
+            "Count: " "10"
+            [:newline]
+            [:newline]]
+           (header rendered)))
     (let [rendered (-> (zipmap (range 20) (range 20)) inspect render)]
-      (is (match? '("Class: "
-                    (:value "clojure.lang.PersistentHashMap" 0)
-                    (:newline)
-                    "Count: " "20"
-                    (:newline)
-                    (:newline))
-                  (header rendered))))
+      (is+ ["Class: "
+            [:value "clojure.lang.PersistentHashMap" 0]
+            [:newline]
+            "Count: " "20"
+            [:newline]
+            [:newline]]
+           (header rendered)))
     (let [rendered (-> (byte-array 30) inspect render)]
-      (is (match? '("Class: "
-                    (:value #"\[B|byte/1" 0)
-                    (:newline)
-                    "Count: " "30"
-                    (:newline)
-                    "Component Type: " (:value "byte" 1)
-                    (:newline)
-                    (:newline))
-                  (header rendered))))
+      (is+ ["Class: "
+            [:value #"\[B|byte/1" 0]
+            [:newline]
+            "Count: " "30"
+            [:newline]
+            "Component Type: " [:value "byte" 1]
+            [:newline]
+            [:newline]]
+           (header rendered)))
     (let [rendered (-> (java.util.HashMap.) inspect render)]
-      (is (match? '("Class: "
-                    (:value "java.util.HashMap" 0)
-                    (:newline)
-                    "Count: " "0"
-                    (:newline)
-                    (:newline))
-                  (header rendered))))
+      (is+ ["Class: "
+            [:value "java.util.HashMap" 0]
+            [:newline]
+            "Count: " "0"
+            [:newline]
+            [:newline]]
+           (header rendered)))
     (let [rendered (-> (cons 1 (cons 2 nil)) inspect render)]
-      (is (match? '("Class: "
-                    (:value "clojure.lang.Cons" 0)
-                    (:newline)
-                    "Count: " "2"
-                    (:newline)
-                    (:newline))
-                  (header rendered))))))
+      (is+ ["Class: "
+            [:value "clojure.lang.Cons" 0]
+            [:newline]
+            "Count: " "2"
+            [:newline]
+            [:newline]]
+           (header rendered)))))
 
 (deftest object-view-mode-test
   (testing "in :object view-mode recognized objects are rendered as :default"
@@ -1429,32 +1403,31 @@
                        (inspect/start)
                        (inspect/set-view-mode :object)
                        render)]
-      (is (match? (matchers/embeds
-                   '("--- Instance fields:"
-                     (:newline)
-                     "  " (:value "_count" 2) " = " (:value "3" 3) (:newline)
-                     "  " (:value "_first" 4) " = " (:value "1" 5) (:newline)
-                     "  " (:value "_hash" 6) " = " (:value "0" 7) (:newline)
-                     (:newline) (:newline)))
-                  (section "Instance fields" rendered)))
-      (is (match? '("--- View mode:" (:newline) "  " ":object")
-                  (section "View mode" rendered))))
+      (is+ (matchers/prefix
+            ["--- Instance fields:"
+             [:newline]
+             "  " [:value "_count" pos?] " = " [:value "3" pos?] [:newline]
+             "  " [:value "_first" pos?] " = " [:value "1" pos?] [:newline]
+             "  " [:value "_hash" pos?] " = " [:value "0" pos?] [:newline]])
+           (section "Instance fields" rendered))
+      (is+ ["--- View mode:" [:newline] "  " ":object"]
+           (section "View mode" rendered)))
 
     (let [rendered (-> (atom "foo")
                        (inspect/start)
                        (inspect/set-view-mode :object)
                        render)]
-      (is (match? (matchers/embeds
-                   '("--- Instance fields:"
-                     (:newline)
-                     "  " (:value "_meta" 2) " = " (:value "nil" 3) (:newline)
-                     "  " (:value "state" 4) " = " (:value "foo" 5) (:newline)
-                     "  " (:value "validator" 6) " = " (:value "nil" 7) (:newline)
-                     "  " (:value "watches" 8) " = " (:value "{}" 9) (:newline)
-                     (:newline)))
-                  (section "Instance fields" rendered)))
-      (is (match? '("--- View mode:" (:newline) "  " ":object")
-                  (section "View mode" rendered)))))
+      (is+ (matchers/prefix
+            ["--- Instance fields:"
+             [:newline]
+             "  " [:value "_meta" pos?] " = " [:value "nil" pos?] [:newline]
+             "  " [:value "state" pos?] " = " [:value "foo" pos?] [:newline]
+             "  " [:value "validator" pos?] " = " [:value "nil" pos?] [:newline]
+             "  " [:value "watches" pos?] " = " [:value "{}" pos?] [:newline]
+             [:newline]])
+           (section "Instance fields" rendered))
+      (is+ ["--- View mode:" [:newline] "  " ":object"]
+           (section "View mode" rendered))))
 
   (testing "navigating away from an object changes the view mode back to normal"
     (let [rendered (-> (list 1 2 3)
@@ -1462,12 +1435,12 @@
                        (inspect/set-view-mode :object)
                        (inspect/down 13)
                        render)]
-      (is (match? (matchers/prefix
-                   '("--- Contents:"
-                     (:newline)
-                     "  " "0" ". " (:value "2" 1) (:newline)
-                     "  " "1" ". " (:value "3" 2) (:newline)))
-                  (section "Contents" rendered)))))
+      (is+ (matchers/prefix
+            ["--- Contents:"
+             [:newline]
+             "  " "0" ". " [:value "2" pos?] [:newline]
+             "  " "1" ". " [:value "3" pos?] [:newline]])
+           (section "Contents" rendered))))
 
   (testing "going back to value viewed with a different mode will remember that view mode"
     (let [rendered (-> (list 1 2 3)
@@ -1477,18 +1450,15 @@
                        (inspect/set-view-mode :normal)
                        (inspect/up)
                        render)]
-      (is (match? (matchers/prefix
-                   '("--- Instance fields:"
-                     (:newline)
-                     "  " (:value "_count" 2) " = " (:value "3" 3) (:newline)
-                     "  " (:value "_first" 4) " = " (:value "1" 5) (:newline)
-                     "  " (:value "_hash" 6) " = " (:value "0" 7) (:newline)))
-                  (section "Instance fields" rendered))))))
+      (is+ (matchers/prefix
+            ["--- Instance fields:"
+             [:newline]
+             "  " [:value "_count" pos?] " = " [:value "3" pos?] [:newline]
+             "  " [:value "_first" pos?] " = " [:value "1" pos?] [:newline]
+             "  " [:value "_hash" pos?] " = " [:value "0" pos?] [:newline]])
+           (section "Instance fields" rendered)))))
 
 (deftest tap-test
-  ;; NOTE: this deftest is flaky - wrap the body in the following (and remove the `Thread/sleep`) to reproduce.
-  #_(dotimes [_ 100000])
-
   (testing "tap-current-value"
     (let [proof (atom [])
           test-tap-handler (fn [x]
@@ -1556,13 +1526,10 @@
 
 (deftest datafy-test
   (testing "When `(datafy x)` is identical to `x`, no Datafy section is included"
-    (let [rendered (-> {:foo :bar} inspect render)]
-      (is (nil? (datafy-section rendered))))
-    (let [rendered (-> {:foo :bar :nilable nil} inspect render)]
-      (is (nil? (datafy-section rendered)))))
+    (is+ nil (-> {:foo :bar} inspect render datafy-section))
+    (is+ nil (-> {:foo :bar :nilable nil} inspect render datafy-section)))
   (testing "datafy is not included for records"
-    (let [rendered (-> (->TestRecord 1 2 3 4) inspect render)]
-      (is (nil? (datafy-section rendered)))))
+    (is+ nil (-> (->TestRecord 1 2 3 4) inspect render datafy-section)))
   (testing "if datafied repr doesn't mirror the original, don't page datafied"
     (let [rendered (-> {:a 1, :b 2}
                        (with-meta {'clojure.core.protocols/datafy
@@ -1570,22 +1537,22 @@
                        inspect
                        (set-page-size 1)
                        render)]
-      (is (match? '("--- Contents:"
-                    (:newline)
-                    "  " (:value ":a" 3)
-                    " = "
-                    (:value "1" 4)
-                    (:newline)
-                    "  " "..."
-                    (:newline)
-                    (:newline))
-                  (section "Contents" rendered)))
-      (is (match? '("--- Datafy:"
-                    (:newline)
-                    "  " (:value "[0 1 2 3 4 ...]" 5)
-                    (:newline)
-                    (:newline))
-                  (datafy-section rendered))))
+      (is+ ["--- Contents:"
+            [:newline]
+            "  " [:value ":a" pos?]
+            " = "
+            [:value "1" pos?]
+            [:newline]
+            "  " "..."
+            [:newline]
+            [:newline]]
+           (section "Contents" rendered))
+      (is+ ["--- Datafy:"
+            [:newline]
+            "  " [:value "[0 1 2 3 4 ...]" pos?]
+            [:newline]
+            [:newline]]
+           (datafy-section rendered)))
 
     (testing "if datafied is small enough, render it as a collection"
       (let [rendered (-> {:a 1, :b 2}
@@ -1594,76 +1561,74 @@
                          inspect
                          (set-page-size 5)
                          render)]
-        (is (match? '("--- Datafy:"
-                      (:newline)
-                      "  " "0" ". " (:value "0" 7)
-                      (:newline)
-                      "  " "1" ". " (:value "1" 8)
-                      (:newline)
-                      "  " "2" ". " (:value "2" 9)
-                      (:newline))
-                    (datafy-section rendered))))))
+        (is+ ["--- Datafy:"
+              [:newline]
+              "  " "0" ". " [:value "0" pos?]
+              [:newline]
+              "  " "1" ". " [:value "1" pos?]
+              [:newline]
+              "  " "2" ". " [:value "2" pos?]
+              [:newline]]
+             (datafy-section rendered)))))
   (testing "datafy doesn't show if the differing datafied is not on the current page"
     (let [ins (-> {:a 1, :b (with-meta [] {'clojure.core.protocols/datafy
                                            (fn [_] :datafied)})}
                   inspect
                   (set-page-size 1))
           rendered (render ins)]
-      (is (match? nil (datafy-section rendered)))
-      (is (match? '("--- Datafy:"
-                    (:newline)
-                    "  " "..."
-                    (:newline)
-                    "  " (:value ":b" 3)
-                    " = "
-                    (:value ":datafied" 4)
-                    (:newline)
-                    (:newline))
-                  (datafy-section (-> ins (inspect/next-page) render)))))
+      (is+ nil (datafy-section rendered))
+      (is+ ["--- Datafy:"
+            [:newline]
+            "  " "..."
+            [:newline]
+            "  " [:value ":b" pos?]
+            " = "
+            [:value ":datafied" pos?]
+            [:newline]
+            [:newline]]
+           (datafy-section (-> ins (inspect/next-page) render))))
     (let [ins (-> [1 2 3 (with-meta [] {'clojure.core.protocols/datafy
                                         (fn [_] :datafied)})]
                   inspect
                   (set-page-size 2))
           rendered (render ins)]
-      (is (match? nil (datafy-section rendered)))
-      (is (match? '("--- Datafy:"
-                    (:newline)
-                    "  " "..."
-                    (:newline)
-                    "  " "2" ". " (:value "3" 3)
-                    (:newline)
-                    "  " "3" ". " (:value ":datafied" 4)
-                    (:newline)
-                    (:newline))
-                  (datafy-section (-> ins (inspect/next-page) render)))))))
+      (is+ nil (datafy-section rendered))
+      (is+ ["--- Datafy:"
+            [:newline]
+            "  " "..."
+            [:newline]
+            "  " "2" ". " [:value "3" pos?]
+            [:newline]
+            "  " "3" ". " [:value ":datafied" pos?]
+            [:newline]
+            [:newline]]
+           (datafy-section (-> ins inspect/next-page render))))))
 
 (deftest private-field-access-test
   (testing "Inspection of private fields is attempted (may fail depending on the JDK and the module of the given class)"
     (if (< java-api-version 17)
       (do
-        (is (nil? (->> 2 inspect render (section "Private static fields"))))
-        (is (match? (matchers/embeds [(list :value "serialVersionUID" number?)])
-                    (->> 2 inspect render (section "Static fields")))))
+        (is+ nil (->> 2 inspect render (section "Private static fields")))
+        (is+ (matchers/embeds [[:value "serialVersionUID" number?]])
+             (->> 2 inspect render (section "Static fields"))))
 
       (let [rendered (->> 2 inspect render (section "Private static fields"))]
-        (is (match? (resolve-syms
-                     '("--- Private static fields:"
-                       (:newline)
-                       "  "
-                       (:value "serialVersionUID" number?)
-                       " = "
-                       (:value "<non-inspectable value>" number?)
-                       (:newline)))
-                    rendered))))
+        (is+ ["--- Private static fields:"
+              [:newline]
+              "  "
+              [:value "serialVersionUID" number?]
+              " = "
+              [:value "<non-inspectable value>" number?]
+              [:newline]]
+             rendered)))
 
     (let [rendered (->> (PrivateFieldClass. 42) inspect render (section "Instance fields"))]
-      (is (match? (resolve-syms
-                   '("--- Instance fields:"
-                     (:newline)
-                     "  "
-                     (:value "age" number?)
-                     " = "
-                     (:value "42" number?)
-                     (:newline)))
-                  rendered)
-          "Fully inspects private fields for a class that is module-accessible"))))
+      (is+ ["--- Instance fields:"
+            [:newline]
+            "  "
+            [:value "age" number?]
+            " = "
+            [:value "42" number?]
+            [:newline]]
+           rendered
+           "Fully inspects private fields for a class that is module-accessible"))))
