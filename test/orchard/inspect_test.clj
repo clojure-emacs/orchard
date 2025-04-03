@@ -88,9 +88,7 @@
 (defn- extend-nav-vector [m]
   (vary-meta m assoc 'clojure.core.protocols/nav (fn [coll k v] [k (get coll k v)])))
 
-(defn inspect
-  [value]
-  (inspect/start value))
+(def inspect inspect/start)
 
 (defn render
   [inspector]
@@ -1615,3 +1613,38 @@
             [:newline]]
            rendered
            "Fully inspects private fields for a class that is module-accessible"))))
+
+(deftest analytics-test
+  (testing "analytics is not shown by default"
+    (let [rendered (-> (range 100) inspect render)]
+      (is+ nil (section "Analytics" rendered))))
+
+  (testing "analytics hint is displayed if requested"
+    (let [rendered (-> (inspect {:show-analytics-hint "true"} (range 100)) render)]
+      (is+ ["--- Analytics:" [:newline]
+            "  Press 'y' or M-x cider-inspector-show-analytics to analyze this value."
+            [:newline] [:newline]]
+           (section "Analytics" rendered))))
+
+  (testing "analytics is shown when requested"
+    (let [rendered (-> (range 100) inspect inspect/show-analytics render)]
+      (is+ ["--- Analytics:" [:newline]
+            "  " [:value ":count" pos?] " = " [:value "100" pos?] [:newline]
+            "  " [:value ":types" pos?] " = " [:value "{java.lang.Long 100}" pos?] [:newline]
+            "  " [:value ":frequencies" pos?] " = " [:value string? pos?] [:newline]
+            "  " [:value ":numbers" pos?] " = " [:value "{:n 100, :zeros 1, :max 99, :min 0, :mean 49.5}" pos?]
+            [:newline] [:newline]]
+           (section "Analytics" rendered))))
+
+  (testing "cutoff is customizable and limits number of values analytics processes"
+    (let [rendered (-> (range 100)
+                       inspect
+                       (inspect/refresh {:analytics-size-cutoff 10})
+                       inspect/show-analytics
+                       render)]
+      (is+ (matchers/prefix
+            ["--- Analytics:" [:newline]
+             "  " [:value ":cutoff?" pos?] " = " [:value "true" pos?] [:newline]
+             "  " [:value ":count" pos?] " = " [:value "10" pos?] [:newline]
+             "  " [:value ":types" pos?] " = " [:value "{java.lang.Long 10}" pos?] [:newline]])
+           (section "Analytics" rendered)))))

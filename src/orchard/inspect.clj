@@ -11,6 +11,7 @@
   (:require
    [clojure.core.protocols :refer [datafy nav]]
    [clojure.string :as str]
+   [orchard.inspect.analytics :as analytics]
    [orchard.print :as print])
   (:import
    (java.lang.reflect Constructor Field Method Modifier)
@@ -41,7 +42,9 @@
    :max-atom-length  150
    :max-value-length 10000   ; To avoid printing huge graphs and Exceptions.
    :max-coll-size    5
-   :max-nested-depth nil})
+   :max-nested-depth nil
+   :show-analytics-hint   nil
+   :analytics-size-cutoff 100000})
 
 (defn- reset-render-state [inspector]
   (-> inspector
@@ -49,7 +52,7 @@
       (dissoc :chunk :start-idx :last-page)))
 
 (defn- array? [obj]
-  (.isArray (class obj)))
+  (some-> (class obj) .isArray))
 
 (defn- object-type [obj]
   (cond
@@ -141,6 +144,7 @@
         (assoc :view-mode (peek view-modes-stack))
         (update :view-modes-stack pop)
         (assoc :value (peek stack))
+        (dissoc :value-analysis)
         (update :stack pop))))
 
 (defn up
@@ -159,6 +163,7 @@
                        current-page)]
     (-> inspector
         (assoc :value child)
+        (dissoc :value-analysis)
         (update :stack conj value)
         (assoc :current-page 0)
         (update :pages-stack conj current-page)
@@ -205,13 +210,16 @@
   (sibling* inspector 1))
 
 (defn- validate-config [{:keys [page-size max-atom-length max-value-length
-                                max-coll-size max-nested-depth]
+                                max-coll-size max-nested-depth show-analytics-hint
+                                analytics-size-cutoff]
                          :as config}]
   (when (some? page-size) (pre-ex (pos-int? page-size)))
   (when (some? max-atom-length) (pre-ex (pos-int? max-atom-length)))
   (when (some? max-value-length) (pre-ex (pos-int? max-value-length)))
   (when (some? max-coll-size) (pre-ex (pos-int? max-coll-size)))
   (when (some? max-nested-depth) (pre-ex (pos-int? max-nested-depth)))
+  (when (some? show-analytics-hint) (pre-ex (= show-analytics-hint "true")))
+  (when (some? analytics-size-cutoff) (pre-ex (pos-int? analytics-size-cutoff)))
   (select-keys config (keys default-inspector-config)))
 
 (defn refresh
@@ -256,6 +264,18 @@
   [inspector mode]
   (pre-ex (contains? supported-view-modes mode))
   (inspect-render (assoc inspector :view-mode mode)))
+
+(defn show-analytics
+  "Calculates and renders analytics for the current object."
+  [{:keys [analytics-size-cutoff value] :as inspector}]
+  (inspect-render
+   (if (analytics/can-analyze? value)
+     (-> inspector
+         (assoc :value-analysis
+                (binding [analytics/*size-cutoff* analytics-size-cutoff]
+                  (analytics/analytics value)))
+         (dissoc :show-analytics-hint))
+     inspector)))
 
 (defn render-onto [inspector coll]
   (letfn [(render-one [{:keys [rendered] :as inspector} val]
@@ -434,6 +454,20 @@
         (unindent))
     inspector))
 
+(defn- render-analytics
+  [{:keys [show-analytics-hint value-analysis] :as inspector}]
+  (if (or value-analysis show-analytics-hint)
+    (as-> inspector ins
+      (render-section-header ins "Analytics")
+      (indent ins)
+      (if value-analysis
+        (render-value-maybe-expand ins value-analysis)
+        (-> ins
+            (render-indent)
+            (render-ln "Press 'y' or M-x cider-inspector-show-analytics to analyze this value.")))
+      (unindent ins))
+    inspector))
+
 ;;;; Datafy
 
 (defn- datafy-kvs [original-object kvs]
@@ -528,6 +562,7 @@
   (-> (render-class-name inspector obj)
       (render-counted-length obj)
       (render-meta-information obj)
+      (render-analytics)
       (render-section-header "Contents")
       (indent)
       (render-collection-paged)
@@ -850,7 +885,8 @@
          (render-view-mode)
          (update :rendered seq))))
   ([inspector value]
-   (inspect-render (assoc inspector :value value))))
+   (inspect-render (-> (assoc inspector :value value)
+                       (dissoc :value-analysis)))))
 
 ;; Public entrypoints
 
