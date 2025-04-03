@@ -3,6 +3,7 @@
 ## master (unreleased)
 
 * [#328](https://github.com/clojure-emacs/orchard/pull/328): Inspector: display identity hashcode for Java objects.
+* [#329](https://github.com/clojure-emacs/orchard/pull/329): Inspector: add analytics.
 
 ## 0.31.1 (2025-03-19)
 
