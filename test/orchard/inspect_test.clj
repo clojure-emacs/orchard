@@ -38,7 +38,7 @@
   ["Class: "
    [:value "clojure.lang.PersistentTreeMap" 0]
    [:newline]
-   "Count: " "4"
+   "Count: 4"
    [:newline]
    [:newline]
    "--- Contents:"
@@ -79,7 +79,7 @@
 
 (defn- page-size-info [rendered]
   (let [s (last (butlast rendered))]
-    (when (and (string? s) (.startsWith ^String s "Page size:"))
+    (when (and (string? s) (re-find #"Page size:" s))
       s)))
 
 (defn- extend-datafy-class [m]
@@ -168,7 +168,7 @@
       (testing "renders the datafy section"
         (is+ ["--- Datafy:"
               [:newline]
-              "  " "0" ". " [:value "42" pos?]
+              "  0. " [:value "42" pos?]
               [:newline]]
              (datafy-section rendered))))))
 
@@ -184,7 +184,7 @@
     (is+ ["Class: "
           [:value "clojure.lang.PersistentArrayMap" number?]
           [:newline]
-          "Count: " "1"
+          "Count: 1"
           [:newline]
           [:newline]
           "--- Contents:"
@@ -194,8 +194,7 @@
           [:newline]
           "--- Path:"
           [:newline]
-          "  "
-          ":a"]
+          "  :a"]
          (-> eval-result inspect (inspect/down 2) render))))
 
 (deftest pop-test
@@ -240,7 +239,7 @@
                   :rendered
                   page-size-info))))
   (testing "uncounted collections have their size determined on the last page"
-    (is (= "Page size: 32, showing page: 2 of 2"
+    (is (= "  Page size: 32, showing page: 2 of 2"
            (-> (range 50)
                inspect
                inspect/next-page
@@ -573,14 +572,14 @@
                       inspect/next-page
                       inspect/next-page
                       (inspect/down 10))]
-    (is (= ":a (nth 2) :b :c (nth 73)" (-> inspector render last))))
+    (is (= "  :a (nth 2) :b :c (nth 73)" (-> inspector render last))))
   (testing "inspector tracks the path in the data structure beyond the first page with custom page size"
-    (is (= "(get 2)" (-> long-map inspect
-                         (set-page-size 2)
-                         (inspect/next-page)
-                         (inspect/down 2)
-                         render
-                         last))))
+    (is (= "  (get 2)" (-> long-map inspect
+                           (set-page-size 2)
+                           (inspect/next-page)
+                           (inspect/down 2)
+                           render
+                           last))))
   (testing "doesn't show path if unknown navigation has happened"
     (is (= [:newline] (-> long-map inspect (inspect/down 39) render last)))
     (is (= [:newline] (-> long-map inspect (inspect/down 40) (inspect/down 0) render last)))
@@ -608,18 +607,18 @@
     (is+ ["Class: "
           [:value "clojure.lang.PersistentVector" number?]
           [:newline]
-          "Count: " "4"
+          "Count: 4"
           [:newline]
           [:newline]
           "--- Contents:"
           [:newline]
-          "  " "0" ". " [:value "1" number?]
+          "  0. " [:value "1" number?]
           [:newline]
-          "  " "1" ". " [:value "2" number?]
+          "  1. " [:value "2" number?]
           [:newline]
-          "  " "2" ". " [:value "nil" number?]
+          "  2. " [:value "nil" number?]
           [:newline]
-          "  " "3" ". " [:value "3" number?]
+          "  3. " [:value "3" number?]
           [:newline]]
          (render (inspect [1 2 nil 3]))))
 
@@ -627,33 +626,33 @@
     (is+ ["Class: "
           [:value "clojure.lang.PersistentVector" number?]
           [:newline]
-          "Count: " "11"
+          "Count: 11"
           [:newline]
           [:newline]
           "--- Contents:"
           [:newline]
-          "  " " 0" ". " [:value "0" number?]
+          "   0. " [:value "0" number?]
           [:newline]
-          "  " " 1" ". " [:value "1" number?]
+          "   1. " [:value "1" number?]
           [:newline]
-          "  " " 2" ". " [:value "2" number?]
+          "   2. " [:value "2" number?]
           [:newline]
-          "  " " 3" ". " [:value "3" number?]
+          "   3. " [:value "3" number?]
           [:newline]
-          "  " " 4" ". " [:value "4" number?]
+          "   4. " [:value "4" number?]
           [:newline]
-          "  " " 5" ". " [:value "5" number?]
+          "   5. " [:value "5" number?]
           [:newline]
-          "  " " 6" ". " [:value "6" number?]
+          "   6. " [:value "6" number?]
           [:newline]
-          "  " " 7" ". " [:value "7" number?]
+          "   7. " [:value "7" number?]
           [:newline]
-          "  " " 8" ". " [:value "8" number?]
+          "   8. " [:value "8" number?]
           [:newline]
-          "  " " 9" ". " [:value "9" number?]
+          "   9. " [:value "9" number?]
           ;; Numbers above have padding, "10" below doesn't.
           [:newline]
-          "  " "10" ". " [:value "10" number?]
+          "  10. " [:value "10" number?]
           [:newline]]
          (render (inspect (vec (range 11))))))
 
@@ -661,20 +660,20 @@
     (let [rendered (-> (inspect (vec (range 101)))
                        (set-page-size 200)
                        render)
-          tail (take-last 5 rendered)]
+          tail (take-last 3 rendered)]
       (is+ (matchers/prefix
             ["Class: "
              [:value "clojure.lang.PersistentVector" number?]
              [:newline]
-             "Count: " "101"
+             "Count: 101"
              [:newline]
              [:newline]
              "--- Contents:"
              [:newline]
-             "  " "  0" ". " [:value "0" number?]])
+             "    0. " [:value "0" number?]])
            rendered)
       ;; "  0" has two spaces of padding, "100" below has none.
-      (is+ ["  " "100" ". " [:value "100" pos?] [:newline]]
+      (is+ ["  100. " [:value "100" pos?] [:newline]]
            tail))))
 
 (deftest inspect-coll-meta-test
@@ -729,41 +728,41 @@
       (testing "renders the content section"
         (is+ ["--- Contents:"
               [:newline]
-              "  " "0" ". " [:value "{:x 0}" pos?]
+              "  0. " [:value "{:x 0}" pos?]
               [:newline]
-              "  " "1" ". " [:value "{:x 1}" pos?]
+              "  1. " [:value "{:x 1}" pos?]
               [:newline]
-              "  " "..."
+              "  ..."
               [:newline]
               [:newline]]
              (section "Contents" rendered)))
       (testing "renders the datafy section"
         (is+ ["--- Datafy:"
               [:newline]
-              "  " "0" ". " [:value "{:class \"PersistentHashMap\", :x 0}" pos?]
+              "  0. " [:value "{:class \"PersistentHashMap\", :x 0}" pos?]
               [:newline]
-              "  " "1" ". " [:value "{:class \"PersistentHashMap\", :x 1}" pos?]
+              "  1. " [:value "{:class \"PersistentHashMap\", :x 1}" pos?]
               [:newline]
-              "  " "..."
+              "  ..."
               [:newline]
               [:newline]]
              (datafy-section rendered)))
       (testing "renders the page info section"
         (is+ ["--- Page Info:"
               [:newline]
-              "  " "Page size: 2, showing page: 1 of ?"
+              "  Page size: 2, showing page: 1 of ?"
               [:newline]]
              (section "Page Info" rendered)))
       (testing "follows the same pagination rules"
         (is+ ["--- Datafy:"
               [:newline]
-              "  " "..."
+              "  ..."
               [:newline]
-              "  " "4" ". " [:value "{:class \"PersistentHashMap\", :x 4}" pos?]
+              "  4. " [:value "{:class \"PersistentHashMap\", :x 4}" pos?]
               [:newline]
-              "  " "5" ". " [:value "{:class \"PersistentHashMap\", :x 5}" pos?]
+              "  5. " [:value "{:class \"PersistentHashMap\", :x 5}" pos?]
               [:newline]
-              "  " "..."
+              "  ..."
               [:newline]
               [:newline]]
              (-> ins
@@ -777,12 +776,12 @@
     (is+ ["Class: "
           [:value "clojure.lang.Persist..." 0]
           [:newline]
-          "Count: " "1"
+          "Count: 1"
           [:newline]
           [:newline]
           "--- Contents:"
           [:newline]
-          "  " "0" ". " [:value "[111111 2222 333 ...]" 1]
+          "  0. " [:value "[111111 2222 333 ...]" 1]
           [:newline]]
          (-> (inspect/start {:max-atom-length 20
                              :max-coll-size 3}
@@ -792,12 +791,12 @@
     (is+ ["Class: "
           [:value "clojure.lang.PersistentVector" 0]
           [:newline]
-          "Count: " "1"
+          "Count: 1"
           [:newline]
           [:newline]
           "--- Contents:"
           [:newline]
-          "  " "0" ". " [:value "(\"long value\" \"long value\" \"long value\" \"long valu..." 1]
+          "  0. " [:value "(\"long value\" \"long value\" \"long value\" \"long valu..." 1]
           [:newline]]
          (-> (inspect/start {:max-value-length 50} [(repeat "long value")])
              render)))
@@ -806,12 +805,12 @@
     (is+ ["Class: "
           [:value "clojure.lang.PersistentVector" 0]
           [:newline]
-          "Count: " "1"
+          "Count: 1"
           [:newline]
           [:newline]
           "--- Contents:"
           [:newline]
-          "  " "0" ". " [:value "[[[[[[...]]]]]]" 1]
+          "  0. " [:value "[[[[[[...]]]]]]" 1]
           [:newline]]
          (-> (inspect/start {:max-nested-depth 5} [[[[[[[[[[1]]]]]]]]]])
              render))))
@@ -824,7 +823,7 @@
       (is+ (matchers/prefix ["Class: "
                              [:value "java.util.HashMap" 0]
                              [:newline]
-                             "Count: " "3"
+                             "Count: 3"
                              [:newline]
                              [:newline]])
            rendered)
@@ -842,8 +841,7 @@
           [:newline]
           "Value: " [:value "#foo ()" 1]
           [:newline]
-          "Identity hash code: "
-          string? " " string?
+          #"Identity hash code: "
           [:newline]
           [:newline]
           "--- Instance fields:"
@@ -1044,9 +1042,9 @@
       (testing "renders the deref section"
         (is+ ["--- Deref:"
               [:newline]
-              "  " "Class: " [:value "clojure.lang.PersistentArrayMap" 1]
+              "  Class: " [:value "clojure.lang.PersistentArrayMap" 1]
               [:newline]
-              "  " "Count: " "1"
+              "  Count: 1"
               [:newline]
               [:newline]
               "  --- Contents:"
@@ -1060,27 +1058,27 @@
   (testing "small collection is rendered fully"
     (is+ ["--- Deref:"
           [:newline]
-          "  " "Class: " [:value "clojure.lang.LongRange" 1]
+          "  Class: " [:value "clojure.lang.LongRange" 1]
           [:newline]
-          "  " "Count: " "3"
+          "  Count: 3"
           [:newline]
           [:newline]
           "  --- Contents:"
           [:newline]
-          "    " "0" ". " [:value "0" 2]
+          "    0. " [:value "0" 2]
           [:newline]
-          "    " "1" ". " [:value "1" 3]
+          "    1. " [:value "1" 3]
           [:newline]
-          "    " "2" ". " [:value "2" 4]
+          "    2. " [:value "2" 4]
           [:newline]]
          (->> (atom (range 3)) inspect render (section "Deref"))))
 
   (testing "larger collection is rendered as a single value"
     (is+ ["--- Deref:"
           [:newline]
-          "  " "Class: " [:value "clojure.lang.LongRange" 1]
+          "  Class: " [:value "clojure.lang.LongRange" 1]
           [:newline]
-          "  " "Count: " "100" [:newline] [:newline]
+          "  Count: 100" [:newline] [:newline]
           "  --- Contents:"
           [:newline]
           "    " [:value "(0 1 2 3 4 ...)" 2]
@@ -1107,7 +1105,7 @@
       (testing "renders the deref section"
         (is+ ["--- Deref:"
               [:newline]
-              "  " "Class: " [:value "clojure.lang.Repeat" 1]
+              "  Class: " [:value "clojure.lang.Repeat" 1]
               [:newline]
               [:newline]
               "  --- Contents:"
@@ -1120,11 +1118,8 @@
   (testing "inspecting the clojure.string namespace"
     (let [result (-> (find-ns 'clojure.string) inspect render)]
       (testing "renders the header"
-        (is+ ["Class: "
-              [:value "clojure.lang.Namespace" number?]
-              [:newline]
-              "Count: " string?
-              [:newline]
+        (is+ ["Class: " [:value "clojure.lang.Namespace" number?] [:newline]
+              #"^Count: " [:newline]
               [:newline]]
              (header result)))
       (testing "renders the meta section"
@@ -1201,7 +1196,7 @@
         (is+ ["Class: "
               [:value "clojure.lang.PersistentArrayMap" 0]
               [:newline]
-              "Count: " "1"
+              "Count: 1"
               [:newline]
               [:newline]]
              (header rendered)))
@@ -1231,7 +1226,7 @@
         (is+ ["Class: "
               [:value "clojure.lang.PersistentArrayMap" 0]
               [:newline]
-              "Count: " "1"
+              "Count: 1"
               [:newline]
               [:newline]]
              (header rendered)))
@@ -1259,14 +1254,14 @@
         (is+ ["Class: "
               [:value "clojure.lang.ExceptionInfo" 0]
               [:newline]
-              "Message: " "BOOM"
+              "Message: BOOM"
               [:newline]
               [:newline]]
              (header rendered)))
       (testing "renders a causes section"
         (is+ ["--- Causes:"
               [:newline]
-              "  " "BOOM" [:newline]
+              "  BOOM" [:newline]
               "  " [:value "clojure.lang.ExceptionInfo" 1] [:newline]
               [:newline]]
              (section "Causes" rendered)))
@@ -1311,25 +1306,23 @@
   (testing "exception with multiple causes"
     (let [rendered (-> (ex-info "Outer" {} (RuntimeException. "Inner"))
                        inspect render)]
-      (is+ ["--- Causes:"
-            [:newline]
-            "  " "Outer" [:newline]
+      (is+ ["--- Causes:" [:newline]
+            "  Outer" [:newline]
             "  " [:value "clojure.lang.ExceptionInfo" number?] " at "
             [:value #"orchard.inspect_test\$fn" number?] [:newline]
             [:newline]
-            "  " "Inner" [:newline] "  " [:value "java.lang.RuntimeException" number?] " at "
+            "  Inner" [:newline] "  " [:value "java.lang.RuntimeException" number?] " at "
             [:value #"orchard.inspect_test\$fn" number?] [:newline]
             [:newline]]
            (section "Causes" rendered))
       (testing "trace is rendered"
         (is+ (matchers/prefix
-              ["--- Trace:"
-               [:newline]
-               "  " " 0" ". " [:value #"orchard.inspect_test\$fn" number?] [:newline]
-               "  " " 1" ". " [:value #"orchard.inspect_test\$fn" number?] [:newline]
-               "  " " 2" ". " [:value string? number?] [:newline]
-               "  " " 3" ". " [:value string? number?] [:newline]
-               "  " " 4" ". " [:value string? number?] [:newline]])
+              ["--- Trace:" [:newline]
+               "   0. " [:value #"orchard.inspect_test\$fn" number?] [:newline]
+               "   1. " [:value #"orchard.inspect_test\$fn" number?] [:newline]
+               "   2. " [:value string? number?] [:newline]
+               "   3. " [:value string? number?] [:newline]
+               "   4. " [:value string? number?] [:newline]])
              (section "Trace" rendered))))))
 
 (deftest inspect-eduction-test
@@ -1342,8 +1335,7 @@
               "Value: "
               [:value "(0 1 2 3 4 ...)" 1]
               [:newline]
-              "Identity hash code: "
-              string? " " string?
+              #"^Identity hash code: "
               [:newline]
               [:newline]]
              (header rendered))))
@@ -1358,7 +1350,7 @@
       (is+ ["Class: "
             [:value "clojure.lang.LongRange" 0]
             [:newline]
-            "Count: " "10"
+            "Count: 10"
             [:newline]
             [:newline]]
            (header rendered)))
@@ -1366,7 +1358,7 @@
       (is+ ["Class: "
             [:value "clojure.lang.PersistentHashMap" 0]
             [:newline]
-            "Count: " "20"
+            "Count: 20"
             [:newline]
             [:newline]]
            (header rendered)))
@@ -1374,7 +1366,7 @@
       (is+ ["Class: "
             [:value #"\[B|byte/1" 0]
             [:newline]
-            "Count: " "30"
+            "Count: 30"
             [:newline]
             "Component Type: " [:value "byte" 1]
             [:newline]
@@ -1384,7 +1376,7 @@
       (is+ ["Class: "
             [:value "java.util.HashMap" 0]
             [:newline]
-            "Count: " "0"
+            "Count: 0"
             [:newline]
             [:newline]]
            (header rendered)))
@@ -1392,7 +1384,7 @@
       (is+ ["Class: "
             [:value "clojure.lang.Cons" 0]
             [:newline]
-            "Count: " "2"
+            "Count: 2"
             [:newline]
             [:newline]]
            (header rendered)))))
@@ -1410,7 +1402,7 @@
              "  " [:value "_first" pos?] " = " [:value "1" pos?] [:newline]
              "  " [:value "_hash" pos?] " = " [:value "0" pos?] [:newline]])
            (section "Instance fields" rendered))
-      (is+ ["--- View mode:" [:newline] "  " ":object"]
+      (is+ ["--- View mode:" [:newline] "  :object"]
            (section "View mode" rendered)))
 
     (let [rendered (-> (atom "foo")
@@ -1426,7 +1418,7 @@
              "  " [:value "watches" pos?] " = " [:value "{}" pos?] [:newline]
              [:newline]])
            (section "Instance fields" rendered))
-      (is+ ["--- View mode:" [:newline] "  " ":object"]
+      (is+ ["--- View mode:" [:newline] "  :object"]
            (section "View mode" rendered))))
 
   (testing "navigating away from an object changes the view mode back to normal"
@@ -1438,8 +1430,8 @@
       (is+ (matchers/prefix
             ["--- Contents:"
              [:newline]
-             "  " "0" ". " [:value "2" pos?] [:newline]
-             "  " "1" ". " [:value "3" pos?] [:newline]])
+             "  0. " [:value "2" pos?] [:newline]
+             "  1. " [:value "3" pos?] [:newline]])
            (section "Contents" rendered))))
 
   (testing "going back to value viewed with a different mode will remember that view mode"
@@ -1543,7 +1535,7 @@
             " = "
             [:value "1" pos?]
             [:newline]
-            "  " "..."
+            "  ..."
             [:newline]
             [:newline]]
            (section "Contents" rendered))
@@ -1563,11 +1555,11 @@
                          render)]
         (is+ ["--- Datafy:"
               [:newline]
-              "  " "0" ". " [:value "0" pos?]
+              "  0. " [:value "0" pos?]
               [:newline]
-              "  " "1" ". " [:value "1" pos?]
+              "  1. " [:value "1" pos?]
               [:newline]
-              "  " "2" ". " [:value "2" pos?]
+              "  2. " [:value "2" pos?]
               [:newline]]
              (datafy-section rendered)))))
   (testing "datafy doesn't show if the differing datafied is not on the current page"
@@ -1577,14 +1569,9 @@
                   (set-page-size 1))
           rendered (render ins)]
       (is+ nil (datafy-section rendered))
-      (is+ ["--- Datafy:"
-            [:newline]
-            "  " "..."
-            [:newline]
-            "  " [:value ":b" pos?]
-            " = "
-            [:value ":datafied" pos?]
-            [:newline]
+      (is+ ["--- Datafy:" [:newline]
+            "  ..." [:newline]
+            "  " [:value ":b" pos?] " = " [:value ":datafied" pos?] [:newline]
             [:newline]]
            (datafy-section (-> ins (inspect/next-page) render))))
     (let [ins (-> [1 2 3 (with-meta [] {'clojure.core.protocols/datafy
@@ -1593,14 +1580,10 @@
                   (set-page-size 2))
           rendered (render ins)]
       (is+ nil (datafy-section rendered))
-      (is+ ["--- Datafy:"
-            [:newline]
-            "  " "..."
-            [:newline]
-            "  " "2" ". " [:value "3" pos?]
-            [:newline]
-            "  " "3" ". " [:value ":datafied" pos?]
-            [:newline]
+      (is+ ["--- Datafy:" [:newline]
+            "  ..." [:newline]
+            "  2. " [:value "3" pos?] [:newline]
+            "  3. " [:value ":datafied" pos?] [:newline]
             [:newline]]
            (datafy-section (-> ins inspect/next-page render))))))
 

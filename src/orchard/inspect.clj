@@ -258,7 +258,13 @@
   (inspect-render (assoc inspector :view-mode mode)))
 
 (defn render-onto [inspector coll]
-  (update inspector :rendered into coll))
+  (letfn [(render-one [{:keys [rendered] :as inspector} val]
+            ;; Special case: fuse two last strings together.
+            (let [lst (peek (or rendered []))]
+              (assoc inspector :rendered (if (and (string? lst) (string? val))
+                                           (conj (pop rendered) (str lst val))
+                                           (conj rendered val)))))]
+    (reduce render-one inspector coll)))
 
 (defn render [inspector & values]
   (render-onto inspector values))
