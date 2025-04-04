@@ -15,7 +15,7 @@
    [orchard.print :as print])
   (:import
    (java.lang.reflect Constructor Field Method Modifier)
-   (java.util List Map)))
+   (java.util Arrays List Map)))
 
 ;;
 ;; Navigating Inspector State
@@ -34,7 +34,7 @@
                             (list 'get key)))
     (conj path '<unknown>)))
 
-(def ^:private supported-view-modes #{:normal :object})
+(def ^:private supported-view-modes #{:normal :object :table})
 
 (def ^:private default-inspector-config
   "Default configuration values for the inspector."
@@ -371,6 +371,57 @@
           inspector
           mappable))
 
+(defn supports-table-view-mode?
+  "Return whether the inspected object can be rendered in :table view-mode."
+  [{:keys [chunk value] :as _inspector}]
+  (let [val (or chunk value)]
+    (and (#{:list :array} (object-type val))
+         (#{:list :array :map} (object-type (first val))))))
+
+(defn- render-chunk-as-table [inspector chunk idx-starts-from]
+  (let [m-i map-indexed
+        fst (first chunk)
+        ;; If items are maps, use map keys as keys. Otherwise assume items are
+        ;; lists/vectors, so we use indices as keys.
+        getter (if (map? fst) get nth)
+        ks (vec (if (map? fst)
+                  (keys fst)
+                  (range (count fst))))
+        pr-rows (into []
+                      (m-i (fn [i row]
+                             (let [i (+ i idx-starts-from)]
+                               (into [[i (str i)]]
+                                     (map (fn [k]
+                                            (let [v (getter row k)]
+                                              [v (print/print-str v)])))
+                                     ks))))
+                      chunk)
+        pr-ks (into [["#" "#"]] (map (fn [k] [k (print/print-str k)])) ks)
+
+        widths (m-i (fn [i [_ pr-k]]
+                      (apply max (count pr-k)
+                             (map #(count (second (nth % i))) pr-rows)))
+                    pr-ks)
+        pad #(String. (doto (char-array %1) (Arrays/fill ^char %2)))
+        spacers (mapv #(fn [c] (pad (- % c) \space)) widths)
+        divider (format "|-%s-|" (str/join "-+-" (map #(pad % \-) widths)))
+
+        render-row #(as-> %1 ins
+                      (render-indent ins "| ")
+                      (reduce-kv (fn [ins i [val pr-val]]
+                                   (-> ins
+                                       (render ((nth spacers i) (count pr-val)))
+                                       (render-value val {:display-value pr-val})
+                                       (render " | ")))
+                                 ins %2)
+                      (render-ln ins))]
+    (as-> inspector ins
+      (render-ln ins)
+      (render-row ins pr-ks)
+      (render-indent ins)
+      (render-ln ins divider)
+      (reduce render-row ins pr-rows))))
+
 (defn- render-indexed-chunk
   "Render an indexed chunk of values. Renders all values in `chunk`, so `chunk`
   must be finite. If `mark-values?` is true, attach the indices to the values in
@@ -409,7 +460,9 @@
 (defn- render-items [inspector items map? start-idx mark-values?]
   (if map?
     (render-map-values inspector items mark-values?)
-    (render-indexed-chunk inspector items start-idx mark-values?)))
+    (if (and (= (:view-mode inspector) :table) (supports-table-view-mode? inspector))
+      (render-chunk-as-table inspector items start-idx)
+      (render-indexed-chunk inspector items start-idx mark-values?))))
 
 (defn- render-value-maybe-expand
   "If `obj` is a collection smaller than page-size, then render it as a

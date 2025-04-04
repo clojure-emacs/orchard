@@ -4,6 +4,7 @@
 
 * [#328](https://github.com/clojure-emacs/orchard/pull/328): Inspector: display identity hashcode for Java objects.
 * [#329](https://github.com/clojure-emacs/orchard/pull/329): Inspector: add analytics.
+* [#331](https://github.com/clojure-emacs/orchard/pull/331): Inspector: add table view mode.
 
 ## 0.31.1 (2025-03-19)
 

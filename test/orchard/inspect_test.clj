@@ -1448,6 +1448,117 @@
              "  " [:value "_hash" pos?] " = " [:value "0" pos?] [:newline]])
            (section "Instance fields" rendered)))))
 
+(deftest table-view-mode-test
+  (testing "in :table view-mode lists of maps are rendered as tables"
+    (let [rendered (-> (for [i (range 5)]
+                         {:a (- i)
+                          :bb (str i i i)
+                          :ccc (range i 0 -1)})
+                       (inspect/start)
+                       (inspect/set-view-mode :table)
+                       render)]
+      (is+ ["--- Contents:" [:newline] [:newline]
+            "  | " [:value "#" pos?] " | " [:value ":a" pos?] " |   "
+            [:value ":bb" pos?] " |      " [:value ":ccc" pos?] " | " [:newline]
+            "  |---+----+-------+-----------|" [:newline]
+            "  | " [:value "0" pos?] " |  " [:value "0" pos?] " | "
+            [:value "\"000\"" pos?] " |        " [:value "()" pos?] " | " [:newline]
+            "  | " [:value "1" pos?] " | " [:value "-1" pos?] " | "
+            [:value "\"111\"" pos?] " |       " [:value "(1)" pos?] " | " [:newline]
+            "  | " [:value "2" pos?] " | " [:value "-2" pos?] " | "
+            [:value "\"222\"" pos?] " |     " [:value "(2 1)" pos?] " | " [:newline]
+            "  | " [:value "3" pos?] " | " [:value "-3" pos?] " | "
+            [:value "\"333\"" pos?] " |   " [:value "(3 2 1)" pos?] " | " [:newline]
+            "  | " [:value "4" pos?] " | " [:value "-4" pos?] " | "
+            [:value "\"444\"" pos?] " | " [:value "(4 3 2 1)" pos?] " | " [:newline]
+            [:newline]]
+           (section "Contents" rendered))
+      (is+ ["--- View mode:" [:newline] "  :table"]
+           (section "View mode" rendered))))
+
+  (testing "in :table view-mode lists of vectors are rendered as tables"
+    (let [rendered (-> (for [i (range 5)]
+                         [(- i) (str i i i) (range i 0 -1)])
+                       (inspect/start)
+                       (inspect/set-view-mode :table)
+                       render)]
+      (is+ ["--- Contents:" [:newline] [:newline]
+            "  | " [:value "#" pos?] " |  " [:value "0" pos?] " |     "
+            [:value "1" pos?] " |         " [:value "2" pos?] " | " [:newline]
+            "  |---+----+-------+-----------|" [:newline]
+            "  | " [:value "0" pos?] " |  " [:value "0" pos?] " | "
+            [:value "\"000\"" pos?] " |        " [:value "()" pos?] " | " [:newline]
+            "  | " [:value "1" pos?] " | " [:value "-1" pos?] " | "
+            [:value "\"111\"" pos?] " |       " [:value "(1)" pos?] " | " [:newline]
+            "  | " [:value "2" pos?] " | " [:value "-2" pos?] " | "
+            [:value "\"222\"" pos?] " |     " [:value "(2 1)" pos?] " | " [:newline]
+            "  | " [:value "3" pos?] " | " [:value "-3" pos?] " | "
+            [:value "\"333\"" pos?] " |   " [:value "(3 2 1)" pos?] " | " [:newline]
+            "  | " [:value "4" pos?] " | " [:value "-4" pos?] " | "
+            [:value "\"444\"" pos?] " | " [:value "(4 3 2 1)" pos?] " | " [:newline]
+            [:newline]]
+           (section "Contents" rendered))
+      (is+ ["--- View mode:" [:newline] "  :table"]
+           (section "View mode" rendered))))
+
+  (testing "doesn't break if table mode is requested for unsupported value"
+    (let [rendered (-> {:a 1}
+                       (inspect/start)
+                       (inspect/set-view-mode :table)
+                       render)]
+      (is+ ["--- Contents:" [:newline]
+            "  " [:value ":a" pos?] " = " [:value "1" pos?] [:newline]
+            [:newline]]
+           (section "Contents" rendered))))
+
+  (testing "works with paging"
+    (let [rendered (-> (map #(vector % %) (range 9))
+                       (inspect/start)
+                       (set-page-size 3)
+                       (inspect/set-view-mode :table)
+                       render)]
+      (is+ ["--- Contents:" [:newline] [:newline]
+            "  | " [:value "#" pos?] " | " [:value "0" pos?] " | " [:value "1" pos?] " | " [:newline]
+            "  |---+---+---|" [:newline]
+            "  | " [:value "0" pos?] " | " [:value "0" pos?] " | " [:value "0" pos?] " | " [:newline]
+            "  | " [:value "1" pos?] " | " [:value "1" pos?] " | " [:value "1" pos?] " | " [:newline]
+            "  | " [:value "2" pos?] " | " [:value "2" pos?] " | " [:value "2" pos?] " | " [:newline]
+            "  ..." [:newline] [:newline]]
+           (section "Contents" rendered)))
+
+    (let [rendered (-> (map #(vector % %) (range 9))
+                       (inspect/start)
+                       (set-page-size 3)
+                       (inspect/next-page)
+                       (inspect/set-view-mode :table)
+                       render)]
+      (is+ ["--- Contents:" [:newline]
+            "  ..." [:newline] [:newline]
+            "  | " [:value "#" pos?] " | " [:value "0" pos?] " | " [:value "1" pos?] " | " [:newline]
+            "  |---+---+---|" [:newline]
+            "  | " [:value "3" pos?] " | " [:value "3" pos?] " | " [:value "3" pos?] " | " [:newline]
+            "  | " [:value "4" pos?] " | " [:value "4" pos?] " | " [:value "4" pos?] " | " [:newline]
+            "  | " [:value "5" pos?] " | " [:value "5" pos?] " | " [:value "5" pos?] " | " [:newline]
+            "  ..." [:newline] [:newline]]
+           (section "Contents" rendered)))
+
+    (let [rendered (-> (map #(vector % %) (range 9))
+                       (inspect/start)
+                       (set-page-size 3)
+                       (inspect/next-page)
+                       (inspect/next-page)
+                       (inspect/set-view-mode :table)
+                       render)]
+      (is+ ["--- Contents:" [:newline]
+            "  ..." [:newline] [:newline]
+            "  | " [:value "#" pos?] " | " [:value "0" pos?] " | " [:value "1" pos?] " | " [:newline]
+            "  |---+---+---|" [:newline]
+            "  | " [:value "6" pos?] " | " [:value "6" pos?] " | " [:value "6" pos?] " | " [:newline]
+            "  | " [:value "7" pos?] " | " [:value "7" pos?] " | " [:value "7" pos?] " | " [:newline]
+            "  | " [:value "8" pos?] " | " [:value "8" pos?] " | " [:value "8" pos?] " | " [:newline]
+            [:newline]]
+           (section "Contents" rendered)))))
+
 (deftest tap-test
   (testing "tap-current-value"
     (let [proof (atom [])
