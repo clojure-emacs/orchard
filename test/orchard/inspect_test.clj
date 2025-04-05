@@ -1731,14 +1731,14 @@
       (is+ nil (section "Analytics" rendered))))
 
   (testing "analytics hint is displayed if requested"
-    (let [rendered (-> (inspect {:show-analytics-hint "true"} (range 100)) render)]
+    (let [rendered (-> (inspect {:display-analytics-hint "true"} (range 100)) render)]
       (is+ ["--- Analytics:" [:newline]
-            "  Press 'y' or M-x cider-inspector-show-analytics to analyze this value."
+            "  Press 'y' or M-x cider-inspector-display-analytics to analyze this value."
             [:newline] [:newline]]
            (section "Analytics" rendered))))
 
   (testing "analytics is shown when requested"
-    (let [rendered (-> (range 100) inspect inspect/show-analytics render)]
+    (let [rendered (-> (range 100) inspect inspect/display-analytics render)]
       (is+ ["--- Analytics:" [:newline]
             "  " [:value ":count" pos?] " = " [:value "100" pos?] [:newline]
             "  " [:value ":types" pos?] " = " [:value "{java.lang.Long 100}" pos?] [:newline]
@@ -1751,7 +1751,7 @@
     (let [rendered (-> (range 100)
                        inspect
                        (inspect/refresh {:analytics-size-cutoff 10})
-                       inspect/show-analytics
+                       inspect/display-analytics
                        render)]
       (is+ (matchers/prefix
             ["--- Analytics:" [:newline]
