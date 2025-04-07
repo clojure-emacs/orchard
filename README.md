@@ -15,10 +15,12 @@ Right now `orchard` provides functionality like:
 * classpath utils (alternative for `java.classpath`)
 * value [inspector](https://github.com/clojure-emacs/orchard/blob/master/doc/inspector.org)
 * Java class handling utilities
-* Utilities for dealing with metadata
-* Namespace utilities
-* Fetching ClojureDocs documentation
-* Finding function dependencies (other functions invoked by a function) and usages
+* utilities for dealing with metadata
+* namespace utilities
+* fetching ClojureDocs documentation
+* finding function dependencies (other functions invoked by a function) and usages
+* function tracer
+* simple function profiler
 
 ## Why?
 
