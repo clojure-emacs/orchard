@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+## 0.33.0 (2025-04-08)
+
 * [#333](https://github.com/clojure-emacs/orchard/pull/333): Add `orchard.profile`.
 
 ## 0.32.1 (2025-04-05)
