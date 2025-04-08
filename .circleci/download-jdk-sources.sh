@@ -7,7 +7,7 @@ DEST=$3
 # that is normally distributed with JDK.
 wget "$URL" -O full-src.zip
 unzip -q full-src.zip
-cp -r jdk-*/src/java.base/share/classes java.base
-cp -r jdk-*/src/java.desktop/share/classes java.desktop
+cp -r jdk*/src/java.base/share/classes java.base
+cp -r jdk*/src/java.desktop/share/classes java.desktop
 zip -qr $DEST java.base java.desktop
-rm -rf java.base java.desktop jdk-* full-src.zip
+rm -rf java.base java.desktop jdk* full-src.zip
