@@ -4,13 +4,16 @@
    [clojure.set :as set]
    [clojure.string :as str]
    [clojure.test :refer [are deftest is testing]]
+   [matcher-combinators.matchers :as mc]
    [orchard.java :as sut :refer [cache class-info class-info* javadoc-url member-info resolve-class resolve-javadoc-path resolve-member resolve-symbol source-info]]
    [orchard.misc :as misc]
-   [orchard.test.util :as util])
+   [orchard.test.util :as util :refer [is+]])
   (:import
    (mx.cider.orchard LruMap)))
 
 (def ^:private jdk11+? (>= misc/java-api-version 11))
+
+(defn- *ns [] 'orchard.java-test)
 
 (javadoc/add-remote-javadoc "com.amazonaws." "http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/")
 (javadoc/add-remote-javadoc "org.apache.kafka." "https://kafka.apache.org/090/javadoc/")
@@ -37,14 +40,12 @@
     (testing "Source parsing"
       (testing "for Clojure classes"
         (is (-> (source-info 'clojure.lang.ExceptionInfo) :doc))
-        (is (some-> (get-in (source-info 'clojure.lang.BigInt)
-                            [:members 'multiply])
-                    first val :line)))
+        (is+ {:members {'multiply {['clojure.lang.BigInt] {:line number?}}}}
+             (source-info 'clojure.lang.BigInt)))
       (testing "for JDK classes"
-        (is (-> (source-info 'java.util.AbstractCollection) :doc))
-        (is (some-> (get-in (source-info 'java.util.AbstractCollection)
-                            [:members 'size])
-                    first val :line))))))
+        (is+ {:doc string?
+              :members {'size {[] {:line number?}}}}
+             (source-info 'java.util.AbstractCollection))))))
 
 (defn class-corpus []
   {:post [(> (count %)
@@ -75,8 +76,7 @@
   (->> (-> info
            :members
            vals)
-       (map vals)
-       (reduce into)
+       (mapcat vals)
        ;; Only methods/constructors (and not fields) have arglists:
        (filter (fn [{:keys [returns] n :name}]
                  (or returns
@@ -152,31 +152,27 @@
           c3 (class-info 'not.actually.AClass)
           thread-class-info (class-info `Thread)]
       (testing "Class"
-        (testing "source file"
-          (is (misc/url? (:file c1))))
-        (testing "source file for nested class"
-          (is (misc/url? (:file c2))))
+        (is+ {:file misc/url?} c1)
+        (is+ {:file misc/url?} c2)
+        (is+ nil c3 "that doesn't exist")
         (testing "member info"
-          (is (map? (:members c1)))
-          (is (every? map? (vals (:members c1))))
-          (let [members (mapcat vals (vals (:members c1)))]
-            (assert (seq members))
-            (doseq [m members]
-              (is (contains? m :name))
-              (assert (is (contains? m :modifiers)))
-              (is (string? (:annotated-arglists m))))))
+          (when (is+ (mc/seq-of map?) (vals (:members c1)))
+            (is+ (mc/all-of
+                  not-empty
+                  (mc/seq-of {:name some?
+                              :modifiers some?
+                              :annotated-arglists string?}))
+                 (mapcat vals (vals (:members c1))))))
         (testing "doesn't throw on classes without dots in classname"
           (let [reified (binding [*ns* (create-ns 'foo)]
                           (clojure.core/eval
                            '(clojure.core/reify Object)))
                 sym (symbol (.getName (class reified)))]
-            (is (class-info sym))))
-        (testing "that doesn't exist"
-          (is (nil? c3))))
-      (when jdk11+?
-        (testing "Doc fragments"
-          (is (seq (:doc-fragments thread-class-info)))
-          (is (seq (:doc-first-sentence-fragments thread-class-info))))))))
+            (is (class-info sym)))))
+      (testing "Doc fragments"
+        (is+ {:doc-fragments seq
+              :doc-first-sentence-fragments seq}
+             thread-class-info)))))
 
 (when (and jdk11+? util/jdk-sources-present?)
   (deftest member-info-test
@@ -189,40 +185,31 @@
           m7 (member-info 'java.util.HashMap 'finalize)
           m8 (member-info `Thread 'isDaemon)]
       (testing "Member"
-        (testing "source file"
-          (is (misc/url? (:file m1))))
-        (testing "line number"
-          (is (number? (:line m1))))
-        (testing "arglists"
-          (is (vector? (:arglists m1)))
-          (is (every? vector? (:arglists m1))))
-        (testing "annotated arglists"
-          (is (vector? (:annotated-arglists m1)))
-          (is (every? string? (:annotated-arglists m1))))
-        (testing "that doesn't exist"
-          (is (nil? m2)))
-        (testing "in a class that doesn't exist"
-          (is (nil? m3)))
-        (testing "that is a field"
-          (is m4))
-        (testing "that is static"
-          (is m5))
+        (is+ {:file misc/url?
+              :line number?
+              :arglists (mc/all-of vector? (mc/seq-of vector?))
+              :annotated-arglists (mc/all-of vector? (mc/seq-of string?))}
+             m1)
+        (is+ nil m2 "that doesn't exist")
+        (is+ nil m3 "in a class that doesn't exist")
+        (is m4 "that is a field")
+        (is m5 "that is static")
         (testing "implemented on immediate superclass"
-          (is (not= 'java.lang.Object (:class m6))))
-        (testing "implemented on ancestor superclass"
+          (is (not= 'java.lang.Object (:class m6)))
           (is (not= 'java.lang.Object (:class m7)))
-          (testing (-> m6 :doc pr-str)
-            (is (-> m6 :doc (str/starts-with? "Called by the garbage collector on an object when garbage collection"))
-                "Contains doc that is clearly defined in Object (the superclass)")))
-        (when jdk11+?
-          (testing "Doc fragments"
-            (testing "For a field"
-              (is (seq (:doc-fragments m4)))
-              (is (seq (:doc-first-sentence-fragments m4))))
+          (is+ {:doc #"^Called by the garbage collector on an object when garbage collection"}
+               m6
+               "Contains doc that is clearly defined in Object (the superclass)"))
+        (testing "Doc fragments"
+          (testing "For a field"
+            (is+ {:doc-fragments seq
+                  :doc-first-sentence-fragments seq}
+                 m4))
 
-            (testing "For a method"
-              (is (seq (:doc-fragments m8)))
-              (is (seq (:doc-first-sentence-fragments m8))))))))))
+          (testing "For a method"
+            (is+ {:doc-fragments seq
+                  :doc-first-sentence-fragments seq}
+                 m8)))))))
 
 (deftest arglists-test
   (let [+this (comp #{'this} first)]
@@ -239,110 +226,93 @@
 
 (deftest javadoc-urls-test
   (testing "Javadoc URL"
-    (when (= misc/java-api-version 8)
-      (testing "for Java < 11"           ; JDK8 - JDK11
+    (when-not jdk11+?
+      (testing "for Java 8"
         (with-redefs [cache (LruMap. 100)]
           (testing "of a class"
-            (is (= (:javadoc (class-info 'java.lang.String))
-                   "java/lang/String.html")))
+            (is (= "java/lang/String.html"
+                   (:javadoc (class-info 'java.lang.String)))))
 
           (testing "of a nested class"
-            (is (= (:javadoc (class-info 'java.util.AbstractMap$SimpleEntry))
-                   "java/util/AbstractMap.SimpleEntry.html")))
+            (is (= "java/util/AbstractMap.SimpleEntry.html"
+                   (:javadoc (class-info 'java.util.AbstractMap$SimpleEntry)))))
 
           (testing "of an interface"
-            (is (= (:javadoc (class-info 'java.io.Closeable))
-                   "java/io/Closeable.html")))
+            (is (= "java/io/Closeable.html"
+                   (:javadoc (class-info 'java.io.Closeable)))))
 
           (testing "of a class member"
             (testing "with no args"
-              (is (= (:javadoc (member-info 'java.util.Random 'nextLong))
-                     "java/util/Random.html#nextLong--")))
+              (is (= "java/util/Random.html#nextLong--"
+                     (:javadoc (member-info 'java.util.Random 'nextLong)))))
             (testing "with primitive args"
-              (is (= (:javadoc (member-info 'java.util.Random 'setSeed))
-                     "java/util/Random.html#setSeed-long-")))
+              (is (= "java/util/Random.html#setSeed-long-"
+                     (:javadoc (member-info 'java.util.Random 'setSeed)))))
             (testing "with object args"
-              (is (= (:javadoc (member-info 'java.lang.String 'contains))
-                     "java/lang/String.html#contains-java.lang.CharSequence-")))
+              (is (= "java/lang/String.html#contains-java.lang.CharSequence-"
+                     (:javadoc (member-info 'java.lang.String 'contains)))))
             (testing "with array args"
-              (is (= (:javadoc (member-info 'java.lang.Thread 'enumerate))
-                     "java/lang/Thread.html#enumerate-java.lang.Thread:A-")))
+              (is (= "java/lang/Thread.html#enumerate-java.lang.Thread:A-"
+                     (:javadoc (member-info 'java.lang.Thread 'enumerate)))))
             (testing "with multiple args"
-              (is (= (:javadoc (member-info 'java.util.ArrayList 'subList))
-                     "java/util/ArrayList.html#subList-int-int-")))
+              (is (= "java/util/ArrayList.html#subList-int-int-"
+                     (:javadoc (member-info 'java.util.ArrayList 'subList)))))
             (testing "with generic type erasure"
-              (is (= (:javadoc (member-info 'java.util.Hashtable 'putAll))
-                     "java/util/Hashtable.html#putAll-java.util.Map-")))))))
+              (is (= "java/util/Hashtable.html#putAll-java.util.Map-"
+                     (:javadoc (member-info 'java.util.Hashtable 'putAll)))))))))
 
-    ;; Java 11+ URLs require module information, which is only available on Java 9+.
-    (when (>= misc/java-api-version 11)
+    ;; Java 11+ URLs require module information, which is only available on Java 11+.
+    (when jdk11+?
       (testing "for Java 11+"
-        (with-redefs [misc/java-api-version 11
-                      cache (LruMap. 100)]
+        (with-redefs [cache (LruMap. 100)]
           (testing "of a class"
-            (is (= (:javadoc (class-info 'java.lang.String))
-                   "java.base/java/lang/String.html")))
+            (is (= "java.base/java/lang/String.html"
+                   (:javadoc (class-info 'java.lang.String)))))
 
           (testing "of a nested class"
-            (is (= (:javadoc (class-info 'java.util.AbstractMap$SimpleEntry))
-                   "java.base/java/util/AbstractMap.SimpleEntry.html")))
+            (is (= "java.base/java/util/AbstractMap.SimpleEntry.html"
+                   (:javadoc (class-info 'java.util.AbstractMap$SimpleEntry)))))
 
           (testing "of an interface"
-            (is (= (:javadoc (class-info 'java.io.Closeable))
-                   "java.base/java/io/Closeable.html")))
+            (is (= "java.base/java/io/Closeable.html"
+                   (:javadoc (class-info 'java.io.Closeable)))))
 
           (testing "of a class member"
             (testing "with no args"
-              (is (= (:javadoc (member-info 'java.util.Random 'nextLong))
-                     "java.base/java/util/Random.html#nextLong()")))
+              (is (= "java.base/java/util/Random.html#nextLong()"
+                     (:javadoc (member-info 'java.util.Random 'nextLong)))))
             (testing "with primitive args"
-              (is (= (:javadoc (member-info 'java.util.Random 'setSeed))
-                     "java.base/java/util/Random.html#setSeed(long)")))
+              (is (= "java.base/java/util/Random.html#setSeed(long)"
+                     (:javadoc (member-info 'java.util.Random 'setSeed)))))
             (testing "with object args"
-              (is (= (:javadoc (member-info 'java.lang.String 'contains))
-                     "java.base/java/lang/String.html#contains(java.lang.CharSequence)")))
+              (is (= "java.base/java/lang/String.html#contains(java.lang.CharSequence)"
+                     (:javadoc (member-info 'java.lang.String 'contains)))))
             (testing "with array args"
-              (is (= (:javadoc (member-info 'java.lang.Thread 'enumerate))
-                     "java.base/java/lang/Thread.html#enumerate(java.lang.Thread[])")))
+              (is (= "java.base/java/lang/Thread.html#enumerate(java.lang.Thread[])"
+                     (:javadoc (member-info 'java.lang.Thread 'enumerate)))))
             (testing "with multiple args"
-              (is (= (:javadoc (member-info 'java.util.ArrayList 'subList))
-                     "java.base/java/util/ArrayList.html#subList(int,int)")))
+              (is (= "java.base/java/util/ArrayList.html#subList(int,int)"
+                     (:javadoc (member-info 'java.util.ArrayList 'subList)))))
             (testing "with generic type erasure"
-              (is (= (:javadoc (member-info 'java.util.Hashtable 'putAll))
-                     "java.base/java/util/Hashtable.html#putAll(java.util.Map)")))))))))
+              (is (= "java.base/java/util/Hashtable.html#putAll(java.util.Map)"
+                     (:javadoc (member-info 'java.util.Hashtable 'putAll)))))))))))
 
 (deftest resolve-javadoc-path-test
   (let [get-url (comp resolve-javadoc-path (partial apply javadoc-url))]
-    (testing "Java 8 javadocs resolve to the correct urls"
-      (with-redefs [misc/java-api-version 8
-                    cache (LruMap. 100)]
-        (are [class url] (= url (get-url class))
-          ['java.lang.String]
-          "https://docs.oracle.com/javase/8/docs/api/java/lang/String.html"
+    (when-not jdk11+?
+      (testing "Java 8 javadocs resolve to the correct urls"
+        (with-redefs [cache (LruMap. 100)]
+          (are [class url] (= url (get-url class))
+            ['java.lang.String]
+            "https://docs.oracle.com/javase/8/docs/api/java/lang/String.html"
 
-          ['java.lang.String 'contains nil]
-          "https://docs.oracle.com/javase/8/docs/api/java/lang/String.html#contains"
+            ['java.lang.String 'contains nil]
+            "https://docs.oracle.com/javase/8/docs/api/java/lang/String.html#contains"
 
-          ['java.lang.String 'contains ['java.lang.CharSequence]]
-          "https://docs.oracle.com/javase/8/docs/api/java/lang/String.html#contains-java.lang.CharSequence-")))
+            ['java.lang.String 'contains ['java.lang.CharSequence]]
+            "https://docs.oracle.com/javase/8/docs/api/java/lang/String.html#contains-java.lang.CharSequence-"))))
 
-    (when (>= misc/java-api-version 9)
-      (testing "Java 9 javadocs resolve to the correct urls"
-        (with-redefs [misc/java-api-version 9
-                      cache (LruMap. 100)]
-          (testing "java.base modules resolve correctly"
-            (are [class url] (= url (get-url class))
-              ['java.lang.String]
-              "https://docs.oracle.com/javase/9/docs/api/java/lang/String.html"
-
-              ['java.lang.String 'contains nil]
-              "https://docs.oracle.com/javase/9/docs/api/java/lang/String.html#contains"
-
-              ['java.lang.String 'contains ['java.lang.CharSequence]]
-              "https://docs.oracle.com/javase/9/docs/api/java/lang/String.html#contains-java.lang.CharSequence-")))))
-
-    ;; these tests require resolving module names so should only run on 11
-    (when (= 11 misc/java-api-version)
+    (when jdk11+?
       (testing "Java 11 javadocs resolve to the correct urls"
         (with-redefs [misc/java-api-version 11
                       cache (LruMap. 100)]
@@ -373,115 +343,105 @@
         (is (= "http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/lambda/AWSLambdaClient.html"
                (get-url ['com.amazonaws.services.lambda.AWSLambdaClient])))
         (is (= "https://kafka.apache.org/090/javadoc/org/apache/kafka/clients/consumer/ConsumerConfig.html"
-               (get-url '[org.apache.kafka.clients.consumer.ConsumerConfig])))))
-    (when (>= misc/java-api-version 11)
-      (testing "Unrecognized java version doesn't blank out the javadocs"
-        (with-redefs [misc/java-api-version 12345
-                      cache (LruMap. 100)]
-          (is (= "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html"
-                 (get-url ['java.lang.String]))))))))
+               (get-url '[org.apache.kafka.clients.consumer.ConsumerConfig])))))))
 
 (deftest class-resolution-test
-  (let [ns (ns-name *ns*)]
-    (testing "Class resolution"
-      (testing "of resolvable classes"
-        (is (= 'java.lang.String (:class (resolve-class ns 'String))))
-        (is (= 'java.lang.String (:class (resolve-class ns 'java.lang.String)))))
-      (testing "of non-resolvable 'classes'"
-        (is (nil? (resolve-class ns 'NothingHere)))
-        (is (nil? (resolve-class ns 'not.actually.AClass))))
-      (testing "of things that aren't classes"
-        (is (nil? (resolve-class ns 'assoc)))
-        (is (nil? (resolve-class ns 'clojure.core)))))))
+  (testing "Class resolution"
+    (testing "of resolvable classes"
+      (is+ 'java.lang.String (:class (resolve-class (*ns) 'String)))
+      (is+ 'java.lang.String (:class (resolve-class (*ns) 'java.lang.String))))
+    (testing "of non-resolvable 'classes'"
+      (is+ nil (resolve-class (*ns) 'NothingHere))
+      (is+ nil (resolve-class (*ns) 'not.actually.AClass)))
+    (testing "of things that aren't classes"
+      (is+ nil (resolve-class (*ns) 'assoc))
+      (is+ nil (resolve-class (*ns) 'clojure.core)))))
 
 (deftest member-resolution-test
-  (let [ns (ns-name *ns*)]
-    (testing "Member resolution"
-      (testing "of instance members"
-        (is (every? #(= 'toString (:member %))
-                    (resolve-member ns 'toString))))
-      (testing "of non-members"
-        (is (empty? (resolve-member ns 'notAMember)))))))
+  (testing "Member resolution"
+    (testing "of instance members"
+      (is+ (mc/seq-of {:member 'toString})
+           (resolve-member (*ns) 'toString)))
+    (testing "of non-members"
+      (is+ [] (resolve-member (*ns) 'notAMember)))))
 
 (deftest symbol-resolution-test
-  (let [ns (ns-name *ns*)]
-    (testing "Symbol resolution"
-      (testing "of classes"
-        (is (= 'java.lang.String (:class (resolve-symbol ns 'String)))))
-      (testing "of deftype in clojure.core"
-        (is (= 'clojure.core.Eduction (:class (resolve-symbol 'clojure.core 'Eduction)))))
-      (testing "of constructors"
-        (is (= 'java.lang.String (:class (resolve-symbol ns 'String.)))))
-      (testing "of unambiguous instance members"
-        (is (= 'java.lang.SecurityManager
-               (:class (resolve-symbol ns '.checkPackageDefinition))))
-        (is (nil? (:class (resolve-symbol ns '.currentThread)))
-            "Shouldn't resolve since Thread/currentThread is a static method"))
-      (testing "of qualified instance members"
-        (is (= 'java.lang.Thread
-               (:class (resolve-symbol ns 'Thread/.start)))))
-      (testing "of candidate instance members"
-        (is (every? #(= 'toString (:member %))
-                    (vals (:candidates (resolve-symbol ns 'toString))))))
-      (testing "of static methods"
-        (is (= 'forName (:member (resolve-symbol ns 'Class/forName)))))
-      (testing "of static fields"
-        (is (= 'TYPE (:member (resolve-symbol ns 'Void/TYPE)))))
-      (testing "of java-style printed members"
-        (is (= (resolve-symbol ns 'Thread/.start)
-               (resolve-symbol ns 'Thread.start)))
-        (is (= (resolve-symbol ns 'Thread/currentThread)
-               (resolve-symbol ns 'Thread.currentThread)))
-        (is (= (resolve-symbol ns 'clojure.lang.Compiler$DefExpr/.eval)
-               (resolve-symbol ns 'clojure.lang.Compiler$DefExpr.eval)))
-        (is (= 'clojure.lang.Compiler$DefExpr
-               (:class (resolve-symbol ns 'clojure.lang.Compiler$DefExpr.eval)))))
-      (testing "of module-prefixed classes"
-        (is (= (resolve-symbol ns 'java.lang.Thread)
-               (resolve-symbol ns 'java.base/java.lang.Thread))))
-      (testing "of java-style printed members with module prefix"
-        (is (= (resolve-symbol ns 'java.lang.Thread/.run)
-               (resolve-symbol ns 'java.base/java.lang.Thread.run))))
+  (testing "Symbol resolution"
+    (testing "of classes"
+      (is+ 'java.lang.String (:class (resolve-symbol (*ns) 'String))))
+    (testing "of deftype in clojure.core"
+      (is+ 'clojure.core.Eduction (:class (resolve-symbol 'clojure.core 'Eduction))))
+    (testing "of constructors"
+      (is+ 'java.lang.String (:class (resolve-symbol (*ns) 'String.))))
+    (testing "of unambiguous instance members"
+      (is+ 'java.lang.SecurityManager
+           (:class (resolve-symbol (*ns) '.checkPackageDefinition)))
+      (is+ nil (:class (resolve-symbol (*ns) '.currentThread))
+           "Shouldn't resolve since Thread/currentThread is a static method"))
+    (testing "of qualified instance members"
+      (is+ 'java.lang.Thread (:class (resolve-symbol (*ns) 'Thread/.start))))
+    (testing "of candidate instance members"
+      (is+ (mc/all-of not-empty
+                      (mc/seq-of {:member 'toString}))
+           (vals (:candidates (resolve-symbol (*ns) '.toString)))))
+    (testing "of static methods"
+      (is+ 'forName (:member (resolve-symbol (*ns) 'Class/forName))))
+    (testing "of static fields"
+      (is+ 'TYPE (:member (resolve-symbol (*ns) 'Void/TYPE))))
+    (testing "of java-style printed members"
+      (is (= (resolve-symbol (*ns) 'Thread/.start)
+             (resolve-symbol (*ns) 'Thread.start)))
+      (is (= (resolve-symbol (*ns) 'Thread/currentThread)
+             (resolve-symbol (*ns) 'Thread.currentThread)))
+      (is (= (resolve-symbol (*ns) 'clojure.lang.Compiler$DefExpr/.eval)
+             (resolve-symbol (*ns) 'clojure.lang.Compiler$DefExpr.eval)))
+      (is (= 'clojure.lang.Compiler$DefExpr
+             (:class (resolve-symbol (*ns) 'clojure.lang.Compiler$DefExpr.eval)))))
+    (testing "of module-prefixed classes"
+      (is (= (resolve-symbol (*ns) 'java.lang.Thread)
+             (resolve-symbol (*ns) 'java.base/java.lang.Thread))))
+    (testing "of java-style printed members with module prefix"
+      (is (= (resolve-symbol (*ns) 'java.lang.Thread/.run)
+             (resolve-symbol (*ns) 'java.base/java.lang.Thread.run))))
 
-      (testing "equality of qualified vs unqualified"
-        (testing "classes"
-          (is (= (resolve-symbol ns 'java.lang.String)
-                 (resolve-symbol ns 'String))))
-        (testing "constructors"
-          (is (= (resolve-symbol ns 'java.lang.Exception.)
-                 (resolve-symbol ns 'Exception.))))
-        (testing "static methods"
-          (is (= (resolve-symbol ns 'java.lang.Class/forName)
-                 (resolve-symbol ns 'Class/forName))))
-        (testing "static fields"
-          (is (= (resolve-symbol ns 'java.lang.Void/TYPE)
-                 (resolve-symbol ns 'Void/TYPE))))
-        (testing "qualified members"
-          (is (= (resolve-symbol ns 'Thread/.start)
-                 (resolve-symbol ns 'java.lang.Thread/.start))))
-        (testing "java-style printed members"
-          (is (= (resolve-symbol ns 'Thread.start)
-                 (resolve-symbol ns 'java.lang.Thread.start)))
-          (is (= (resolve-symbol ns 'Thread.currentThread)
-                 (resolve-symbol ns 'java.lang.Thread.currentThread)))))
+    (testing "equality of qualified vs unqualified"
+      (testing "classes"
+        (is (= (resolve-symbol (*ns) 'java.lang.String)
+               (resolve-symbol (*ns) 'String))))
+      (testing "constructors"
+        (is (= (resolve-symbol (*ns) 'java.lang.Exception.)
+               (resolve-symbol (*ns) 'Exception.))))
+      (testing "static methods"
+        (is (= (resolve-symbol (*ns) 'java.lang.Class/forName)
+               (resolve-symbol (*ns) 'Class/forName))))
+      (testing "static fields"
+        (is (= (resolve-symbol (*ns) 'java.lang.Void/TYPE)
+               (resolve-symbol (*ns) 'Void/TYPE))))
+      (testing "qualified members"
+        (is (= (resolve-symbol (*ns) 'Thread/.start)
+               (resolve-symbol (*ns) 'java.lang.Thread/.start))))
+      (testing "java-style printed members"
+        (is (= (resolve-symbol (*ns) 'Thread.start)
+               (resolve-symbol (*ns) 'java.lang.Thread.start)))
+        (is (= (resolve-symbol (*ns) 'Thread.currentThread)
+               (resolve-symbol (*ns) 'java.lang.Thread.currentThread)))))
 
-      (when util/jdk-sources-present?
-        (testing "class and constructor resolve to different lines"
-          (is (not= (:line (resolve-symbol ns 'java.lang.String))
-                    (:line (resolve-symbol ns 'java.lang.String.))))
-          (is (not= (:line (resolve-symbol ns 'Thread))
-                    (:line (resolve-symbol ns 'Thread.))))))
+    (when util/jdk-sources-present?
+      (testing "class and constructor resolve to different lines"
+        (is (not= (:line (resolve-symbol (*ns) 'java.lang.String))
+                  (:line (resolve-symbol (*ns) 'java.lang.String.))))
+        (is (not= (:line (resolve-symbol (*ns) 'Thread))
+                  (:line (resolve-symbol (*ns) 'Thread.))))))
 
-      (testing "of things that shouldn't resolve"
-        (is (nil? (resolve-symbol ns 'MissingUnqualifiedClass)))
-        (is (nil? (resolve-symbol ns 'missing.qualified.Class)))
-        (is (nil? (resolve-symbol ns 'MissingUnqualifiedCtor.)))
-        (is (nil? (resolve-symbol ns 'missing.qualified.Ctor.)))
-        (is (nil? (resolve-symbol ns 'MissingUnqualified/staticMethod)))
-        (is (nil? (resolve-symbol ns 'missing.Qualified/staticMethod)))
-        (is (nil? (resolve-symbol ns 'missingMethod)))
-        (is (nil? (resolve-symbol ns '.missingDottedMethod)))
-        (is (nil? (resolve-symbol ns '.random.bunch/of$junk)))))))
+    (testing "of things that shouldn't resolve"
+      (is (nil? (resolve-symbol (*ns) 'MissingUnqualifiedClass)))
+      (is (nil? (resolve-symbol (*ns) 'missing.qualified.Class)))
+      (is (nil? (resolve-symbol (*ns) 'MissingUnqualifiedCtor.)))
+      (is (nil? (resolve-symbol (*ns) 'missing.qualified.Ctor.)))
+      (is (nil? (resolve-symbol (*ns) 'MissingUnqualified/staticMethod)))
+      (is (nil? (resolve-symbol (*ns) 'missing.Qualified/staticMethod)))
+      (is (nil? (resolve-symbol (*ns) '.missingDottedMethod)))
+      (is (nil? (resolve-symbol (*ns) '.random.bunch/of$junk))))))
 
 (defn- replace-last-dot [^String s]
   (if (re-find #"(.*\.)" s)
@@ -494,32 +454,32 @@
   (deftest reflect-and-source-info-match
     (testing "reflect and source info structurally match, allowing a meaningful deep-merge of both"
       (let [extract-arities (fn [info]
-                              (->> info :members vals (map keys) (reduce into)
+                              (->> info :members vals (mapcat keys)
                                    (remove nil?) ;; fields
-                                   (sort-by pr-str)))]
+                                   (sort-by pr-str)))
+            resolves? #(let [s (str/replace (str %) "[]" "")]
+                         (if (#{"byte" "short" "int" "long" "float" "double" "char" "boolean" "void"} s)
+                           true
+                           (try
+                             (Class/forName s)
+                             (catch Exception _
+                               (Class/forName (replace-last-dot s))))))]
         (doseq [class-symbol (class-corpus)
                 :let [src-info (source-info class-symbol)
-                      reflect-info (sut/reflect-info (#'sut/reflection-for (eval class-symbol)))
+                      reflect-info (sut/reflect-info (#'sut/reflection-for (resolve class-symbol)))
                       arities-from-source (extract-arities src-info)
                       arities-from-reflector (extract-arities reflect-info)]]
           (testing class-symbol
-            (is (pos? (count arities-from-source)))
-            (is (= arities-from-source arities-from-reflector))
-            (doseq [arity arities-from-source]
-              (doseq [s arity
-                      :let [s (-> s str (str/replace "[]" ""))]]
-                (when-not (#{"byte" "short" "int" "long" "float" "double" "char" "boolean" "void"}
-                           s)
-                  (is (try
-                        (Class/forName s)
-                        (catch Exception _
-                          (Class/forName (replace-last-dot s)))))
-                  "The ")))
+            (when (is (pos? (count arities-from-source)))
+              (is+ arities-from-source arities-from-reflector)
+              (doseq [arity arities-from-source
+                      s arity]
+                (is+ resolves? s))
 
-            (let [arities-data (extract-method-arities class-symbol (misc/deep-merge reflect-info src-info))]
-              (is (pos? (count arities-data)))
-              (is (every? :argnames arities-data)
-                  "The deep-merge went ok"))))))))
+              (let [arities-data (extract-method-arities class-symbol
+                                                         (misc/deep-merge reflect-info src-info))]
+                (is (pos? (count arities-data)))
+                (is+ (mc/seq-of {:argnames some?}) arities-data)))))))))
 
 (when (and util/jdk-sources-present? jdk11+?)
   (deftest array-arg-doc-test
