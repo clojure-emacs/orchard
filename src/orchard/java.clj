@@ -461,12 +461,9 @@
   "Re-implementation of `clojure.java.javadoc/*core-java-api*` because it doesn't
   contain newer JDK versions, especially in older Clojure."
   [jdk-version]
-  (cond (<= jdk-version 10)
-        (format "https://docs.oracle.com/javase/%s/docs/api/" jdk-version)
-        (<= 11 jdk-version 22)
-        (format "https://docs.oracle.com/en/java/javase/%s/docs/api/" jdk-version)
-        :else ;; For newer JDK version, default to latest LTS.
-        (recur 21)))
+  (if (< jdk-version 11)
+    (format "https://docs.oracle.com/javase/%s/docs/api/" jdk-version)
+    (format "https://docs.oracle.com/en/java/javase/%s/docs/api/" jdk-version)))
 
 (defn resolve-javadoc-path
   "Resolve a relative javadoc path to a URL and return as a map. Prefer javadoc
