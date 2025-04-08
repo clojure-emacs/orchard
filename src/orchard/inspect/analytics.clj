@@ -56,7 +56,7 @@
 
 (defn- numbers-stats [^Iterable coll]
   (let [it (.iterator coll)]
-    (loop [i 0, hi nil, lo nil, zeros 0, n 0, sum 0]
+    (loop [i 0, hi nil, lo nil, zeros 0, n 0, sum 0.0]
       (if (and (< i *size-cutoff*) (.hasNext it))
         (let [x (.next it)]
           (if (number? x)
@@ -65,10 +65,10 @@
                    (if (nil? lo) x (min lo x))
                    (inc-if zeros (zero? x))
                    (inc n)
-                   (+ sum x))
+                   (+ sum (double x)))
             (recur (inc i) hi lo zeros n sum)))
         (when (> n 0)
-          {:n n, :zeros zeros, :max hi, :min lo, :mean (float (/ sum n))})))))
+          {:n n, :zeros zeros, :max hi, :min lo, :mean (/ sum n)})))))
 
 (def ^:private ^java.nio.charset.CharsetEncoder ascii-enc
   (.newEncoder (java.nio.charset.Charset/forName "US-ASCII")))
