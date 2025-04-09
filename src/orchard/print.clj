@@ -192,3 +192,14 @@
     (try (print x writer)
          (catch TruncatingStringWriter$TotalLimitExceeded _))
     (.toString writer)))
+
+(defn pprint-str
+  "Pretty print the object `x` with `orchard.pp/pprint` and return it as
+  a string. The `:indentation` option is the number of spaces used for
+  indentation."
+  [x & [{:keys [indentation]}]]
+  (let [writer (TruncatingStringWriter. *max-atom-length* *max-total-length*)
+        indentation-str (apply str (repeat (or indentation 0) " "))]
+    (try (pp/pprint writer x {:indentation indentation-str})
+         (catch TruncatingStringWriter$TotalLimitExceeded _))
+    (str/trimr (.toString writer))))
