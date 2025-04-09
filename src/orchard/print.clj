@@ -15,7 +15,9 @@
                  Var)
    (java.util List Map Map$Entry)
    (mx.cider.orchard TruncatingStringWriter
-                     TruncatingStringWriter$TotalLimitExceeded)))
+                     TruncatingStringWriter$TotalLimitExceeded))
+  (:require [clojure.string :as str]
+            [orchard.pp :as pp]))
 
 (defmulti print
   (fn [x _]
