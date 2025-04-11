@@ -5,7 +5,8 @@
 
 (def dev-test-common-profile
   {:dependencies '[[nubank/matcher-combinators "3.9.1"
-                    :exclusions [org.clojure/clojure]]]
+                    :exclusions [org.clojure/clojure]]
+                   [org.clojure/test.check "1.1.1"]]
    :source-paths ["test-resources/java"]
    :resource-paths ["test-resources"]
    :test-paths ["test"]
