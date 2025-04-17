@@ -3,18 +3,6 @@
                                :unresolved-namespace {:level :off}}}
  :linters           {:unused-private-var {:level   :warning
                                           :exclude [orchard.query-test/a-private orchard.query-test/docd-fn]}
-                     :unresolved-symbol  {:exclude [(clojure.test/is [match?])
-                                                    roundtrip
-                                                    level-zero-map-entry
-                                                    non-map-coll-map-entry
-                                                    pp-vs-cpp-map-entry
-                                                    pp-vs-cpp-vec
-                                                    pp-vs-cpp-map-1
-                                                    pp-vs-cpp-map-2
-                                                    pp-vs-cpp-map-3
-                                                    pp-vs-cpp-inf-max-width
-                                                    print-readably
-                                                    print-arrays
-                                                    print-linear]}
+                     :unresolved-symbol  {:exclude [(clojure.test/is [match?])]}
                      ;; Enable this opt-in linter:
                      :unsorted-required-namespaces {:level :warning}}}
