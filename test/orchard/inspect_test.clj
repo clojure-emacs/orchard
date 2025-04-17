@@ -77,6 +77,12 @@
   (take-while #(not (and (string? %)
                          (re-matches #".*---.*" %))) rendered))
 
+(defn- labeled-value [label rendered]
+  (let [formatted-label (str label ": ")]
+    (->> rendered
+         (drop-while #(not (= formatted-label %)))
+         (take 2))))
+
 (defn- page-size-info [rendered]
   (let [s (last (butlast rendered))]
     (when (and (string? s) (re-find #"Page size:" s))
@@ -96,6 +102,9 @@
 
 (defn set-page-size [inspector new-size]
   (inspect/refresh inspector {:page-size new-size}))
+
+(defn set-pretty-print [inspector pretty-print]
+  (inspect/refresh inspector {:pretty-print pretty-print}))
 
 (deftest nil-test
   (testing "nil renders correctly"
@@ -1559,7 +1568,7 @@
             [:newline]]
            (section "Contents" rendered)))))
 
-(deftest pretty-view-mode-map-test
+(deftest pretty-print-map-test
   (testing "in :pretty view-mode are pretty printed"
     (let [rendered (-> {:a 0
                         :bb "000"
@@ -1568,7 +1577,7 @@
                             {:a -1 :bb "111" :ccc [1]}
                             {:a 2 :bb "222" :ccc [1 2]}]}
                        (inspect/start)
-                       (inspect/set-view-mode :pretty)
+                       (set-pretty-print "true")
                        render)]
       (is+ ["--- Contents:" [:newline] "  "
             [:value ":a" 1] " = " [:value "0" 2]
@@ -1581,12 +1590,35 @@
             [:value (str "[{:a 0, :bb \"000\", :ccc [[]]}\n"
                          "        {:a -1, :bb \"111\", :ccc [1]}\n"
                          "        {:a 2, :bb \"222\", :ccc [1 2]}]") 8]
-            [:newline] [:newline]]
+            [:newline]]
            (section "Contents" rendered))
-      (is+ ["--- View mode:" [:newline] "  :pretty"]
+      (is (nil? (section "View mode" rendered))))))
+
+(deftest pretty-print-map-in-object-view-test
+  (testing "in :pretty view-mode are pretty printed"
+    (let [rendered (-> {:a 0
+                        :bb "000"
+                        :ccc []
+                        :d [{:a 0 :bb "000" :ccc [[]]}
+                            {:a -1 :bb "111" :ccc [1]}
+                            {:a 2 :bb "222" :ccc [1 2]}]}
+                       (inspect/start)
+                       (inspect/set-view-mode :object)
+                       (set-pretty-print "true")
+                       render)]
+      (is+ ["Value: "
+            [:value (str "{:a 0,\n"
+                         "        :bb \"000\",\n"
+                         "        :ccc [],\n"
+                         "        :d\n"
+                         "        [{:a 0, :bb \"000\", :ccc [[]]}\n"
+                         "         {:a -1, :bb \"111\", :ccc [1]}\n"
+                         "         {:a 2, :bb \"222\", :ccc [1 2]}]}") 1]]
+           (labeled-value "Value" rendered))
+      (is+ ["--- View mode:" [:newline] "  :object"]
            (section "View mode" rendered)))))
 
-(deftest pretty-view-mode-seq-of-maps-test
+(deftest pretty-print-seq-of-maps-test
   (testing "in :pretty view-mode maps seqs of maps are pretty printed"
     (let [rendered (-> (for [i (range 2)]
                          {:a (- i)
@@ -1597,7 +1629,7 @@
                                 :bb (str i i i)
                                 :ccc (range i 0 -1)})})
                        (inspect/start)
-                       (inspect/set-view-mode :pretty)
+                       (set-pretty-print "true")
                        render)]
       (is+ ["--- Contents:" [:newline]
             "  0. "
@@ -1615,12 +1647,11 @@
                          "\"222\", :ccc (2 1)}\n       {:a -3, :bb \"333\", "
                          ":ccc (3 2 1)}\n       {:a -4, :bb \"444\", "
                          ":ccc (4 3 2 1)})}") 2]
-            [:newline] [:newline]]
+            [:newline]]
            (section "Contents" rendered))
-      (is+ ["--- View mode:" [:newline] "  :pretty"]
-           (section "View mode" rendered)))))
+      (is (nil? (section "View mode" rendered))))))
 
-(deftest pretty-view-mode-map-as-key-test
+(deftest pretty-print-map-as-key-test
   (testing "in :pretty view-mode maps that contain maps as a keys are pretty printed"
     (let [rendered (-> {{:a 0
                          :bb "000"
@@ -1639,7 +1670,7 @@
                              {:a -3 :bb "333" :ccc [3 2 1]}
                              {:a -4 :bb "444" :ccc [4 3 2 1]}]}}
                        (inspect/start)
-                       (inspect/set-view-mode :pretty)
+                       (set-pretty-print "true")
                        render)]
       (is+ ["--- Contents:" [:newline] "  "
             [:value (str "{:a 0,\n   :bb \"000\",\n   :ccc [],\n   :d\n   "
@@ -1654,12 +1685,11 @@
                          ":bb \"222\", :ccc [2 1]}\n    {:a -3, :bb "
                          "\"333\", :ccc [3 2 1]}\n    {:a -4, :bb "
                          "\"444\", :ccc [4 3 2 1]}]}") 2]
-            [:newline] [:newline] [:newline]]
+            [:newline] [:newline]]
            (section "Contents" rendered))
-      (is+ ["--- View mode:" [:newline] "  :pretty"]
-           (section "View mode" rendered)))))
+      (is (nil? (section "View mode" rendered))))))
 
-(deftest pretty-view-mode-seq-of-map-as-key-test
+(deftest pretty-print-seq-of-map-as-key-test
   (testing "in :pretty view-mode maps that contain seq of maps as a keys are pretty printed"
     (let [rendered (-> {[{:a 0
                           :bb "000"
@@ -1674,7 +1704,7 @@
                              {:a -1 :bb "111" :ccc [1]}
                              {:a 2 :bb "222" :ccc [1 2]}]}}
                        (inspect/start)
-                       (inspect/set-view-mode :pretty)
+                       (set-pretty-print "true")
                        render)]
       (is+ ["--- Contents:" [:newline] "  "
             [:value (str "[{:a 0,\n    :bb \"000\",\n    :ccc [],\n    :d\n    "
@@ -1685,10 +1715,9 @@
                          "[{:a 0, :bb \"000\", :ccc [[]]}\n    {:a -1, "
                          ":bb \"111\", :ccc [1]}\n    {:a 2, :bb \"222\", "
                          ":ccc [1 2]}]}") 2]
-            [:newline] [:newline] [:newline]]
+            [:newline] [:newline]]
            (section "Contents" rendered))
-      (is+ ["--- View mode:" [:newline] "  :pretty"]
-           (section "View mode" rendered)))))
+      (is (nil? (section "View mode" rendered))))))
 
 (deftest tap-test
   (testing "tap-current-value"
