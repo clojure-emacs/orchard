@@ -1577,7 +1577,7 @@
                             {:a -1 :bb "111" :ccc [1]}
                             {:a 2 :bb "222" :ccc [1 2]}]}
                        (inspect/start)
-                       (set-pretty-print "true")
+                       (set-pretty-print true)
                        render)]
       (is+ ["--- Contents:" [:newline] "  "
             [:value ":a" 1] " = " [:value "0" 2]
@@ -1604,7 +1604,7 @@
                             {:a 2 :bb "222" :ccc [1 2]}]}
                        (inspect/start)
                        (inspect/set-view-mode :object)
-                       (set-pretty-print "true")
+                       (set-pretty-print true)
                        render)]
       (is+ ["Value: "
             [:value (str "{:a 0,\n"
@@ -1629,7 +1629,7 @@
                                 :bb (str i i i)
                                 :ccc (range i 0 -1)})})
                        (inspect/start)
-                       (set-pretty-print "true")
+                       (set-pretty-print true)
                        render)]
       (is+ ["--- Contents:" [:newline]
             "  0. "
@@ -1670,7 +1670,7 @@
                              {:a -3 :bb "333" :ccc [3 2 1]}
                              {:a -4 :bb "444" :ccc [4 3 2 1]}]}}
                        (inspect/start)
-                       (set-pretty-print "true")
+                       (set-pretty-print true)
                        render)]
       (is+ ["--- Contents:" [:newline] "  "
             [:value (str "{:a 0,\n   :bb \"000\",\n   :ccc [],\n   :d\n   "
@@ -1704,7 +1704,7 @@
                              {:a -1 :bb "111" :ccc [1]}
                              {:a 2 :bb "222" :ccc [1 2]}]}}
                        (inspect/start)
-                       (set-pretty-print "true")
+                       (set-pretty-print true)
                        render)]
       (is+ ["--- Contents:" [:newline] "  "
             [:value (str "[{:a 0,\n    :bb \"000\",\n    :ccc [],\n    :d\n    "

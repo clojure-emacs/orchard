@@ -56,7 +56,7 @@
   "Print or pretty print the string `value`, depending on the view mode
   of the inspector."
   [{:keys [indentation pretty-print]} value]
-  (if (= "true" pretty-print)
+  (if pretty-print
     (print/pprint-str value {:indentation (or indentation 0)})
     (print/print-str value)))
 
@@ -229,7 +229,7 @@
   (when (some? max-nested-depth) (pre-ex (pos-int? max-nested-depth)))
   (when (some? display-analytics-hint) (pre-ex (= display-analytics-hint "true")))
   (when (some? analytics-size-cutoff) (pre-ex (pos-int? analytics-size-cutoff)))
-  (when (some? pretty-print) (pre-ex (#{"true" "false"} pretty-print)))
+  (when (some? pretty-print) (pre-ex (#{true false} pretty-print)))
   (select-keys config (keys default-inspector-config)))
 
 (defn refresh
@@ -356,7 +356,7 @@
 
 (defn render-labeled-value [{:keys [pretty-print] :as inspector} label value & [value-opts]]
   (let [formatted-label (str label ": ")
-        indentation (if (= "true" pretty-print) (count formatted-label) 0)]
+        indentation (if pretty-print (count formatted-label) 0)]
     (-> inspector
         (render-indent formatted-label)
         (indent indentation)
@@ -402,7 +402,7 @@
   `rendered-key` is long or contains newlines the key and value will
   be rendered on separate lines."
   [{:keys [pretty-print] :as inspector} long-key?]
-  (if (and (= "true" pretty-print) long-key?)
+  (if (and pretty-print long-key?)
     (-> (render-ln inspector)
         (render-indent "=")
         (render-ln))
@@ -412,7 +412,7 @@
   "Render a map value. If `mark-values?` is true, attach the keys to the
   values in the index."
   [{:keys [pretty-print] :as inspector} key val mark-values? rendered-key long-key?]
-  (if (= "true" pretty-print)
+  (if pretty-print
     (let [indentation (if long-key? 0 (+ 3 (count rendered-key)))]
       (-> (indent inspector indentation)
           (render (if (zero? indentation) "  " ""))
@@ -503,7 +503,7 @@
     (loop [ins inspector, chunk (seq chunk), idx idx-starts-from]
       (if chunk
         (let [header (str (format idx-fmt idx) ". ")
-              indentation (if (= "true" pretty-print) (count header) 0)]
+              indentation (if pretty-print (count header) 0)]
           (recur (-> ins
                      (render-indent header)
                      (indent indentation)
@@ -1006,7 +1006,7 @@
                                         ;; render a ton of # characters when
                                         ;; there is still enough screen estate
                                         ;; in most cases.
-                                        (and (= "true" pretty-print) (number? max-nested-depth))
+                                        (and pretty-print (number? max-nested-depth))
                                         (* 2))]
      (-> inspector
          (reset-render-state)
