@@ -401,8 +401,8 @@
   "Render the map separator according to `rendered-key`. If
   `rendered-key` is long or contains newlines the key and value will
   be rendered on separate lines."
-  [{:keys [pretty-print] :as inspector} rendered-key]
-  (if (and (= "true" pretty-print) (long-map-key? rendered-key))
+  [{:keys [pretty-print] :as inspector} long-key?]
+  (if (and (= "true" pretty-print) long-key?)
     (-> (render-ln inspector)
         (render-indent "=")
         (render-ln))
@@ -411,9 +411,9 @@
 (defn- render-map-value
   "Render a map value. If `mark-values?` is true, attach the keys to the
   values in the index."
-  [{:keys [pretty-print] :as inspector} key val mark-values? rendered-key]
+  [{:keys [pretty-print] :as inspector} key val mark-values? rendered-key long-key?]
   (if (= "true" pretty-print)
-    (let [indentation (if (long-map-key? rendered-key) 0 (+ 3 (count rendered-key)))]
+    (let [indentation (if long-key? 0 (+ 3 (count rendered-key)))]
       (-> (indent inspector indentation)
           (render (if (zero? indentation) "  " ""))
           (render-value val
@@ -430,11 +430,12 @@
   to the values in the index."
   [inspector mappable mark-values?]
   (reduce (fn [ins [key val]]
-            (let [rendered-key (rendered-element-str (last (:rendered (render-map-key ins key))))]
+            (let [rendered-key (rendered-element-str (last (:rendered (render-map-key ins key))))
+                  long-key? (long-map-key? rendered-key)]
               (-> (render-indent ins)
                   (render-map-key key)
-                  (render-map-separator rendered-key)
-                  (render-map-value key val mark-values? rendered-key)
+                  (render-map-separator long-key?)
+                  (render-map-value key val mark-values? rendered-key long-key?)
                   (render-ln))))
           inspector
           mappable))
