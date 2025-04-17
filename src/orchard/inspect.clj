@@ -45,7 +45,7 @@
    :max-nested-depth nil
    :display-analytics-hint nil
    :analytics-size-cutoff  100000
-   :pretty-print nil})
+   :pretty-print false})
 
 (defn- reset-render-state [inspector]
   (-> inspector
@@ -229,7 +229,7 @@
   (when (some? max-nested-depth) (pre-ex (pos-int? max-nested-depth)))
   (when (some? display-analytics-hint) (pre-ex (= display-analytics-hint "true")))
   (when (some? analytics-size-cutoff) (pre-ex (pos-int? analytics-size-cutoff)))
-  (when (some? pretty-print) (pre-ex (#{true false} pretty-print)))
+  (when (some? pretty-print) (pre-ex (contains? #{true false} pretty-print)))
   (select-keys config (keys default-inspector-config)))
 
 (defn refresh
