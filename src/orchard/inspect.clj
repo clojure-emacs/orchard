@@ -374,23 +374,6 @@
         (render-ln))
     inspector))
 
-(defn- rendered-element-str
-  "Return the string representation of the rendered `element`."
-  [element]
-  (cond (string? element)
-        element
-        (and (seq? element) (= :value (first element)))
-        (second element)
-        (and (seq? element) (= :newline (first element)))
-        "\n"
-        :else
-        (throw (ex-info "Unsupported element" {:element element}))))
-
-(defn- render-map-key
-  "Render the key of a map."
-  [inspector key]
-  (render-value inspector key))
-
 (defn- long-map-key?
   "Returns true of `s` is a long string, more than 20 character or
   containing newlines."
@@ -430,10 +413,10 @@
   to the values in the index."
   [inspector mappable mark-values?]
   (reduce (fn [ins [key val]]
-            (let [rendered-key (rendered-element-str (last (:rendered (render-map-key ins key))))
+            (let [rendered-key (print-string ins key)
                   long-key? (long-map-key? rendered-key)]
               (-> (render-indent ins)
-                  (render-map-key key)
+                  (render-value key {:display-value rendered-key})
                   (render-map-separator long-key?)
                   (render-map-value key val mark-values? rendered-key long-key?)
                   (render-ln))))
