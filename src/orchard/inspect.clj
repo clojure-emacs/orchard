@@ -44,12 +44,21 @@
    :max-coll-size    5
    :max-nested-depth nil
    :display-analytics-hint nil
-   :analytics-size-cutoff  100000})
+   :analytics-size-cutoff  100000
+   :pretty-print false})
 
 (defn- reset-render-state [inspector]
   (-> inspector
       (assoc :counter 0, :index [], :indentation 0, :rendered [])
       (dissoc :chunk :start-idx :last-page)))
+
+(defn- print-string
+  "Print or pretty print the string `value`, depending on the view mode
+  of the inspector."
+  [{:keys [indentation pretty-print]} value]
+  (if pretty-print
+    (print/pprint-str value {:indentation (or indentation 0)})
+    (print/print-str value)))
 
 (defn- array? [obj]
   (some-> (class obj) .isArray))
@@ -211,7 +220,7 @@
 
 (defn- validate-config [{:keys [page-size max-atom-length max-value-length
                                 max-coll-size max-nested-depth display-analytics-hint
-                                analytics-size-cutoff]
+                                analytics-size-cutoff pretty-print]
                          :as config}]
   (when (some? page-size) (pre-ex (pos-int? page-size)))
   (when (some? max-atom-length) (pre-ex (pos-int? max-atom-length)))
@@ -220,6 +229,7 @@
   (when (some? max-nested-depth) (pre-ex (pos-int? max-nested-depth)))
   (when (some? display-analytics-hint) (pre-ex (= display-analytics-hint "true")))
   (when (some? analytics-size-cutoff) (pre-ex (pos-int? analytics-size-cutoff)))
+  (when (some? pretty-print) (pre-ex (contains? #{true false} pretty-print)))
   (select-keys config (keys default-inspector-config)))
 
 (defn refresh
@@ -294,11 +304,15 @@
       (render-onto values)
       (render '(:newline))))
 
-(defn- indent [inspector]
-  (update inspector :indentation + 2))
+(defn- indent
+  "Increment the `:indentation` of `inspector` by `n` or 2."
+  [inspector & [n]]
+  (update inspector :indentation + (or n 2)))
 
-(defn- unindent [inspector]
-  (update inspector :indentation - 2))
+(defn- unindent
+  "Decrement the `:indentation` of `inspector` by `n` or 2."
+  [inspector & [n]]
+  (indent inspector (- (or n 2))))
 
 (defn- padding [{:keys [indentation]}]
   (when (and (number? indentation) (pos? indentation))
@@ -325,7 +339,7 @@
   ([inspector value] (render-value inspector value nil))
   ([inspector value {:keys [value-role value-key display-value]}]
    (let [{:keys [counter]} inspector
-         display-value (or display-value (print/print-str value))
+         display-value (or display-value (print-string inspector value))
          expr (list :value display-value counter)]
      (-> inspector
          (update :index conj {:value value
@@ -340,11 +354,15 @@
       (render-value value value-opts)
       (render-ln)))
 
-(defn render-labeled-value [inspector label value & [value-opts]]
-  (-> inspector
-      (render-indent (str label ": "))
-      (render-value value value-opts)
-      (render-ln)))
+(defn render-labeled-value [{:keys [pretty-print] :as inspector} label value & [value-opts]]
+  (let [formatted-label (str label ": ")
+        indentation (if pretty-print (count formatted-label) 0)]
+    (-> inspector
+        (render-indent formatted-label)
+        (indent indentation)
+        (render-value value value-opts)
+        (unindent indentation)
+        (render-ln))))
 
 (defn- render-class-name [inspector obj]
   (render-labeled-value inspector "Class" (class obj)))
@@ -356,18 +374,52 @@
         (render-ln))
     inspector))
 
+(defn- long-map-key?
+  "Returns true of `s` is a long string, more than 20 character or
+  containing newlines."
+  [^String s]
+  (or (.contains s "\n") (> (count s) 20)))
+
+(defn- render-map-separator
+  "Render the map separator according to `rendered-key`. If
+  `rendered-key` is long or contains newlines the key and value will
+  be rendered on separate lines."
+  [{:keys [pretty-print] :as inspector} long-key?]
+  (if (and pretty-print long-key?)
+    (-> (render-ln inspector)
+        (render-indent "=")
+        (render-ln))
+    (render inspector " = ")))
+
+(defn- render-map-value
+  "Render a map value. If `mark-values?` is true, attach the keys to the
+  values in the index."
+  [{:keys [pretty-print] :as inspector} key val mark-values? rendered-key long-key?]
+  (if pretty-print
+    (let [indentation (if long-key? 0 (+ 3 (count rendered-key)))]
+      (-> (indent inspector indentation)
+          (render (if (zero? indentation) "  " ""))
+          (render-value val
+                        (when mark-values?
+                          {:value-role :map-value, :value-key key}))
+          (unindent indentation)
+          ((if (long-map-key? rendered-key) render-ln identity))))
+    (render-value inspector val
+                  (when mark-values?
+                    {:value-role :map-value, :value-key key}))))
+
 (defn- render-map-values
   "Render associative key-value pairs. If `mark-values?` is true, attach the keys
   to the values in the index."
   [inspector mappable mark-values?]
   (reduce (fn [ins [key val]]
-            (-> ins
-                (render-indent)
-                (render-value key)
-                (render " = ")
-                (render-value val (when mark-values?
-                                    {:value-role :map-value, :value-key key}))
-                (render-ln)))
+            (let [rendered-key (print-string ins key)
+                  long-key? (long-map-key? rendered-key)]
+              (-> (render-indent ins)
+                  (render-value key {:display-value rendered-key})
+                  (render-map-separator long-key?)
+                  (render-map-value key val mark-values? rendered-key long-key?)
+                  (render-ln))))
           inspector
           mappable))
 
@@ -426,20 +478,24 @@
   "Render an indexed chunk of values. Renders all values in `chunk`, so `chunk`
   must be finite. If `mark-values?` is true, attach the indices to the values in
   the index."
-  [inspector chunk idx-starts-from mark-values?]
+  [{:keys [pretty-print] :as inspector} chunk idx-starts-from mark-values?]
   (let [n (count chunk)
         last-idx (+ idx-starts-from n -1)
         last-idx-len (count (str last-idx))
         idx-fmt (str "%" last-idx-len "s")]
     (loop [ins inspector, chunk (seq chunk), idx idx-starts-from]
       (if chunk
-        (recur (-> ins
-                   (render-indent (format idx-fmt idx) ". ")
-                   (render-value (first chunk)
-                                 (when mark-values?
-                                   {:value-role :seq-item, :value-key idx}))
-                   (render-ln))
-               (next chunk) (inc idx))
+        (let [header (str (format idx-fmt idx) ". ")
+              indentation (if pretty-print (count header) 0)]
+          (recur (-> ins
+                     (render-indent header)
+                     (indent indentation)
+                     (render-value (first chunk)
+                                   (when mark-values?
+                                     {:value-role :seq-item, :value-key idx}))
+                     (unindent indentation)
+                     (render-ln))
+                 (next chunk) (inc idx)))
         ins))))
 
 (declare known-types)
@@ -656,7 +712,7 @@
 
 (defmethod inspect :string [inspector ^java.lang.String obj]
   (-> (render-class-name inspector obj)
-      (render "Value: " (print/print-str obj))
+      (render "Value: " (print-string inspector obj))
       (render-ln)
       (render-section-header "Print")
       (indent)
@@ -714,9 +770,7 @@
                   (shorten-member-string (str obj) (.getDeclaringClass ^Method obj))
 
                   (instance? Field obj)
-                  (shorten-member-string (str obj) (.getDeclaringClass ^Field obj))
-
-                  :else (print/print-str obj))]
+                  (shorten-member-string (str obj) (.getDeclaringClass ^Field obj)))]
     (letfn [(render-fields [inspector section-name field-values]
               (if (seq field-values)
                 (-> inspector
@@ -924,12 +978,19 @@
           (unindent)))))
 
 (defn inspect-render
-  ([{:keys [max-atom-length max-value-length max-coll-size max-nested-depth value]
+  ([{:keys [max-atom-length max-value-length max-coll-size max-nested-depth value pretty-print]
      :as inspector}]
    (binding [print/*max-atom-length*  max-atom-length
              print/*max-total-length* max-value-length
              *print-length*           max-coll-size
-             *print-level*            max-nested-depth]
+             *print-level*            (cond-> max-nested-depth
+                                        ;; In pretty mode a higher *print-level*
+                                        ;; leads to better results, otherwise we
+                                        ;; render a ton of # characters when
+                                        ;; there is still enough screen estate
+                                        ;; in most cases.
+                                        (and pretty-print (number? max-nested-depth))
+                                        (* 2))]
      (-> inspector
          (reset-render-state)
          (decide-if-paginated)

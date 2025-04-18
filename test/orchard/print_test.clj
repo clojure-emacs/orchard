@@ -143,3 +143,60 @@
   (is (= "#{1 2 3}" (sut/print-str (reify clojure.lang.IPersistentSet
                                      (equiv [t o] (.equals t o))
                                      (seq [_] (seq [1 2 3])))))))
+
+(deftest pprint-no-limits
+  (are [result form] (match? result (sut/pprint-str form))
+    "1" 1
+    "\"2\"" "2"
+    "\"special \\\" \\\\ symbols\"" "special \" \\ symbols"
+    ":foo" :foo
+    ":abc/def" :abc/def
+    "sym" 'sym
+    "(:a :b :c)" '(:a :b :c)
+    "[1 2 3]" [1 2 3]
+    "{:a 1, :b 2}" {:a 1 :b 2}
+    "[:a 1]" (first {:a 1 :b 2})
+    "([:a 1] [:b 2])" (seq {:a 1 :b 2})
+    "[[:a 1] [:b 2]]" (vec {:a 1 :b 2})
+    "{}" {}
+    "{}" (java.util.HashMap.)
+    "#{:a}" #{:a}
+    "(1 2 3)" (lazy-seq '(1 2 3))
+    "[1 1 1 1 1]" (java.util.ArrayList. ^java.util.Collection (repeat 5 1))
+    "{:a 1, :b 2}" (let [^java.util.Map x {:a 1 :b 2}]
+                     (java.util.HashMap. x))
+    "#orchard.print_test.TestRecord{:a 1, :b 2, :c 3, :d 4}" (->TestRecord 1 2 3 4)
+    "[1 2 3 4]" (long-array [1 2 3 4])
+    "[]" (long-array [])
+    "[0 1 2 3 4]" (into-array Long (range 5))
+    "[]" (into-array Long [])
+    ;; The following tests print differently in the REPL vs in Leiningen due to some overrides in cider-nrepl
+    ;; #"#object\[orchard.print_test.MyTestType 0x.+ \"orchard.print_test.MyTestType@.+\"\]" (MyTestType. "test1")
+    ;; #"#atom\[1 0x.+\]" (atom 1)
+    ;; #"#delay\[\{:status :pending, :val nil\} 0x.+\]" (delay 1)
+    ;; #"#delay\[\{:status :ready, :val 1\} 0x.+\]" (doto (delay 1) deref)
+    ;; #"(?ms)#delay\[\{:status :failed, :val #error .*\}\]" (let [d (delay (/ 1 0))] (try @d (catch Exception _)) d)
+    ;; #"(?ms)#error \{.*\}" (ex-info "Boom" {})
+    ;; "#function[clojure.core/str]" str
+    ))
+
+(deftest pprint-limits
+  (testing "global writer limits will stop the printing when reached"
+    (are [result form] (= result (binding [sut/*max-atom-length* 10
+                                           sut/*max-total-length* 30
+                                           *print-length* 5
+                                           *print-level* 10]
+                                   (sut/pprint-str form)))
+      "\"aaaaaaaaa..." (apply str (repeat 300 "a"))
+      "[\"aaaaaaaaa...\n \"aaaaaaaaa...]..." [(apply str (repeat 300 "a")) (apply str (repeat 300 "a"))]
+      "(1 1 1 1 1 ...)" (repeat 1)
+      "[(1 1 1 1 1 ...)]" [(repeat 1)]
+      "{:a {(0 1 2 3 4 ...) 1, 2 3, 4..." {:a {(range 10) 1, 2 3, 4 5, 6 7, 8 9, 10 11}}
+      "[1 1 1 1 1..." (java.util.ArrayList. ^java.util.Collection (repeat 100 1))
+      "[0 1 2 3 4 ...]" (into-array Long (range 10))
+      "{:m\n {:m\n  {:m\n   {:m {:m 1234..." (nasty 5)
+      "{:b {:a {:..." graph-with-loop))
+
+  (testing "writer won't go much over total-length"
+    (is (= 2003 (count (binding [sut/*max-total-length* 2000]
+                         (sut/print-str infinite-map)))))))
