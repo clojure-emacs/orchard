@@ -17,8 +17,7 @@
    (java.util List Map Map$Entry)
    (mx.cider.orchard TruncatingStringWriter
                      TruncatingStringWriter$TotalLimitExceeded))
-  (:require [clojure.string :as str]
-            [orchard.pp :as pp]))
+  (:require [clojure.string :as str]))
 
 (defmulti print
   (fn [x _]
@@ -27,6 +26,7 @@
       ;; Allow meta :type override regular types.
       (:type (meta x))                (type x)
       (instance? String x)            :string
+      (instance? Double x)            :double
       (instance? Number x)            :scalar
       (instance? Keyword x)           :scalar
       (instance? Symbol x)            :scalar
@@ -110,6 +110,12 @@
 (defmethod print :scalar [^Object x, ^Writer w]
   (.write w (.toString x)))
 
+(defmethod print :double [x, ^Writer w]
+  (cond (= Double/POSITIVE_INFINITY x) (.write w "##Inf")
+        (= Double/NEGATIVE_INFINITY x) (.write w "##-Inf")
+        (Double/isNaN x) (.write w "##NaN")
+        :else (.write w (str x))))
+
 (defmethod print :persistent-map [x w]
   (print-coll w x ", " "{" "}" true))
 
@@ -157,17 +163,14 @@
         full-name (.getName (class x))
         name (cond (str/starts-with? full-name "clojure.core$future_call") "future"
                    (str/starts-with? full-name "clojure.core$promise") "promise"
-                   :else (str/lower-case (.getSimpleName (class x))))]
+                   :else (str/lower-case (.getSimpleName (class x))))
+        err (or (when ex val)
+                (when (instance? clojure.lang.Agent x) (agent-error x)))]
     (.write w "#")
     (.write w name)
-    (print [(cond (or ex
-                      (and (instance? clojure.lang.Agent x)
-                           (agent-error x)))
-                  '<failed>
-
-                  pending '<pending>
-
-                  :else val)]
+    (print (cond err ['<failed> err]
+                 pending '[<pending>]
+                 :else [val])
            w)))
 
 (defmethod print Class [x w]
@@ -216,7 +219,7 @@
   (.write w "]"))
 
 (defmethod print :default [^Object x, ^Writer w]
-  (.write w (.toString x)))
+  (print-method x w))
 
 (defn print-str
   "Alternative implementation of `clojure.core/pr-str` which supports truncating
@@ -227,18 +230,3 @@
     (try (print x writer)
          (catch TruncatingStringWriter$TotalLimitExceeded _))
     (.toString writer)))
-
-(defn pprint-str
-  "Pretty print the object `x` with `orchard.pp/pprint` and return it as
-  a string. The `:indentation` option is the number of spaces used for
-  indentation."
-  ([x]
-   (pprint-str x {}))
-  ([x options]
-   (let [{:keys [indentation] :or {indentation 0}} options
-         writer (TruncatingStringWriter. *max-atom-length* *max-total-length*)
-         indentation-str (apply str (repeat indentation " "))]
-     (try (pp/pprint writer x {:indentation indentation-str
-                               :max-width (+ indentation 80)})
-          (catch TruncatingStringWriter$TotalLimitExceeded _))
-     (str/trimr (.toString writer)))))
