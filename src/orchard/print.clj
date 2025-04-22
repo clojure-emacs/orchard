@@ -10,9 +10,10 @@
   (:refer-clojure :exclude [print print-str])
   (:import
    (clojure.core Eduction)
-   (clojure.lang AFunction Compiler IDeref IPending IPersistentMap
-                 IPersistentSet IPersistentVector IRecord Keyword Symbol
-                 TaggedLiteral Var)
+   (clojure.lang AFunction Compiler IDeref IPending IPersistentMap MultiFn
+                 IPersistentSet IPersistentVector IRecord Keyword Namespace
+                 Symbol TaggedLiteral Var)
+   (java.io Writer)
    (java.util List Map Map$Entry)
    (mx.cider.orchard TruncatingStringWriter
                      TruncatingStringWriter$TotalLimitExceeded))
@@ -50,7 +51,7 @@
 (defn- print-coll-item
   "Print an item in the context of a collection. When printing a map, don't print
   `[]` characters around map entries."
-  [^TruncatingStringWriter w, x, map?]
+  [^Writer w, x, map?]
   (if (and map? (instance? Map$Entry x))
     (do (print (.getKey ^Map$Entry x) w)
         (.write w " ")
@@ -60,7 +61,7 @@
 (defn- print-coll
   ([w x sep prefix suffix]
    (print-coll w x sep prefix suffix false))
-  ([^TruncatingStringWriter w, ^Iterable x, ^String sep, ^String prefix,
+  ([^Writer w, ^Iterable x, ^String sep, ^String prefix,
     ^String suffix, map?]
    (let [level *print-level*]
      (when-not (nil? level)
@@ -89,10 +90,10 @@
        (finally (when-not (nil? level)
                   (set! *print-level* level)))))))
 
-(defmethod print nil [_ ^TruncatingStringWriter w]
+(defmethod print nil [_ ^Writer w]
   (.write w "nil"))
 
-(defmethod print :string [^String x, ^TruncatingStringWriter w]
+(defmethod print :string [^String x, ^Writer w]
   (let [len (.length x)
         max-len *max-atom-length*
         truncate? (and max-len (< max-len len))
@@ -106,7 +107,7 @@
       (.write w "..."))
     (.append w \")))
 
-(defmethod print :scalar [^Object x, ^TruncatingStringWriter w]
+(defmethod print :scalar [^Object x, ^Writer w]
   (.write w (.toString x)))
 
 (defmethod print :persistent-map [x w]
@@ -132,12 +133,12 @@
 (defmethod print :map [^Map x, w]
   (print-map x w))
 
-(defmethod print :record [x, ^TruncatingStringWriter w]
+(defmethod print :record [x, ^Writer w]
   (.write w "#")
   (.write w (.getSimpleName (class x)))
   (print-map x w))
 
-(defmethod print :array [x, ^TruncatingStringWriter w]
+(defmethod print :array [x, ^Writer w]
   (let [ct (.getName (or (.getComponentType (class x)) Object))
         as-seq (seq x)]
     (.write w ct)
@@ -145,16 +146,20 @@
       (print-coll w as-seq ", " "[] {" "}")
       (.write w "[] {}"))))
 
-(defmethod print IDeref [^IDeref x, ^TruncatingStringWriter w]
+(defmethod print IDeref [^IDeref x, ^Writer w]
   (let [pending (and (instance? IPending x)
                      (not (.isRealized ^IPending x)))
         [ex val]
         (when-not pending
           (try [false (deref x)]
                (catch Throwable e
-                 [true e])))]
+                 [true e])))
+        full-name (.getName (class x))
+        name (cond (str/starts-with? full-name "clojure.core$future_call") "future"
+                   (str/starts-with? full-name "clojure.core$promise") "promise"
+                   :else (str/lower-case (.getSimpleName (class x))))]
     (.write w "#")
-    (.write w (.getSimpleName (class x)))
+    (.write w name)
     (print [(cond (or ex
                       (and (instance? clojure.lang.Agent x)
                            (agent-error x)))
@@ -168,16 +173,35 @@
 (defmethod print Class [x w]
   (print-method x w))
 
-(defmethod print AFunction [x, ^TruncatingStringWriter w]
+(defmethod print AFunction [x, ^Writer w]
   (.write w "#function[")
   (.write w (Compiler/demunge (.getName (class x))))
   (.write w "]"))
 
+(def ^:private multifn-name-field
+  (delay (doto (.getDeclaredField MultiFn "name")
+           (.setAccessible true))))
+
+(defn- multifn-name [^MultiFn mfn]
+  (try (.get ^java.lang.reflect.Field @multifn-name-field mfn)
+       (catch SecurityException _ "_")))
+
+(defmethod print MultiFn [x, ^Writer w]
+  ;; MultiFn names are not unique so we keep the identity to ensure it's unique.
+  (.write w (format "#multifn[%s 0x%x]"
+                    (multifn-name x) (System/identityHashCode x))))
+
 (defmethod print TaggedLiteral [x w]
   (print-method x w))
 
-(defmethod print Throwable [^Throwable x, ^TruncatingStringWriter w]
-  (.write w "#Error[")
+(defmethod print Namespace [x, ^Writer w]
+  (.write w "#namespace[")
+  (.write w (str (ns-name x)))
+  ;; MultiFn names are not unique so we keep the identity to ensure it's unique.
+  (.write w "]"))
+
+(defmethod print Throwable [^Throwable x, ^Writer w]
+  (.write w "#error[")
   (.write w (str (.getName (class x)) " "))
   (loop [cause x, msg nil]
     (if cause
@@ -191,7 +215,7 @@
     (print (str first-frame) w))
   (.write w "]"))
 
-(defmethod print :default [^Object x, ^TruncatingStringWriter w]
+(defmethod print :default [^Object x, ^Writer w]
   (.write w (.toString x)))
 
 (defn print-str
