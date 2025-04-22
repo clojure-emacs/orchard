@@ -770,7 +770,11 @@
                   (shorten-member-string (str obj) (.getDeclaringClass ^Method obj))
 
                   (instance? Field obj)
-                  (shorten-member-string (str obj) (.getDeclaringClass ^Field obj)))]
+                  (shorten-member-string (str obj) (.getDeclaringClass ^Field obj))
+
+                  ;; Using print-str and not pprint intentionally, so that the
+                  ;; `Value:` remains on a single line.
+                  :else (print/print-str obj))]
     (letfn [(render-fields [inspector section-name field-values]
               (if (seq field-values)
                 (-> inspector

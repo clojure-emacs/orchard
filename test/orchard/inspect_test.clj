@@ -1595,7 +1595,7 @@
       (is (nil? (section "View mode" rendered))))))
 
 (deftest pretty-print-map-in-object-view-test
-  (testing "in :pretty view-mode are pretty printed"
+  (testing "in :object view mode + :pretty, Value: is printed regularly"
     (let [rendered (-> {:a 0
                         :bb "000"
                         :ccc []
@@ -1607,16 +1607,8 @@
                        (set-pretty-print true)
                        render)]
       (is+ ["Value: "
-            [:value (str "{:a 0,\n"
-                         "        :bb \"000\",\n"
-                         "        :ccc [],\n"
-                         "        :d\n"
-                         "        [{:a 0, :bb \"000\", :ccc [[]]}\n"
-                         "         {:a -1, :bb \"111\", :ccc [1]}\n"
-                         "         {:a 2, :bb \"222\", :ccc [1 2]}]}") 1]]
-           (labeled-value "Value" rendered))
-      (is+ ["--- View mode:" [:newline] "  :object"]
-           (section "View mode" rendered)))))
+            [:value "{:a 0, :bb \"000\", :ccc [], :d [{:a 0, :bb \"000\", :ccc [[]]} {:a -1, :bb \"111\", :ccc [1]} {:a 2, :bb \"222\", :ccc [1 2]}]}" 1]]
+           (labeled-value "Value" rendered)))))
 
 (deftest pretty-print-seq-of-maps-test
   (testing "in :pretty view-mode maps seqs of maps are pretty printed"
