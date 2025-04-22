@@ -378,7 +378,7 @@
   "Returns true of `s` is a long string, more than 20 character or
   containing newlines."
   [^String s]
-  (or (.contains s "\n") (> (count s) 20)))
+  (or (.contains s "\n") (> (count s) 50)))
 
 (defn- render-map-separator
   "Render the map separator according to `rendered-key`. If
