@@ -11,8 +11,8 @@
   (:import
    (clojure.core Eduction)
    (clojure.lang AFunction Compiler IDeref IPending IPersistentMap
-                 IPersistentSet IPersistentVector Keyword Symbol TaggedLiteral
-                 Var)
+                 IPersistentSet IPersistentVector IRecord Keyword Symbol
+                 TaggedLiteral Var)
    (java.util List Map Map$Entry)
    (mx.cider.orchard TruncatingStringWriter
                      TruncatingStringWriter$TotalLimitExceeded))
@@ -23,10 +23,13 @@
   (fn [x _]
     (cond
       (nil? x)                        nil
+      ;; Allow meta :type override regular types.
+      (:type (meta x))                (type x)
       (instance? String x)            :string
       (instance? Number x)            :scalar
       (instance? Keyword x)           :scalar
       (instance? Symbol x)            :scalar
+      (instance? IRecord x)           :record
       (instance? Map x)               :map
       (instance? IPersistentVector x) :vector
       (instance? List x)              :list
@@ -118,13 +121,21 @@
 (defmethod print :set [x w]
   (print-coll w x " " "#{" "}"))
 
-(defmethod print :map [^Map x, w]
+(defn- print-map [^Map x, w]
   (if (.isEmpty x)
     (print-method x w)
     (let [;; If the map is a Clojure map, don't take the entrySet but iterate
           ;; directly as the order might be important.
           coll (if (instance? IPersistentMap x) x (.entrySet ^Map x))]
       (print-coll w coll ", " "{" "}" true))))
+
+(defmethod print :map [^Map x, w]
+  (print-map x w))
+
+(defmethod print :record [x, ^TruncatingStringWriter w]
+  (.write w "#")
+  (.write w (.getSimpleName (class x)))
+  (print-map x w))
 
 (defmethod print :array [x, ^TruncatingStringWriter w]
   (let [ct (.getName (or (.getComponentType (class x)) Object))

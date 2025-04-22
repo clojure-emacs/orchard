@@ -960,13 +960,13 @@
               "  " [:value ":flags" pos?] " = " [:value "#{:public}" pos?]
               [:newline]
               "  " [:value ":members" pos?] " = "
-              [:value #=(str "{clone [{:name clone, :return-type java.lang.Object, :declaring-class java.lang.Object, "
+              [:value #=(str "{clone [#Method{:name clone, :return-type java.lang.Object, :declaring-class java.lang.Object, "
                              ":parameter-types [], :exception-types [java.lang.CloneNotSupportedException], ...}], equals "
-                             "[{:name equals, :return-type boolean, :declaring-class java.lang.Object, :parameter-types "
-                             "[java.lang.Object], :exception-types [], ...}], finalize [{:name finalize, :return-type void, "
+                             "[#Method{:name equals, :return-type boolean, :declaring-class java.lang.Object, :parameter-types "
+                             "[java.lang.Object], :exception-types [], ...}], finalize [#Method{:name finalize, :return-type void, "
                              ":declaring-class java.lang.Object, :parameter-types [], :exception-types [java.lang.Throwable], "
-                             "...}], getClass [{:name getClass, :return-type java.lang.Class, :declaring-class java.lang.Object, "
-                             ":parameter-types [], :exception-types [], ...}], hashCode [{:name hashCode, :return-type int, "
+                             "...}], getClass [#Method{:name getClass, :return-type java.lang.Class, :declaring-class java.lang.Object, "
+                             ":parameter-types [], :exception-types [], ...}], hashCode [#Method{:name hashCode, :return-type int, "
                              ":declaring-class java.lang.Object, :parameter-types [], :exception-types [], ...}], ...}")
                pos?]
               [:newline]

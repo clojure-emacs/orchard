@@ -77,7 +77,7 @@
     "(1 1 1 1 1)" (java.util.ArrayList. ^java.util.Collection (repeat 5 1))
     "{:a 1, :b 2}" (let [^java.util.Map x {:a 1 :b 2}]
                      (java.util.HashMap. x))
-    "{:a 1, :b 2, :c 3, :d 4}" (->TestRecord 1 2 3 4)
+    "#TestRecord{:a 1, :b 2, :c 3, :d 4}" (->TestRecord 1 2 3 4)
     "long[] {1, 2, 3, 4}" (long-array [1 2 3 4])
     "long[] {}" (long-array [])
     "java.lang.Long[] {0, 1, 2, 3, 4}" (into-array Long (range 5))
@@ -143,6 +143,12 @@
   (is (= "#{1 2 3}" (sut/print-str (reify clojure.lang.IPersistentSet
                                      (equiv [t o] (.equals t o))
                                      (seq [_] (seq [1 2 3])))))))
+
+(defmethod orchard.print/print ::custom-rec [_ w] (sut/print 'hello w))
+
+(deftest print-custom-print-method
+  (is (= "hello"
+         (sut/print-str (with-meta (->TestRecord 1 2 3 4) {:type ::custom-rec})))))
 
 (deftest pprint-no-limits
   (are [result form] (match? result (sut/pprint-str form))

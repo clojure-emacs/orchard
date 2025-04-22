@@ -2,9 +2,11 @@
 
 ## master (unreleased)
 
+* [#314](https://github.com/clojure-emacs/orchard/pull/314): Print: add special printing rules for records and allow meta :type overrides.
+
 ## 0.34.0 (2025-04-18)
 
-* [#335](https://github.com/clojure-emacs/orchard/pull/335) Add `orchard.pp` and pretty view mode.
+* [#335](https://github.com/clojure-emacs/orchard/pull/335): Add `orchard.pp` and pretty view mode.
 
 ## 0.33.0 (2025-04-08)
 
