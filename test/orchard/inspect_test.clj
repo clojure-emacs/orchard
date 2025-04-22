@@ -168,7 +168,7 @@
               [:newline]
               "  " [:value ":name" pos?] " = " [:value "any-var" pos?]
               [:newline]
-              "  " [:value ":ns" pos?] " = " [:value "orchard.inspect-test" pos?]
+              "  " [:value ":ns" pos?] " = " [:value "#namespace[orchard.inspect-test]" pos?]
               [:newline]
               [:newline]]
              (section "Meta Information" rendered)))
@@ -1147,7 +1147,7 @@
         (is+ ["--- Refer from:"
               [:newline]
               "  "
-              [:value "clojure.core" pos?]
+              [:value "#namespace[clojure.core]" pos?]
               " = "
               [:value #=(str "[#'clojure.core/primitives-classnames #'clojure.core/+' #'clojure.core/decimal? "
                              "#'clojure.core/restart-agent #'clojure.core/sort-by ...]") pos?]

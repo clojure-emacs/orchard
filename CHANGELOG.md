@@ -4,6 +4,7 @@
 
 * [#314](https://github.com/clojure-emacs/orchard/pull/314): Print: add special printing rules for records and allow meta :type overrides.
 * [#336](https://github.com/clojure-emacs/orchard/pull/336): Inspector: tune pretty-printing mode.
+* [#337](https://github.com/clojure-emacs/orchard/pull/337): Print: make orchard.print consistent with CIDER printing.
 
 ## 0.34.0 (2025-04-18)
 

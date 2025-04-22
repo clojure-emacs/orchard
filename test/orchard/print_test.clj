@@ -83,15 +83,21 @@
     "java.lang.Long[] {0, 1, 2, 3, 4}" (into-array Long (range 5))
     "java.lang.Long[] {}" (into-array Long [])
     "#<MyTestType test1>" (MyTestType. "test1")
-    "#Atom[1]" (atom 1)
-    "#Delay[<pending>]" (delay 1)
-    "#Delay[1]" (doto (delay 1) deref)
-    "#Delay[<failed>]" (let [d (delay (/ 1 0))] (try @d (catch Exception _)) d)
-    #"#Error\[clojure.lang.ExceptionInfo \"Boom\" \"orchard.print_test.+\"\]" (ex-info "Boom" {})
-    #"#Error\[clojure.lang.ExceptionInfo \"Boom\" \{:a 1\} \"orchard.print_test.+\"\]" (ex-info "Boom" {:a 1})
-    #"#Error\[java.lang.RuntimeException \"Runtime!\" \"orchard.print_test.+\"\]" (RuntimeException. "Runtime!")
-    #"#Error\[java.lang.RuntimeException \"Outer: Inner\" \"orchard.print_test.+\"\]" (RuntimeException. "Outer"
+    "#atom[1]" (atom 1)
+    "#delay[<pending>]" (delay 1)
+    "#delay[1]" (doto (delay 1) deref)
+    "#delay[<failed>]" (let [d (delay (/ 1 0))] (try @d (catch Exception _)) d)
+    "#promise[<pending>]" (promise)
+    "#promise[1]" (doto (promise) (deliver 1))
+    "#future[<pending>]" (future (Thread/sleep 10000))
+    "#future[1]" (doto (future 1) deref)
+    "#agent[1]" (agent 1)
+    #"#error\[clojure.lang.ExceptionInfo \"Boom\" \"orchard.print_test.+\"\]" (ex-info "Boom" {})
+    #"#error\[clojure.lang.ExceptionInfo \"Boom\" \{:a 1\} \"orchard.print_test.+\"\]" (ex-info "Boom" {:a 1})
+    #"#error\[java.lang.RuntimeException \"Runtime!\" \"orchard.print_test.+\"\]" (RuntimeException. "Runtime!")
+    #"#error\[java.lang.RuntimeException \"Outer: Inner\" \"orchard.print_test.+\"\]" (RuntimeException. "Outer"
                                                                                                          (RuntimeException. "Inner"))
+    #"multifn\[print .+\]" sut/print
     "#function[clojure.core/str]" str))
 
 (deftest print-writer-limits
@@ -134,10 +140,10 @@
 
   (are [result lvl] (= result (binding [*print-level* lvl]
                                 (sut/print-str (atom {:a (range 10)}))))
-    "#Atom[...]" 0
-    "#Atom[{...}]" 1
-    "#Atom[{:a (...)}]" 2
-    "#Atom[{:a (0 1 2 3 4 5 6 7 8 9)}]" 3))
+    "#atom[...]" 0
+    "#atom[{...}]" 1
+    "#atom[{:a (...)}]" 2
+    "#atom[{:a (0 1 2 3 4 5 6 7 8 9)}]" 3))
 
 (deftest print-non-iterable
   (is (= "#{1 2 3}" (sut/print-str (reify clojure.lang.IPersistentSet
