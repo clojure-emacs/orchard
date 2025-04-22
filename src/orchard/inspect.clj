@@ -973,12 +973,17 @@
       inspector)))
 
 (defn render-view-mode [inspector]
-  (let [view-mode (:view-mode inspector)]
-    (if (= view-mode :normal)
+  (let [{:keys [view-mode pretty-print]} inspector
+        view-mode-str (->> [(when-not (= view-mode :normal)
+                              (str view-mode))
+                            (when pretty-print ":pretty")]
+                           (remove nil?)
+                           (str/join " "))]
+    (if (str/blank? view-mode-str)
       inspector
       (-> (render-section-header inspector "View mode")
           (indent)
-          (render-indent (str view-mode))
+          (render-indent view-mode-str)
           (unindent)))))
 
 (defn inspect-render
