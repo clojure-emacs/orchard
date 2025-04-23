@@ -12,6 +12,7 @@
    [clojure.core.protocols :refer [datafy nav]]
    [clojure.string :as str]
    [orchard.inspect.analytics :as analytics]
+   [orchard.pp :as pp]
    [orchard.print :as print])
   (:import
    (java.lang.reflect Constructor Field Method Modifier)
@@ -57,7 +58,7 @@
   of the inspector."
   [{:keys [indentation pretty-print]} value]
   (if pretty-print
-    (print/pprint-str value {:indentation (or indentation 0)})
+    (pp/pprint-str value {:indentation (or indentation 0)})
     (print/print-str value)))
 
 (defn- array? [obj]

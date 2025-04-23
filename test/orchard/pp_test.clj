@@ -1,11 +1,9 @@
 (ns orchard.pp-test
   (:require [clojure.string :as str]
-            [clojure.test :refer [deftest is]]
-            [orchard.pp :as sut]))
-
-(defn ^:private q
-  []
-  clojure.lang.PersistentQueue/EMPTY)
+            [clojure.test :refer [deftest is are testing]]
+            [orchard.pp :as sut]
+            [orchard.print :as print]
+            [orchard.print-test]))
 
 (defn replace-crlf [s]
   (str/replace s #"\r\n" "\n"))
@@ -51,15 +49,6 @@
               :d 4
               :e {:a 1 :b 2 :c 3 :d 4 :e {:f 6 :g 7 :h 8 :i 9 :j 10}}}
              :max-width 24)))
-
-  ;; Queues
-  (is (= "<-()-<\n" (pp (q))))
-  (is (= "<-(1)-<\n" (pp (conj (q) 1))))
-  (is (= "<-(1\n   2\n   3)-<\n" (pp (conj (q) 1 2 3) :max-width 1)))
-  (is (= "<-(1 ...)-<\n" (pp (conj (q) 1 2 3) :print-length 1)))
-  (is (= "<-(1 2 3)-<\n" (pp (conj (q) 1 2 3) :print-level 1)))
-  (is (= "<-(1 ...)-<\n" (pp (conj (q) 1 2 3) :print-length 1 :print-level 1)))
-  (is (= "<-(1\n   2\n   3)-<\n" (pp (conj (q) 1 2 3) :max-width 6)))
 
   ;; Max width
   (is (= "{:a\n 1,\n :b\n 2,\n :c\n 3,\n :d\n 4}\n"
@@ -214,7 +203,7 @@
   (is (= "[7 8 9]\n" (pp (long-array [7 8 9]))))
   (is (= "[{:a 1} {:b 2}]\n" (pp (object-array [{:a 1} {:b 2}]))))
   (is (= "[10 11 22]\n" (pp (short-array [10 11 22]))))
-  (is (= "[[1 2 3] [4 5 6]]\n" (pp (to-array-2d [[1 2 3] [4 5 6]])))))
+  (is (= "[[1 2 3]\n [4 5 6]]\n" (pp (to-array-2d [[1 2 3] [4 5 6]])))))
 
 (deftest pprint-meta-test
   ;; clojure.pprint prints this incorrectly with meta
@@ -236,9 +225,59 @@
   (is (= "('#{boolean ...})\n" (pp '('#{boolean char floats}) :print-length 1))))
 
 (deftest map-entry-separator-test
-  (is (= "{:a 1, :b 2}\n" (pp {:a 1 :b 2})))
-  (is (= "{:a 1, :b 2}\n" (pp {:a 1 :b 2} :map-entry-separator ",")))
-  (is (= "{:a 1,,, :b 2}\n" (pp {:a 1 :b 2} :map-entry-separator ",,,")))
-  (is (= "{:a 1,,,\n :b 2}\n" (pp {:a 1 :b 2} :max-width 8 :map-entry-separator ",,,")))
-  (is (= "{:a 1 :b 2}\n" (pp {:a 1 :b 2} :map-entry-separator "")))
-  (is (= "{:a 1\n :b 2}\n" (pp {:a 1 :b 2} :max-width 7 :map-entry-separator ""))))
+  (is (= "{:a 1, :b 2}\n" (pp {:a 1 :b 2}))))
+
+(deftest pprint-no-limits
+  (are [result form] (match? result (sut/pprint-str form))
+    "1" 1
+    "\"2\"" "2"
+    "\"special \\\" \\\\ symbols\"" "special \" \\ symbols"
+    ":foo" :foo
+    ":abc/def" :abc/def
+    "sym" 'sym
+    "(:a :b :c)" '(:a :b :c)
+    "[1 2 3]" [1 2 3]
+    "{:a 1, :b 2}" {:a 1 :b 2}
+    "[:a 1]" (first {:a 1 :b 2})
+    "([:a 1] [:b 2])" (seq {:a 1 :b 2})
+    "[[:a 1] [:b 2]]" (vec {:a 1 :b 2})
+    "{}" {}
+    "{}" (java.util.HashMap.)
+    "#{:a}" #{:a}
+    "(1 2 3)" (lazy-seq '(1 2 3))
+    "(1 1 1 1 1)" (java.util.ArrayList. ^java.util.Collection (repeat 5 1))
+    "{:a 1, :b 2}" (let [^java.util.Map x {:a 1 :b 2}]
+                     (java.util.HashMap. x))
+    "#orchard.print_test.TestRecord{:a 1, :b 2, :c 3, :d 4}" (orchard.print-test/->TestRecord 1 2 3 4)
+    "[1 2 3 4]" (long-array [1 2 3 4])
+    "[]" (long-array [])
+    "[0 1 2 3 4]" (into-array Long (range 5))
+    "[]" (into-array Long [])
+    "#<MyTestType test1>" (orchard.print-test/->MyTestType "test1")
+    "#atom[1]" (atom 1)
+    "#delay[<pending>]" (delay 1)
+    "#delay[1]" (doto (delay 1) deref)
+    #"#delay\[<failed> #error\[java.lang.ArithmeticException \"Divide by zero\"" (let [d (delay (/ 1 0))] (try @d (catch Exception _)) d)
+    #"#error\[clojure.lang.ExceptionInfo \"Boom\"" (ex-info "Boom" {})
+    "#function[clojure.core/str]" str))
+
+(deftest pprint-limits
+  (testing "global writer limits will stop the printing when reached"
+    (are [result form] (= result (binding [print/*max-atom-length* 10
+                                           print/*max-total-length* 30
+                                           *print-length* 5
+                                           *print-level* 10]
+                                   (sut/pprint-str form)))
+      "\"aaaaaaaaa..." (apply str (repeat 300 "a"))
+      "[\"aaaaaaaaa... \"aaaaaaaaa...]" [(apply str (repeat 300 "a")) (apply str (repeat 300 "a"))]
+      "(1 1 1 1 1 ...)" (repeat 1)
+      "[(1 1 1 1 1 ...)]" [(repeat 1)]
+      "{:a {(0 1 2 3 4 ...) 1, 2 3, 4..." {:a {(range 10) 1, 2 3, 4 5, 6 7, 8 9, 10 11}}
+      "(1 1 1 1 1..." (java.util.ArrayList. ^java.util.Collection (repeat 100 1))
+      "[0 1 2 3 4 ...]" (into-array Long (range 10))
+      "{:m {:m {:m {:m {:m 1234, :e 1..." (orchard.print-test/nasty 5)
+      "{:b {:a {:..." orchard.print-test/graph-with-loop))
+
+  (testing "writer won't go much over total-length"
+    (is (= 2003 (count (binding [print/*max-total-length* 2000]
+                         (print/print-str orchard.print-test/infinite-map)))))))

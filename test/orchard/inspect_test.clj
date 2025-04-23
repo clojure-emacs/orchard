@@ -1420,7 +1420,7 @@
             ["--- Instance fields:"
              [:newline]
              "  " [:value "_meta" pos?] " = " [:value "nil" pos?] [:newline]
-             "  " [:value "state" pos?] " = " [:value "foo" pos?] [:newline]
+             "  " [:value "state" pos?] " = " [:value #"#object\[java.util.concurrent.atomic.AtomicReference" pos?] [:newline]
              "  " [:value "validator" pos?] " = " [:value "nil" pos?] [:newline]
              "  " [:value "watches" pos?] " = " [:value "{}" pos?] [:newline]
              [:newline]])
