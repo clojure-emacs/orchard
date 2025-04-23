@@ -199,9 +199,11 @@ Subsequently [CIDER][] and
 SLIME and swank, and much code was moved from `swank-clojure` to
 `cider-nrepl` and continued to evolve there.
 
-You can watch the presentation [The Evolution of the Emacs tooling for
-  Clojure](https://www.youtube.com/watch?v=4X-1fJm25Ww&list=PLZdCLR02grLoc322bYirANEso3mmzvCiI&index=6)
-  to learn more about all of this.
+> [!TIP]
+>
+> You can watch the presentation [The Evolution of the Emacs tooling for
+> Clojure](https://www.youtube.com/watch?v=4X-1fJm25Ww&list=PLZdCLR02grLoc322bYirANEso3mmzvCiI&index=6)
+> to learn more about all of this.
 
 This project is an effort to prevent repeating the mistakes of the
 past - `cider-nrepl` was split into two libraries, so that non-nREPL
