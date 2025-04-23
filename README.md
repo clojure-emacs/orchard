@@ -19,8 +19,12 @@ Right now `orchard` provides functionality like:
 - namespace utilities
 - fetching ClojureDocs documentation
 - finding function dependencies (other functions invoked by a function) and usages
-- function tracer
+- function tracer (alternative for `tools.trace`)
 - simple function profiler
+- fast pretty printing (alternative for `clojure.pprint`)
+- eldoc (function signature) utilities
+- indention data inference
+- stacktrace analysis
 
 ## Why?
 
@@ -79,7 +83,8 @@ Documentation for the master branch as well as tagged releases are available
 
 > [!NOTE]
 >
-> Java 8 is soft-deprecated in Orchard since version 0.29. Core Orchard funcitonality continues to work on JDK 8, but these following features don't:
+> Java 8 is soft-deprecated in Orchard since version 0.29. Core Orchard functionality continues to work on JDK 8, but these following features don't:
+>
 > - Java sources parsing
 
 Just add `orchard` as a dependency and start hacking.
@@ -178,11 +183,15 @@ The important implications from this are:
 
 ### Java 8 support
 
-As noted earlier Java 8 is soft-deprecated in Orchard since version 0.29. Core Orchard funcitonality continues to work on JDK 8, but the following features don't:
+As noted earlier Java 8 is soft-deprecated in Orchard since version 0.29. Core
+Orchard funcitonality continues to work on JDK 8, but the following features
+don't:
 
 - Java sources parsing
 
-We are aware that some people are stuck using Java 8 and we'll keep supporting for as long as we can, but it's no longer a priority for us that every feature works with Java 8.
+We are aware that some people are stuck using Java 8 and we'll keep supporting
+for as long as we can, but it's no longer a priority for us that every feature
+works with Java 8.
 
 ## History
 
