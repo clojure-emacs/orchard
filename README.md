@@ -140,13 +140,13 @@ classpath, it just need to exist in the distribution.
 
 You can install Orchard locally like this:
 
-```
+```shell
 PROJECT_VERSION=99.99 make install
 ```
 
 For releasing to [Clojars](https://clojars.org/):
 
-```
+```shell
 git tag -a vX.Y.Z -m "Release X.Y.Z"
 git push --tags
 git push
