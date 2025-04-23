@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+## 0.34.1 (2025-04-23)
+
 * [#314](https://github.com/clojure-emacs/orchard/pull/314): Print: add special printing rules for records and allow meta :type overrides.
 * [#337](https://github.com/clojure-emacs/orchard/pull/337): Print: make orchard.print consistent with CIDER printing.
 * [#338](https://github.com/clojure-emacs/orchard/pull/337): Print: reuse orchard.print in orchard.pp.
