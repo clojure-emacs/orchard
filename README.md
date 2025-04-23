@@ -11,16 +11,16 @@ development tools (e.g. Clojure editor plugins and IDEs).
 
 Right now `orchard` provides functionality like:
 
-* enhanced apropos
-* classpath utils (alternative for `java.classpath`)
-* value [inspector](https://github.com/clojure-emacs/orchard/blob/master/doc/inspector.org)
-* Java class handling utilities
-* utilities for dealing with metadata
-* namespace utilities
-* fetching ClojureDocs documentation
-* finding function dependencies (other functions invoked by a function) and usages
-* function tracer
-* simple function profiler
+- enhanced apropos
+- classpath utils (alternative for `java.classpath`)
+- value [inspector](https://github.com/clojure-emacs/orchard/blob/master/doc/inspector.org)
+- Java class handling utilities
+- utilities for dealing with metadata
+- namespace utilities
+- fetching ClojureDocs documentation
+- finding function dependencies (other functions invoked by a function) and usages
+- function tracer
+- simple function profiler
 
 ## Why?
 
@@ -30,9 +30,9 @@ and altered in each and every tool.
 
 Having a common tooling foundation typically means:
 
-* Better foundation (e.g. more functionality, good documentation, etc) with more contributors
-* Less work for tool authors as they don't have to reinvent the wheel for every tool
-* Happier end users
+- Better foundation (e.g. more functionality, good documentation, etc) with more contributors
+- Less work for tool authors as they don't have to reinvent the wheel for every tool
+- Happier end users
 
 ## Design
 
@@ -170,11 +170,11 @@ You can find a more in-depth explanation in this [post](https://lukas-domagala.d
 
 The important implications from this are:
 
-* very fast
-* functions marked with meta `:inline` will not be found (`inc`, `+`, ...)
-* redefining function vars that include lambdas will still return the dependencies of the old plus the new ones
-([explanation](https://lukas-domagala.de/blog/clojure-compiler-class-cache.html))
-* does not work on AoT compiled functions
+- very fast
+- functions marked with meta `:inline` will not be found (`inc`, `+`, ...)
+- redefining function vars that include lambdas will still return the dependencies of the old plus the new ones
+-[explanation](https://lukas-domagala.de/blog/clojure-compiler-class-cache.html))
+- does not work on AoT compiled functions
 
 ### Java 8 support
 
