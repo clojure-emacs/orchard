@@ -123,12 +123,11 @@
 (defn- keyvals-stats [coll]
   (when (instance? Map coll)
     (let [cnt (bounded-count *size-cutoff* coll)]
-      (when (> cnt 10)
-        (non-nil-hmap
-         :cutoff? (when (>= cnt *size-cutoff*) true)
-         :count cnt
-         :keys (basic-list-stats (vec (keys coll)) false)
-         :values (basic-list-stats (vec (vals coll)) false))))))
+      (non-nil-hmap
+       :cutoff? (when (>= cnt *size-cutoff*) true)
+       :count cnt
+       :keys (basic-list-stats (vec (keys coll)) false)
+       :values (basic-list-stats (vec (vals coll)) false)))))
 
 (defn- tuples-stats [^Iterable coll]
   (when (list-of-tuples? coll)
@@ -174,4 +173,5 @@
 (defn can-analyze?
   "Simple heuristic: we currently only analyze collections (but most of them)."
   [object]
-  (instance? java.util.Collection object))
+  (or (instance? List object)
+      (instance? Map object)))
