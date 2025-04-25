@@ -688,6 +688,7 @@
   (-> (render-class-name inspector obj)
       (render-counted-length obj)
       (render-labeled-value "Component Type" (.getComponentType (class obj)))
+      (render-analytics)
       (render-section-header "Contents")
       (indent)
       (render-collection-paged)

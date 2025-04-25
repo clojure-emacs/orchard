@@ -165,13 +165,18 @@
   - lists of arbitrary collections
   - arbitrary key-value maps"
   [object]
-  (or (tuples-stats object)
-      (records-stats object)
-      (keyvals-stats object)
-      (basic-list-stats object true)))
+  (let [object (if (some-> (class object) (.isArray))
+                 ;; Convert arrays into vectors to simplify analytics for them.
+                 (vec object)
+                 object)]
+    (or (tuples-stats object)
+        (records-stats object)
+        (keyvals-stats object)
+        (basic-list-stats object true))))
 
 (defn can-analyze?
   "Simple heuristic: we currently only analyze collections (but most of them)."
   [object]
   (or (instance? List object)
-      (instance? Map object)))
+      (instance? Map object)
+      (some-> (class object) (.isArray))))

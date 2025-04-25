@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+* [#339](https://github.com/clojure-emacs/orchard/pull/339): Inspector: support analytics for all maps and arrays.
+
 ## 0.34.1 (2025-04-23)
 
 * [#314](https://github.com/clojure-emacs/orchard/pull/314): Print: add special printing rules for records and allow meta :type overrides.
