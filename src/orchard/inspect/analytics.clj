@@ -17,12 +17,11 @@
        (into {})))
 
 (defn- *frequencies [coll]
-  (->> coll
-       (eduction (take *size-cutoff*))
-       frequencies
-       (sort-by second >)
-       (apply concat)
-       (apply array-map)))
+  (let [freqs (->> coll
+                   (eduction (take *size-cutoff*))
+                   frequencies)]
+    ;; Turn the result in a map that is sorted by descending value.
+    (into (sorted-map-by #(- (compare (freqs %1) (freqs %2)))) freqs)))
 
 (definline ^:private inc-if [val condition]
   `(cond-> ~val ~condition inc))
