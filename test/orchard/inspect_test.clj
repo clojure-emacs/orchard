@@ -1566,7 +1566,13 @@
             "  | " [:value "7" pos?] " | " [:value "7" pos?] " | " [:value "7" pos?] " | " [:newline]
             "  | " [:value "8" pos?] " | " [:value "8" pos?] " | " [:value "8" pos?] " | " [:newline]
             [:newline]]
-           (section "Contents" rendered)))))
+           (section "Contents" rendered))))
+
+  (testing "map is not reported as table-viewable when paged"
+    (is (not (-> (zipmap (range 100) (range))
+                 (inspect/start)
+                 (set-page-size 30)
+                 (inspect/supports-table-view-mode?))))))
 
 (deftest pretty-print-map-test
   (testing "in :pretty view-mode are pretty printed"

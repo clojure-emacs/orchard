@@ -427,9 +427,9 @@
 (defn supports-table-view-mode?
   "Return whether the inspected object can be rendered in :table view-mode."
   [{:keys [chunk value] :as _inspector}]
-  (let [val (or chunk value)]
-    (and (#{:list :array} (object-type val))
-         (#{:list :array :map} (object-type (first val))))))
+  (let [chunk (or chunk value)]
+    (and (#{:list :array} (object-type value))
+         (#{:list :array :map} (object-type (first chunk))))))
 
 (defn- render-chunk-as-table [inspector chunk idx-starts-from]
   (let [m-i map-indexed
