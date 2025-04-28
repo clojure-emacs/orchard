@@ -14,13 +14,6 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :scm {:name "git" :url "https://github.com/clojure-emacs/orchard"}
 
-  :release-tasks [["vcs" "assert-committed"]
-                  ["bump-version" "release"]
-                  ["vcs" "commit" "Release %s"]
-                  ["vcs" "tag" "v" "--no-sign"]
-                  ["bump-version"]
-                  ["vcs" "commit" "Begin %s"]]
-
   :deploy-repositories [["clojars" {:url "https://clojars.org/repo"
                                     :username :env/clojars_username
                                     :password :env/clojars_password
@@ -58,9 +51,9 @@
              ;; Development tools
              :dev ~dev-test-common-profile
 
-             :cljfmt {:plugins [[lein-cljfmt "0.9.2"]]
-                      :cljfmt {:indents {merge-meta [[:inner 0]]}}}
+             :cljfmt {:plugins [[dev.weavejester/lein-cljfmt "0.13.1"]]
+                      :cljfmt {:extra-indents {merge-meta [[:inner 0]]}}}
 
-             :clj-kondo {:plugins [[com.github.clj-kondo/lein-clj-kondo "2024.11.14"]]}
+             :clj-kondo {:plugins [[com.github.clj-kondo/lein-clj-kondo "2025.04.07"]]}
 
              :eastwood  {:plugins  [[jonase/eastwood "1.4.3"]]}})
