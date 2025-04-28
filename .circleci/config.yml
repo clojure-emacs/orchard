@@ -98,13 +98,14 @@ jobs:
       clojure_version:
         type: string
         default: "1.12"
-    executor: jdk21
+    executor: jdk24
     environment:
       CLOJURE_VERSION: << parameters.clojure_version >>
+      TEST_PROFILES: "-user,-dev,+test,+cljs"
     steps:
       - checkout
       - with_cache:
-          cache_version: "lint_v1_<< parameters.clojure_version >>"
+          cache_version: "lint_v2_<< parameters.clojure_version >>"
           steps:
             - run:
                 name: Running cljfmt
@@ -112,27 +113,6 @@ jobs:
             - run:
                 name: Running clj-kondo
                 command: make kondo
-
-  eastwood:
-    description: |
-      Run Eastwood on source code against given version of JDK and Clojure
-    parameters:
-      jdk_version:
-        type: string
-      clojure_version:
-        type: string
-        default: "1.12"
-    executor: << parameters.jdk_version >>
-    environment:
-      CLOJURE_VERSION: << parameters.clojure_version >>
-      TEST_PROFILES: "-user,-dev,+test,+cljs"
-    steps:
-      - checkout
-      - with_cache:
-          cache_version: "eastwood_v1_<< parameters.clojure_version >>"
-          steps:
-            # Eastwood is run for every Clojure and JDK version because its
-            # results are sensitive to the code in the runtime.
             - run:
                 name: Running Eastwood
                 command: make eastwood
@@ -208,8 +188,7 @@ workflows:
               clojure_version: ["1.10", "1.11", "1.12"]
           <<: *run_always
       - test:
-          # Sanity check that we don't have a requirement for Clojurescript or
-          # spec-alpha2 being on the classpath.
+          # Sanity check that we don't have a requirement for Clojurescript being on the classpath.
           matrix:
             alias: "test_no_extra_deps"
             parameters:
@@ -219,14 +198,6 @@ workflows:
           <<: *run_always
       - test_windows:
           <<: *run_always
-      # Eastwood output partly depends on JDK version it is run on,
-      # so selectively test with several versions of those.
-      - eastwood:
-          matrix:
-            alias: "eastwood"
-            parameters:
-              jdk_version: [jdk8, jdk24]
-          <<: *run_always
       - lint:
           <<: *run_always
       - deploy:
@@ -234,7 +205,6 @@ workflows:
             - test
             - test_no_extra_deps
             - test_windows
-            - eastwood
             - lint
           filters:
             branches:
