@@ -24,7 +24,13 @@
         :types {java.lang.Long 3, nil 3}
         :frequencies {nil 3, 0 1, 1 1, 2 1}
         :numbers {:n 3, :zeros 1, :max 2, :min 0, :mean 1.0}}
-       (analytics [0 nil 1 nil 2 nil])))
+       (analytics [0 nil 1 nil 2 nil]))
+
+  (is+ {:count 5
+        :types {java.lang.Long 5}
+        :frequencies {0 1, 1 1, 2 1, 3 1, 4 1}
+        :numbers {:n 5, :zeros 1, :max 4, :min 0, :mean 2.0}}
+       (analytics (range 5))))
 
 (deftest strings-test
   (is+ {:count 100

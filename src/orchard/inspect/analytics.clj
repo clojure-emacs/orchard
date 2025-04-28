@@ -19,9 +19,15 @@
 (defn- *frequencies [coll]
   (let [freqs (->> coll
                    (eduction (take *size-cutoff*))
-                   frequencies)]
+                   frequencies)
+        cmp #(let [res (compare (freqs %1) (freqs %2))]
+               (if (zero? res)
+                 ;; If values are identical, compare hashes of their keys.
+                 ;; Hashes because keys themselves might not be comparable.
+                 (compare (hash %1) (hash %2))
+                 (- res)))]
     ;; Turn the result in a map that is sorted by descending value.
-    (into (sorted-map-by #(- (compare (freqs %1) (freqs %2)))) freqs)))
+    (into (sorted-map-by cmp) freqs)))
 
 (definline ^:private inc-if [val condition]
   `(cond-> ~val ~condition inc))
