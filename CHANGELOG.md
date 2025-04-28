@@ -2,6 +2,10 @@
 
 ## master (unreleased)
 
+## 0.34.3 (2025-04-28)
+
+- Inspector: fix multiple frequencies not shown for the same value in analytics.
+
 ## 0.34.2 (2025-04-26)
 
 * [#339](https://github.com/clojure-emacs/orchard/pull/339): Inspector: support analytics for all maps and arrays.
