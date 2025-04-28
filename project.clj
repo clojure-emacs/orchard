@@ -1,8 +1,3 @@
-(def jdk-version
-  (let [v (System/getProperty "java.specification.version")]
-    (if (.contains v ".") 8 (Integer/parseInt v))))
-(def jdk8? (= jdk-version 8))
-
 (def dev-test-common-profile
   {:dependencies '[[nubank/matcher-combinators "3.9.1"
                     :exclusions [org.clojure/clojure]]]
@@ -68,10 +63,4 @@
 
              :clj-kondo {:plugins [[com.github.clj-kondo/lein-clj-kondo "2024.11.14"]]}
 
-             :eastwood  {:plugins  [[jonase/eastwood "1.4.3"]]
-                         :eastwood {:ignored-faults {:unused-ret-vals-in-try {orchard.java {:line 84}
-                                                                              orchard.java.parser-next-test true}}
-                                    :exclude-namespaces ~(when jdk8?
-                                                           '[orchard.java.modules
-                                                             orchard.java.parser-next
-                                                             orchard.java.parser-next-test])}}})
+             :eastwood  {:plugins  [[jonase/eastwood "1.4.3"]]}})
