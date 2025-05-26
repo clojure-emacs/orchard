@@ -35,7 +35,7 @@
                             (list 'get key)))
     (conj path '<unknown>)))
 
-(def ^:private supported-view-modes #{:normal :object :table})
+(def ^:private supported-view-modes #{:normal :object :table :hex})
 
 (def ^:private default-inspector-config
   "Default configuration values for the inspector."
@@ -121,8 +121,11 @@
 (defn- decide-if-paginated
   "Make early decision if the inspected object should be paginated. If so,
   assoc the `:chunk` to be displayed to `inspector`."
-  [{:keys [value current-page page-size] :as inspector}]
-  (let [pageable? (boolean (#{:list :map :set :array} (object-type value)))]
+  [{:keys [value current-page page-size view-mode] :as inspector}]
+  (let [pageable? (boolean (#{:list :map :set :array} (object-type value)))
+        page-size (if (= view-mode :hex)
+                    (* page-size 16) ;; In hex view mode, each row is 16 bytes.
+                    page-size)]
     (cond-> (assoc inspector :pageable pageable?)
       pageable? (merge (pagination-info value page-size current-page)))))
 
@@ -653,6 +656,45 @@
       (unindent ins))
     inspector))
 
+;; Hex view mode
+
+(defn- byte->ascii [b]
+  (let [c (bit-and b 0xFF)]
+    (if (and (>= c 32) (<= c 126))
+      (char c)
+      ;; Use MIDDLE DOT for non-printed chars as it is distinct from 0x2E.
+      \·)))
+
+(defn- format-hex-row
+  "Format 16 bytes as hex values."
+  [bytes]
+  (let [hex-strs (mapv #(format "%02x" (bit-and % 0xFF)) bytes)
+        padded (concat hex-strs (repeat (- 16 (count bytes)) "  "))
+        [left-half right-half] (split-at 8 padded)]
+    (str (str/join " " left-half) "  " (str/join " " right-half))))
+
+(defn format-ascii-row
+  "Format 16 bytes as ASCII characters."
+  [bytes]
+  (str/join (map byte->ascii bytes)))
+
+(defn render-hexdump
+  "Render the current array or array chunk as a hexdump-style table."
+  [{:keys [value chunk start-idx] :as inspector}]
+  (let [start-idx (or start-idx 0)
+        lines (eduction (comp (partition-all 16)
+                              (map-indexed vector))
+                        (or chunk value))]
+    (as-> inspector ins
+      (render-leading-page-ellipsis ins)
+      (reduce (fn [ins [i line]]
+                (let [addr (+ (* i 16) start-idx)]
+                  (render-indent-ln
+                   ins (format "0x%08x │ %s │ %s" addr (format-hex-row line)
+                               (format-ascii-row line)))))
+              ins lines)
+      (render-trailing-page-ellipsis ins))))
+
 ;; Inspector multimethod
 (defn- dispatch-inspect [{:keys [view-mode] :as _ins} obj]
   (if (= view-mode :object)
@@ -683,16 +725,18 @@
 (defmethod inspect :map  [inspector obj] (inspect-coll inspector obj))
 
 (defmethod inspect :array [inspector obj]
-  (-> (render-class-name inspector obj)
-      (render-counted-length obj)
-      (render-labeled-value "Component Type" (.getComponentType (class obj)))
-      (render-analytics)
-      (render-section-header "Contents")
-      (indent)
-      (render-collection-paged)
-      (unindent)
-      (render-datafy)
-      (render-page-info)))
+  (as-> (render-class-name inspector obj) ins
+    (render-counted-length ins obj)
+    (render-labeled-value ins "Component Type" (.getComponentType (class obj)))
+    (render-analytics ins)
+    (render-section-header ins "Contents")
+    (indent ins)
+    (if (= (:view-mode inspector) :hex)
+      (render-hexdump ins)
+      (render-collection-paged ins))
+    (unindent ins)
+    (render-datafy ins)
+    (render-page-info ins)))
 
 (defn- render-var-value [inspector ^clojure.lang.Var obj]
   (if-not (.isBound obj)
