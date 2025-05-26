@@ -327,6 +327,13 @@
       (seq values)
       (render-onto values))))
 
+(defn- render-indent-ln [inspector & values]
+  (let [padding (padding inspector)]
+    (cond-> inspector
+      padding      (render padding)
+      (seq values) (render-onto values)
+      true         (render '(:newline)))))
+
 (defn- render-section-header [inspector section]
   (-> (render-ln inspector)
       (render (format "%s--- %s:" (or (padding inspector) "") (name section)))
@@ -370,9 +377,7 @@
 
 (defn- render-counted-length [inspector obj]
   (if-let [clength (counted-length obj)]
-    (-> inspector
-        (render-indent "Count: " (str clength))
-        (render-ln))
+    (render-indent-ln inspector "Count: " (str clength))
     inspector))
 
 (defn- long-map-key?
@@ -387,9 +392,9 @@
   be rendered on separate lines."
   [{:keys [pretty-print] :as inspector} long-key?]
   (if (and pretty-print long-key?)
-    (-> (render-ln inspector)
-        (render-indent "=")
-        (render-ln))
+    (-> inspector
+        (render-ln)
+        (render-indent-ln "="))
     (render inspector " = ")))
 
 (defn- render-map-value
@@ -471,8 +476,7 @@
     (as-> inspector ins
       (render-ln ins)
       (render-row ins pr-ks)
-      (render-indent ins)
-      (render-ln ins divider)
+      (render-indent-ln ins divider)
       (reduce render-row ins pr-rows))))
 
 (defn- render-indexed-chunk
@@ -506,12 +510,11 @@
   (if last-page
     (-> (render-section-header inspector "Page Info")
         (indent)
-        (render-indent (format "Page size: %d, showing page: %d of %s"
-                               page-size (inc current-page)
-                               (if (= last-page Integer/MAX_VALUE)
-                                 "?" (inc last-page))))
-        (unindent)
-        (render-ln))
+        (render-indent-ln (format "Page size: %d, showing page: %d of %s"
+                                  page-size (inc current-page)
+                                  (if (= last-page Integer/MAX_VALUE)
+                                    "?" (inc last-page))))
+        (unindent))
     inspector))
 
 (defn- render-items [inspector items map? start-idx mark-values?]
@@ -531,17 +534,13 @@
 
 (defn- render-leading-page-ellipsis [{:keys [current-page] :as inspector}]
   (if (> current-page 0)
-    (-> inspector
-        (render-indent "...")
-        (render-ln))
+    (render-indent-ln inspector "...")
     inspector))
 
 (defn- render-trailing-page-ellipsis
   [{:keys [current-page last-page] :as inspector}]
   (if (some-> last-page (> current-page))
-    (-> inspector
-        (render-indent "...")
-        (render-ln))
+    (render-indent-ln inspector "...")
     inspector))
 
 (defn- render-collection-paged
@@ -572,9 +571,8 @@
       (indent ins)
       (if value-analysis
         (render-value-maybe-expand ins value-analysis)
-        (-> ins
-            (render-indent)
-            (render-ln "Press 'y' or M-x cider-inspector-display-analytics to analyze this value.")))
+        (render-indent-ln
+         ins "Press 'y' or M-x cider-inspector-display-analytics to analyze this value."))
       (unindent ins))
     inspector))
 
