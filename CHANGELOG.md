@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+- [#342](https://github.com/clojure-emacs/orchard/pull/342): Inspector: add hexdump view mode.
+
 ## 0.34.3 (2025-04-28)
 
 - Inspector: fix multiple frequencies not shown for the same value in analytics.
