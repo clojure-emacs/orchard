@@ -63,7 +63,7 @@
   (when (string? rendered)
     (re-matches (re-pattern (format "--- %s:" name)) rendered)))
 
-(defn- section [name rendered]
+(defn- section [rendered name]
   (->> rendered
        (drop-while #(not (section? name %)))
        (take-while #(or (section? name %)
@@ -71,7 +71,10 @@
        (not-empty)))
 
 (defn- datafy-section [rendered]
-  (section "Datafy" rendered))
+  (section rendered "Datafy"))
+
+(defn- contents-section [rendered]
+  (section rendered "Contents"))
 
 (defn- header [rendered]
   (take-while #(not (and (string? %)
@@ -171,7 +174,7 @@
               "  " [:value ":ns" pos?] " = " [:value "#namespace[orchard.inspect-test]" pos?]
               [:newline]
               [:newline]]
-             (section "Meta Information" rendered)))
+             (section rendered "Meta Information")))
       (testing "renders the datafy section"
         (is+ ["--- Datafy:"
               [:newline]
@@ -605,7 +608,7 @@
           "  " [:value "public static final Class<Boolean> TYPE" pos?]
           [:newline]
           [:newline]]
-         (->> Boolean inspect render (section "Fields"))))
+         (-> Boolean inspect render (section "Fields"))))
   (testing "inspecting a class without fields renders correctly"
     (is (nil? (-> Object inspect render (section "Fields"))))))
 
@@ -695,7 +698,7 @@
               [:value "42" 2]
               [:newline]
               [:newline]]
-             (section "Meta Information" rendered))))
+             (section rendered "Meta Information"))))
 
     (testing "meta values can be navigated to"
       (is (= 42 (-> (inspect (with-meta [:a :b :c :d :e] {:m 42}))
@@ -722,7 +725,7 @@
               [:value "{0 0, 7 7, 1 1, 4 4, 15 15, ...}" pos?]
               [:newline]
               [:newline]]
-             (section "Meta Information" rendered))))))
+             (section rendered "Meta Information"))))))
 
 (deftest inspect-coll-nav-test
   (testing "inspecting a collection extended with the Datafiable and Navigable protocols"
@@ -742,7 +745,7 @@
               "  ..."
               [:newline]
               [:newline]]
-             (section "Contents" rendered)))
+             (contents-section rendered)))
       (testing "renders the datafy section"
         (is+ ["--- Datafy:"
               [:newline]
@@ -759,7 +762,7 @@
               [:newline]
               "  Page size: 2, showing page: 1 of ?"
               [:newline]]
-             (section "Page Info" rendered)))
+             (section rendered "Page Info")))
       (testing "follows the same pagination rules"
         (is+ ["--- Datafy:"
               [:newline]
@@ -826,7 +829,7 @@
   (testing "inspecting java.util.Map descendants prints a key-value coll"
     (let [^java.util.Map the-map {:a 1, :b 2, :c 3}
           rendered (render (inspect (java.util.HashMap. the-map)))
-          contents (section "Contents" rendered)]
+          contents (contents-section rendered)]
       (is+ (matchers/prefix ["Class: "
                              [:value "java.util.HashMap" 0]
                              [:newline]
@@ -942,9 +945,9 @@
               "  " [:value "public Object()" 2]
               [:newline]
               [:newline]]
-             (section "Constructors" rendered)))
+             (section rendered "Constructors")))
       (testing "renders the methods section"
-        (let [methods (section "Methods" rendered)]
+        (let [methods (section rendered "Methods")]
           (is+ (matchers/embeds [[:value "public final native Class<?> getClass()" pos?]
                                  [:value "public boolean equals(Object)" pos?]
                                  [:value "public native int hashCode()" pos?]
@@ -983,7 +986,7 @@
                                [:newline]
                                "  " [:value "java.io.Serializable" pos?]
                                [:newline]])
-             (section "Class hierarchy" rendered)))))
+             (section rendered "Class hierarchy")))))
 
   (testing "inspecting the java.io.FileReader  class"
     (let [rendered (-> java.io.FileReader inspect render)]
@@ -996,7 +999,7 @@
                                      "        " "java.lang.AutoCloseable"
                                      "      " "java.lang.Readable"])
                      [[:newline]])
-             (section "Class hierarchy" rendered)))))
+             (section rendered "Class hierarchy")))))
 
   (testing "inspecting the java.lang.ClassValue class"
     (let [rendered (-> java.lang.ClassValue inspect render)]
@@ -1006,7 +1009,7 @@
               "Class: " [:value "java.lang.Class" 1] [:newline] [:newline]]
              (header rendered)))
       (testing "renders the methods section"
-        (let [methods (section "Methods" rendered)]
+        (let [methods (section rendered "Methods")]
           (is+ (matchers/prefix ["--- Methods:" [:newline]])
                methods)
           (doseq [assertion ["public boolean equals(Object)"
@@ -1027,7 +1030,7 @@
           [:newline] "  "
           [:value "public volatile clojure.lang.MethodImplCache __methodImplCache" pos?]
           [:newline] [:newline]]
-         (section "Fields" (-> clojure.lang.AFunction$1 inspect render)))))
+         (-> clojure.lang.AFunction$1 inspect render (section "Fields")))))
 
 (deftest inspect-method-test
   (testing "reflect.Method values aren't truncated"
@@ -1058,7 +1061,7 @@
               [:newline]
               "    " [:value ":a" 2] " = " [:value "1" 3]
               [:newline]]
-             (section "Deref" rendered)))
+             (section rendered "Deref")))
       (testing "doesn't render the datafy section"
         (is+ nil (datafy-section rendered)))))
 
@@ -1078,7 +1081,7 @@
           [:newline]
           "    2. " [:value "2" 4]
           [:newline]]
-         (->> (atom (range 3)) inspect render (section "Deref"))))
+         (-> (atom (range 3)) inspect render (section "Deref"))))
 
   (testing "larger collection is rendered as a single value"
     (is+ ["--- Deref:"
@@ -1090,7 +1093,7 @@
           [:newline]
           "    " [:value "(0 1 2 3 4 ...)" 2]
           [:newline]]
-         (->> (atom (range 100)) inspect render (section "Deref"))))
+         (-> (atom (range 100)) inspect render (section "Deref"))))
 
   (testing "meta is shown on atoms"
     (is+ ["--- Meta Information:"
@@ -1098,7 +1101,7 @@
           "  " [:value ":foo" 1] " = " [:value "\"bar\"" 2]
           [:newline]
           [:newline]]
-         (->> (atom [1 2 3] :meta {:foo "bar"}) inspect render (section "Meta Information")))))
+         (-> (atom [1 2 3] :meta {:foo "bar"}) inspect render (section "Meta Information")))))
 
 (deftest inspect-atom-infinite-seq-test
   (testing "inspecting an atom holding an infinite seq"
@@ -1119,7 +1122,7 @@
               [:newline]
               "    " [:value "(1 1 1 1 1 ...)" 2]
               [:newline]]
-             (section "Deref" rendered))))))
+             (section rendered "Deref"))))))
 
 (deftest inspect-clojure-string-namespace-test
   (testing "inspecting the clojure.string namespace"
@@ -1142,7 +1145,7 @@
               [:value "\"Stuart Sierra, Stuart Halloway, David Liebke\"" pos?]
               [:newline]
               [:newline]]
-             (section "Meta Information" result)))
+             (section result "Meta Information")))
       (testing "renders the refer from section"
         (is+ ["--- Refer from:"
               [:newline]
@@ -1153,7 +1156,7 @@
                              "#'clojure.core/restart-agent #'clojure.core/sort-by ...]") pos?]
               [:newline]
               [:newline]]
-             (section "Refer from" result)))
+             (section result "Refer from")))
       (testing "renders the imports section"
         (is+ ["--- Imports:"
               [:newline]
@@ -1164,7 +1167,7 @@
                                   "Class java.lang.Class, ...}") pos?]
               [:newline]
               [:newline]]
-             (section "Imports" result)))
+             (section result "Imports")))
       (testing "renders the interns section"
         (is+ ["--- Interns:"
               [:newline]
@@ -1174,7 +1177,7 @@
                                   "reverse #'clojure.string/reverse, join #'clojure.string/join, ...}") pos?]
               [:newline]
               [:newline]]
-             (section "Interns" result)))
+             (section result "Interns")))
       (testing "renders the datafy from section"
         (is+ ["--- Datafy:"
               [:newline]
@@ -1216,7 +1219,7 @@
               [:value "#function[orchard.inspect-test/extend-datafy-class/fn]" 2]
               [:newline]
               [:newline]]
-             (demunge (section "Meta Information" rendered))))
+             (demunge (section rendered "Meta Information"))))
       (testing "renders the datafy section"
         (is+ ["--- Datafy:"
               [:newline]
@@ -1244,7 +1247,7 @@
               " = " [:value "#function[orchard.inspect-test/extend-nav-vector/fn]" pos?]
               [:newline]
               [:newline]]
-             (demunge (section "Meta Information" rendered))))
+             (demunge (section rendered "Meta Information"))))
       (testing "renders the datafy section"
         (is+ ["--- Datafy:"
               [:newline]
@@ -1271,7 +1274,7 @@
               "  BOOM" [:newline]
               "  " [:value "clojure.lang.ExceptionInfo" 1] [:newline]
               [:newline]]
-             (section "Causes" rendered)))
+             (section rendered "Causes")))
       (testing "renders the datafy section"
         (is+ (if (> java-api-version 8)
                ["--- Datafy:"
@@ -1321,7 +1324,7 @@
             "  Inner" [:newline] "  " [:value "java.lang.RuntimeException" number?] " at "
             [:value #"orchard.inspect_test\$fn" number?] [:newline]
             [:newline]]
-           (section "Causes" rendered))
+           (section rendered "Causes"))
       (testing "trace is rendered"
         (is+ (matchers/prefix
               ["--- Trace:" [:newline]
@@ -1330,7 +1333,7 @@
                "   2. " [:value string? number?] [:newline]
                "   3. " [:value string? number?] [:newline]
                "   4. " [:value string? number?] [:newline]])
-             (section "Trace" rendered))))))
+             (section rendered "Trace"))))))
 
 (deftest inspect-eduction-test
   (testing "inspecting eduction shows its object fields"
@@ -1349,7 +1352,7 @@
 
     (let [rendered (-> (eduction (range 100)) inspect render)]
       (testing "doesn't render page info section"
-        (is (nil? (section "Page Info" rendered)))))))
+        (is (nil? (section rendered "Page Info")))))))
 
 (deftest render-counted-length-test
   (testing "inspecting counted collections shows their size upfront"
@@ -1408,9 +1411,9 @@
              "  " [:value "_count" pos?] " = " [:value "3" pos?] [:newline]
              "  " [:value "_first" pos?] " = " [:value "1" pos?] [:newline]
              "  " [:value "_hash" pos?] " = " [:value "0" pos?] [:newline]])
-           (section "Instance fields" rendered))
+           (section rendered "Instance fields"))
       (is+ ["--- View mode:" [:newline] "  :object"]
-           (section "View mode" rendered)))
+           (section rendered "View mode")))
 
     (let [rendered (-> (atom "foo")
                        (inspect/start)
@@ -1424,38 +1427,22 @@
              "  " [:value "validator" pos?] " = " [:value "nil" pos?] [:newline]
              "  " [:value "watches" pos?] " = " [:value "{}" pos?] [:newline]
              [:newline]])
-           (section "Instance fields" rendered))
+           (section rendered "Instance fields"))
       (is+ ["--- View mode:" [:newline] "  :object"]
-           (section "View mode" rendered))))
+           (section rendered "View mode"))))
 
   (testing "navigating away from an object changes the view mode back to normal"
-    (let [rendered (-> (list 1 2 3)
-                       (inspect/start)
-                       (inspect/set-view-mode :object)
-                       (inspect/down 13)
-                       render)]
-      (is+ (matchers/prefix
-            ["--- Contents:"
-             [:newline]
-             "  0. " [:value "2" pos?] [:newline]
-             "  1. " [:value "3" pos?] [:newline]])
-           (section "Contents" rendered))))
-
-  (testing "going back to value viewed with a different mode will remember that view mode"
-    (let [rendered (-> (list 1 2 3)
-                       (inspect/start)
-                       (inspect/set-view-mode :object)
-                       (inspect/down 13)
-                       (inspect/set-view-mode :normal)
-                       (inspect/up)
-                       render)]
-      (is+ (matchers/prefix
-            ["--- Instance fields:"
-             [:newline]
-             "  " [:value "_count" pos?] " = " [:value "3" pos?] [:newline]
-             "  " [:value "_first" pos?] " = " [:value "1" pos?] [:newline]
-             "  " [:value "_hash" pos?] " = " [:value "0" pos?] [:newline]])
-           (section "Instance fields" rendered)))))
+    (is+ (matchers/prefix
+          ["--- Contents:"
+           [:newline]
+           "  0. " [:value "2" pos?] [:newline]
+           "  1. " [:value "3" pos?] [:newline]])
+         (-> (list 1 2 3)
+             (inspect/start)
+             (inspect/set-view-mode :object)
+             (inspect/down 13)
+             render
+             contents-section))))
 
 (deftest table-view-mode-test
   (testing "in :table view-mode lists of maps are rendered as tables"
@@ -1481,9 +1468,9 @@
             "  | " [:value "4" pos?] " | " [:value "-4" pos?] " | "
             [:value "\"444\"" pos?] " | " [:value "(4 3 2 1)" pos?] " | " [:newline]
             [:newline]]
-           (section "Contents" rendered))
+           (contents-section rendered))
       (is+ ["--- View mode:" [:newline] "  :table"]
-           (section "View mode" rendered))))
+           (section rendered "View mode"))))
 
   (testing "in :table view-mode lists of vectors are rendered as tables"
     (let [rendered (-> (for [i (range 5)]
@@ -1506,67 +1493,67 @@
             "  | " [:value "4" pos?] " | " [:value "-4" pos?] " | "
             [:value "\"444\"" pos?] " | " [:value "(4 3 2 1)" pos?] " | " [:newline]
             [:newline]]
-           (section "Contents" rendered))
+           (contents-section rendered))
       (is+ ["--- View mode:" [:newline] "  :table"]
-           (section "View mode" rendered))))
+           (section rendered "View mode"))))
 
   (testing "doesn't break if table mode is requested for unsupported value"
-    (let [rendered (-> {:a 1}
-                       (inspect/start)
-                       (inspect/set-view-mode :table)
-                       render)]
-      (is+ ["--- Contents:" [:newline]
-            "  " [:value ":a" pos?] " = " [:value "1" pos?] [:newline]
-            [:newline]]
-           (section "Contents" rendered))))
+    (is+ ["--- Contents:" [:newline]
+          "  " [:value ":a" pos?] " = " [:value "1" pos?] [:newline]
+          [:newline]]
+         (-> {:a 1}
+             (inspect/start)
+             (inspect/set-view-mode :table)
+             render
+             contents-section)))
 
   (testing "works with paging"
-    (let [rendered (-> (map #(vector % %) (range 9))
-                       (inspect/start)
-                       (set-page-size 3)
-                       (inspect/set-view-mode :table)
-                       render)]
-      (is+ ["--- Contents:" [:newline] [:newline]
-            "  | " [:value "#" pos?] " | " [:value "0" pos?] " | " [:value "1" pos?] " | " [:newline]
-            "  |---+---+---|" [:newline]
-            "  | " [:value "0" pos?] " | " [:value "0" pos?] " | " [:value "0" pos?] " | " [:newline]
-            "  | " [:value "1" pos?] " | " [:value "1" pos?] " | " [:value "1" pos?] " | " [:newline]
-            "  | " [:value "2" pos?] " | " [:value "2" pos?] " | " [:value "2" pos?] " | " [:newline]
-            "  ..." [:newline] [:newline]]
-           (section "Contents" rendered)))
+    (is+ ["--- Contents:" [:newline] [:newline]
+          "  | " [:value "#" pos?] " | " [:value "0" pos?] " | " [:value "1" pos?] " | " [:newline]
+          "  |---+---+---|" [:newline]
+          "  | " [:value "0" pos?] " | " [:value "0" pos?] " | " [:value "0" pos?] " | " [:newline]
+          "  | " [:value "1" pos?] " | " [:value "1" pos?] " | " [:value "1" pos?] " | " [:newline]
+          "  | " [:value "2" pos?] " | " [:value "2" pos?] " | " [:value "2" pos?] " | " [:newline]
+          "  ..." [:newline] [:newline]]
+         (-> (map #(vector % %) (range 9))
+             (inspect/start)
+             (set-page-size 3)
+             (inspect/set-view-mode :table)
+             render
+             contents-section))
 
-    (let [rendered (-> (map #(vector % %) (range 9))
-                       (inspect/start)
-                       (set-page-size 3)
-                       (inspect/next-page)
-                       (inspect/set-view-mode :table)
-                       render)]
-      (is+ ["--- Contents:" [:newline]
-            "  ..." [:newline] [:newline]
-            "  | " [:value "#" pos?] " | " [:value "0" pos?] " | " [:value "1" pos?] " | " [:newline]
-            "  |---+---+---|" [:newline]
-            "  | " [:value "3" pos?] " | " [:value "3" pos?] " | " [:value "3" pos?] " | " [:newline]
-            "  | " [:value "4" pos?] " | " [:value "4" pos?] " | " [:value "4" pos?] " | " [:newline]
-            "  | " [:value "5" pos?] " | " [:value "5" pos?] " | " [:value "5" pos?] " | " [:newline]
-            "  ..." [:newline] [:newline]]
-           (section "Contents" rendered)))
+    (is+ ["--- Contents:" [:newline]
+          "  ..." [:newline] [:newline]
+          "  | " [:value "#" pos?] " | " [:value "0" pos?] " | " [:value "1" pos?] " | " [:newline]
+          "  |---+---+---|" [:newline]
+          "  | " [:value "3" pos?] " | " [:value "3" pos?] " | " [:value "3" pos?] " | " [:newline]
+          "  | " [:value "4" pos?] " | " [:value "4" pos?] " | " [:value "4" pos?] " | " [:newline]
+          "  | " [:value "5" pos?] " | " [:value "5" pos?] " | " [:value "5" pos?] " | " [:newline]
+          "  ..." [:newline] [:newline]]
+         (-> (map #(vector % %) (range 9))
+             (inspect/start)
+             (set-page-size 3)
+             (inspect/next-page)
+             (inspect/set-view-mode :table)
+             render
+             contents-section))
 
-    (let [rendered (-> (map #(vector % %) (range 9))
-                       (inspect/start)
-                       (set-page-size 3)
-                       (inspect/next-page)
-                       (inspect/next-page)
-                       (inspect/set-view-mode :table)
-                       render)]
-      (is+ ["--- Contents:" [:newline]
-            "  ..." [:newline] [:newline]
-            "  | " [:value "#" pos?] " | " [:value "0" pos?] " | " [:value "1" pos?] " | " [:newline]
-            "  |---+---+---|" [:newline]
-            "  | " [:value "6" pos?] " | " [:value "6" pos?] " | " [:value "6" pos?] " | " [:newline]
-            "  | " [:value "7" pos?] " | " [:value "7" pos?] " | " [:value "7" pos?] " | " [:newline]
-            "  | " [:value "8" pos?] " | " [:value "8" pos?] " | " [:value "8" pos?] " | " [:newline]
-            [:newline]]
-           (section "Contents" rendered))))
+    (is+ ["--- Contents:" [:newline]
+          "  ..." [:newline] [:newline]
+          "  | " [:value "#" pos?] " | " [:value "0" pos?] " | " [:value "1" pos?] " | " [:newline]
+          "  |---+---+---|" [:newline]
+          "  | " [:value "6" pos?] " | " [:value "6" pos?] " | " [:value "6" pos?] " | " [:newline]
+          "  | " [:value "7" pos?] " | " [:value "7" pos?] " | " [:value "7" pos?] " | " [:newline]
+          "  | " [:value "8" pos?] " | " [:value "8" pos?] " | " [:value "8" pos?] " | " [:newline]
+          [:newline]]
+         (-> (map #(vector % %) (range 9))
+             (inspect/start)
+             (set-page-size 3)
+             (inspect/next-page)
+             (inspect/next-page)
+             (inspect/set-view-mode :table)
+             render
+             contents-section)))
 
   (testing "map is not reported as table-viewable when paged"
     (is (not (-> (zipmap (range 100) (range))
@@ -1597,9 +1584,9 @@
                          "        {:a -1, :bb \"111\", :ccc [1]}\n"
                          "        {:a 2, :bb \"222\", :ccc [1 2]}]") 8]
             [:newline] [:newline]]
-           (section "Contents" rendered))
+           (contents-section rendered))
       (is+ ["--- View mode:" [:newline] "  :pretty"]
-           (section "View mode" rendered)))))
+           (section rendered "View mode")))))
 
 (deftest pretty-print-map-in-object-view-test
   (testing "in :object view mode + :pretty, Value: is printed regularly"
@@ -1647,9 +1634,9 @@
                          ":ccc (3 2 1)}\n       {:a -4, :bb \"444\", "
                          ":ccc (4 3 2 1)})}") 2]
             [:newline] [:newline]]
-           (section "Contents" rendered))
+           (contents-section rendered))
       (is+ ["--- View mode:" [:newline] "  :pretty"]
-           (section "View mode" rendered)))))
+           (section rendered "View mode")))))
 
 (deftest pretty-print-map-as-key-test
   (testing "in :pretty view-mode maps that contain maps as a keys are pretty printed"
@@ -1686,9 +1673,9 @@
                          "\"333\", :ccc [3 2 1]}\n    {:a -4, :bb "
                          "\"444\", :ccc [4 3 2 1]}]}") 2]
             [:newline] [:newline] [:newline]]
-           (section "Contents" rendered))
+           (contents-section rendered))
       (is+ ["--- View mode:" [:newline] "  :pretty"]
-           (section "View mode" rendered)))))
+           (section rendered "View mode")))))
 
 (deftest pretty-print-seq-of-map-as-key-test
   (testing "in :pretty view-mode maps that contain seq of maps as a keys are pretty printed"
@@ -1717,9 +1704,9 @@
                          ":bb \"111\", :ccc [1]}\n    {:a 2, :bb \"222\", "
                          ":ccc [1 2]}]}") 2]
             [:newline] [:newline] [:newline]]
-           (section "Contents" rendered))
+           (contents-section rendered))
       (is+ ["--- View mode:" [:newline] "  :pretty"]
-           (section "View mode" rendered)))))
+           (section rendered "View mode")))))
 
 (deftest tap-test
   (testing "tap-current-value"
@@ -1809,7 +1796,7 @@
             "  ..."
             [:newline]
             [:newline]]
-           (section "Contents" rendered))
+           (contents-section rendered))
       (is+ ["--- Datafy:"
             [:newline]
             "  " [:value "[0 1 2 3 4 ...]" pos?]
@@ -1862,11 +1849,11 @@
   (testing "Inspection of private fields is attempted (may fail depending on the JDK and the module of the given class)"
     (if (< java-api-version 17)
       (do
-        (is+ nil (->> 2 inspect render (section "Private static fields")))
+        (is+ nil (-> 2 inspect render (section "Private static fields")))
         (is+ (matchers/embeds [[:value "serialVersionUID" number?]])
-             (->> 2 inspect render (section "Static fields"))))
+             (-> 2 inspect render (section "Static fields"))))
 
-      (let [rendered (->> 2 inspect render (section "Private static fields"))]
+      (let [rendered (-> 2 inspect render (section "Private static fields"))]
         (is+ ["--- Private static fields:"
               [:newline]
               "  "
@@ -1876,7 +1863,7 @@
               [:newline]]
              rendered)))
 
-    (let [rendered (->> (PrivateFieldClass. 42) inspect render (section "Instance fields"))]
+    (let [rendered (-> (PrivateFieldClass. 42) inspect render (section "Instance fields"))]
       (is+ ["--- Instance fields:"
             [:newline]
             "  "
@@ -1889,35 +1876,33 @@
 
 (deftest analytics-test
   (testing "analytics is not shown by default"
-    (let [rendered (-> (range 100) inspect render)]
-      (is+ nil (section "Analytics" rendered))))
+    (is+ nil (-> (range 100) inspect render (section "Analytics"))))
 
   (testing "analytics hint is displayed if requested"
-    (let [rendered (-> (inspect {:display-analytics-hint "true"} (range 100)) render)]
-      (is+ ["--- Analytics:" [:newline]
-            "  Press 'y' or M-x cider-inspector-display-analytics to analyze this value."
-            [:newline] [:newline]]
-           (section "Analytics" rendered))))
+    (is+ ["--- Analytics:" [:newline]
+          "  Press 'y' or M-x cider-inspector-display-analytics to analyze this value."
+          [:newline] [:newline]]
+         (-> (inspect {:display-analytics-hint "true"} (range 100)) render
+             (section "Analytics"))))
 
   (testing "analytics is shown when requested"
-    (let [rendered (-> (range 100) inspect inspect/display-analytics render)]
-      (is+ ["--- Analytics:" [:newline]
-            "  " [:value ":count" pos?] " = " [:value "100" pos?] [:newline]
-            "  " [:value ":types" pos?] " = " [:value "{java.lang.Long 100}" pos?] [:newline]
-            "  " [:value ":frequencies" pos?] " = " [:value string? pos?] [:newline]
-            "  " [:value ":numbers" pos?] " = " [:value "{:n 100, :zeros 1, :max 99, :min 0, :mean 49.5}" pos?]
-            [:newline] [:newline]]
-           (section "Analytics" rendered))))
+    (is+ ["--- Analytics:" [:newline]
+          "  " [:value ":count" pos?] " = " [:value "100" pos?] [:newline]
+          "  " [:value ":types" pos?] " = " [:value "{java.lang.Long 100}" pos?] [:newline]
+          "  " [:value ":frequencies" pos?] " = " [:value string? pos?] [:newline]
+          "  " [:value ":numbers" pos?] " = " [:value "{:n 100, :zeros 1, :max 99, :min 0, :mean 49.5}" pos?]
+          [:newline] [:newline]]
+         (-> (range 100) inspect inspect/display-analytics render (section "Analytics"))))
 
   (testing "cutoff is customizable and limits number of values analytics processes"
-    (let [rendered (-> (range 100)
-                       inspect
-                       (inspect/refresh {:analytics-size-cutoff 10})
-                       inspect/display-analytics
-                       render)]
-      (is+ (matchers/prefix
-            ["--- Analytics:" [:newline]
-             "  " [:value ":cutoff?" pos?] " = " [:value "true" pos?] [:newline]
-             "  " [:value ":count" pos?] " = " [:value "10" pos?] [:newline]
-             "  " [:value ":types" pos?] " = " [:value "{java.lang.Long 10}" pos?] [:newline]])
-           (section "Analytics" rendered)))))
+    (is+ (matchers/prefix
+          ["--- Analytics:" [:newline]
+           "  " [:value ":cutoff?" pos?] " = " [:value "true" pos?] [:newline]
+           "  " [:value ":count" pos?] " = " [:value "10" pos?] [:newline]
+           "  " [:value ":types" pos?] " = " [:value "{java.lang.Long 10}" pos?] [:newline]])
+         (-> (range 100)
+             inspect
+             (inspect/refresh {:analytics-size-cutoff 10})
+             inspect/display-analytics
+             render
+             (section "Analytics")))))
