@@ -35,8 +35,6 @@
                             (list 'get key)))
     (conj path '<unknown>)))
 
-(def ^:private supported-view-modes #{:normal :object :table :hex})
-
 (def ^:private default-inspector-config
   "Default configuration values for the inspector."
   {:page-size        32      ; = Clojure's default chunked sequences chunk size.
@@ -272,13 +270,6 @@
   (tap> (:value (get index idx)))
   (inspect-render inspector))
 
-(defn set-view-mode
-  "Set the view mode for the current value to `mode`. See allowed values in
-  `supported-view-modes`."
-  [inspector mode]
-  (pre-ex (contains? supported-view-modes mode))
-  (inspect-render (assoc inspector :view-mode mode)))
-
 (defn display-analytics
   "Calculates and renders analytics for the current object."
   [{:keys [analytics-size-cutoff value] :as inspector}]
@@ -290,6 +281,45 @@
                   (analytics/analytics value)))
          (dissoc :display-analytics-hint))
      inspector)))
+
+;; View modes
+
+(def ^:private view-mode-order [:normal :hex :table :object])
+
+(defmulti view-mode-supported? (fn [_inspector view-mode] view-mode))
+
+(defmethod view-mode-supported? :normal [_ _] true)
+
+(defmethod view-mode-supported? :object [{:keys [value]} _]
+  ;; A hack - for all "known" types `object-type` returns a keyword. If it's not
+  ;; a keyword, it means we render it using object renderer, so :object
+  ;; view-mode is redundant for it.
+  (keyword? (object-type value)))
+
+(defmethod view-mode-supported? :table [{:keys [chunk value]} _]
+  (let [chunk (or chunk value)]
+    (and (#{:list :array} (object-type value))
+         (#{:list :array :map} (object-type (first chunk))))))
+
+(defmethod view-mode-supported? :hex [{:keys [value]} _]
+  (when-let [klass (class value)]
+    (and (.isArray klass)
+         (= (.getComponentType klass) Byte/TYPE))))
+
+(defn set-view-mode
+  "Set the view mode for the current value to `mode`."
+  [inspector mode]
+  (pre-ex (view-mode-supported? inspector mode))
+  (inspect-render (assoc inspector :view-mode mode)))
+
+(defn toggle-view-mode
+  "Switch to the next supported view mode."
+  [{:keys [view-mode] :as inspector}]
+  (let [supported (filter #(view-mode-supported? inspector %) view-mode-order)
+        transitions (zipmap supported (rest (cycle supported)))]
+    (set-view-mode inspector (transitions view-mode))))
+
+;; Rendering
 
 (defn render-onto [inspector coll]
   (letfn [(render-one [{:keys [rendered] :as inspector} val]
@@ -432,13 +462,6 @@
           inspector
           mappable))
 
-(defn supports-table-view-mode?
-  "Return whether the inspected object can be rendered in :table view-mode."
-  [{:keys [chunk value] :as _inspector}]
-  (let [chunk (or chunk value)]
-    (and (#{:list :array} (object-type value))
-         (#{:list :array :map} (object-type (first chunk))))))
-
 (defn- render-chunk-as-table [inspector chunk idx-starts-from]
   (let [m-i map-indexed
         fst (first chunk)
@@ -523,7 +546,7 @@
 (defn- render-items [inspector items map? start-idx mark-values?]
   (if map?
     (render-map-values inspector items mark-values?)
-    (if (and (= (:view-mode inspector) :table) (supports-table-view-mode? inspector))
+    (if (= (:view-mode inspector) :table)
       (render-chunk-as-table inspector items start-idx)
       (render-indexed-chunk inspector items start-idx mark-values?))))
 
@@ -1018,17 +1041,16 @@
 
 (defn render-view-mode [inspector]
   (let [{:keys [view-mode pretty-print]} inspector
-        view-mode-str (->> [(when-not (= view-mode :normal)
-                              (str view-mode))
-                            (when pretty-print ":pretty")]
-                           (remove nil?)
-                           (str/join " "))]
-    (if (str/blank? view-mode-str)
-      inspector
-      (-> (render-section-header inspector "View mode")
-          (indent)
-          (render-indent view-mode-str)
-          (unindent)))))
+        supported (filter #(view-mode-supported? inspector %) view-mode-order)
+        add-circle #(if %2 (str "●" %1) %1)
+        view-mode-str (str (->> supported
+                                (map #(add-circle (name %) (= % view-mode)))
+                                (str/join " "))
+                           " " (add-circle "pretty" pretty-print))]
+    (-> (render-section-header inspector "View mode (press 'v' to cycle, 'P' to pretty-print)")
+        (indent)
+        (render-indent view-mode-str)
+        (unindent))))
 
 (defn inspect-render
   ([{:keys [max-atom-length max-value-length max-coll-size max-nested-depth value pretty-print]
