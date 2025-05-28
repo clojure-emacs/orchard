@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+## 0.35.0 (2025-05-28)
+
 - [#342](https://github.com/clojure-emacs/orchard/pull/342): Inspector: add hexdump view mode.
 - [#343](https://github.com/clojure-emacs/orchard/pull/343): Inspector: rework view-mode toggling.
 
