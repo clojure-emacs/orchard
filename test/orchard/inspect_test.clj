@@ -28,7 +28,7 @@
 ;; Simplifies writing test structures for `match?`.
 
 (def nil-result
-  ["nil" [:newline] [:newline] #"--- View mode" [:newline] "  ●normal object pretty"])
+  ["Value: nil" [:newline] [:newline] "--- Contents:" [:newline] string? [:newline]])
 
 (def code "(sorted-map :a {:b 1} :c \"a\" :d 'e :f [2 3])")
 

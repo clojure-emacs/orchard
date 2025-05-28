@@ -729,7 +729,20 @@
 
 (defmethod inspect :nil [inspector _obj]
   (-> inspector
-      (render-ln "nil")))
+      (render-ln "Value: nil")
+      (render-section-header "Contents")
+      (indent)
+      (render-indent-ln
+       (rand-nth ["You have gazed into the void and it winked back."
+                  "You've reached the end of the universe. Time to turn back."
+                  "There's nothing here… or is there? Nope. Still nothing."
+                  "Welcome to Nil. Population: 0."
+                  "I sometimes come here too, to enjoy the peace and quiet."
+                  "Here lies no data. Rest in peace, little bytes."
+                  "Warning: staring too long at nil may summon cosmic horrors."
+                  "This whole trip might have been for nothing! Zero, zilch, zip, nada, nothing."
+                  "No data found. Please insert meaning manually."]))
+      (unindent)))
 
 (defn- inspect-coll [inspector obj]
   (-> (render-class-name inspector obj)
@@ -1035,22 +1048,23 @@
     (if (and (seq path) (not-any? #(= % '<unknown>) path))
       (-> (render-section-header inspector "Path")
           (indent)
-          (render-indent (str/join " " (:path inspector)))
+          (render-indent-ln (str/join " " (:path inspector)))
           (unindent))
       inspector)))
 
-(defn render-view-mode [inspector]
-  (let [{:keys [view-mode pretty-print]} inspector
-        supported (filter #(view-mode-supported? inspector %) view-mode-order)
-        add-circle #(if %2 (str "●" %1) %1)
-        view-mode-str (str (->> supported
-                                (map #(add-circle (name %) (= % view-mode)))
-                                (str/join " "))
-                           " " (add-circle "pretty" pretty-print))]
-    (-> (render-section-header inspector "View mode (press 'v' to cycle, 'P' to pretty-print)")
-        (indent)
-        (render-indent view-mode-str)
-        (unindent))))
+(defn render-view-mode [{:keys [value view-mode pretty-print] :as inspector}]
+  (if (some? value)
+    (let [supported (filter #(view-mode-supported? inspector %) view-mode-order)
+          add-circle #(if %2 (str "●" %1) %1)
+          view-mode-str (str (->> supported
+                                  (map #(add-circle (name %) (= % view-mode)))
+                                  (str/join " "))
+                             " " (add-circle "pretty" pretty-print))]
+      (-> (render-section-header inspector "View mode (press 'v' to cycle, 'P' to pretty-print)")
+          (indent)
+          (render-indent view-mode-str)
+          (unindent)))
+    inspector))
 
 (defn inspect-render
   ([{:keys [max-atom-length max-value-length max-coll-size max-nested-depth value pretty-print]
