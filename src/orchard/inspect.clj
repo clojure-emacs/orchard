@@ -12,6 +12,7 @@
    [clojure.core.protocols :refer [datafy nav]]
    [clojure.string :as str]
    [orchard.inspect.analytics :as analytics]
+   [orchard.java.compatibility :as compat]
    [orchard.pp :as pp]
    [orchard.print :as print])
   (:import
@@ -327,8 +328,8 @@
 ;; Rendering
 
 (defn render
-  ([{:keys [rendered] :as inspector} value]
-   (assoc inspector :rendered (conj! rendered value)))
+  ([inspector value]
+   (update inspector :rendered conj! value))
   ([inspector value & values]
    (reduce render (render inspector value) values)))
 
@@ -826,16 +827,6 @@
       (render-indent-str-lines obj)
       (unindent)))
 
-(defn- field-val [^Field f, obj]
-  (try
-    (.get f obj)
-    (catch Exception _
-      (try
-        (.setAccessible f true)
-        (.get f obj)
-        (catch Exception _
-          ::access-denied)))))
-
 (defn- shorten-member-string [member-string, ^Class class]
   ;; Ugly as hell, but easier than reimplementing all custom printing that
   ;; java.lang.reflect does.
@@ -855,8 +846,10 @@
                         res))
         all-fields (mapcat #(.getDeclaredFields ^Class %) class-chain)
         field-values (mapv (fn [^Field f]
-                             {:name (symbol (.getName f)), :value (field-val f obj)
-                              :static (Modifier/isStatic (.getModifiers f))})
+                             (let [static? (Modifier/isStatic (.getModifiers f))]
+                               {:name (symbol (.getName f))
+                                :value (compat/get-field-value f (when-not static? obj))
+                                :static static?}))
                            all-fields)
         {static-accessible        [true true]
          non-static-accessible    [false true]
@@ -865,7 +858,7 @@
         (group-by (fn [{:keys [static value]}]
                     ;; Be careful to use identical? instead of = because an
                     ;; object might not implement equiv().
-                    [static (not (identical? ::access-denied value))])
+                    [static (not (identical? ::compat/access-denied value))])
                   field-values)
         ;; This is fine like this for now. If this condp ever grows bigger,
         ;; consider refactoring it into something polymorphic.
@@ -891,7 +884,7 @@
                      (->> field-values
                           (map (fn [{:keys [name value]}]
                                  [name
-                                  (if (identical? value ::access-denied)
+                                  (if (identical? value ::compat/access-denied)
                                     ;; This is a special value that can be
                                     ;; detected client-side:
                                     (symbol "<non-inspectable value>")
