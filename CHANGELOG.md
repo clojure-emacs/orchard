@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+- [#346](https://github.com/clojure-emacs/orchard/pull/346): Inspector: only show those datafied collection items that have unique datafy represantation.
+
 ## 0.35.0 (2025-05-28)
 
 - [#342](https://github.com/clojure-emacs/orchard/pull/342): Inspector: add hexdump view mode.
