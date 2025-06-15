@@ -5,6 +5,7 @@
    [clojure.java.javadoc :as javadoc]
    [clojure.reflect :as reflect]
    [clojure.string :as str]
+   [orchard.java.compatibility :as compat]
    [orchard.java.resource :as resource]
    [orchard.java.source-files :as src-files]
    [orchard.misc :as misc]
@@ -61,13 +62,6 @@
    (when parser-next-source-info
      (parser-next-source-info klass source-url))))
 
-;; As of Java 11, Javadoc URLs begin with the module name.
-(defn module-name
-  "On JDK11+, return module name from the class if present; otherwise return nil"
-  [class-or-sym]
-  (when (>= misc/java-api-version 11)
-    ((requiring-resolve 'orchard.java.modules/module-name) class-or-sym)))
-
 (defn javadoc-url
   "Return the relative `.html` javadoc path and member fragment."
   ([class]
@@ -75,7 +69,7 @@
                       (str/replace "$" "."))
                   ".html")
          ;; As of Java 11, Javadoc URLs begin with the module name.
-         module (module-name class)]
+         module (compat/module-name class)]
      (cond->> url
        module (format "%s/%s" module))))
   ([class member argtypes]
