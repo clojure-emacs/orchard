@@ -1119,12 +1119,11 @@
               [:newline]
               "  " [:value ":doc" pos?]
               " = "
-              [:value #=(str "\"Clojure String utilities\\n\\nIt is poor form to (:use clojure.string). "
-                             "Instead, use require\\nwith :as to specify a prefix, e.g.\\n\\n(ns your.namespace.here\\n ...\"") pos?]
+              [:value string? pos?]
               [:newline]
               "  " [:value ":author" pos?]
               " = "
-              [:value "\"Stuart Sierra, Stuart Halloway, David Liebke\"" pos?]]
+              [:value string? pos?]]
              (section result "Meta Information")))
       (testing "renders the refer from section"
         (is+ ["--- Refer from:"
@@ -1846,9 +1845,17 @@
       (is+ nil (datafy-section rendered))
       (is+ ["--- Datafy:" [:newline]
             "  ..." [:newline]
-            "  2. " [:value "3" pos?] [:newline]
             "  3. " [:value ":datafied" pos?]]
-           (datafy-section (-> ins inspect/next-page render))))))
+           (datafy-section (-> ins inspect/next-page render)))))
+  (testing "only show those items in collection that have unique datafication"
+    (is+ ["--- Datafy:" [:newline]
+          "  3. " [:value string? pos?]]
+         (-> [1 2 3 (ex-info "datafy" {})]
+             inspect render datafy-section))
+    (is+ ["--- Datafy:" [:newline]
+          "  " [:value ":c" pos?] " = " [:value string? pos?]]
+         (-> {:a 1 :b 2 :c (ex-info "datafy" {})}
+             inspect render datafy-section))))
 
 (deftest private-field-access-test
   (testing "Inspection of private fields is attempted (may fail depending on the JDK and the module of the given class)"
