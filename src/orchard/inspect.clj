@@ -321,17 +321,18 @@
 
 ;; Rendering
 
-(defn render-onto [inspector coll]
-  (letfn [(render-one [{:keys [rendered] :as inspector} val]
-            ;; Special case: fuse two last strings together.
-            (let [lst (peek (or rendered []))]
-              (assoc inspector :rendered (if (and (string? lst) (string? val))
-                                           (conj (pop rendered) (str lst val))
-                                           (conj rendered val)))))]
-    (reduce render-one inspector coll)))
+(defn render
+  ([{:keys [rendered] :as inspector} value]
+   ;; Special case: fuse two last strings together.
+   (let [lst (peek (or rendered []))]
+     (assoc inspector :rendered (if (and (string? lst) (string? value))
+                                  (conj (pop rendered) (.concat ^String lst value))
+                                  (conj rendered value)))))
+  ([inspector value & values]
+   (reduce render (render inspector value) values)))
 
-(defn render [inspector & values]
-  (render-onto inspector values))
+(defn render-onto [inspector coll]
+  (reduce render inspector coll))
 
 (defn render-ln [inspector & values]
   (-> inspector
@@ -350,7 +351,7 @@
 
 (defn- padding [{:keys [indentation]}]
   (when (and (number? indentation) (pos? indentation))
-    (apply str (repeat indentation " "))))
+    (String. (char-array indentation \space))))
 
 (defn- render-indent [inspector & values]
   (let [padding (padding inspector)]
@@ -505,27 +506,37 @@
       (render-indent-ln ins divider)
       (reduce render-row ins pr-rows))))
 
+(defn- leftpad [idx last-idx-len]
+  (let [idx-s (str idx)
+        idx-len (count idx-s)]
+    (if (= idx-len last-idx-len)
+      (str idx-s ". ")
+      (str (String. (char-array (- last-idx-len idx-len) \space)) idx-s ". "))))
+
 (defn- render-indexed-chunk
   "Render an indexed chunk of values. Renders all values in `chunk`, so `chunk`
   must be finite. If `mark-values?` is true, attach the indices to the values in
-  the index."
-  [{:keys [pretty-print] :as inspector} chunk idx-starts-from mark-values?]
-  (let [n (count chunk)
-        last-idx (+ idx-starts-from n -1)
-        last-idx-len (count (str last-idx))
-        idx-fmt (str "%" last-idx-len "s")]
-    (loop [ins inspector, chunk (seq chunk), idx idx-starts-from]
+  the index. If `skip-nils?` is true, don't render nil values."
+  [{:keys [pretty-print] :as inspector} chunk {:keys [start-idx mark-values? skip-nils?]}]
+  (let [start-idx (or start-idx 0)
+        n (count chunk)
+        last-idx (+ start-idx n -1)
+        last-idx-len (count (str last-idx))]
+    (loop [ins inspector, chunk (seq chunk), idx start-idx]
       (if chunk
-        (let [header (str (format idx-fmt idx) ". ")
-              indentation (if pretty-print (count header) 0)]
-          (recur (-> ins
-                     (render-indent header)
-                     (indent indentation)
-                     (render-value (first chunk)
-                                   (when mark-values?
-                                     {:value-role :seq-item, :value-key idx}))
-                     (unindent indentation)
-                     (render-ln))
+        (let [header (leftpad idx last-idx-len)
+              indentation (if pretty-print (count header) 0)
+              item (first chunk)]
+          (recur (if-not (and (nil? item) skip-nils?)
+                   (-> ins
+                       (render-indent header)
+                       (indent indentation)
+                       (render-value item
+                                     (when mark-values?
+                                       {:value-role :seq-item, :value-key idx}))
+                       (unindent indentation)
+                       (render-ln))
+                   ins)
                  (next chunk) (inc idx)))
         ins))))
 
@@ -543,19 +554,20 @@
         (unindent))
     inspector))
 
-(defn- render-items [inspector items map? start-idx mark-values?]
+(defn- render-items
+  [inspector items {:keys [map? start-idx mark-values?] :as opts}]
   (if map?
     (render-map-values inspector items mark-values?)
     (if (= (:view-mode inspector) :table)
-      (render-chunk-as-table inspector items start-idx)
-      (render-indexed-chunk inspector items start-idx mark-values?))))
+      (render-chunk-as-table inspector items (or start-idx 0))
+      (render-indexed-chunk inspector items opts))))
 
 (defn- render-value-maybe-expand
   "If `obj` is a collection smaller than page-size, then render it as a
   collection, otherwise as a compact value."
   [{:keys [page-size] :as inspector} obj]
   (if (some-> (counted-length obj) (<= page-size))
-    (render-items inspector obj (map? obj) 0 false)
+    (render-items inspector obj {:map? (map? obj), :start-idx 0})
     (render-indented-value inspector obj)))
 
 (defn- render-leading-page-ellipsis [{:keys [current-page] :as inspector}]
@@ -575,9 +587,11 @@
   (let [type (object-type value)]
     (-> inspector
         (render-leading-page-ellipsis)
-        (render-items (or chunk value) (= type :map) (or start-idx 0)
-                      ;; Set items are not indexed - don't mark.
-                      (not= type :set))
+        (render-items (or chunk value)
+                      {:map? (= type :map)
+                       :start-idx start-idx
+                       ;; Set items are not indexed - don't mark.
+                       :mark-values? (not= type :set)})
         (render-trailing-page-ellipsis))))
 
 (defn render-meta-information [inspector obj]
@@ -604,25 +618,34 @@
 
 ;;;; Datafy
 
-(defn- datafy-kvs [original-object kvs]
+(defn- datafy-kvs [original-object kvs keep-same?]
+  ;; keep-same? should be true for datafying collections that were produced by
+  ;; datafying the root, and false if we datafy elements of the original coll.
   (let [differs? (volatile! false)
         result (into {}
                      (keep (fn [[k v]]
                              (when-some [dat (some->> (nav original-object k v)
                                                       datafy)]
-                               (when-not (= dat v)
-                                 (vreset! differs? true))
-                               [k dat])))
+                               (let [same? (= dat v)]
+                                 (when-not same?
+                                   (vreset! differs? true))
+                                 (when (or (not same?) keep-same?)
+                                   [k dat])))))
                      kvs)]
-    (with-meta result {:differs @differs?})))
+    (when-not (empty? result)
+      result)))
 
-(defn- datafy-seq [s]
+(defn- datafy-seq [s keep-same?]
   (let [differs? (volatile! false)
-        result (mapv #(let [dat (datafy %)]
-                        (when-not (= dat %)
+        result (mapv #(let [dat (datafy %)
+                            same? (= dat %)]
+                        (when-not same?
                           (vreset! differs? true))
-                        dat) s)]
-    (with-meta result {:differs @differs?})))
+                        (when (or (not same?) keep-same?)
+                          dat))
+                     s)]
+    (when (or @differs? keep-same?)
+      result)))
 
 (defn- datafy-root [obj]
   (let [datafied (datafy obj)]
@@ -638,8 +661,8 @@
     ;; If the root value has datafy representation, check if it's a collection.
     ;; If so, additionally datafy its items or map values.
     (let [datafied (case (object-type datafied)
-                     :map (datafy-kvs datafied datafied)
-                     (:list :set) (datafy-seq datafied)
+                     :map (datafy-kvs datafied datafied true)
+                     (:list :set) (datafy-seq datafied true)
                      datafied)]
       ;; Only render the datafy section if the datafied version of the object is
       ;; different than object, since we don't want to show the same data twice.
@@ -650,13 +673,10 @@
       ;; If the value is a type that can be paged, then only datafy the
       ;; displayed chunk.
       (let [chunk (or chunk value)
-            map? (= (object-type value) :map)
-            datafied (if map?
-                       (datafy-kvs value chunk)
-                       (datafy-seq chunk))]
-        ;; Only return the datafied representation if at least one value is
-        ;; different from the original.
-        (when (:differs (meta datafied))
+            datafied (if (= (object-type value) :map)
+                       (datafy-kvs value chunk false)
+                       (datafy-seq chunk false))]
+        (when datafied
           [datafied true])))))
 
 (defn- render-datafy [{:keys [start-idx] :as inspector}]
@@ -670,7 +690,9 @@
         ;; using the same pagination rules as the main chunk.
         (-> ins
             (render-leading-page-ellipsis)
-            (render-items datafied (map? datafied) (or start-idx 0) false)
+            (render-items datafied {:map? (map? datafied)
+                                    :start-idx start-idx
+                                    :skip-nils? true})
             (render-trailing-page-ellipsis))
         ;; Otherwise, render datafied representation as a collection if it is
         ;; small enough, or as a single value.
@@ -978,7 +1000,7 @@
       (unindent ins)
       (render-section-header ins "Trace")
       (indent ins)
-      (render-items ins (.getStackTrace root-cause) false 0 false)
+      (render-items ins (.getStackTrace root-cause) {})
       (unindent ins)
       (render-datafy ins))))
 
@@ -987,7 +1009,7 @@
       (render-labeled-value "Class" (class obj))
       (render-section-header "Contents")
       (indent)
-      (render-items (StackTraceElement->vec obj) false 0 false)))
+      (render-items (StackTraceElement->vec obj) {})))
 
 (defmethod inspect :aref [inspector ^clojure.lang.ARef obj]
   (let [val (deref obj)]
@@ -1086,10 +1108,7 @@
          (inspect value)
          (render-path)
          (render-view-mode)
-         (update :rendered seq))))
-  ([inspector value]
-   (inspect-render (-> (assoc inspector :value value)
-                       (dissoc :value-analysis)))))
+         (update :rendered seq)))))
 
 ;; Public entrypoints
 
@@ -1102,8 +1121,8 @@
    (-> default-inspector-config
        (merge (validate-config config))
        (assoc :stack [], :path [], :pages-stack [], :current-page 0,
-              :view-modes-stack [], :view-mode :normal)
-       (inspect-render value))))
+              :view-modes-stack [], :view-mode :normal, :value value)
+       (inspect-render))))
 
 (defn ^:deprecated clear
   "If necessary, use `(start inspector nil) instead.`"
