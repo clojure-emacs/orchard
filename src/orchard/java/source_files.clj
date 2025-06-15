@@ -5,7 +5,7 @@
    :added "0.29"}
   (:require [clojure.java.io :as io]
             [clojure.string :as str]
-            [orchard.misc :as misc])
+            [orchard.java.compatibility :as compat])
   (:import (java.io File IOException)
            (java.net URL)))
 
@@ -41,8 +41,7 @@
 (defn- class->classfile-path
   "Infer a relative path to the classfile of the given `klass`."
   [^Class klass]
-  (let [module (when (>= misc/java-api-version 11)
-                 ((requiring-resolve 'orchard.java.modules/module-name) klass))
+  (let [module (compat/module-name klass)
         classfile-name (-> (.getName klass)
                            (str/replace #"\$.*" "") ;; Drop internal class.
                            (str/replace "." "/")

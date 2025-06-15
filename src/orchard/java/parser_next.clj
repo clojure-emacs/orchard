@@ -22,7 +22,7 @@
   (:require
    [clojure.java.io :as io]
    [clojure.string :as str]
-   [orchard.java.modules :as modules]
+   [orchard.java.compatibility :as compat]
    [orchard.java.source-files :as src-files]
    [orchard.misc :as misc])
   (:import
@@ -432,7 +432,7 @@
    {:pre [(class? klass)]}
    (misc/with-lock lock ;; the jdk.javadoc.doclet classes aren't meant for concurrent modification/access.
      (let [class-sym (symbol (.getName klass))
-           ^DocletEnvironment root (parse-java source-url (modules/module-name klass))]
+           ^DocletEnvironment root (parse-java source-url (compat/module-name klass))]
        (when root
          (try
            (some #(when (#{ElementKind/CLASS
