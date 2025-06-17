@@ -48,7 +48,7 @@
 
 (defn- reset-render-state [inspector]
   (-> inspector
-      (assoc :counter 0, :index [], :indentation 0, :rendered [])
+      (assoc :index [], :indentation 0, :rendered (transient []))
       (dissoc :chunk :start-idx :last-page)))
 
 (defn- print-string
@@ -83,49 +83,54 @@
   `(when-not ~x
      (throw (ex-info (str "Precondition failed: " (pr-str '~x)) {}))))
 
-(defn- counted-length [obj]
+(defn- pageable? [obj]
+  (contains? #{:list :map :set :array} (object-type obj)))
+
+(defn- counted-length [{:keys [page-size]} obj]
   (cond (instance? clojure.lang.Counted obj) (count obj)
         (instance? Map obj) (.size ^Map obj)
         (array? obj) (java.lang.reflect.Array/getLength obj)
-        ;; Count small lazy collections <= 10 elements (arbitrary).
-        (sequential? obj) (let [bc (bounded-count 11 obj)]
-                            (when (<= bc 10)
-                              bc))))
+        ;; Count small lazy collections (<= page-size).
+        (pageable? obj) (let [bc (bounded-count (inc page-size) obj)]
+                          (when (<= bc page-size)
+                            bc))))
 
 (defn- pagination-info
   "Calculate if the object should be paginated given the page size. Return a map
   with pagination info, or nil if object fits in a single page."
-  [obj page-size current-page]
-  (let [clength (counted-length obj)
+  [{:keys [page-size current-page view-mode value] :as inspector}]
+  (let [page-size (if (= view-mode :hex)
+                    (* page-size 16) ;; In hex view mode, each row is 16 bytes.
+                    page-size)
         start-idx (* current-page page-size)
         ;; Try grab a chunk that is one element longer than asked in
         ;; page-size. This is how we know there are elements beyond the
         ;; current page.
-        chunk+1 (->> obj
-                     (drop start-idx)
-                     (take (inc page-size)))
+        chunk+1 (persistent! (transduce (comp (drop start-idx)
+                                              (take (inc page-size)))
+                                        conj! (transient []) value))
         count+1 (count chunk+1)
         paginate? (or (> current-page 0) ;; In non-paginated it's always 0.
                       (> count+1 page-size))
-        last-page (cond clength (quot (dec clength) page-size)
-                        (<= count+1 page-size) current-page
-                        ;; Possibly infinite
-                        :else Integer/MAX_VALUE)]
+        clength (or (counted-length inspector value)
+                    (when (<= count+1 page-size)
+                      (+ (* page-size current-page) count+1)))
+        last-page (if clength
+                    (quot (dec clength) page-size)
+                    ;; Possibly infinite
+                    Integer/MAX_VALUE)]
     (when paginate?
-      {:chunk (take page-size chunk+1)
+      {:chunk (cond-> chunk+1
+                (> count+1 page-size) pop)
        :start-idx start-idx
        :last-page last-page})))
 
 (defn- decide-if-paginated
   "Make early decision if the inspected object should be paginated. If so,
   assoc the `:chunk` to be displayed to `inspector`."
-  [{:keys [value current-page page-size view-mode] :as inspector}]
-  (let [pageable? (boolean (#{:list :map :set :array} (object-type value)))
-        page-size (if (= view-mode :hex)
-                    (* page-size 16) ;; In hex view mode, each row is 16 bytes.
-                    page-size)]
-    (cond-> (assoc inspector :pageable pageable?)
-      pageable? (merge (pagination-info value page-size current-page)))))
+  [{:keys [value] :as inspector}]
+  (cond-> inspector
+    (pageable? value) (merge (pagination-info inspector))))
 
 (defn next-page
   "Jump to the next page when inspecting a paginated sequence/map. Does nothing
@@ -323,43 +328,42 @@
 
 (defn render
   ([{:keys [rendered] :as inspector} value]
-   ;; Special case: fuse two last strings together.
-   (let [lst (peek (or rendered []))]
-     (assoc inspector :rendered (if (and (string? lst) (string? value))
-                                  (conj (pop rendered) (.concat ^String lst value))
-                                  (conj rendered value)))))
+   (assoc inspector :rendered (conj! rendered value)))
   ([inspector value & values]
    (reduce render (render inspector value) values)))
 
 (defn render-onto [inspector coll]
   (reduce render inspector coll))
 
-(defn render-ln [inspector & values]
-  (-> inspector
-      (render-onto values)
-      (render '(:newline))))
+(defn render-ln [inspector]
+  (render inspector '(:newline)))
 
 (defn- indent
   "Increment the `:indentation` of `inspector` by `n` or 2."
-  [inspector & [n]]
-  (update inspector :indentation + (or n 2)))
+  ([inspector] (update inspector :indentation + 2))
+  ([inspector n]
+   (cond-> inspector
+     (pos? n) (update :indentation + n))))
 
 (defn- unindent
   "Decrement the `:indentation` of `inspector` by `n` or 2."
-  [inspector & [n]]
-  (indent inspector (- (or n 2))))
+  ([inspector] (update inspector :indentation - 2))
+  ([inspector n]
+   (cond-> inspector
+     (pos? n) (update :indentation - n))))
 
 (defn- padding [{:keys [indentation]}]
   (when (and (number? indentation) (pos? indentation))
-    (String. (char-array indentation \space))))
+    (if (= indentation 2) "  " ;; Fastpath
+        (String. (char-array indentation \space)))))
 
-(defn- render-indent [inspector & values]
-  (let [padding (padding inspector)]
-    (cond-> inspector
-      padding
-      (render padding)
-      (seq values)
-      (render-onto values))))
+(defn- render-indent
+  ([inspector]
+   (if-let [padding (padding inspector)]
+     (render inspector padding)
+     inspector))
+  ([inspector & values]
+   (render-onto (render-indent inspector) values)))
 
 (defn- render-indent-ln [inspector & values]
   (let [padding (padding inspector)]
@@ -380,15 +384,14 @@
   `display-value` string can be provided explicitly."
   ([inspector value] (render-value inspector value nil))
   ([inspector value {:keys [value-role value-key display-value]}]
-   (let [{:keys [counter]} inspector
+   (let [{:keys [index]} inspector
          display-value (or display-value (print-string inspector value))
-         expr (list :value display-value counter)]
+         expr (seq [:value display-value (count index)])]
      (-> inspector
          (update :index conj {:value value
                               :role value-role
                               :key value-key})
-         (update :counter inc)
-         (update :rendered conj expr)))))
+         (update :rendered conj! expr)))))
 
 (defn render-indented-value [inspector value & [value-opts]]
   (-> inspector
@@ -410,7 +413,7 @@
   (render-labeled-value inspector "Class" (class obj)))
 
 (defn- render-counted-length [inspector obj]
-  (if-let [clength (counted-length obj)]
+  (if-let [clength (counted-length inspector obj)]
     (render-indent-ln inspector "Count: " (str clength))
     inspector))
 
@@ -507,10 +510,10 @@
       (reduce render-row ins pr-rows))))
 
 (defn- leftpad [idx last-idx-len]
-  (let [idx-s (str idx)
+  (let [^String idx-s (str idx)
         idx-len (count idx-s)]
     (if (= idx-len last-idx-len)
-      (str idx-s ". ")
+      (.concat idx-s ". ")
       (str (String. (char-array (- last-idx-len idx-len) \space)) idx-s ". "))))
 
 (defn- render-indexed-chunk
@@ -520,25 +523,26 @@
   [{:keys [pretty-print] :as inspector} chunk {:keys [start-idx mark-values? skip-nils?]}]
   (let [start-idx (or start-idx 0)
         n (count chunk)
+        idx (volatile! start-idx)
         last-idx (+ start-idx n -1)
         last-idx-len (count (str last-idx))]
-    (loop [ins inspector, chunk (seq chunk), idx start-idx]
-      (if chunk
-        (let [header (leftpad idx last-idx-len)
-              indentation (if pretty-print (count header) 0)
-              item (first chunk)]
-          (recur (if-not (and (nil? item) skip-nils?)
-                   (-> ins
-                       (render-indent header)
-                       (indent indentation)
-                       (render-value item
-                                     (when mark-values?
-                                       {:value-role :seq-item, :value-key idx}))
-                       (unindent indentation)
-                       (render-ln))
-                   ins)
-                 (next chunk) (inc idx)))
-        ins))))
+    (reduce (fn [ins item]
+              (let [i @idx
+                    header (leftpad i last-idx-len)
+                    indentation (if pretty-print (count header) 0)]
+                (vswap! idx inc)
+                (if-not (and (nil? item) skip-nils?)
+                  (-> ins
+                      (render-indent)
+                      (render header)
+                      (indent indentation)
+                      (render-value item
+                                    (when mark-values?
+                                      {:value-role :seq-item, :value-key i}))
+                      (unindent indentation)
+                      (render-ln))
+                  ins)))
+            inspector chunk)))
 
 (declare known-types)
 
@@ -566,7 +570,7 @@
   "If `obj` is a collection smaller than page-size, then render it as a
   collection, otherwise as a compact value."
   [{:keys [page-size] :as inspector} obj]
-  (if (some-> (counted-length obj) (<= page-size))
+  (if (some-> (counted-length inspector obj) (<= page-size))
     (render-items inspector obj {:map? (map? obj), :start-idx 0})
     (render-indented-value inspector obj)))
 
@@ -656,7 +660,7 @@
   "Datafy either the current value or its paginated view. Return datafied
   representation if it differs from value and boolean `mirror?` that tells if
   the datafied representation mirrors the structure of the input collection."
-  [{:keys [value chunk pageable]}]
+  [{:keys [value chunk]}]
   (if-let [datafied (datafy-root value)]
     ;; If the root value has datafy representation, check if it's a collection.
     ;; If so, additionally datafy its items or map values.
@@ -669,7 +673,7 @@
       (when-not (identical? datafied value)
         [datafied false]))
 
-    (when pageable
+    (when (pageable? value)
       ;; If the value is a type that can be paged, then only datafy the
       ;; displayed chunk.
       (let [chunk (or chunk value)
@@ -751,7 +755,8 @@
 
 (defmethod inspect :nil [inspector _obj]
   (-> inspector
-      (render-ln "Value: nil")
+      (render "Value: nil")
+      (render-ln)
       (render-section-header "Contents")
       (indent)
       (render-indent-ln
@@ -898,8 +903,8 @@
             (render-ident-hashcode [inspector]
               (let [code (System/identityHashCode obj)]
                 (-> inspector
-                    (render-indent "Identity hash code: " (str code) " "
-                                   (format "(0x%s)" (Integer/toHexString code)))
+                    (render "Identity hash code: " (str code) " "
+                            (format "(0x%s)" (Integer/toHexString code)))
                     (render-ln))))]
       (cond-> inspector
         true                           (render-labeled-value "Class" (class obj))
@@ -1058,7 +1063,6 @@
 
 (defmethod inspect :namespace [inspector ^clojure.lang.Namespace obj]
   (-> (render-class-name inspector obj)
-      (render-counted-length (ns-map obj))
       (render-meta-information obj)
       (render-ns-refers obj)
       (render-ns-imports obj)
@@ -1088,6 +1092,9 @@
           (unindent)))
     inspector))
 
+(defn- finalize-rendered [rendered]
+  (seq (persistent! rendered)))
+
 (defn inspect-render
   ([{:keys [max-atom-length max-value-length max-coll-size max-nested-depth value pretty-print]
      :as inspector}]
@@ -1108,7 +1115,7 @@
          (inspect value)
          (render-path)
          (render-view-mode)
-         (update :rendered seq)))))
+         (update :rendered finalize-rendered)))))
 
 ;; Public entrypoints
 
@@ -1133,14 +1140,3 @@
   "If necessary, use `(start nil)` instead."
   []
   (start nil))
-
-(defn inspect-print
-  "Get a human readable printout of rendered sequence."
-  [x]
-  (print
-   (with-out-str
-     (doseq [[type value :as component] (:rendered (start x))]
-       (print (case type
-                :newline \newline
-                :value (str value)
-                component))))))
