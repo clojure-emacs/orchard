@@ -105,7 +105,12 @@
 
 (defn render
   [inspector]
-  (:rendered inspector))
+  (reduce (fn [acc x]
+            (let [lst (peek acc)]
+              (if (and (string? x) (string? lst))
+                (conj (pop acc) (str lst x))
+                (conj acc x))))
+          [] (:rendered inspector)))
 
 (defn set-page-size [inspector new-size]
   (inspect/refresh inspector {:page-size new-size}))
@@ -220,13 +225,9 @@
 
 (deftest pagination-test
   (testing "big collections are paginated"
-    (is (= 33 (-> long-sequence
-                  inspect
-                  :counter)))
+    (is+ 33 (count (:index (inspect long-sequence))))
     ;; Twice more for maps
-    (is (= 65 (-> long-map
-                  inspect
-                  :counter)))
+    (is+ 65 (count (:index (inspect long-map))))
     (is (-> long-vector
             inspect
             :rendered
@@ -237,21 +238,19 @@
                   :rendered
                   page-size-info))))
   (testing "changing page size"
-    (is (= 21 (-> long-sequence
-                  inspect
-                  (set-page-size 20)
-                  :counter)))
-    (is (= 41 (-> long-map
-                  inspect
-                  (set-page-size 20)
-                  :counter)))
+    (is+ 21 (count (:index (-> long-sequence
+                               inspect
+                               (set-page-size 20)))))
+    (is+ 41 (count (:index (-> long-map
+                               inspect
+                               (set-page-size 20)))))
     (is (nil? (-> long-sequence
                   inspect
                   (set-page-size 200)
                   :rendered
                   page-size-info))))
   (testing "uncounted collections have their size determined on the last page"
-    (is (= "  Page size: 32, showing page: 2 of 2"
+    (is (= "Page size: 32, showing page: 2 of 2"
            (-> (range 50)
                inspect
                inspect/next-page
@@ -1110,9 +1109,7 @@
   (testing "inspecting the clojure.string namespace"
     (let [result (-> (find-ns 'clojure.string) inspect render)]
       (testing "renders the header"
-        (is+ ["Class: " [:value "clojure.lang.Namespace" number?] [:newline]
-              #"^Count: " [:newline]
-              [:newline]]
+        (is+ (matchers/prefix ["Class: " [:value "clojure.lang.Namespace" number?]])
              (header result)))
       (testing "renders the meta section"
         (is+ ["--- Meta Information:"
