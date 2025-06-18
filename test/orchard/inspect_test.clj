@@ -931,7 +931,8 @@
       (testing "renders the header section"
         (is+ ["Name: "
               [:value "java.lang.Object" 0] [:newline]
-              "Class: " [:value "java.lang.Class" 1] [:newline] [:newline]]
+              "Class: " [:value "java.lang.Class" 1] [:newline]
+              "Flags: public" [:newline] [:newline]]
              (header rendered)))
       (testing "renders the constructors section"
         (is+ ["--- Constructors:"
@@ -997,7 +998,8 @@
       (testing "renders the header section"
         (is+ ["Name: "
               [:value "java.lang.ClassValue" 0] [:newline]
-              "Class: " [:value "java.lang.Class" 1] [:newline] [:newline]]
+              "Class: " [:value "java.lang.Class" 1] [:newline]
+              "Flags: public abstract" [:newline] [:newline]]
              (header rendered)))
       (testing "renders the methods section"
         (let [methods (section rendered "Methods")]
