@@ -560,7 +560,7 @@
                   :value))))
   (testing "sibling functions work with arrays"
     (is+ {:value 35, :pages-stack [1], :path '[(nth 35)]}
-         (-> (byte-array (range 40))
+         (-> (long-array (range 40))
              inspect
              (inspect/down 33)
              (inspect/next-sibling)
@@ -1527,7 +1527,7 @@
             "  0x00000050 │ 50 51 52 53 54 55 56 57  58 59 5a 5b 5c 5d 5e 5f │ PQRSTUVWXYZ[\\]^_" [:newline]
             "  0x00000060 │ 60 61 62 63                                      │ `abc"]
            (contents-section rendered))
-      (is+ [#"--- View mode" [:newline] "  normal ●hex object pretty"]
+      (is+ [#"--- View mode" [:newline] "  ●hex normal object pretty"]
            (section rendered "View mode"))))
 
   (testing "works with paging"
@@ -1553,7 +1553,25 @@
              (set-page-size 2)
              inspect/next-page
              render
-             contents-section))))
+             contents-section))
+
+    (testing "enabled by default for byte arrays"
+      (is+ (matchers/prefix
+            ["--- Contents:" [:newline]
+             "  0x00000000 │ 00 01 02 03 04 05 06 07  08 09 0a 0b 0c 0d 0e 0f │ ················"])
+           (-> (byte-array (range 100))
+               inspect
+               render
+               contents-section))
+
+      (is+ (matchers/prefix
+            ["--- Contents:" [:newline]
+             "  0x00000000 │ 00 01 02 03 04 05 06 07  08 09 0a 0b 0c 0d 0e 0f │ ················"])
+           (-> [(byte-array (range 100))]
+               inspect
+               (inspect/down 1)
+               render
+               contents-section)))))
 
 (deftest toggle-view-mode-test
   (is+ :normal (-> (repeat 10 [1 2]) inspect :view-mode))
