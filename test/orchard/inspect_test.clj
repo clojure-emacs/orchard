@@ -1736,6 +1736,41 @@
       (is+ [#"--- View mode" [:newline] "  ●normal object ●pretty"]
            (section rendered "View mode")))))
 
+(deftest sort-maps-test
+  (testing "with :sort-map-keys enabled, may keys are sorted"
+    (is+ (matchers/prefix
+          ["--- Contents:" [:newline]
+           "  " [:value "0" pos?] " = " [:value "0" pos?] [:newline]
+           "  " [:value "1" pos?] " = " [:value "1" pos?] [:newline]
+           "  " [:value "2" pos?] " = " [:value "2" pos?] [:newline]
+           "  " [:value "3" pos?] " = " [:value "3" pos?] [:newline]])
+         (-> (zipmap (range 100) (range 100))
+             inspect
+             (inspect/refresh {:sort-maps true})
+             render
+             contents-section)))
+
+  (testing "works if map is smaller than page size"
+    (is+ ["--- Contents:" [:newline]
+          "  " [:value "0" pos?] " = " [:value "0" pos?] [:newline]
+          "  " [:value "1" pos?] " = " [:value "1" pos?] [:newline]
+          "  " [:value "2" pos?] " = " [:value "2" pos?] [:newline]
+          "  " [:value "3" pos?] " = " [:value "3" pos?] [:newline]
+          "  " [:value "4" pos?] " = " [:value "4" pos?]]
+         (-> (zipmap (range 5) (range 5))
+             inspect
+             (inspect/refresh {:sort-maps true, :page-size 100})
+             render
+             contents-section)))
+
+  (testing "doesn't fail if keys are non-comparable"
+    (is+ (matchers/prefix ["--- Contents:"])
+         (-> {(byte-array 1) 1 (byte-array 2) 2}
+             inspect
+             (inspect/refresh {:sort-maps true})
+             render
+             contents-section))))
+
 (deftest tap-test
   (testing "tap-current-value"
     (let [proof (atom [])
