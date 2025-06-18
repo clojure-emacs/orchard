@@ -10,6 +10,7 @@
   Pretty wild, right?"
   (:require
    [clojure.core.protocols :refer [datafy nav]]
+   [clojure.reflect :as reflect]
    [clojure.string :as str]
    [orchard.inspect.analytics :as analytics]
    [orchard.java.compatibility :as compat]
@@ -955,6 +956,10 @@
     (-> inspector
         (render-labeled-value "Name" (-> obj .getName symbol))
         (render-class-name obj)
+        (render "Flags: " (->> (#'clojure.reflect/parse-flags (.getModifiers obj) :class)
+                               (map name)
+                               (str/join " ")))
+        (render-ln)
         (render-class-hierarchy obj)
         (render-class-section :Constructors (.getConstructors obj)
                               (print-fn #(.toGenericString ^Constructor %)))
