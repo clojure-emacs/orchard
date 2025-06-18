@@ -5,6 +5,7 @@
 - [#346](https://github.com/clojure-emacs/orchard/pull/346): Inspector: only show those datafied collection items that have unique datafy represantation.
 - [#348](https://github.com/clojure-emacs/orchard/pull/348): Inspector: display length of inspected strings.
 - [#348](https://github.com/clojure-emacs/orchard/pull/348): Inspector: display class flags.
+- [#349](https://github.com/clojure-emacs/orchard/pull/349): Inspector: add ability to sort maps by key.
 
 ## 0.35.0 (2025-05-28)
 

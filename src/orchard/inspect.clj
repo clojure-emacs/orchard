@@ -46,6 +46,7 @@
    :max-nested-depth nil
    :display-analytics-hint nil
    :analytics-size-cutoff  100000
+   :sort-maps false
    :pretty-print false})
 
 (defn- reset-render-state [inspector]
@@ -100,11 +101,18 @@
 (defn- pagination-info
   "Calculate if the object should be paginated given the page size. Return a map
   with pagination info, or nil if object fits in a single page."
-  [{:keys [page-size current-page view-mode value] :as inspector}]
+  [{:keys [page-size current-page view-mode sort-maps value] :as inspector}]
   (let [page-size (if (= view-mode :hex)
                     (* page-size 16) ;; In hex view mode, each row is 16 bytes.
                     page-size)
         start-idx (* current-page page-size)
+        ;; Sort maps early to ensure proper paging.
+        sort-map? (and (= (object-type value) :map) sort-maps)
+        value (if sort-map?
+                (try (sort-by key value)
+                     ;; May throw if keys are not comparable.
+                     (catch Exception _ value))
+                value)
         ;; Try grab a chunk that is one element longer than asked in
         ;; page-size. This is how we know there are elements beyond the
         ;; current page.
@@ -114,6 +122,8 @@
         count+1 (count chunk+1)
         paginate? (or (> current-page 0) ;; In non-paginated it's always 0.
                       (> count+1 page-size))
+        chunk (cond-> chunk+1
+                (> count+1 page-size) pop)
         clength (or (counted-length inspector value)
                     (when (<= count+1 page-size)
                       (+ (* page-size current-page) count+1)))
@@ -121,11 +131,10 @@
                     (quot (dec clength) page-size)
                     ;; Possibly infinite
                     Integer/MAX_VALUE)]
-    (when paginate?
-      {:chunk (cond-> chunk+1
-                (> count+1 page-size) pop)
-       :start-idx start-idx
-       :last-page last-page})))
+    (cond paginate? {:chunk chunk
+                     :start-idx start-idx
+                     :last-page last-page}
+          sort-map? {:chunk chunk})))
 
 (defn- decide-if-paginated
   "Make early decision if the inspected object should be paginated. If so,
