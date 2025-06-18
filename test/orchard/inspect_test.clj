@@ -560,7 +560,7 @@
                   :value))))
   (testing "sibling functions work with arrays"
     (is+ {:value 35, :pages-stack [1], :path '[(nth 35)]}
-         (-> (byte-array (range 40))
+         (-> (long-array (range 40))
              inspect
              (inspect/down 33)
              (inspect/next-sibling)
@@ -931,7 +931,8 @@
       (testing "renders the header section"
         (is+ ["Name: "
               [:value "java.lang.Object" 0] [:newline]
-              "Class: " [:value "java.lang.Class" 1] [:newline] [:newline]]
+              "Class: " [:value "java.lang.Class" 1] [:newline]
+              "Flags: public" [:newline] [:newline]]
              (header rendered)))
       (testing "renders the constructors section"
         (is+ ["--- Constructors:"
@@ -997,7 +998,8 @@
       (testing "renders the header section"
         (is+ ["Name: "
               [:value "java.lang.ClassValue" 0] [:newline]
-              "Class: " [:value "java.lang.Class" 1] [:newline] [:newline]]
+              "Class: " [:value "java.lang.Class" 1] [:newline]
+              "Flags: public abstract" [:newline] [:newline]]
              (header rendered)))
       (testing "renders the methods section"
         (let [methods (section rendered "Methods")]
@@ -1527,7 +1529,7 @@
             "  0x00000050 │ 50 51 52 53 54 55 56 57  58 59 5a 5b 5c 5d 5e 5f │ PQRSTUVWXYZ[\\]^_" [:newline]
             "  0x00000060 │ 60 61 62 63                                      │ `abc"]
            (contents-section rendered))
-      (is+ [#"--- View mode" [:newline] "  normal ●hex object pretty"]
+      (is+ [#"--- View mode" [:newline] "  ●hex normal object pretty"]
            (section rendered "View mode"))))
 
   (testing "works with paging"
@@ -1553,7 +1555,25 @@
              (set-page-size 2)
              inspect/next-page
              render
-             contents-section))))
+             contents-section))
+
+    (testing "enabled by default for byte arrays"
+      (is+ (matchers/prefix
+            ["--- Contents:" [:newline]
+             "  0x00000000 │ 00 01 02 03 04 05 06 07  08 09 0a 0b 0c 0d 0e 0f │ ················"])
+           (-> (byte-array (range 100))
+               inspect
+               render
+               contents-section))
+
+      (is+ (matchers/prefix
+            ["--- Contents:" [:newline]
+             "  0x00000000 │ 00 01 02 03 04 05 06 07  08 09 0a 0b 0c 0d 0e 0f │ ················"])
+           (-> [(byte-array (range 100))]
+               inspect
+               (inspect/down 1)
+               render
+               contents-section)))))
 
 (deftest toggle-view-mode-test
   (is+ :normal (-> (repeat 10 [1 2]) inspect :view-mode))
@@ -1715,6 +1735,41 @@
            (contents-section rendered))
       (is+ [#"--- View mode" [:newline] "  ●normal object ●pretty"]
            (section rendered "View mode")))))
+
+(deftest sort-maps-test
+  (testing "with :sort-map-keys enabled, may keys are sorted"
+    (is+ (matchers/prefix
+          ["--- Contents:" [:newline]
+           "  " [:value "0" pos?] " = " [:value "0" pos?] [:newline]
+           "  " [:value "1" pos?] " = " [:value "1" pos?] [:newline]
+           "  " [:value "2" pos?] " = " [:value "2" pos?] [:newline]
+           "  " [:value "3" pos?] " = " [:value "3" pos?] [:newline]])
+         (-> (zipmap (range 100) (range 100))
+             inspect
+             (inspect/refresh {:sort-maps true})
+             render
+             contents-section)))
+
+  (testing "works if map is smaller than page size"
+    (is+ ["--- Contents:" [:newline]
+          "  " [:value "0" pos?] " = " [:value "0" pos?] [:newline]
+          "  " [:value "1" pos?] " = " [:value "1" pos?] [:newline]
+          "  " [:value "2" pos?] " = " [:value "2" pos?] [:newline]
+          "  " [:value "3" pos?] " = " [:value "3" pos?] [:newline]
+          "  " [:value "4" pos?] " = " [:value "4" pos?]]
+         (-> (zipmap (range 5) (range 5))
+             inspect
+             (inspect/refresh {:sort-maps true, :page-size 100})
+             render
+             contents-section)))
+
+  (testing "doesn't fail if keys are non-comparable"
+    (is+ (matchers/prefix ["--- Contents:"])
+         (-> {(byte-array 1) 1 (byte-array 2) 2}
+             inspect
+             (inspect/refresh {:sort-maps true})
+             render
+             contents-section))))
 
 (deftest tap-test
   (testing "tap-current-value"

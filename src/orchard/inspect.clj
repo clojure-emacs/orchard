@@ -10,6 +10,7 @@
   Pretty wild, right?"
   (:require
    [clojure.core.protocols :refer [datafy nav]]
+   [clojure.reflect :as reflect]
    [clojure.string :as str]
    [orchard.inspect.analytics :as analytics]
    [orchard.java.compatibility :as compat]
@@ -23,7 +24,7 @@
 ;; Navigating Inspector State
 ;;
 
-(declare inspect-render)
+(declare inspect-render supported-view-modes)
 
 (defn push-item-to-path
   "Takes `path` and the role and key of the value to be navigated to, and returns
@@ -45,6 +46,7 @@
    :max-nested-depth nil
    :display-analytics-hint nil
    :analytics-size-cutoff  100000
+   :sort-maps false
    :pretty-print false})
 
 (defn- reset-render-state [inspector]
@@ -99,11 +101,18 @@
 (defn- pagination-info
   "Calculate if the object should be paginated given the page size. Return a map
   with pagination info, or nil if object fits in a single page."
-  [{:keys [page-size current-page view-mode value] :as inspector}]
+  [{:keys [page-size current-page view-mode sort-maps value] :as inspector}]
   (let [page-size (if (= view-mode :hex)
                     (* page-size 16) ;; In hex view mode, each row is 16 bytes.
                     page-size)
         start-idx (* current-page page-size)
+        ;; Sort maps early to ensure proper paging.
+        sort-map? (and (= (object-type value) :map) sort-maps)
+        value (if sort-map?
+                (try (sort-by key value)
+                     ;; May throw if keys are not comparable.
+                     (catch Exception _ value))
+                value)
         ;; Try grab a chunk that is one element longer than asked in
         ;; page-size. This is how we know there are elements beyond the
         ;; current page.
@@ -113,6 +122,8 @@
         count+1 (count chunk+1)
         paginate? (or (> current-page 0) ;; In non-paginated it's always 0.
                       (> count+1 page-size))
+        chunk (cond-> chunk+1
+                (> count+1 page-size) pop)
         clength (or (counted-length inspector value)
                     (when (<= count+1 page-size)
                       (+ (* page-size current-page) count+1)))
@@ -120,11 +131,10 @@
                     (quot (dec clength) page-size)
                     ;; Possibly infinite
                     Integer/MAX_VALUE)]
-    (when paginate?
-      {:chunk (cond-> chunk+1
-                (> count+1 page-size) pop)
-       :start-idx start-idx
-       :last-page last-page})))
+    (cond paginate? {:chunk chunk
+                     :start-idx start-idx
+                     :last-page last-page}
+          sort-map? {:chunk chunk})))
 
 (defn- decide-if-paginated
   "Make early decision if the inspected object should be paginated. If so,
@@ -177,16 +187,16 @@
         ;; :current-page may be wrong, recompute it.
         current-page (if (number? child-key)
                        (quot child-key page-size)
-                       current-page)]
-    (-> inspector
-        (assoc :value child)
-        (dissoc :value-analysis)
-        (update :stack conj value)
-        (assoc :current-page 0)
-        (update :pages-stack conj current-page)
-        (assoc :view-mode :normal)
-        (update :view-modes-stack conj view-mode)
-        (update :path push-item-to-path child-role child-key))))
+                       current-page)
+        ins (-> inspector
+                (assoc :value child)
+                (dissoc :value-analysis)
+                (update :stack conj value)
+                (assoc :current-page 0)
+                (update :pages-stack conj current-page)
+                (update :view-modes-stack conj view-mode)
+                (update :path push-item-to-path child-role child-key))]
+    (assoc ins :view-mode (first (supported-view-modes ins)))))
 
 (defn down
   "Drill down to an indexed object referred to by the previously rendered value."
@@ -290,7 +300,7 @@
 
 ;; View modes
 
-(def ^:private view-mode-order [:normal :hex :table :object])
+(def ^:private view-mode-order [:hex :normal :table :object])
 
 (defmulti view-mode-supported? (fn [_inspector view-mode] view-mode))
 
@@ -318,10 +328,13 @@
   (pre-ex (view-mode-supported? inspector mode))
   (inspect-render (assoc inspector :view-mode mode)))
 
+(defn- supported-view-modes [inspector]
+  (filter #(view-mode-supported? inspector %) view-mode-order))
+
 (defn toggle-view-mode
   "Switch to the next supported view mode."
   [{:keys [view-mode] :as inspector}]
-  (let [supported (filter #(view-mode-supported? inspector %) view-mode-order)
+  (let [supported (supported-view-modes inspector)
         transitions (zipmap supported (rest (cycle supported)))]
     (set-view-mode inspector (transitions view-mode))))
 
@@ -367,11 +380,8 @@
    (render-onto (render-indent inspector) values)))
 
 (defn- render-indent-ln [inspector & values]
-  (let [padding (padding inspector)]
-    (cond-> inspector
-      padding      (render padding)
-      (seq values) (render-onto values)
-      true         (render '(:newline)))))
+  (-> (apply render-indent inspector values)
+      (render-ln)))
 
 (defn- render-section-header [inspector section]
   (-> (render-ln inspector)
@@ -822,6 +832,7 @@
   (-> (render-class-name inspector obj)
       (render "Value: " (print-string inspector obj))
       (render-ln)
+      (render-indent-ln "Length: " (str (.length obj)))
       (render-section-header "Print")
       (indent)
       (render-indent-str-lines obj)
@@ -954,6 +965,10 @@
     (-> inspector
         (render-labeled-value "Name" (-> obj .getName symbol))
         (render-class-name obj)
+        (render "Flags: " (->> (#'clojure.reflect/parse-flags (.getModifiers obj) :class)
+                               (map name)
+                               (str/join " ")))
+        (render-ln)
         (render-class-hierarchy obj)
         (render-class-section :Constructors (.getConstructors obj)
                               (print-fn #(.toGenericString ^Constructor %)))
@@ -1118,11 +1133,13 @@
   of supported keys."
   ([value] (start {} value))
   ([config value]
-   (-> default-inspector-config
-       (merge (validate-config config))
-       (assoc :stack [], :path [], :pages-stack [], :current-page 0,
-              :view-modes-stack [], :view-mode :normal, :value value)
-       (inspect-render))))
+   (let [inspector (-> default-inspector-config
+                       (merge (validate-config config))
+                       (assoc :stack [], :path [], :pages-stack [], :current-page 0,
+                              :view-modes-stack [], :value value))]
+     (-> inspector
+         (assoc :view-mode (first (supported-view-modes inspector)))
+         inspect-render))))
 
 (defn ^:deprecated clear
   "If necessary, use `(start inspector nil) instead.`"
