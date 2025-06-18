@@ -367,11 +367,8 @@
    (render-onto (render-indent inspector) values)))
 
 (defn- render-indent-ln [inspector & values]
-  (let [padding (padding inspector)]
-    (cond-> inspector
-      padding      (render padding)
-      (seq values) (render-onto values)
-      true         (render '(:newline)))))
+  (-> (apply render-indent inspector values)
+      (render-ln)))
 
 (defn- render-section-header [inspector section]
   (-> (render-ln inspector)
@@ -822,6 +819,7 @@
   (-> (render-class-name inspector obj)
       (render "Value: " (print-string inspector obj))
       (render-ln)
+      (render-indent-ln "Length: " (str (.length obj)))
       (render-section-header "Print")
       (indent)
       (render-indent-str-lines obj)
