@@ -48,6 +48,10 @@
   "Maximum total size of the resulting string."
   Integer/MAX_VALUE)
 
+(def ^:dynamic *coll-show-only-diff*
+  "When displaying collection diffs, whether to hide matching values."
+  false)
+
 (defn- print-coll-item
   "Print an item in the context of a collection. When printing a map, don't print
   `[]` characters around map entries."
@@ -217,6 +221,41 @@
     (.write w " ")
     (print (str first-frame) w))
   (.write w "]"))
+
+;;;; Diffing support. Used for orchard.inspect/diff.
+
+(deftype Diff [d1 d2])
+(deftype DiffColl [coll]) ;; For collections that contain diff elements.
+(deftype Nothing []) ;; To represent absent value.
+(def nothing (->Nothing))
+
+(defn diff-result?
+  "Return true if the object represents a diff result."
+  [x]
+  (or (instance? Diff x) (instance? DiffColl x)))
+
+(defn diff-coll-hide-equal-items [coll]
+  (cond (map? coll) (into {} (filter (fn [[_ v]] (diff-result? v))
+                                     coll))
+        (sequential? coll) (mapv #(if (diff-result? %) % nothing)
+                                 coll)
+        :else coll))
+
+(defmethod print DiffColl [^DiffColl x, ^Writer w]
+  (let [coll (cond-> (.coll x)
+               *coll-show-only-diff* diff-coll-hide-equal-items)]
+    (.write w "#≠")
+    (print coll w)))
+
+(defmethod print Diff [^Diff x, ^Writer w]
+  (let [d1 (.d1 x), d2 (.d2 x)]
+    (.write w "#±[")
+    (print d1 w)
+    (.write w " ~~ ")
+    (print d2 w)
+    (.write w "]")))
+
+(defmethod print Nothing [_ _])
 
 (defmethod print :default [^Object x, ^Writer w]
   (print-method x w))

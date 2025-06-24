@@ -14,7 +14,8 @@
   (:require [clojure.string :as str]
             [orchard.print :as print])
   (:import (mx.cider.orchard TruncatingStringWriter
-                             TruncatingStringWriter$TotalLimitExceeded)))
+                             TruncatingStringWriter$TotalLimitExceeded)
+           (orchard.print DiffColl)))
 
 (defn ^:private strip-ns
   "Given a (presumably qualified) ident, return an unqualified version
@@ -317,9 +318,17 @@
       (do
         (write writer reader-macro)
         (-pprint (second this) writer
-                 (update opts :indentation
-                         (fn [indentation] (str indentation " "))))))
+                 (update opts :indentation str " "))))
     (-pprint-coll this writer opts)))
+
+(defn ^:private -pprint-diff-coll
+  [^DiffColl this writer opts]
+  (if (meets-print-level? (:level opts))
+    (write writer "#")
+    (let [coll (cond-> (.coll this)
+                 print/*coll-show-only-diff* print/diff-coll-hide-equal-items)]
+      (write writer "#≠")
+      (-pprint coll writer (update opts :indentation str "  ")))))
 
 (extend-protocol PrettyPrintable
   nil
@@ -349,6 +358,10 @@
   clojure.lang.PersistentQueue
   (-pprint [this writer opts]
     (-pprint-coll (or (seq this) ()) writer opts))
+
+  DiffColl
+  (-pprint [this writer opts]
+    (-pprint-diff-coll this writer opts))
 
   Object
   (-pprint [this writer opts]

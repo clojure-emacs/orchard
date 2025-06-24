@@ -6,6 +6,7 @@
 - [#348](https://github.com/clojure-emacs/orchard/pull/348): Inspector: display length of inspected strings.
 - [#348](https://github.com/clojure-emacs/orchard/pull/348): Inspector: display class flags.
 - [#349](https://github.com/clojure-emacs/orchard/pull/349): Inspector: add ability to sort maps by key.
+- [#350](https://github.com/clojure-emacs/orchard/pull/350): Inspector: add diff mode and `orchard.inspect/diff`.
 
 ## 0.35.0 (2025-05-28)
 
