@@ -18,7 +18,8 @@
    [orchard.print :as print])
   (:import
    (java.lang.reflect Constructor Field Method Modifier)
-   (java.util Arrays List Map)))
+   (java.util Arrays List Map)
+   (orchard.print Diff DiffColl)))
 
 ;;
 ;; Navigating Inspector State
@@ -47,6 +48,7 @@
    :display-analytics-hint nil
    :analytics-size-cutoff  100000
    :sort-maps false
+   :only-diff false
    :pretty-print false})
 
 (defn- reset-render-state [inspector]
@@ -1038,6 +1040,27 @@
         (unindent)
         (unindent))))
 
+(defmethod inspect DiffColl [{:keys [only-diff] :as inspector} ^DiffColl obj]
+  (let [val (cond-> (.coll obj)
+              only-diff print/diff-coll-hide-equal-items)]
+    (-> inspector
+        (render-class-name val)
+        (render-counted-length val)
+        (render-section-header "Diff contents")
+        (indent)
+        (render-value-maybe-expand val)
+        (unindent))))
+
+(defmethod inspect Diff [inspector ^Diff obj]
+  (let [d1 (.d1 obj), d2 (.d2 obj)]
+    (-> inspector
+        (render-class-name obj)
+        (render-section-header "Diff")
+        (indent)
+        (render-labeled-value " Left" d1)
+        (render-labeled-value "Right" d2)
+        (unindent))))
+
 (defn ns-refers-by-ns [^clojure.lang.Namespace ns]
   (group-by (fn [^clojure.lang.Var v] (.ns v))
             (map val (ns-refers ns))))
@@ -1086,15 +1109,20 @@
           (unindent))
       inspector)))
 
-(defn render-view-mode [{:keys [value view-mode pretty-print] :as inspector}]
+(defn render-view-mode [{:keys [value view-mode pretty-print only-diff] :as inspector}]
   (if (some? value)
     (let [supported (filter #(view-mode-supported? inspector %) view-mode-order)
           add-circle #(if %2 (str "●" %1) %1)
+          diff? (print/diff-result? value)
           view-mode-str (str (->> supported
                                   (map #(add-circle (name %) (= % view-mode)))
                                   (str/join " "))
-                             " " (add-circle "pretty" pretty-print))]
-      (-> (render-section-header inspector "View mode (press 'v' to cycle, 'P' to pretty-print)")
+                             " " (add-circle "pretty" pretty-print)
+                             (when diff?
+                               (str " " (add-circle "only-diff" only-diff))))
+          caption (format "View mode (press 'v' to cycle, 'P' to pretty-print%s)"
+                          (if diff? ", 'D' to show only diffs" ""))]
+      (-> (render-section-header inspector caption)
           (indent)
           (render-indent view-mode-str)
           (unindent)))
@@ -1104,10 +1132,12 @@
   (seq (persistent! rendered)))
 
 (defn inspect-render
-  ([{:keys [max-atom-length max-value-length max-coll-size max-nested-depth value pretty-print]
+  ([{:keys [max-atom-length max-value-length max-coll-size max-nested-depth value
+            pretty-print only-diff]
      :as inspector}]
    (binding [print/*max-atom-length*  max-atom-length
              print/*max-total-length* max-value-length
+             print/*coll-show-only-diff* (boolean only-diff)
              *print-length*           max-coll-size
              *print-level*            (cond-> max-nested-depth
                                         ;; In pretty mode a higher *print-level*
@@ -1141,12 +1171,25 @@
          (assoc :view-mode (first (supported-view-modes inspector)))
          inspect-render))))
 
-(defn ^:deprecated clear
-  "If necessary, use `(start inspector nil) instead.`"
-  [inspector]
-  (start inspector nil))
+(defn diff
+  "Perform a recursive diff on two values and return a structure suitable to be
+  viewed with the inspector."
+  [d1 d2]
+  (cond (= d1 d2) d1
+        (not= (class d1) (class d2)) (print/->Diff d1 d2)
 
-(defn ^:deprecated fresh
-  "If necessary, use `(start nil)` instead."
-  []
-  (start nil))
+        (and (sequential? d1) (sequential? d2))
+        (let [n (max (count d1) (count d2))]
+          (->> (mapv #(diff (nth d1 % print/nothing) (nth d2 % print/nothing))
+                     (range n))
+               print/->DiffColl))
+
+        (and (map? d1) (map? d2))
+        (print/->DiffColl
+         (->> (concat (keys d1) (keys d2))
+              distinct
+              (mapv (fn [k]
+                      [k (diff (get d1 k print/nothing) (get d2 k print/nothing))]))
+              (into {})))
+
+        :else (print/->Diff d1 d2)))

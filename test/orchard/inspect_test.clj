@@ -101,7 +101,9 @@
 (defn- extend-nav-vector [m]
   (vary-meta m assoc 'clojure.core.protocols/nav (fn [coll k v] [k (get coll k v)])))
 
-(def inspect inspect/start)
+(defn inspect
+  [value & [config]]
+  (inspect/start config value))
 
 (defn render
   [inspector]
@@ -784,9 +786,8 @@
            [:newline]
            "  0. " [:value "[111111 2222 333 ...]" 1]
            [:newline]])
-         (-> (inspect/start {:max-atom-length 20
-                             :max-coll-size 3}
-                            [[111111 2222 333 44 5]])
+         (-> [[111111 2222 333 44 5]]
+             (inspect {:max-atom-length 20, :max-coll-size 3})
              render)))
   (testing "inspect respects :max-value-length configuration"
     (is+ (matchers/prefix
@@ -800,7 +801,8 @@
            [:newline]
            "  0. " [:value "(\"long value\" \"long value\" \"long value\" \"long valu..." 1]
            [:newline]])
-         (-> (inspect/start {:max-value-length 50} [(repeat "long value")])
+         (-> [(repeat "long value")]
+             (inspect {:max-value-length 50})
              render)))
 
   (testing "inspect respects :max-value-depth configuration"
@@ -815,7 +817,8 @@
            [:newline]
            "  0. " [:value "[[[[[[...]]]]]]" 1]
            [:newline]])
-         (-> (inspect/start {:max-nested-depth 5} [[[[[[[[[[1]]]]]]]]]])
+         (-> [[[[[[[[[[1]]]]]]]]]]
+             (inspect {:max-nested-depth 5})
              render))))
 
 (deftest inspect-java-hashmap-test
@@ -1363,7 +1366,7 @@
 (deftest object-view-mode-test
   (testing "in :object view-mode recognized objects are rendered as :default"
     (let [rendered (-> (list 1 2 3)
-                       (inspect/start)
+                       inspect
                        (inspect/set-view-mode :object)
                        render)]
       (is+ (matchers/prefix
@@ -1377,7 +1380,7 @@
            (section rendered "View mode")))
 
     (let [rendered (-> (atom "foo")
-                       (inspect/start)
+                       inspect
                        (inspect/set-view-mode :object)
                        render)]
       (is+ (matchers/prefix
@@ -1397,7 +1400,7 @@
           "  0. " [:value "2" pos?] [:newline]
           "  1. " [:value "3" pos?]]
          (-> (list 1 2 3)
-             (inspect/start)
+             inspect
              (inspect/set-view-mode :object)
              (inspect/down 13)
              render
@@ -1409,7 +1412,7 @@
                          {:a (- i)
                           :bb (str i i i)
                           :ccc (range i 0 -1)})
-                       (inspect/start)
+                       inspect
                        (inspect/set-view-mode :table)
                        render)]
       (is+ ["--- Contents:" [:newline] [:newline]
@@ -1433,7 +1436,7 @@
   (testing "in :table view-mode lists of vectors are rendered as tables"
     (let [rendered (-> (for [i (range 5)]
                          [(- i) (str i i i) (range i 0 -1)])
-                       (inspect/start)
+                       inspect
                        (inspect/set-view-mode :table)
                        render)]
       (is+ ["--- Contents:" [:newline] [:newline]
@@ -1456,7 +1459,7 @@
 
   (testing "breaks if table mode is requested for unsupported value"
     (is (thrown? Exception (-> {:a 1}
-                               (inspect/start)
+                               inspect
                                (inspect/set-view-mode :table)
                                render
                                contents-section))))
@@ -1470,7 +1473,7 @@
           "  | " [:value "2" pos?] " | " [:value "2" pos?] " | " [:value "2" pos?] " | " [:newline]
           "  ..."]
          (-> (map #(vector % %) (range 9))
-             (inspect/start)
+             inspect
              (set-page-size 3)
              (inspect/set-view-mode :table)
              render
@@ -1485,7 +1488,7 @@
           "  | " [:value "5" pos?] " | " [:value "5" pos?] " | " [:value "5" pos?] " | " [:newline]
           "  ..."]
          (-> (map #(vector % %) (range 9))
-             (inspect/start)
+             inspect
              (set-page-size 3)
              (inspect/next-page)
              (inspect/set-view-mode :table)
@@ -1500,7 +1503,7 @@
           "  | " [:value "7" pos?] " | " [:value "7" pos?] " | " [:value "7" pos?] " | " [:newline]
           "  | " [:value "8" pos?] " | " [:value "8" pos?] " | " [:value "8" pos?] " | "]
          (-> (map #(vector % %) (range 9))
-             (inspect/start)
+             inspect
              (set-page-size 3)
              (inspect/next-page)
              (inspect/next-page)
@@ -1510,7 +1513,7 @@
 
   (testing "map is not reported as table-viewable when paged"
     (is (not (-> (zipmap (range 100) (range))
-                 (inspect/start)
+                 inspect
                  (set-page-size 30)
                  (inspect/view-mode-supported? :table))))))
 
@@ -1591,7 +1594,7 @@
   (is+ :normal (-> (repeat 10 [1 2]) inspect inspect/toggle-view-mode inspect/toggle-view-mode inspect/toggle-view-mode :view-mode))
 
   (is+ "  ●normal table object ●pretty"
-       (-> (inspect {:pretty-print true} (repeat 10 [1 2])) render (section "View mode") last)))
+       (-> (repeat 10 [1 2]) (inspect {:pretty-print true}) render (section "View mode") last)))
 
 (deftest pretty-print-map-test
   (testing "in :pretty view-mode are pretty printed"
@@ -1601,7 +1604,7 @@
                         :d [{:a 0 :bb "000" :ccc [[]]}
                             {:a -1 :bb "111" :ccc [1]}
                             {:a 2 :bb "222" :ccc [1 2]}]}
-                       (inspect/start)
+                       inspect
                        (set-pretty-print true)
                        render)]
       (is+ ["--- Contents:" [:newline] "  "
@@ -1627,7 +1630,7 @@
                         :d [{:a 0 :bb "000" :ccc [[]]}
                             {:a -1 :bb "111" :ccc [1]}
                             {:a 2 :bb "222" :ccc [1 2]}]}
-                       (inspect/start)
+                       inspect
                        (inspect/set-view-mode :object)
                        (set-pretty-print true)
                        render)]
@@ -1645,7 +1648,7 @@
                                {:a (- i)
                                 :bb (str i i i)
                                 :ccc (range i 0 -1)})})
-                       (inspect/start)
+                       inspect
                        (set-pretty-print true)
                        render)]
       (is+ ["--- Contents:" [:newline]
@@ -1686,7 +1689,7 @@
                              {:a -2 :bb "222" :ccc [2 1]}
                              {:a -3 :bb "333" :ccc [3 2 1]}
                              {:a -4 :bb "444" :ccc [4 3 2 1]}]}}
-                       (inspect/start)
+                       inspect
                        (set-pretty-print true)
                        render)]
       (is+ ["--- Contents:" [:newline] "  "
@@ -1720,7 +1723,7 @@
                          :d [{:a 0 :bb "000" :ccc [[]]}
                              {:a -1 :bb "111" :ccc [1]}
                              {:a 2 :bb "222" :ccc [1 2]}]}}
-                       (inspect/start)
+                       inspect
                        (set-pretty-print true)
                        render)]
       (is+ ["--- Contents:" [:newline] "  "
@@ -1737,7 +1740,7 @@
            (section rendered "View mode")))))
 
 (deftest sort-maps-test
-  (testing "with :sort-map-keys enabled, may keys are sorted"
+  (testing "with :sort-map-keys enabled, map keys are sorted"
     (is+ (matchers/prefix
           ["--- Contents:" [:newline]
            "  " [:value "0" pos?] " = " [:value "0" pos?] [:newline]
@@ -1941,7 +1944,9 @@
   (testing "analytics hint is displayed if requested"
     (is+ ["--- Analytics:" [:newline]
           "  Press 'y' or M-x cider-inspector-display-analytics to analyze this value."]
-         (-> (inspect {:display-analytics-hint "true"} (range 100)) render
+         (-> (range 100)
+             (inspect {:display-analytics-hint "true"})
+             render
              (section "Analytics"))))
 
   (testing "analytics is shown when requested"
@@ -1964,3 +1969,110 @@
              inspect/display-analytics
              render
              (section "Analytics")))))
+
+(def data1 [{:tea/type "Jinxuan Oolong"
+             :tea/color "Green"
+             :tea/region "Alishan"
+             :aliases ["Milky Wulong" "Jinxuan"]
+             :temperature 80}
+            {:tea/type "Dong Ding"
+             :tea/region "Nantou"
+             :aliases ["Frozen summit" "Dongti" "Dong ding wulong"]}
+            "same string"
+            3])
+
+(def data2 [{:tea/type "Jinxuan Wulong"
+             :tea/color "Green"
+             :tea/region "Alishan"
+             :aliases ["Milky Wulong" "金宣" "Jinxuan"]
+             :temperature 75}
+            {:tea/type "Dong Ding"
+             :tea/region "Nantou"
+             :aliases ["Frozen summit" "Dongti" "Dong ding wulong"]
+             :temperature 85}
+            "same string"
+            4])
+
+(deftest diff-test
+  (let [rendered (-> (inspect/diff data1 data2)
+                     inspect
+                     render)]
+    (is+ ["--- Diff contents:" [:newline]
+          "  0. " [:value "#≠{:tea/type #±[\"Jinxuan Oolong\" ~~ \"Jinxuan Wulong\"], :tea/color \"Green\", :tea/region \"Alishan\", :aliases #≠[\"Milky Wulong\" #±[\"Jinxuan\" ~~ \"金宣\"] #±[ ~~ \"Jinxuan\"]], :temperature #±[80 ~~ 75]}" pos?] [:newline]
+          "  1. " [:value "#≠{:tea/type \"Dong Ding\", :tea/region \"Nantou\", :aliases [\"Frozen summit\" \"Dongti\" \"Dong ding wulong\"], :temperature #±[ ~~ 85]}" pos?] [:newline]
+          "  2. " [:value "\"same string\"" pos?] [:newline]
+          "  3. " [:value "#±[3 ~~ 4]" pos?]]
+         (section rendered "Diff"))
+
+    (is+ [string? [:newline] "  ●normal pretty only-diff"]
+         (section rendered "View mode")))
+
+  (is+ ["--- Diff contents:" [:newline]
+        "  " [:value ":tea/type" pos?] " = " [:value "#±[\"Jinxuan Oolong\" ~~ \"Jinxuan Wulong\"]" pos?] [:newline]
+        "  " [:value ":tea/color" pos?] " = " [:value "\"Green\"" pos?] [:newline]
+        "  " [:value ":tea/region" pos?] " = " [:value "\"Alishan\"" pos?] [:newline]
+        "  " [:value ":aliases" pos?] " = " [:value "#≠[\"Milky Wulong\" #±[\"Jinxuan\" ~~ \"金宣\"] #±[ ~~ \"Jinxuan\"]]" pos?] [:newline]
+        "  " [:value ":temperature" pos?] " = " [:value "#±[80 ~~ 75]" pos?]]
+       (-> (inspect/diff data1 data2)
+           inspect
+           (inspect/down 1)
+           render
+           (section "Diff")))
+
+  (is+ ["--- Diff:" [:newline]
+        "   Left: " [:value "\"Jinxuan Oolong\"" pos?] [:newline]
+        "  Right: " [:value "\"Jinxuan Wulong\"" pos?]]
+       (-> (inspect/diff data1 data2)
+           inspect
+           (inspect/down 1)
+           (inspect/down 2)
+           render
+           (section "Diff")))
+
+  (is+ ["--- Diff contents:" [:newline]
+        "  0. " [:value "\"Milky Wulong\"" pos?] [:newline]
+        "  1. " [:value "#±[\"Jinxuan\" ~~ \"金宣\"]" pos?] [:newline]
+        "  2. " [:value "#±[ ~~ \"Jinxuan\"]" 3]]
+       (-> (inspect/diff data1 data2)
+           inspect
+           (inspect/down 1)
+           (inspect/down 8)
+           render
+           (section "Diff")))
+
+  (testing "in :only-diff mode, render only differing subvalues"
+    (let [rendered (-> (inspect/diff data1 data2)
+                       (inspect {:only-diff true})
+                       render)]
+      (is+ ["--- Diff contents:" [:newline]
+            "  0. " [:value "#≠{:tea/type #±[\"Jinxuan Oolong\" ~~ \"Jinxuan Wulong\"], :aliases #≠[ #±[\"Jinxuan\" ~~ \"金宣\"] #±[ ~~ \"Jinxuan\"]], :temperature #±[80 ~~ 75]}" pos?] [:newline]
+            "  1. " [:value "#≠{:temperature #±[ ~~ 85]}" pos?] [:newline]
+            "  2. " [:value "" pos?] [:newline]
+            "  3. " [:value "#±[3 ~~ 4]" pos?]]
+           (section rendered "Diff"))
+
+      (is+ [string? [:newline] "  ●normal pretty ●only-diff"]
+           (section rendered "View mode")))
+
+    (is+ ["--- Diff contents:" [:newline]
+          "  " [:value ":tea/type" pos?] " = " [:value "#±[\"Jinxuan Oolong\" ~~ \"Jinxuan Wulong\"]" pos?] [:newline]
+          "  " [:value ":aliases" pos?] " = " [:value "#≠[ #±[\"Jinxuan\" ~~ \"金宣\"] #±[ ~~ \"Jinxuan\"]]" pos?] [:newline]
+          "  " [:value ":temperature" pos?] " = " [:value "#±[80 ~~ 75]" pos?]]
+         (-> (inspect/diff data1 data2)
+             (inspect {:only-diff true})
+             (inspect/down 1)
+             render
+             (section "Diff"))))
+
+  (testing "works with :pretty-print"
+    (is+ ["--- Diff contents:" [:newline]
+          "  0. " [:value "#≠{:tea/type #±[\"Jinxuan Oolong\" ~~ \"Jinxuan Wulong\"],
+        :aliases #≠[ #±[\"Jinxuan\" ~~ \"金宣\"] #±[ ~~ \"Jinxuan\"]],
+        :temperature #±[80 ~~ 75]}" pos?] [:newline]
+          "  1. " [:value "#≠{:temperature #±[ ~~ 85]}" pos?] [:newline]
+          "  2. " [:value "" pos?] [:newline]
+          "  3. " [:value "#±[3 ~~ 4]" pos?]]
+         (-> (inspect/diff data1 data2)
+             (inspect {:only-diff true, :pretty-print true})
+             render
+             (section "Diff")))))
