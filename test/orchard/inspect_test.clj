@@ -51,7 +51,7 @@
    [:newline]
    "  " [:value ":f" 7] " = " [:value "[2 3]" 8]
    [:newline] [:newline]
-   #"--- View mode" [:newline] "  ●normal object pretty"])
+   #"--- View mode" [:newline] "  ●normal object pretty sort-maps"])
 
 (def long-sequence (range 70))
 (def long-vector (vec (range 70)))
@@ -1376,7 +1376,7 @@
              "  " [:value "_first" pos?] " = " [:value "1" pos?] [:newline]
              "  " [:value "_hash" pos?] " = " [:value "0" pos?] [:newline]])
            (section rendered "Instance fields"))
-      (is+ [#"--- View mode" [:newline] "  normal ●object pretty"]
+      (is+ [#"--- View mode" [:newline] "  normal ●object pretty sort-maps"]
            (section rendered "View mode")))
 
     (let [rendered (-> (atom "foo")
@@ -1391,7 +1391,7 @@
              "  " [:value "validator" pos?] " = " [:value "nil" pos?] [:newline]
              "  " [:value "watches" pos?] " = " [:value "{}" pos?]])
            (section rendered "Instance fields"))
-      (is+ [#"--- View mode" [:newline] "  normal ●object pretty"]
+      (is+ [#"--- View mode" [:newline] "  normal ●object pretty sort-maps"]
            (section rendered "View mode"))))
 
   (testing "navigating away from an object changes the view mode back to normal"
@@ -1430,7 +1430,7 @@
             "  | " [:value "4" pos?] " | " [:value "-4" pos?] " | "
             [:value "\"444\"" pos?] " | " [:value "(4 3 2 1)" pos?] " | "]
            (contents-section rendered))
-      (is+ [#"--- View mode" [:newline] "  normal ●table object pretty"]
+      (is+ [#"--- View mode" [:newline] "  normal ●table object pretty sort-maps"]
            (section rendered "View mode"))))
 
   (testing "in :table view-mode lists of vectors are rendered as tables"
@@ -1454,7 +1454,7 @@
             "  | " [:value "4" pos?] " | " [:value "-4" pos?] " | "
             [:value "\"444\"" pos?] " | " [:value "(4 3 2 1)" pos?] " | "]
            (contents-section rendered))
-      (is+ [#"--- View mode" [:newline] "  normal ●table object pretty"]
+      (is+ [#"--- View mode" [:newline] "  normal ●table object pretty sort-maps"]
            (section rendered "View mode"))))
 
   (testing "breaks if table mode is requested for unsupported value"
@@ -1532,7 +1532,7 @@
             "  0x00000050 │ 50 51 52 53 54 55 56 57  58 59 5a 5b 5c 5d 5e 5f │ PQRSTUVWXYZ[\\]^_" [:newline]
             "  0x00000060 │ 60 61 62 63                                      │ `abc"]
            (contents-section rendered))
-      (is+ [#"--- View mode" [:newline] "  ●hex normal object pretty"]
+      (is+ [#"--- View mode" [:newline] "  ●hex normal object pretty sort-maps"]
            (section rendered "View mode"))))
 
   (testing "works with paging"
@@ -1580,20 +1580,20 @@
 
 (deftest toggle-view-mode-test
   (is+ :normal (-> (repeat 10 [1 2]) inspect :view-mode))
-  (is+ "  ●normal table object pretty"
+  (is+ "  ●normal table object pretty sort-maps"
        (-> (repeat 10 [1 2]) inspect render (section "View mode") last))
 
   (is+ :table (-> (repeat 10 [1 2]) inspect inspect/toggle-view-mode :view-mode))
-  (is+ "  normal ●table object pretty"
+  (is+ "  normal ●table object pretty sort-maps"
        (-> (repeat 10 [1 2]) inspect inspect/toggle-view-mode render (section "View mode") last))
 
   (is+ :object (-> (repeat 10 [1 2]) inspect inspect/toggle-view-mode inspect/toggle-view-mode :view-mode))
-  (is+ "  normal table ●object pretty"
+  (is+ "  normal table ●object pretty sort-maps"
        (-> (repeat 10 [1 2]) inspect inspect/toggle-view-mode inspect/toggle-view-mode render (section "View mode") last))
 
   (is+ :normal (-> (repeat 10 [1 2]) inspect inspect/toggle-view-mode inspect/toggle-view-mode inspect/toggle-view-mode :view-mode))
 
-  (is+ "  ●normal table object ●pretty"
+  (is+ "  ●normal table object ●pretty sort-maps"
        (-> (repeat 10 [1 2]) (inspect {:pretty-print true}) render (section "View mode") last)))
 
 (deftest pretty-print-map-test
@@ -1619,7 +1619,7 @@
                          "        {:a -1, :bb \"111\", :ccc [1]}\n"
                          "        {:a 2, :bb \"222\", :ccc [1 2]}]") 8]]
            (contents-section rendered))
-      (is+ [#"--- View mode" [:newline] "  ●normal object ●pretty"]
+      (is+ [#"--- View mode" [:newline] "  ●normal object ●pretty sort-maps"]
            (section rendered "View mode")))))
 
 (deftest pretty-print-map-in-object-view-test
@@ -1668,7 +1668,7 @@
                          ":ccc (3 2 1)}\n       {:a -4, :bb \"444\", "
                          ":ccc (4 3 2 1)})}") 2]]
            (contents-section rendered))
-      (is+ [#"--- View mode" [:newline] "  ●normal table object ●pretty"]
+      (is+ [#"--- View mode" [:newline] "  ●normal table object ●pretty sort-maps"]
            (section rendered "View mode")))))
 
 (deftest pretty-print-map-as-key-test
@@ -1706,7 +1706,7 @@
                          "\"333\", :ccc [3 2 1]}\n    {:a -4, :bb "
                          "\"444\", :ccc [4 3 2 1]}]}") 2]]
            (contents-section rendered))
-      (is+ [#"--- View mode" [:newline] "  ●normal object ●pretty"]
+      (is+ [#"--- View mode" [:newline] "  ●normal object ●pretty sort-maps"]
            (section rendered "View mode")))))
 
 (deftest pretty-print-seq-of-map-as-key-test
@@ -1736,22 +1736,25 @@
                          ":bb \"111\", :ccc [1]}\n    {:a 2, :bb \"222\", "
                          ":ccc [1 2]}]}") 2]]
            (contents-section rendered))
-      (is+ [#"--- View mode" [:newline] "  ●normal object ●pretty"]
+      (is+ [#"--- View mode" [:newline] "  ●normal object ●pretty sort-maps"]
            (section rendered "View mode")))))
 
 (deftest sort-maps-test
   (testing "with :sort-map-keys enabled, map keys are sorted"
-    (is+ (matchers/prefix
-          ["--- Contents:" [:newline]
-           "  " [:value "0" pos?] " = " [:value "0" pos?] [:newline]
-           "  " [:value "1" pos?] " = " [:value "1" pos?] [:newline]
-           "  " [:value "2" pos?] " = " [:value "2" pos?] [:newline]
-           "  " [:value "3" pos?] " = " [:value "3" pos?] [:newline]])
-         (-> (zipmap (range 100) (range 100))
-             inspect
-             (inspect/refresh {:sort-maps true})
-             render
-             contents-section)))
+    (let [rendered (-> (zipmap (range 100) (range 100))
+                       inspect
+                       (inspect/refresh {:sort-maps true})
+                       render)]
+      (is+ (matchers/prefix
+            ["--- Contents:" [:newline]
+             "  " [:value "0" pos?] " = " [:value "0" pos?] [:newline]
+             "  " [:value "1" pos?] " = " [:value "1" pos?] [:newline]
+             "  " [:value "2" pos?] " = " [:value "2" pos?] [:newline]
+             "  " [:value "3" pos?] " = " [:value "3" pos?] [:newline]])
+           (contents-section rendered))
+
+      (is+ [#"--- View mode" [:newline] "  ●normal object pretty ●sort-maps"]
+           (section rendered "View mode"))))
 
   (testing "works if map is smaller than page size"
     (is+ ["--- Contents:" [:newline]
@@ -2004,7 +2007,7 @@
           "  3. " [:value "#±[3 ~~ 4]" pos?]]
          (section rendered "Diff"))
 
-    (is+ [string? [:newline] "  ●normal pretty only-diff"]
+    (is+ [string? [:newline] "  ●normal pretty sort-maps only-diff"]
          (section rendered "View mode")))
 
   (is+ ["--- Diff contents:" [:newline]
@@ -2051,7 +2054,7 @@
             "  3. " [:value "#±[3 ~~ 4]" pos?]]
            (section rendered "Diff"))
 
-      (is+ [string? [:newline] "  ●normal pretty ●only-diff"]
+      (is+ [string? [:newline] "  ●normal pretty sort-maps ●only-diff"]
            (section rendered "View mode")))
 
     (is+ ["--- Diff contents:" [:newline]

@@ -1109,7 +1109,7 @@
           (unindent))
       inspector)))
 
-(defn render-view-mode [{:keys [value view-mode pretty-print only-diff] :as inspector}]
+(defn render-view-mode [{:keys [value view-mode pretty-print sort-maps only-diff] :as inspector}]
   (if (some? value)
     (let [supported (filter #(view-mode-supported? inspector %) view-mode-order)
           add-circle #(if %2 (str "●" %1) %1)
@@ -1118,9 +1118,10 @@
                                   (map #(add-circle (name %) (= % view-mode)))
                                   (str/join " "))
                              " " (add-circle "pretty" pretty-print)
+                             " " (add-circle "sort-maps" sort-maps)
                              (when diff?
                                (str " " (add-circle "only-diff" only-diff))))
-          caption (format "View mode (press 'v' to cycle, 'P' to pretty-print%s)"
+          caption (format "View mode (press 'v' to cycle, 'P' to pretty-print, 'S' to sort maps%s)"
                           (if diff? ", 'D' to show only diffs" ""))]
       (-> (render-section-header inspector caption)
           (indent)
