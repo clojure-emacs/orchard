@@ -38,7 +38,7 @@
       (if (and (< i limit) (.hasNext it))
         (let [x (.next it)]
           (recur (inc i) (inc-if n (pred x))))
-        [n (/ n i)]))))
+        [n (if (pos? i) (/ n i) 0.0)]))))
 
 (defn- bounded-count [limit coll]
   (first (count-pred (constantly true) limit coll)))
@@ -138,10 +138,14 @@
   (when (list-of-tuples? coll)
     (let [cnt (bounded-count *size-cutoff* coll)
           all (into [] (take *size-cutoff*) coll)
-          longest (min 20 (apply max (map count all)))]
+          longest (->> all
+                       (keep #(when (instance? List %) (bounded-count 20 %)))
+                       (apply max)
+                       (min 20))]
       (non-nil-hmap
        :cutoff? (when (>= cnt *size-cutoff*) true)
        :count cnt
+       :types (*frequencies (map type coll))
        :tuples (mapv (fn [i]
                        (basic-list-stats
                         (mapv #(when (vector? %) (nth % i nil)) all)
@@ -155,6 +159,7 @@
       (non-nil-hmap
        :cutoff? (when (>= cnt *size-cutoff*) true)
        :count cnt
+       :types (*frequencies (map type coll))
        :by-key (into {}
                      (for [k ks]
                        (let [kcoll (mapv #(get % k) coll)]
