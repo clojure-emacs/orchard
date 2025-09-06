@@ -143,6 +143,9 @@
        (partition 2 1)
        (map (fn [[frame parent]]
               (if (or (= (:name frame) (:name parent))
+                      ;; Deduplicate demunged function names
+                      (and (:fn frame)
+                           (= (:fn frame) (:fn parent)))
                       (and (= (:file frame) (:file parent))
                            (= (:line frame) (:line parent))))
                 (flag-frame parent :dup)

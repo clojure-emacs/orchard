@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+- [#353](https://github.com/clojure-emacs/orchard/pull/353): Stacktrace: flag Clojure functions as duplicate.
+
 ## 0.36.0 (2025-06-29)
 
 - [#346](https://github.com/clojure-emacs/orchard/pull/346): Inspector: only show those datafied collection items that have unique datafy represantation.

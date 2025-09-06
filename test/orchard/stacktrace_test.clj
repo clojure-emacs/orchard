@@ -4,9 +4,8 @@
    [clojure.string :as str]
    [clojure.test :refer [are deftest is testing]]
    [matcher-combinators.matchers :as matchers]
-   [orchard.stacktrace :as sut]))
-
-(require 'matcher-combinators.test) ;; for `match?`
+   [orchard.stacktrace :as sut]
+   [orchard.test.util :refer [is+]]))
 
 ;; # Utils
 
@@ -61,16 +60,16 @@
 
 (deftest spec-assert-stacktrace-test
   (testing "Spec assert components"
-    (is (match? [{:stacktrace some?
-                  :message some?
-                  :spec {:spec some?
-                         :value string?
-                         :problems [{:in some?
-                                     :val some?
-                                     :predicate some?
-                                     :spec some?
-                                     :at some?}]}}]
-                spec-causes))))
+    (is+ [{:stacktrace some?
+           :message some?
+           :spec {:spec some?
+                  :value string?
+                  :problems [{:in some?
+                              :val some?
+                              :predicate some?
+                              :spec some?
+                              :at some?}]}}]
+         spec-causes)))
 
 (deftest stacktrace-frames-test
   (testing "File types"
@@ -79,26 +78,24 @@
     (is (= #{:clj :java} (set (map :type frames2)))))
 
   (testing "Full file mappings"
-    (is (match?
-         (matchers/seq-of {:file-url #".+!/clojure/core.clj$"})
-         (filter #(= "clojure.core" (:ns %)) frames1)))
-    (is (match?
-         (matchers/seq-of {:file-url #"^file:/.+"})
-         (filter #(some->> (:ns %) (re-find #"^orchard")) frames1))))
+    (is+ (matchers/seq-of {:file-url #".+!/clojure/core.clj$"})
+         (filter #(= "clojure.core" (:ns %)) frames1))
+    (is+ (matchers/seq-of {:file-url #"^file:/.+"})
+         (filter #(some->> (:ns %) (re-find #"^orchard")) frames1)))
 
   (testing "Clojure ns, fn, and var"
     ;; All Clojure frames should have non-nil :ns :fn and :var attributes.
-    (is (match? (matchers/seq-of {:ns some?, :fn some?, :var some?})
-                (filter #(= :clj (:type %)) frames1)))
-    (is (match? (matchers/seq-of {:ns some?, :fn some?, :var some?})
-                (filter #(= :clj (:type %)) frames2))))
+    (is+ (matchers/seq-of {:ns some?, :fn some?, :var some?})
+         (filter #(= :clj (:type %)) frames1))
+    (is+ (matchers/seq-of {:ns some?, :fn some?, :var some?})
+         (filter #(= :clj (:type %)) frames2)))
 
   (testing "Clojure name demunging"
     ;; Clojure fn names should be free of munging characters.
-    (is (match? (matchers/seq-of {:fn (matchers/mismatch #"[_$]|(--\d+)")})
-                (filter :fn frames1)))
-    (is (match? (matchers/seq-of {:fn (matchers/mismatch #"[_$]|(--\d+)")})
-                (filter :fn frames2)))))
+    (is+ (matchers/seq-of {:fn (matchers/mismatch #"[_$]|(--\d+)")})
+         (filter :fn frames1))
+    (is+ (matchers/seq-of {:fn (matchers/mismatch #"[_$]|(--\d+)")})
+         (filter :fn frames2))))
 
 (deftest stacktrace-frame-flags-test
   (testing "Flags"
@@ -118,18 +115,16 @@
     (testing "for project"
       (is (seq (filter (comp :project :flags) frames4))))
 
-    (testing "for duplicate frames"
-      ;; Index frames. For all frames flagged as :dup, the frame above it in
-      ;; the stack (index i - 1) should be substantially the same source info.
-      (let [ixd1 (zipmap (iterate inc 0) frames1)
-            ixd2 (zipmap (iterate inc 0) frames2)
-            dup? #(or (= (:name %1) (:name %2))
-                      (and (= (:file %1) (:file %2))
-                           (= (:line %1) (:line %2))))]
-        (is (every? (fn [[i v]] (dup? v (get ixd1 (dec ^long i))))
-                    (filter (comp :dup :flags val) ixd1)))
-        (is (every? (fn [[i v]] (dup? v (get ixd2 (dec ^long i))))
-                    (filter (comp :dup :flags val) ixd2)))))))
+    (testing "flags duplicate fns even if method names differ"
+      (is+ [{:fn "foo", :flags (matchers/mismatch (matchers/embeds #{:dup}))}
+            {:fn "foo", :flags (matchers/embeds #{:dup})}
+            {:fn "eval12444", :flags (matchers/mismatch (matchers/embeds #{:dup}))}
+            {:fn "eval12444", :flags (matchers/embeds #{:dup})}]
+           (#'sut/analyze-stacktrace-data
+            '[[orchard.stacktrace_test$foo invokeStatic "NO_SOURCE_FILE" 376]
+              [orchard.stacktrace_test$foo invoke "NO_SOURCE_FILE" 375]
+              [orchard.stacktrace_test$eval12444 invokeStatic "NO_SOURCE_FILE" 378]
+              [orchard.stacktrace_test$eval12444 invoke "NO_SOURCE_FILE" 378]])))))
 
 (deftest exception-causes-test
   (testing "Exception cause unrolling"
@@ -142,8 +137,8 @@
 
 (deftest compilation-errors-test
   (testing "first cause of compiler exception looks like this"
-    (is (match? #"Syntax error compiling at \(.*orchard/stacktrace_test\.clj:"
-                (:message (first causes3)))))
+    (is+ {:message #"Syntax error compiling at \(.*orchard/stacktrace_test\.clj:"}
+         (first causes3)))
 
   (testing "extract-location with location-data already present"
     (is (= {:class    "clojure.lang.Compiler$CompilerException"
@@ -188,8 +183,7 @@
 
 (deftest test-analyze-throwable
   (testing "shape of analyzed throwable"
-    (is (match?
-         [;; first cause
+    (is+ [;; first cause
           {:class "clojure.lang.ExceptionInfo"
            :message "BOOM-1"
            :data "{:boom \"1\"}"
@@ -253,16 +247,16 @@
              [clojure.lang.Compiler$InvokeExpr eval "Compiler.java" 3705]]
             :cause "BOOM-3"
             :data {:boom "3"}
-            :stacktrace-type :throwable}))))
+            :stacktrace-type :throwable})))
 
   (testing "Includes a `:phase` for the causes that include it"
-    (is (match? [{:phase :macro-syntax-check}
-                 {:phase nil}]
-                (catch-and-analyze (eval '(let [1]))))))
+    (is+ [{:phase :macro-syntax-check}
+          {:phase nil}]
+         (catch-and-analyze (eval '(let [1])))))
 
   (testing "Does not include `:phase` for vanilla runtime exceptions"
-    (is (match? [{:phase nil}]
-                (catch-and-analyze (throw (ex-info "" {})))))))
+    (is+ [{:phase nil}]
+         (catch-and-analyze (throw (ex-info "" {}))))))
 
 (deftest tooling-frame-name?
   (are [frame-name] (true? (#'sut/tooling-frame-name? frame-name))
