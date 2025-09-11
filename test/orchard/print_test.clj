@@ -156,3 +156,29 @@
 (deftest print-custom-print-method
   (is (= "hello"
          (sut/print-str (with-meta (->TestRecord 1 2 3 4) {:type ::custom-rec})))))
+
+(deftest qualified-keywords-compaction
+  (are [kw repr] (= repr (sut/print-str kw))
+    :foo     ":foo"
+    :foo/bar ":foo/bar"
+    ::foo    ":orchard.print-test/foo"
+    ::t/foo  ":clojure.test/foo")
+  (is (= ":foo" (sut/print-str :foo)))
+  (is (= ":foo/bar" (sut/print-str :foo/bar)))
+  (is (= ":orchard.print-test/foo" (sut/print-str ::foo)))
+  (is (= ":clojure.test/foo" (sut/print-str :clojure.test/foo)))
+
+  (testing "binding *pov-ns* enables keyword compaction"
+    (binding [sut/*pov-ns* (find-ns 'orchard.print-test)]
+      (are [kw repr] (= repr (sut/print-str kw))
+        :foo             ":foo"
+        :foo/bar         ":foo/bar"
+        ::foo            "::foo"
+        ::t/foo          "::t/foo"
+        :clojure.set/foo ":clojure.set/foo")))
+
+  (testing "from other pov NS the printing will be different"
+    (binding [sut/*pov-ns* (create-ns 'throwaway)]
+      (are [kw repr] (= repr (sut/print-str kw))
+        ::foo    ":orchard.print-test/foo"
+        ::t/foo          ":clojure.test/foo"))))
