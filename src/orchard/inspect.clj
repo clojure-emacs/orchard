@@ -49,7 +49,8 @@
    :analytics-size-cutoff  100000
    :sort-maps false
    :only-diff false
-   :pretty-print false})
+   :pretty-print false
+   :pov-ns nil})
 
 (defn- reset-render-state [inspector]
   (-> inspector
@@ -1134,11 +1135,12 @@
 
 (defn inspect-render
   ([{:keys [max-atom-length max-value-length max-coll-size max-nested-depth value
-            pretty-print only-diff]
+            pretty-print only-diff pov-ns]
      :as inspector}]
    (binding [print/*max-atom-length*  max-atom-length
              print/*max-total-length* max-value-length
              print/*coll-show-only-diff* (boolean only-diff)
+             print/*pov-ns*           (some-> pov-ns find-ns)
              *print-length*           max-coll-size
              *print-level*            (cond-> max-nested-depth
                                         ;; In pretty mode a higher *print-level*

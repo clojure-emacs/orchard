@@ -1777,6 +1777,18 @@
              render
              contents-section))))
 
+(deftest compact-keywords-test
+  (testing "when :pov-ns is passed, use it to compact qualified keywords"
+    (is+ ["--- Contents:" [:newline]
+          "  " [:value "::foo" pos?] " = " [:value "1" pos?] [:newline]
+          "  " [:value "::str/bar" pos?] " = " [:value "2" pos?] [:newline]
+          "  " [:value "::walk/baz" pos?] " = " [:value "3" pos?]]
+         (-> {::foo 1
+              ::str/bar 2
+              :clojure.walk/baz 3}
+             (inspect {:pov-ns 'orchard.inspect-test})
+             render contents-section))))
+
 (deftest tap-test
   (testing "tap-current-value"
     (let [proof (atom [])
