@@ -8,6 +8,7 @@
   {:author "Oleksandr Yakushev"
    :added "0.24"}
   (:refer-clojure :exclude [print print-str])
+  (:require [clojure.string :as str])
   (:import
    (clojure.core Eduction)
    (clojure.lang AFunction Compiler IDeref IPending IPersistentMap MultiFn
@@ -16,8 +17,7 @@
    (java.io Writer)
    (java.util List Map Map$Entry)
    (mx.cider.orchard TruncatingStringWriter
-                     TruncatingStringWriter$TotalLimitExceeded))
-  (:require [clojure.string :as str]))
+                     TruncatingStringWriter$TotalLimitExceeded)))
 
 (defmulti print
   (fn [x _]
@@ -28,8 +28,8 @@
       (instance? String x)            :string
       (instance? Double x)            :double
       (instance? Number x)            :scalar
-      (instance? Keyword x)           :scalar
       (instance? Symbol x)            :scalar
+      (instance? Keyword x)           :keyword
       (instance? IRecord x)           :record
       (instance? Map x)               :map
       (instance? IPersistentVector x) :vector
@@ -51,6 +51,13 @@
 (def ^:dynamic *coll-show-only-diff*
   "When displaying collection diffs, whether to hide matching values."
   false)
+
+(def ^:dynamic *pov-ns*
+  "The \"point-of-view namespace\" for the printer. When bound to a namespace
+  object, use this namespace data to shorten qualified keywords:
+  - print `::foo` instead of `:pov.ns/foo`
+  - print `::alias/foo` instead of `:ns.aliases.in.pov.ns/foo`"
+  nil)
 
 (defn- print-coll-item
   "Print an item in the context of a collection. When printing a map, don't print
@@ -113,6 +120,22 @@
 
 (defmethod print :scalar [^Object x, ^Writer w]
   (.write w (.toString x)))
+
+(defmethod print :keyword [^Keyword kw, ^Writer w]
+  (if-some [kw-ns (and *pov-ns* (namespace kw))]
+    (if (= kw-ns (name (ns-name *pov-ns*)))
+      (do (.write w "::")
+          (.write w (name kw)))
+      (if-some [matched-alias (some (fn [[alias ns]]
+                                      (when (= kw-ns (name (ns-name ns)))
+                                        alias))
+                                    (ns-aliases *pov-ns*))]
+        (do (.write w "::")
+            (.write w (name matched-alias))
+            (.write w "/")
+            (.write w (name kw)))
+        (.write w (.toString kw))))
+    (.write w (.toString kw))))
 
 (defmethod print :double [x, ^Writer w]
   (cond (= Double/POSITIVE_INFINITY x) (.write w "##Inf")
