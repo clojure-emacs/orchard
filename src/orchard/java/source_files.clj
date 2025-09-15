@@ -89,13 +89,15 @@
 (defn- locate-source-url-in-jdk-sources
   "Try to find the source file for `klass` in sources included with JDK."
   ^URL [^Class klass]
-  ;; Heuristic: JDK classes have `nil` classloader.
-  (when (and @jdk-sources (nil? (.getClassLoader klass)))
+  ;; JDK classes belong to a boot module on JDK11+, and source parsing doesn't
+  ;; work for JDK8 anyway.
+  (when (and @jdk-sources (compat/is-in-boot-module? klass))
     (let [source-file (class->sourcefile-path klass)]
       (-> (combine-archive-url @jdk-sources source-file)
           verify-url-readable))))
 
 #_(locate-source-url-in-jdk-sources Thread)
+#_(locate-source-url-in-jdk-sources java.sql.Connection)
 
 (defn- parse-jar-path-from-url [^URL url]
   (when-let [[_ path] (some->> url .getFile (re-matches #"file:(.+\.jar)!.*"))]

@@ -16,6 +16,18 @@
   [class-or-sym]
   (module-name-macro class-or-sym))
 
+(defmacro ^:private contains-in-boot-modules-macro [class]
+  ;; On JDK8, always return nil.
+  (when (>= misc/java-api-version 11)
+    `(let [^Class klass# ~class]
+       (when-some [module# (some-> klass# .getModule)]
+         (.contains (.modules (java.lang.ModuleLayer/boot)) module#)))))
+
+(defn is-in-boot-module?
+  "Return true if the class belongs to a module that is among boot modules."
+  [class]
+  (contains-in-boot-modules-macro class))
+
 (defmacro get-field-value-macro [field obj]
   (if (>= misc/java-api-version 11)
     `(try (if (or (.canAccess ~field ~obj)
