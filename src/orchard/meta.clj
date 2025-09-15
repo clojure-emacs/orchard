@@ -132,7 +132,7 @@
         [_ wo-method] (re-matches #"(.+?)(?:\.(?:invoke|invokeStatic|doInvoke))?"
                                   demunged)
         [ns-str name-str] (->> (str/split wo-method #"/")
-                               (remove #(re-matches #"eval\d+" %)))
+                               (remove #(re-matches #"fn|eval\d+" %)))
         ns (some-> ns-str symbol find-ns)
         resolved (when (and ns name-str)
                    (ns-resolve ns (symbol name-str)))]
