@@ -196,18 +196,14 @@
 (closed-over)
 
 (deftest info-munged-printed-var-test
-  (is (= 'str
-         (:name (info/info 'orchard.test-ns 'clojure.core$str))))
-  (is (= 'str
-         (:name (info/info 'orchard.test-ns 'clojure.core$str.invoke))))
-  (is (= 'str
-         (:name (info/info 'orchard.test-ns 'clojure.core$str$fn__12.doInvoke))))
-  (is (= 'str
-         (:name (info/info 'orchard.test-ns (symbol "clojure.core/str/fn--12")))))
-  (is (= 'closed-over
-         (:name (info/info 'orchard.test-ns 'orchard.info_test$eval17939$closed_over__17940.invokeStatic))))
-  (is (= 'closed-over
-         (:name (info/info 'orchard.test-ns (symbol "orchard.info-test/eval17939/closed_over--17940"))))))
+  (are [input result] (= result (:name (info/info  'orchard.test-ns input)))
+    'clojure.core$str                                            'str
+    'clojure.core$str.invoke                                     'str
+    'clojure.core$str$fn__12.doInvoke                            'str
+    (symbol "clojure.core/str/fn--12")                           'str
+    'orchard.info_test$eval17939$closed_over__17940.invokeStatic 'closed-over
+    (symbol "orchard.info-test/eval17939/closed_over--17940")    'closed-over
+    (symbol "orchard.info/eval123456/fn__123.invoke")            nil))
 
 (deftest info-unqualified-sym-and-namespace-test
   (testing "Resolution from current namespace"
