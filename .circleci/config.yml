@@ -54,7 +54,7 @@ commands:
       files:
         description: Files to consider when creating the cache key
         type: string
-        default: "deps.edn project.clj"
+        default: "deps.edn project.clj download-jdk-sources.sh"
       cache_version:
         type: string
         description: "Key used to identify unique cache"

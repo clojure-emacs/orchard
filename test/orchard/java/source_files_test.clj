@@ -7,7 +7,8 @@
 (when util/jdk-sources-present?
   (deftest class->source-file-url-test
     (is (src-files/class->source-file-url mx.cider.orchard.LruMap)) ;; classpath
-    (is (src-files/class->source-file-url Thread))                  ;; JDK
+    (is (src-files/class->source-file-url Thread)) ;; JDK
+    (is (src-files/class->source-file-url java.sql.Connection)) ;; JDK other module
     (is (src-files/class->source-file-url clojure.lang.PersistentVector)) ;; Clojure
     (is (nil? (src-files/class->source-file-url clojure.core.Eduction))))) ;; record
 
