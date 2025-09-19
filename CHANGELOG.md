@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+## 0.37.0 (2025-09-19)
+
 - [#353](https://github.com/clojure-emacs/orchard/pull/353): Stacktrace: flag Clojure functions as duplicate.
 - [#355](https://github.com/clojure-emacs/orchard/pull/355): Java: resolve source files for non-base JDK classes.
 - [#354](https://github.com/clojure-emacs/orchard/pull/354): Inspector: add support for printing compact qualified keywords.
