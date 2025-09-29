@@ -29,9 +29,9 @@ executors:
     docker:
       - image: clojure:temurin-21-lein-2.12.0-noble
     <<: *defaults
-  jdk24:
+  jdk25:
     docker:
-      - image: clojure:temurin-24-lein-2.12.0-noble
+      - image: clojure:temurin-25-lein-2.12.0-noble
     <<: *defaults
 
 # Runs a given set of steps, with some standard pre- and post-
@@ -81,7 +81,7 @@ commands:
             - base-src-jdk11.zip
             - base-src-jdk17.zip
             - base-src-jdk21.zip
-            - base-src-jdk24.zip
+            - base-src-jdk25.zip
           key: cache-<< parameters.cache_version >>-{{ checksum "/tmp/clojure_cache_seed" }}
 
   setup-windows:
@@ -98,7 +98,7 @@ jobs:
       clojure_version:
         type: string
         default: "1.12"
-    executor: jdk24
+    executor: jdk25
     environment:
       CLOJURE_VERSION: << parameters.clojure_version >>
       TEST_PROFILES: "-user,-dev,+test,+cljs"
@@ -184,7 +184,7 @@ workflows:
           matrix:
             alias: "test"
             parameters:
-              jdk_version: [jdk8, jdk11, jdk17, jdk21, jdk24]
+              jdk_version: [jdk8, jdk11, jdk17, jdk21, jdk25]
               clojure_version: ["1.10", "1.11", "1.12"]
           <<: *run_always
       - test:
@@ -192,7 +192,7 @@ workflows:
           matrix:
             alias: "test_no_extra_deps"
             parameters:
-              jdk_version: [jdk24]
+              jdk_version: [jdk25]
               clojure_version: ["1.12"]
               command: ["test-no-extra-deps"]
           <<: *run_always
