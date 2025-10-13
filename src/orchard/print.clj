@@ -13,9 +13,9 @@
    (clojure.core Eduction)
    (clojure.lang AFunction Compiler IDeref IPending IPersistentMap MultiFn
                  IPersistentSet IPersistentVector IRecord Keyword Namespace
-                 Symbol TaggedLiteral Var)
+                 RT Symbol TaggedLiteral Var)
    (java.io Writer)
-   (java.util List Map Map$Entry)
+   (java.util Iterator List Map Map$Entry)
    (mx.cider.orchard TruncatingStringWriter
                      TruncatingStringWriter$TotalLimitExceeded)))
 
@@ -78,8 +78,11 @@
      (when-not (nil? level)
        (set! *print-level* (dec level)))
      (try
-       (let [^Iterable iterable (if (instance? Iterable x) x (seq x))
-             it (.iterator iterable)]
+       (let [^Iterator it (try (RT/iter (if (instance? Iterable x) x (seq x)))
+                               ;; In some cases, calling .iterator may throw
+                               ;; (e.g. incomplete CollReduce implementations).
+                               (catch Exception ex
+                                 (RT/iter [(format "<<%s>>" ex)])))]
          (if (.hasNext it)
            (do (.write w prefix)
                (if (or (nil? level) (pos? level))
