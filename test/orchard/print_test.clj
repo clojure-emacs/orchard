@@ -193,3 +193,10 @@
                                       (reduce f (range 10)))
                                     (coll-reduce [_ f init]
                                       (reduce f init (range 10)))))))))
+
+(deftest short-record-names-test
+  (testing "*short-record-names* controls how records are printed"
+    (is (= "#TestRecord{:a 1, :b 2, :c 3, :d 4}" (sut/print-str (->TestRecord 1 2 3 4))))
+    (binding [sut/*short-record-names* false]
+      (is (= "#orchard.print_test.TestRecord{:a 1, :b 2, :c 3, :d 4}"
+             (sut/print-str (->TestRecord 1 2 3 4)))))))
