@@ -1,7 +1,8 @@
 (ns orchard.print-test
   (:require
    [clojure.test :as t :refer [is are deftest testing]]
-   [orchard.print :as sut])
+   [orchard.print :as sut]
+   [orchard.test.util :refer [is+]])
   (:import
    (mx.cider.orchard TruncatingStringWriter
                      TruncatingStringWriter$TotalLimitExceeded)))
@@ -182,3 +183,13 @@
       (are [kw repr] (= repr (sut/print-str kw))
         ::foo    ":orchard.print-test/foo"
         ::t/foo          ":clojure.test/foo"))))
+
+(deftest broken-eduction-test
+  (testing "shouldn't throw if printing an eduction that lacks Seq impl"
+    (is+ #"\(\"<<java.lang.IllegalArgumentException: Don't know how to create ISeq from:"
+         (sut/print-str (eduction (map identity)
+                                  (reify clojure.core.protocols.CollReduce
+                                    (coll-reduce [_ f]
+                                      (reduce f (range 10)))
+                                    (coll-reduce [_ f init]
+                                      (reduce f init (range 10)))))))))
