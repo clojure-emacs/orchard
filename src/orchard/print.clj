@@ -59,6 +59,10 @@
   - print `::alias/foo` instead of `:ns.aliases.in.pov.ns/foo`"
   nil)
 
+(def ^:dynamic *short-record-names*
+  "When true, only simple record classnames will be displayed instead of FQNs."
+  true)
+
 (defn- print-coll-item
   "Print an item in the context of a collection. When printing a map, don't print
   `[]` characters around map entries."
@@ -171,7 +175,9 @@
 
 (defmethod print :record [x, ^Writer w]
   (.write w "#")
-  (.write w (.getSimpleName (class x)))
+  (.write w (if *short-record-names*
+              (.getSimpleName (class x))
+              (.getName (class x))))
   (print-map x w))
 
 (defmethod print :array [x, ^Writer w]

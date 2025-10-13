@@ -3,6 +3,7 @@
 ## master (unreleased)
 
 - [#359](https://github.com/clojure-emacs/orchard/pull/359): Print: protect printing from broken eductions.
+- [#360](https://github.com/clojure-emacs/orchard/pull/360): Pretty-print: print short record names by default.
 
 ## 0.37.0 (2025-09-19)
 

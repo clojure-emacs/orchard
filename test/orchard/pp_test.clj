@@ -248,7 +248,7 @@
     "(1 1 1 1 1)" (java.util.ArrayList. ^java.util.Collection (repeat 5 1))
     "{:a 1, :b 2}" (let [^java.util.Map x {:a 1 :b 2}]
                      (java.util.HashMap. x))
-    "#orchard.print_test.TestRecord{:a 1, :b 2, :c 3, :d 4}" (orchard.print-test/->TestRecord 1 2 3 4)
+    "#TestRecord{:a 1, :b 2, :c 3, :d 4}" (orchard.print-test/->TestRecord 1 2 3 4)
     "[1 2 3 4]" (long-array [1 2 3 4])
     "[]" (long-array [])
     "[0 1 2 3 4]" (into-array Long (range 5))
@@ -281,3 +281,17 @@
   (testing "writer won't go much over total-length"
     (is (= 2003 (count (binding [print/*max-total-length* 2000]
                          (print/print-str orchard.print-test/infinite-map)))))))
+
+(deftest short-record-names-test
+  (testing "*short-record-names* controls how records are printed"
+    (is (= "#TestRecord{:a (0 1 2 3 4 5 6 7 8 9 10 11 12 13 14),
+            :b (0 1 2 3 4 5 6 7 8 9 10 11 12 13 14),
+            :c 3,
+            :d 4}"
+           (sut/pprint-str (orchard.print-test/->TestRecord (range 15) (range 15) 3 4))))
+    (binding [print/*short-record-names* false]
+      (is (= "#orchard.print_test.TestRecord{:a (0 1 2 3 4 5 6 7 8 9 10 11 12 13 14),
+                               :b (0 1 2 3 4 5 6 7 8 9 10 11 12 13 14),
+                               :c 3,
+                               :d 4}"
+             (sut/pprint-str (orchard.print-test/->TestRecord (range 15) (range 15) 3 4)))))))
