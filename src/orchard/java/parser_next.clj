@@ -157,8 +157,8 @@
     (or (some #(when (instance? % node) %) interfaces)
         ::default)))
 
-(defmulti process-node #'dispatch
-  :default ::default)
+(defprotocol NodeProcessor
+  (process-node [node stack found-closing-tags-types]))
 
 (defn node-reducer [{:keys [stack result found-closing-tags-types] :as m}
                     node]
@@ -171,11 +171,6 @@
 (def node-reducer-init {:stack []
                         :result []})
 
-(defmethod process-node ::default [node stack _]
-  [stack
-   [{:type "html"
-     :content (str node)}]])
-
 (def newline-fragment
   "A newline intended to separate html fragments.
   We choose text, because inserting <p> elements could unbalance the tags,
@@ -183,141 +178,136 @@
   {:type "text"
    :content "\n"})
 
-(def nbsp "&nbsp;")
+(extend-protocol NodeProcessor
+  ParamTree
+  (process-node [^ParamTree node stack found-closing-tags-types]
+    (let [{:keys [stack result]} (reduce node-reducer
+                                         {:stack stack
+                                          :result []
+                                          :found-closing-tags-types found-closing-tags-types}
+                                         (.getDescription node))]
+      [stack
+       (into [newline-fragment
+              {:type "html"
+               :content (format "<i>Param</i>&nbsp;<pre>%s</pre>:&nbsp;" (.getName node))}]
+             result)]))
 
-(defmethod process-node ParamTree [^ParamTree node stack found-closing-tags-types]
-  (let [{:keys [stack result]} (reduce node-reducer
-                                       {:stack stack
-                                        :result []
-                                        :found-closing-tags-types found-closing-tags-types}
-                                       (.getDescription node))]
-    [stack
-     (reduce into [] [[newline-fragment
-                       {:type "html"
-                        :content (format "<i>Param</i>%s<pre>%s</pre>:%s" nbsp (.getName node) nbsp)}]
-                      result])]))
+  ReturnTree
+  (process-node [^ReturnTree node stack found-closing-tags-types]
+    (let [{:keys [stack result]} (reduce node-reducer
+                                         {:stack stack
+                                          :result []
+                                          :found-closing-tags-types found-closing-tags-types}
+                                         (.getDescription node))]
+      [stack
+       (into [newline-fragment
+              {:type "html"
+               :content "<i>Returns</i>:&nbsp;"}]
+             result)]))
 
-(defmethod process-node ReturnTree [^ReturnTree node stack found-closing-tags-types]
-  (let [{:keys [stack result]} (reduce node-reducer
-                                       {:stack stack
-                                        :result []
-                                        :found-closing-tags-types found-closing-tags-types}
-                                       (.getDescription node))]
-    [stack
-     (reduce into [] [[newline-fragment
-                       {:type "html"
-                        :content (format "<i>Returns</i>:%s" nbsp)}]
-                      result])]))
+  ThrowsTree
+  (process-node [^ThrowsTree node stack found-closing-tags-types]
+    (let [{:keys [stack result]} (reduce node-reducer
+                                         {:stack stack
+                                          :result []
+                                          :found-closing-tags-types found-closing-tags-types}
+                                         (.getDescription node))]
+      [stack
+       (into [newline-fragment
+              {:type "html"
+               :content (format "<i>Throws</i>:&nbsp;<pre>%s</pre>:&nbsp;"
+                                (.getExceptionName node))}]
+             result)]))
 
-(defmethod process-node ThrowsTree [^ThrowsTree node stack found-closing-tags-types]
-  (let [{:keys [stack result]} (reduce node-reducer
-                                       {:stack stack
-                                        :result []
-                                        :found-closing-tags-types found-closing-tags-types}
-                                       (.getDescription node))]
-    [stack
-     (reduce into [] [[newline-fragment
-                       {:type "html"
-                        :content (format "<i>Throws</i>:%s<pre>%s</pre>:%s" nbsp (.getExceptionName node) nbsp)}]
-                      result])]))
+  BlockTagTree
+  (process-node [_node stack _]
+    ;; omit the tag - it makes the docstring larger on docstring UIs:
+    [stack []])
 
-(defmethod process-node BlockTagTree [_node stack _]
-  ;; omit the tag - it makes the docstring larger on docstring UIs:
-  [stack []])
+  LiteralTree
+  (process-node [^LiteralTree node stack _]
+    (let [body (-> node .getBody .getBody)]
+      [stack
+       (if (= (-> node .getKind .tagName) "code")
+         [{:type "html"
+           :content (format "<pre>%s</pre> " body)}]
+         [{:type "text"
+           :content body}])]))
 
-(defmethod process-node LiteralTree [^LiteralTree node stack _]
-  (let [^String tag-name (-> node .getKind .tagName)
-        body (-> node .getBody .getBody)]
-    [stack
-     (if (-> tag-name (.equals "code"))
-       [{:type "html"
-         :content (format "<pre>%s</pre> " body)}]
-       [{:type "text"
-         :content body}])]))
+  StartElementTree
+  (process-node [^StartElementTree node stack found-closing-tags-types]
+    (let [v (str (.getName node))
+          self-closing? (or (.isSelfClosing node)
+                            (and (#{"p" "hr" "li"} v)
+                                 (not (contains? found-closing-tags-types v))))]
+      [(cond-> stack
+         (not self-closing?) (conj v))
+       (cond
+         (and (= v "p") self-closing?)
+         [{:type "text"
+           :content "\n"}]
 
-(defmethod process-node StartElementTree [^StartElementTree node stack found-closing-tags-types]
-  (let [v (-> node .getName str)
-        self-closing? (or (.isSelfClosing node)
-                          (and (#{"p" "hr" "li"} v)
-                               (not (contains? found-closing-tags-types v))))]
+         (= v "a") ;; turn links into code
+         [{:type "html"
+           :content "<pre>"}]
+
+         :else
+         [{:type "html"
+           :content (str node)}])]))
+
+  EndElementTree
+  (process-node [^EndElementTree node stack _]
     [(cond-> stack
-       (not self-closing?)
-       (conj v))
-     (cond
-       (and (= v "p")
-            self-closing?)
-       [{:type "text"
-         :content "\n"}]
+       (seq stack) pop)
+     [{:type "html"
+       :content (if (= (str (.getName node)) "a")
+                  "</pre>"
+                  (str node))}]])
 
-       (= v "a") ;; turn links into code
-       [{:type "html"
-         :content "<pre>"}]
+  TextTree
+  (process-node [^TextTree node stack _]
+    [stack [{:type (if (empty? stack) "text" "html")
+             :content (str node)}]])
 
-       :else
-       [{:type "html"
-         :content (str node)}])]))
+  LinkTree
+  (process-node [^LinkTree node stack _]
+    [stack
+     [{:type "html"
+       :content (format "<pre>%s</pre> " (-> node .getReference .getSignature))}]])
 
-(defmethod process-node EndElementTree [^EndElementTree node stack _]
-  [(cond-> stack
-     (seq stack) pop)
-   [(if (-> node .getName str (.equals "a"))
-      {:type "html"
-       :content "</pre>"}
-      {:type "html"
-       :content (str node)})]])
-
-(defmethod process-node TextTree [^TextTree node stack _]
-  [stack (if (empty? stack)
-           [{:type "text"
-             :content (str node)}]
-           [{:type "html"
-             :content (str node)}])])
-
-(defmethod process-node LinkTree [^LinkTree node stack _]
-  [stack
-   [{:type "html"
-     :content (format "<pre>%s</pre> " (-> node .getReference .getSignature))}]])
+  ;; Default
+  Object
+  (process-node [node stack _]
+    [stack
+     [{:type "html"
+       :content (str node)}]]))
 
 (defn coalesce [xs]
   (reduce (fn [acc {next-type :type next-content :content :as next-item}]
-            (let [{prev-type :type} (peek acc)]
+            (let [{prev-type :type, prev-content :content :as prev} (peek acc)]
               (if (= prev-type next-type)
-                (update-in acc
-                           [(dec (count acc)) :content]
-                           str
-                           (if (= prev-type "text")
-                             "\n\n"
-                             " ")
-                           next-content)
+                (conj (pop acc) (assoc prev
+                                       :content (str prev-content
+                                                     (if (= prev-type "text")
+                                                       "\n\n"
+                                                       " ")
+                                                     next-content)))
                 (conj acc next-item))))
-          []
-          xs))
-
-(defn remove-left-margin [s]
-  (->> (str/split s #"\r?\n" -1) ;; split-lines without losing trailing newlines
-       (map-indexed (fn [i s]
-                      (let [first? (zero? i)
-                            blank? (str/blank? s)]
-                        (cond-> s
-                          (and (not first?)
-                               (not blank?))
-                          (str/replace #"^ +" "")))))
-       (str/join "\n")))
+          [] xs))
 
 (defn cleanup-whitespace [fragments]
-  (into []
-        (map (fn [{:keys [content]
-                   content-type :type
-                   :as x}]
-               (let [text? (= content-type "text")]
-                 (assoc x :content (-> content
-                                       (str/replace #"^  +" " ")
-                                       (str/replace #"  +$" " ")
-                                       (str/replace #"\s*\n+\s*\n+\s*" "\n\n")
-                                       (str/replace #"\n +$" "\n")
-                                       (cond-> text? remove-left-margin
-                                               text? (str/replace #"^ +\." ".")
-                                               text? (str/replace #"^ +," ",")))))))
+  (mapv (fn [{:keys [content]
+              content-type :type
+              :as x}]
+          (let [text? (= content-type "text")]
+            (assoc x :content (-> content
+                                  (str/replace #"^  +" " ")
+                                  (str/replace #"  +$" " ")
+                                  (str/replace #"\s*\n+\s*\n+\s*" "\n\n")
+                                  (str/replace #"\n +$" "\n")
+                                  (cond-> text? (str/replace #"\n +" "\n")
+                                          text? (str/replace #"^ +\." ".")
+                                          text? (str/replace #"^ +," ","))))))
         fragments))
 
 (defn docstring
@@ -326,8 +316,8 @@
   (let [^DocCommentTree comment-tree (some-> env
                                              .getDocTrees
                                              (.getDocCommentTree e))
-        full-body-raw (some->> comment-tree .getFullBody)
-        block-tags-raw (some->> comment-tree .getBlockTags)
+        full-body-raw (some-> comment-tree .getFullBody)
+        block-tags-raw (some-> comment-tree .getBlockTags)
         found-closing-tags-types (into #{}
                                        (keep #(when (instance? EndElementTree %)
                                                 (str (.getName ^EndElementTree %))))
