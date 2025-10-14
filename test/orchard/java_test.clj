@@ -51,25 +51,23 @@
   {:post [(> (count %)
              50)]}
   (->> (util/imported-classes 'clojure.core)
-       (into ['java.util.Map 'java.io.File])
+       (into ['java.util.Map 'java.io.File 'clojure.lang.Compiler])
        (into (util/imported-classes (-> ::_ namespace symbol)))
        ;; Remove classes without methods:
-       (remove (some-fn
-                #{`ThreadDeath
-                  `Void
-                  `RuntimePermission
-                  'clojure.core.Vec
-                  'clojure.core.VecNode
-                  'clojure.core.VecSeq
-                  'clojure.core.ArrayChunk
-                  'clojure.core.Eduction
-                  ;; Currently doesn't work for LruMap.
-                  'mx.cider.orchard.LruMap}
-                (fn [s]
-                  (or (-> s str Class/forName .isInterface)
-                      (-> s str Class/forName .isEnum)))
-                (fn [s]
-                  (->> s str (re-find #"(Exception|Error)$")))))))
+       (remove #(or (#{`ThreadDeath
+                       `Void
+                       `RuntimePermission
+                       'clojure.core.Vec
+                       'clojure.core.VecNode
+                       'clojure.core.VecSeq
+                       'clojure.core.ArrayChunk
+                       'clojure.core.Eduction
+                       ;; Currently doesn't work for LruMap.
+                       'mx.cider.orchard.LruMap} %)
+                    (-> % str Class/forName .isInterface)
+                    (-> % str Class/forName .isEnum)
+                    (re-find #"(Exception|Error)$" (str %))))
+       vec))
 
 (defn extract-method-arities [class-symbol info]
   {:pre [(symbol? class-symbol)]}
@@ -85,7 +83,7 @@
 (when (and jdk11+? util/jdk-sources-present?)
   (deftest map-structure-test
     (testing "Parsed map structure = reflected map structure"
-      (doseq [class-sym (conj (class-corpus) 'clojure.lang.Compiler)]
+      (doseq [class-sym (class-corpus)]
         (testing class-sym
           (let [excluded-cols #{:file :line :column :doc :argnames :non-generic-argtypes :annotated-arglists
                                 :doc-first-sentence-fragments :doc-fragments :doc-block-tags-fragments :argtypes :path :resource-url}
@@ -444,10 +442,8 @@
       (is (nil? (resolve-symbol (*ns) '.random.bunch/of$junk))))))
 
 (defn- replace-last-dot [^String s]
-  (if (re-find #"(.*\.)" s)
-    (str (second (re-matches #"(.*)(\..*)" s))
-         "$"
-         (subs s (inc (.lastIndexOf s "."))))
+  (if (str/includes? s ".")
+    (str/replace s #"\.([^\.]+)$" "\\$$1")
     s))
 
 (when (and util/jdk-sources-present? jdk11+?)

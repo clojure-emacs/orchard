@@ -2,65 +2,59 @@
   (:require
    [clojure.test :refer [deftest is testing]]
    [orchard.eldoc :as eldoc]
-   [orchard.info :as info]))
-
-;; test data
-(def test-eldoc-info {:arglists '([x] [x y])})
-
-(def test-eldoc-info-special-form {:forms ['(.instanceMember instance args*)
-                                           '(.instanceMember Classname args*)
-                                           '(Classname/staticMethod args*)
-                                           'Classname/staticField]
-                                   :special-form true})
-
-(def test-eldoc-info-candidates
-  {:candidates '{X {:arglists ([x])}
-                 Y {:arglists ([x] [x y z])}
-                 Z {:arglists ([])}}})
+   [orchard.info :as info]
+   [orchard.test.util :refer [is+]]))
 
 (deftest test-eldoc
   (testing "arglist extraction"
-    (is (= (:eldoc (eldoc/eldoc test-eldoc-info)) '(["x"] ["x" "y"])))
-    (is (= (:eldoc (eldoc/eldoc test-eldoc-info-candidates))
-           '([] ["x"] ["x" "y" "z"])))
-    (is (= (:eldoc (eldoc/eldoc test-eldoc-info-special-form))
-           '([".instanceMember" "instance" "args*"]
-             [".instanceMember" "Classname" "args*"]
-             ["Classname/staticMethod" "args*"]
-             ["Classname/staticField"])))
+    (is+ {:eldoc '(["x"] ["x" "y"])}
+         (eldoc/eldoc {:arglists '([x] [x y])}))
+    (is+ {:eldoc '([] ["x"] ["x" "y" "z"])}
+         (eldoc/eldoc {:candidates '{X {:arglists ([x])}
+                                     Y {:arglists ([x] [x y z])}
+                                     Z {:arglists ([])}}}))
+    (is+ {:eldoc '([".instanceMember" "instance" "args*"]
+                   [".instanceMember" "Classname" "args*"]
+                   ["Classname/staticMethod" "args*"]
+                   ["Classname/staticField"])}
+         (eldoc/eldoc {:forms ['(.instanceMember instance args*)
+                               '(.instanceMember Classname args*)
+                               '(Classname/staticMethod args*)
+                               'Classname/staticField]
+                       :special-form true}))
 
     ;; sanity checks and special cases
     (is (:eldoc (eldoc/eldoc (info/info 'clojure.core 'map))))
     (is (:eldoc (eldoc/eldoc (info/info 'clojure.core '.toString))))
     (is (:eldoc (eldoc/eldoc (info/info 'clojure.core '.))))
-    (is (not (:eldoc (eldoc/eldoc (info/info 'clojure.core (gensym "non-existing")))))))
+    (is (nil? (:eldoc (eldoc/eldoc (info/info 'clojure.core 'non-existing))))))
 
   (testing "Clojure result structure"
-    (let [result (eldoc/eldoc (info/info 'clojure.core 'map))]
-      (is (:ns result))
-      (is (:name result))
-      (is (:type result))
-      (is (:eldoc result))
-      (is (:docstring result))))
+    (is+ {:ns some?
+          :name some?
+          :type some?
+          :eldoc some?
+          :docstring some?}
+         (eldoc/eldoc (info/info 'clojure.core 'map))))
 
   (testing "Clojure special form"
-    (let [result (eldoc/eldoc (info/info 'clojure.core 'if))]
-      (is (= (:type result) "special-form"))))
+    (is+ {:type "special-form"}
+         (eldoc/eldoc (info/info 'clojure.core 'if))))
 
   (testing "Clojure macro"
-    (let [result (eldoc/eldoc (info/info 'clojure.core 'when))]
-      (is (= (:type result) "macro"))))
+    (is+ {:type "macro"}
+         (eldoc/eldoc (info/info 'clojure.core 'when))))
 
   (testing "Clojure function"
-    (let [result (eldoc/eldoc (info/info 'clojure.core 'inc))]
-      (is (= (:type result) "function"))))
+    (is+ {:type "function"}
+         (eldoc/eldoc (info/info 'clojure.core 'inc))))
 
   (testing "Java result structure"
-    (let [result (eldoc/eldoc (info/info-java 'java.lang.String 'toLowerCase))]
-      (is (:class result))
-      (is (:member result))
-      (is (:type result))
-      (is (:eldoc result)))))
+    (is+ {:class some?
+          :member some?
+          :type some?
+          :eldoc some?}
+         (eldoc/eldoc (info/info-java 'java.lang.String 'toLowerCase)))))
 
 ;;;; eldoc datomic query
 (def testing-datomic-query '[:find ?x
@@ -70,21 +64,21 @@
 
 (deftest datomic-query-test
   (testing "eldoc of inline datomic query"
-    (let [response (eldoc/datomic-query "user" "'[:find ?x :in $ % ?person-id]")]
-      (is (= (:inputs response) '(["$" "%" "?person-id"])))))
+    (is+ {:inputs '(["$" "%" "?person-id"])}
+         (eldoc/datomic-query "user" "'[:find ?x :in $ % ?person-id]")))
 
   (testing "eldoc of inline datomic query as map"
-    (let [response (eldoc/datomic-query "user" "'{:find [?x] :in [$ % ?person-id]}")]
-      (is (= (:inputs response) '(["$" "%" "?person-id"])))))
+    (is+ {:inputs '(["$" "%" "?person-id"])}
+         (eldoc/datomic-query "user" "'{:find [?x] :in [$ % ?person-id]}")))
 
   (testing "eldoc of datomic query defined as symbol"
-    (let [response (eldoc/datomic-query "orchard.eldoc-test" "testing-datomic-query")]
-      (is (= (:inputs response) '(["$" "?name"])))))
+    (is+ {:inputs '(["$" "?name"])}
+         (eldoc/datomic-query "orchard.eldoc-test" "testing-datomic-query")))
 
   (testing "eldoc of inline datomic query without :in"
-    (let [response (eldoc/datomic-query "user" "'[:find ?x]")]
-      (is (= (:inputs response) '(["$"])))))
+    (is+ {:inputs '(["$"])}
+         (eldoc/datomic-query "user" "'[:find ?x]")))
 
   (testing "eldoc of inline datomic query as map without :in"
-    (let [response (eldoc/datomic-query "user" "'{:find ?x}")]
-      (is (= (:inputs response) '(["$"]))))))
+    (is+ {:inputs '(["$"])}
+         (eldoc/datomic-query "user" "'{:find ?x}"))))
