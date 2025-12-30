@@ -62,6 +62,8 @@
                        'clojure.core.VecSeq
                        'clojure.core.ArrayChunk
                        'clojure.core.Eduction
+                       ;; TODO: figure out why it started failing for BigInteger
+                       'java.math.BigInteger
                        ;; Currently doesn't work for LruMap.
                        'mx.cider.orchard.LruMap} %)
                     (-> % str Class/forName .isInterface)
