@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+- [#365](https://github.com/clojure-emacs/orchard/pull/365): Inspector: don't datafy vars.
+
 ## 0.37.1 (2025-10-14)
 
 - [#359](https://github.com/clojure-emacs/orchard/pull/359): Print: protect printing from broken eductions.

@@ -183,12 +183,7 @@
               "  " [:value ":name" pos?] " = " [:value "any-var" pos?]
               [:newline]
               "  " [:value ":ns" pos?] " = " [:value "#namespace[orchard.inspect-test]" pos?]]
-             (section rendered "Meta Information")))
-      (testing "renders the datafy section"
-        (is+ ["--- Datafy:"
-              [:newline]
-              "  0. " [:value "42" pos?]]
-             (datafy-section rendered))))))
+             (section rendered "Meta Information"))))))
 
 (deftest inspect-expr-test
   (testing "rendering an expr"
@@ -952,25 +947,7 @@
                                  [:value "public String toString()" pos?]
                                  [:value "public final void wait() throws InterruptedException" pos?]
                                  [:value "public final void wait(long,int) throws InterruptedException" pos?]])
-               methods)))
-      (testing "renders the datafy section"
-        (is+ ["--- Datafy:"
-              [:newline]
-              "  " [:value ":flags" pos?] " = " [:value "#{:public}" pos?]
-              [:newline]
-              "  " [:value ":members" pos?] " = "
-              [:value #=(str "{clone [#Method{:name clone, :return-type java.lang.Object, :declaring-class java.lang.Object, "
-                             ":parameter-types [], :exception-types [java.lang.CloneNotSupportedException], ...}], equals "
-                             "[#Method{:name equals, :return-type boolean, :declaring-class java.lang.Object, :parameter-types "
-                             "[java.lang.Object], :exception-types [], ...}], finalize [#Method{:name finalize, :return-type void, "
-                             ":declaring-class java.lang.Object, :parameter-types [], :exception-types [java.lang.Throwable], "
-                             "...}], getClass [#Method{:name getClass, :return-type java.lang.Class, :declaring-class java.lang.Object, "
-                             ":parameter-types [], :exception-types [], ...}], hashCode [#Method{:name hashCode, :return-type int, "
-                             ":declaring-class java.lang.Object, :parameter-types [], :exception-types [], ...}], ...}")
-               pos?]
-              [:newline]
-              "  " [:value ":name" pos?] " = " [:value "java.lang.Object" pos?]]
-             (datafy-section rendered)))))
+               methods)))))
 
   (testing "inspecting the java.lang.Class class"
     (let [rendered (-> Class inspect render)]
@@ -1241,42 +1218,7 @@
               [:newline]
               "  BOOM" [:newline]
               "  " [:value "clojure.lang.ExceptionInfo" 1]]
-             (section rendered "Causes")))
-      (testing "renders the datafy section"
-        (is+ (if (> java-api-version 8)
-               ["--- Datafy:"
-                [:newline]
-                "  "
-                [:value ":via" number?]
-                " = "
-                [:value
-                 "[{:type clojure.lang.ExceptionInfo, :message \"BOOM\", :data {}}]"
-                 number?]
-                [:newline]
-                "  "
-                [:value ":trace" number?]
-                " = "
-                [:value "[]" number?]
-                [:newline]
-                "  "
-                [:value ":cause" number?]
-                " = "
-                [:value "\"BOOM\"" number?]
-                [:newline]
-                "  "
-                [:value ":data" number?]
-                " = "
-                [:value "{}" number?]]
-               ["--- Datafy:"
-                [:newline]
-                "  " [:value ":via" number?] " = " [:value "[{:type clojure.lang.ExceptionInfo, :message \"BOOM\", :data {}}]" number?]
-                [:newline]
-                "  " [:value ":trace" number?] " = " [:value "[]" number?]
-                [:newline]
-                "  " [:value ":cause" number?] " = " [:value "\"BOOM\"" number?]
-                [:newline]
-                "  " [:value ":data" number?] " = " [:value "{}" number?]])
-             (datafy-section rendered)))))
+             (section rendered "Causes")))))
 
   (testing "exception with multiple causes"
     (let [rendered (-> (ex-info "Outer" {} (RuntimeException. "Inner"))
@@ -1920,11 +1862,13 @@
   (testing "only show those items in collection that have unique datafication"
     (is+ ["--- Datafy:" [:newline]
           "  3. " [:value string? pos?]]
-         (-> [1 2 3 (ex-info "datafy" {})]
+         (-> [1 2 3 (with-meta [] {'clojure.core.protocols/datafy
+                                   (fn [_] (range 3))})]
              inspect render datafy-section))
     (is+ ["--- Datafy:" [:newline]
           "  " [:value ":c" pos?] " = " [:value string? pos?]]
-         (-> {:a 1 :b 2 :c (ex-info "datafy" {})}
+         (-> {:a 1 :b 2 :c (with-meta [] {'clojure.core.protocols/datafy
+                                          (fn [_] (range 3))})}
              inspect render datafy-section))))
 
 (deftest private-field-access-test
