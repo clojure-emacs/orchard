@@ -636,6 +636,13 @@
 
 ;;;; Datafy
 
+(defn- datafy* [o]
+  ;; Don't datafy known types which we already render nicely, because datafying
+  ;; them causes the Datafy section to unnecessarily appear in the inspector.
+  (if (or (var? o) (class? o) (instance? clojure.lang.ARef o) (instance? Throwable o))
+    o
+    (datafy o)))
+
 (defn- datafy-kvs [original-object kvs keep-same?]
   ;; keep-same? should be true for datafying collections that were produced by
   ;; datafying the root, and false if we datafy elements of the original coll.
@@ -643,7 +650,7 @@
         result (into {}
                      (keep (fn [[k v]]
                              (when-some [dat (some->> (nav original-object k v)
-                                                      datafy)]
+                                                      datafy*)]
                                (let [same? (= dat v)]
                                  (when-not same?
                                    (vreset! differs? true))
@@ -655,7 +662,7 @@
 
 (defn- datafy-seq [s keep-same?]
   (let [differs? (volatile! false)
-        result (mapv #(let [dat (datafy %)
+        result (mapv #(let [dat (datafy* %)
                             same? (= dat %)]
                         (when-not same?
                           (vreset! differs? true))
@@ -666,7 +673,7 @@
       result)))
 
 (defn- datafy-root [obj]
-  (let [datafied (datafy obj)]
+  (let [datafied (datafy* obj)]
     (when-not (identical? obj datafied)
       datafied)))
 
