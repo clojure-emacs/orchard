@@ -1912,7 +1912,6 @@
     (is+ ["--- Analytics:" [:newline]
           "  " [:value ":count" pos?] " = " [:value "100" pos?] [:newline]
           "  " [:value ":types" pos?] " = " [:value "{java.lang.Long 100}" pos?] [:newline]
-          "  " [:value ":frequencies" pos?] " = " [:value string? pos?] [:newline]
           "  " [:value ":numbers" pos?] " = " [:value "{:n 100, :zeros 1, :max 99, :min 0, :mean 49.5}" pos?]]
          (-> (range 100) inspect inspect/display-analytics render (section "Analytics"))))
 

@@ -3,6 +3,7 @@
 ## master (unreleased)
 
 - [#365](https://github.com/clojure-emacs/orchard/pull/365): Inspector: don't datafy vars.
+- [#363](https://github.com/clojure-emacs/orchard/pull/363): Inspector: show duplicates in analytics.
 
 ## 0.37.1 (2025-10-14)
 
