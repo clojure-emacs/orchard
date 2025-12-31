@@ -203,7 +203,11 @@
     (symbol "clojure.core/str/fn--12")                           'str
     'orchard.info_test$eval17939$closed_over__17940.invokeStatic 'closed-over
     (symbol "orchard.info-test/eval17939/closed_over--17940")    'closed-over
-    (symbol "orchard.info/eval123456/fn__123.invoke")            nil))
+    (symbol "orchard.info/eval123456/fn__123.invoke")            nil)
+
+  (testing "doesn't crash if symbols contain $ or /"
+    (is (= '/ (:name (info/info 'orchard.test-ns 'clojure.core//))))
+    (is (= nil (:name (info/info 'orchard.test-ns 'clojure.core/$x))))))
 
 (deftest info-unqualified-sym-and-namespace-test
   (testing "Resolution from current namespace"
