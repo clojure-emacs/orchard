@@ -105,7 +105,7 @@
     (loop [i 0, n 0, empty 0, hi nil, lo nil, sum 0]
       (if (and (< i *size-cutoff*) (.hasNext it))
         (let [x (.next it)]
-          (if (instance? java.util.Collection x)
+          (if (or (instance? java.util.Collection x) (some-> x class .isArray))
             (let [size (count x)]
               (recur (inc i)
                      (inc n)
