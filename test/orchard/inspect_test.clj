@@ -983,20 +983,14 @@
              (header rendered)))
       (testing "renders the methods section"
         (let [methods (section rendered "Methods")]
-          (is+ (matchers/prefix ["--- Methods:" [:newline]])
-               methods)
-          (doseq [assertion ["public boolean equals(Object)"
-                             "public T get(Class<?>)"
-                             "public final native Class<?> getClass()"
-                             "public native int hashCode()"
-                             "public final native void notify()"
-                             "public final native void notifyAll()"
-                             "public void remove(Class<?>)"
-                             "public String toString()"
-                             "public final void wait() throws InterruptedException"
-                             "public final void wait(long,int) throws InterruptedException"]]
-            (is+ (matchers/embeds ["  " [:value assertion pos?]])
-                 methods))))))
+          (is+ (matchers/prefix ["--- Methods:" [:newline]
+                                 "  " [:value "public T get(Class<?>)" pos?] [:newline]
+                                 "  " [:value "public void remove(Class<?>)" pos?] [:newline]
+                                 [:newline]
+                                 "  // Declared in " [:value "java.lang.Object" pos?] ":" [:newline]
+                                 "  " [:value "public boolean equals(Object)" pos?] [:newline]
+                                 "  " [:value "public final native Class<?> getClass()" pos?] [:newline]])
+               methods)))))
 
   (testing "inspecting an internal class"
     (is+ ["--- Fields:"

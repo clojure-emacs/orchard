@@ -943,6 +943,34 @@
                                (render-section-header section)
                                (indent)))))))
 
+(defn- render-class-methods [inspector, ^Class klass, print-fn]
+  (if-let [grouped (not-empty (group-by #(.getDeclaringClass ^Method %)
+                                        (.getMethods klass)))]
+    (loop [kl klass, ins (-> inspector
+                             (render-section-header "Methods")
+                             (indent))]
+      (if kl
+        (recur (.getSuperclass kl)
+               (if-let [group (seq (grouped kl))]
+                 (let [sorted (sort-by #(vector (.getName ^Method %)
+                                                (.toGenericString ^Method %))
+                                       group)]
+                   (as-> ins ins
+                     (if (not= kl klass)
+                       (-> ins
+                           (render-ln)
+                           (render-indent "// Declared in ")
+                           (render-value kl)
+                           (render ":")
+                           (render-ln))
+                       ins)
+                     (reduce #(render-indented-value
+                               %1 %2 {:display-value (print-fn %2)})
+                             ins sorted)))
+                 ins))
+        (unindent ins)))
+    inspector))
+
 (defn- render-class-hierarchy [inspector ^Class klass]
   (let [seen (volatile! #{})]
     (letfn [(render-class [ins k]
@@ -984,10 +1012,7 @@
                               (print-fn #(.toGenericString ^Constructor %)))
         (render-class-section :Fields (.getFields obj)
                               (print-fn #(.toGenericString ^Field %)))
-        (render-class-section :Methods (.getMethods obj)
-                              (print-fn #(.toGenericString ^Method %))
-                              #(vector (.getName ^Method %)
-                                       (.toGenericString ^Method %)))
+        (render-class-methods obj (print-fn #(.toGenericString ^Method %)))
         (render-datafy))))
 
 (defn- render-stacktrace-cause [inspector ^Throwable cause]
