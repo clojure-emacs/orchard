@@ -4,6 +4,7 @@
 
 - [#362](https://github.com/clojure-emacs/orchard/pull/362): Info: don't crash if symbol contains $ or /.
 - [#365](https://github.com/clojure-emacs/orchard/pull/365): Inspector: don't datafy vars.
+- [#370](https://github.com/clojure-emacs/orchard/pull/370): Inspector: dedicated view for methods.
 
 ## 0.37.1 (2025-10-14)
 
