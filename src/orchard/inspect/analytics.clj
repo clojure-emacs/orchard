@@ -6,7 +6,7 @@
    [clojure.string :as str])
   (:import
    (clojure.lang RT)
-   (java.util List Map)))
+   (java.util List Map Set)))
 
 ;; To keep execution time under control, only calculate analytics for the first
 ;; 100k elements.
@@ -118,7 +118,7 @@
           {:n n, :empty empty, :max-size hi, :min-size lo, :avg-size (float (/ sum n))})))))
 
 (defn- basic-list-stats [coll show-count?]
-  (when (instance? List coll)
+  (when (or (instance? List coll) (instance? Set coll))
     (let [cnt (bounded-count *size-cutoff* coll)]
       (non-nil-hmap
        :cutoff? (when (and show-count? (>= cnt *size-cutoff*)) true)
@@ -193,4 +193,5 @@
   [object]
   (or (instance? List object)
       (instance? Map object)
+      (instance? Set object)
       (some-> (class object) (.isArray))))

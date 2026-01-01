@@ -9,6 +9,7 @@
 - [#368](https://github.com/clojure-emacs/orchard/pull/368): Print: correctly render empty records.
 - [#369](https://github.com/clojure-emacs/orchard/pull/369): Inspector: group methods by declaring class.
 - [#370](https://github.com/clojure-emacs/orchard/pull/370): Inspector: dedicated view for methods.
+- [#371](https://github.com/clojure-emacs/orchard/pull/371): Inspector: analytics improvements.
 
 ## 0.37.1 (2025-10-14)
 
