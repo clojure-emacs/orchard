@@ -45,7 +45,12 @@
   (is+ {:count 20
         :types {clojure.lang.LongRange 19, clojure.lang.PersistentList$EmptyList 1}
         :collections {:n 20, :empty 1, :max-size 19, :min-size 0, :avg-size 9.5}}
-       (analytics (map range (range 20)))))
+       (analytics (map range (range 20))))
+
+  (is+ {:count 20
+        :types {(class (byte-array 0)) 20}
+        :collections {:n 20, :empty 1, :max-size 19, :min-size 0, :avg-size 9.5}}
+       (analytics (map (comp byte-array range) (range 20)))))
 
 (deftest heterogeneous-list-stats
   (is+ {:count 90,
