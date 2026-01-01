@@ -16,10 +16,13 @@
        (keep #(when (some? (second %)) (vec %)))
        (into {})))
 
-(defn- *frequencies [coll]
+(defn- *frequencies [coll only-duplicates?]
   (let [freqs (->> coll
-                   (eduction (take *size-cutoff*))
+                   (eduction (comp (take *size-cutoff*)))
                    frequencies)
+        freqs (if only-duplicates?
+                (into {} (filter (fn [[_ v]] (>= v 2))) freqs)
+                freqs)
         cmp #(let [res (compare (freqs %1) (freqs %2))]
                (if (zero? res)
                  ;; If values are identical, compare hashes of their keys.
@@ -119,8 +122,8 @@
       (non-nil-hmap
        :cutoff? (when (and show-count? (>= cnt *size-cutoff*)) true)
        :count (when show-count? cnt)
-       :types (*frequencies (map type coll))
-       :frequencies (*frequencies coll)
+       :types (*frequencies (map type coll) false)
+       :duplicates (not-empty (*frequencies coll true))
        :numbers (numbers-stats coll)
        :strings (strings-stats coll)
        :collections (colls-stats coll)))))
@@ -145,7 +148,7 @@
       (non-nil-hmap
        :cutoff? (when (>= cnt *size-cutoff*) true)
        :count cnt
-       :types (*frequencies (map type coll))
+       :types (*frequencies (map type coll) false)
        :tuples (mapv (fn [i]
                        (basic-list-stats
                         (mapv #(when (vector? %) (nth % i nil)) all)
@@ -159,7 +162,7 @@
       (non-nil-hmap
        :cutoff? (when (>= cnt *size-cutoff*) true)
        :count cnt
-       :types (*frequencies (map type coll))
+       :types (*frequencies (map type coll) false)
        :by-key (into {}
                      (for [k ks]
                        (let [kcoll (mapv #(get % k) coll)]
