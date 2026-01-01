@@ -5,6 +5,7 @@
   (:require
    [clojure.string :as str])
   (:import
+   (clojure.lang RT)
    (java.util List Map)))
 
 ;; To keep execution time under control, only calculate analytics for the first
@@ -36,7 +37,7 @@
   `(cond-> ~val ~condition inc))
 
 (defn- count-pred [pred limit ^Iterable coll]
-  (let [it (.iterator ^Iterable coll)]
+  (let [it (RT/iter coll)]
     (loop [i 0, n 0]
       (if (and (< i limit) (.hasNext it))
         (let [x (.next it)]

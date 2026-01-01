@@ -68,7 +68,14 @@
                :numbers {:n 100, :zeros 1, :max 99, :min 0, :mean 49.5}}
         :values {:types {java.lang.String 100}
                  :strings {:n 100, :blank 0, :ascii 100, :max-len 2, :min-len 1, :avg-len (approx 1.9)}}}
-       (analytics (zipmap (range 100) (map str (range 100))))))
+       (analytics (zipmap (range 100) (map str (range 100)))))
+
+  (is+ {:count 100
+        :keys {:types {java.lang.Long 100}
+               :numbers {:n 100, :zeros 1, :max 99, :min 0, :mean 49.5}}
+        :values {:types {java.lang.String 100}
+                 :strings {:n 100, :blank 0, :ascii 100, :max-len 2, :min-len 1, :avg-len (approx 1.9)}}}
+       (analytics (java.util.HashMap. ^java.util.Map (zipmap (range 100) (map str (range 100)))))))
 
 (deftest list-of-tuples-test
   (is+ {:count 100
