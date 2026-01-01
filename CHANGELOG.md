@@ -8,6 +8,7 @@
 - [#367](https://github.com/clojure-emacs/orchard/pull/367): Inspector: pretty-print arrays distinctively from vectors.
 - [#368](https://github.com/clojure-emacs/orchard/pull/368): Print: correctly render empty records.
 - [#369](https://github.com/clojure-emacs/orchard/pull/369): Inspector: group methods by declaring class.
+- [#370](https://github.com/clojure-emacs/orchard/pull/370): Inspector: dedicated view for methods.
 
 ## 0.37.1 (2025-10-14)
 

@@ -77,6 +77,7 @@
     (instance? List obj) :list
     (var? obj) :var
     (instance? Class obj) :class
+    (instance? Method obj) :method
     (instance? clojure.lang.Namespace obj) :namespace
     (instance? clojure.lang.ARef obj) :aref
     (instance? Throwable obj) :throwable
@@ -1014,6 +1015,41 @@
                               (print-fn #(.toGenericString ^Field %)))
         (render-class-methods obj (print-fn #(.toGenericString ^Method %)))
         (render-datafy))))
+
+(defmethod inspect :method [inspector ^Method obj]
+  (as-> inspector ins
+    (render-labeled-value ins "Class" (class obj))
+    ;; (render-indent-ln ins "Value: " (.toGenericString obj))
+    (render-indent-ln ins "Name: " (-> obj .getName))
+    (render-indent-ln ins "Flags: "
+                      (->> (#'clojure.reflect/parse-flags (.getModifiers obj) :class)
+                           (map name)
+                           (str/join " ")))
+    (render-labeled-value ins "Declaring class" (-> obj .getDeclaringClass))
+    (render-labeled-value ins "Return type" (.getReturnType obj))
+
+    (render-section-header ins "Parameter types")
+    (indent ins)
+    (reduce (fn [ins [i c]]
+              (-> ins
+                  (render-indent (str i ". "))
+                  (render-value c)
+                  (render-ln)))
+            ins (map-indexed vector (.getParameterTypes obj)))
+    (unindent ins)
+
+    (if-let [exc (seq (.getExceptionTypes obj))]
+      (as-> ins ins
+        (render-section-header ins "Checked exceptions")
+        (indent ins)
+        (reduce (fn [ins [i c]]
+                  (-> ins
+                      (render-indent (str i ". "))
+                      (render-value c)
+                      (render-ln)))
+                ins (map-indexed vector exc))
+        (unindent ins))
+      ins)))
 
 (defn- render-stacktrace-cause [inspector ^Throwable cause]
   (as-> inspector ins
