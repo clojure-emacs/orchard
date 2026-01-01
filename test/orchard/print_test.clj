@@ -38,6 +38,7 @@
   (.write w (str "#<MyTestType " (get-name obj) ">")))
 
 (defrecord TestRecord [a b c d])
+(defrecord EmptyRecord [])
 
 (defn sample-writer [atom-limit total-limit & strings]
   (let [writer (TruncatingStringWriter. atom-limit total-limit)]
@@ -80,6 +81,7 @@
     "{:a 1, :b 2}" (let [^java.util.Map x {:a 1 :b 2}]
                      (java.util.HashMap. x))
     "#TestRecord{:a 1, :b 2, :c 3, :d 4}" (->TestRecord 1 2 3 4)
+    "#EmptyRecord{}" (->EmptyRecord)
     "long[] {1, 2, 3, 4}" (long-array [1 2 3 4])
     "long[] {}" (long-array [])
     "java.lang.Long[] {0, 1, 2, 3, 4}" (into-array Long (range 5))

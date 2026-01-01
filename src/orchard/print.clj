@@ -162,9 +162,9 @@
 (defmethod print :set [x w]
   (print-coll w x " " "#{" "}"))
 
-(defn- print-map [^Map x, w]
+(defn- print-map [^Map x, ^Writer w]
   (if (.isEmpty x)
-    (print-method x w)
+    (.write w "{}")
     (let [;; If the map is a Clojure map, don't take the entrySet but iterate
           ;; directly as the order might be important.
           coll (if (instance? IPersistentMap x) x (.entrySet ^Map x))]

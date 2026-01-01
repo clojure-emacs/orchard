@@ -6,6 +6,7 @@
 - [#363](https://github.com/clojure-emacs/orchard/pull/363): Inspector: show duplicates in analytics.
 - [#365](https://github.com/clojure-emacs/orchard/pull/365): Inspector: don't datafy vars.
 - [#367](https://github.com/clojure-emacs/orchard/pull/367): Inspector: pretty-print arrays distinctively from vectors.
+- [#368](https://github.com/clojure-emacs/orchard/pull/368): Print: correctly render empty records.
 
 ## 0.37.1 (2025-10-14)
 
