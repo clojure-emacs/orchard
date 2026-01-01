@@ -5,7 +5,8 @@
   (:require
    [clojure.string :as str])
   (:import
-   (java.util List Map)))
+   (clojure.lang RT)
+   (java.util List Map Set)))
 
 ;; To keep execution time under control, only calculate analytics for the first
 ;; 100k elements.
@@ -33,7 +34,7 @@
   `(cond-> ~val ~condition inc))
 
 (defn- count-pred [pred limit ^Iterable coll]
-  (let [it (.iterator ^Iterable coll)]
+  (let [it (RT/iter coll)]
     (loop [i 0, n 0]
       (if (and (< i limit) (.hasNext it))
         (let [x (.next it)]
@@ -101,7 +102,7 @@
     (loop [i 0, n 0, empty 0, hi nil, lo nil, sum 0]
       (if (and (< i *size-cutoff*) (.hasNext it))
         (let [x (.next it)]
-          (if (instance? java.util.Collection x)
+          (if (or (instance? java.util.Collection x) (some-> x class .isArray))
             (let [size (count x)]
               (recur (inc i)
                      (inc n)
@@ -114,7 +115,7 @@
           {:n n, :empty empty, :max-size hi, :min-size lo, :avg-size (float (/ sum n))})))))
 
 (defn- basic-list-stats [coll show-count?]
-  (when (instance? List coll)
+  (when (or (instance? List coll) (instance? Set coll))
     (let [cnt (bounded-count *size-cutoff* coll)]
       (non-nil-hmap
        :cutoff? (when (and show-count? (>= cnt *size-cutoff*)) true)
@@ -189,4 +190,5 @@
   [object]
   (or (instance? List object)
       (instance? Map object)
+      (instance? Set object)
       (some-> (class object) (.isArray))))

@@ -30,7 +30,13 @@
         :types {java.lang.Long 5}
         :frequencies {0 1, 1 1, 2 1, 3 1, 4 1}
         :numbers {:n 5, :zeros 1, :max 4, :min 0, :mean 2.0}}
-       (analytics (range 5))))
+       (analytics (range 5)))
+
+  (is+ {:count 5
+        :types {java.lang.Long 5}
+        :frequencies {0 1, 1 1, 2 1, 3 1, 4 1}
+        :numbers {:n 5, :zeros 1, :max 4, :min 0, :mean 2.0}}
+       (analytics (set (range 5)))))
 
 (deftest strings-test
   (is+ {:count 100
@@ -50,7 +56,13 @@
         :types {clojure.lang.LongRange 19, clojure.lang.PersistentList$EmptyList 1}
         :frequencies map?
         :collections {:n 20, :empty 1, :max-size 19, :min-size 0, :avg-size 9.5}}
-       (analytics (map range (range 20)))))
+       (analytics (map range (range 20))))
+
+  (is+ {:count 20
+        :types {(class (byte-array 0)) 20}
+        :frequencies map?
+        :collections {:n 20, :empty 1, :max-size 19, :min-size 0, :avg-size 9.5}}
+       (analytics (map (comp byte-array range) (range 20)))))
 
 (deftest heterogeneous-list-stats
   (is+ {:count 90,
@@ -75,7 +87,16 @@
         :values {:types {java.lang.String 100}
                  :frequencies map?
                  :strings {:n 100, :blank 0, :ascii 100, :max-len 2, :min-len 1, :avg-len (approx 1.9)}}}
-       (analytics (zipmap (range 100) (map str (range 100))))))
+       (analytics (zipmap (range 100) (map str (range 100)))))
+
+  (is+ {:count 100
+        :keys {:types {java.lang.Long 100}
+               :frequencies map?
+               :numbers {:n 100, :zeros 1, :max 99, :min 0, :mean 49.5}}
+        :values {:types {java.lang.String 100}
+                 :frequencies map?
+                 :strings {:n 100, :blank 0, :ascii 100, :max-len 2, :min-len 1, :avg-len (approx 1.9)}}}
+       (analytics (java.util.HashMap. ^java.util.Map (zipmap (range 100) (map str (range 100)))))))
 
 (deftest list-of-tuples-test
   (is+ {:count 100
