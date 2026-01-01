@@ -999,12 +999,38 @@
          (-> clojure.lang.AFunction$1 inspect render (section "Fields")))))
 
 (deftest inspect-method-test
-  (testing "reflect.Method values aren't truncated"
-    (let [rendered (-> (.getDeclaredMethod clojure.lang.AFn "invoke"
-                                           (into-array Class (repeat 15 Object)))
-                       inspect render)]
-      (is+ (matchers/embeds [[:value "public Object invoke(Object,Object,Object,Object,Object,Object,Object,Object,Object,Object,Object,Object,Object,Object,Object)" 1]])
-           rendered))))
+  (testing "inspecting the HashMap.computeIfAbsent method"
+    (let [m (some #(when (= (.getName ^java.lang.reflect.Method %) "computeIfAbsent") %)
+                  (.getDeclaredMethods java.util.HashMap))
+          rendered (-> m inspect render)]
+      (testing "renders the header section"
+        (is+ ["Class: " [:value "java.lang.reflect.Method" 0] [:newline]
+              "Name: computeIfAbsent" [:newline]
+              "Flags: public" [:newline]
+              "Declaring class: " [:value "java.util.HashMap" 1] [:newline]
+              "Return type: " [:value "java.lang.Object" 2] [:newline] [:newline]]
+             (header rendered)))
+      (testing "renders the parameters section"
+        (is+ ["--- Parameter types:" [:newline]
+              "  0. " [:value "java.lang.Object" pos?] [:newline]
+              "  1. " [:value "java.util.function.Function" pos?]]
+             (section rendered "Parameter types")))))
+
+  (testing "inspecting the Future.get method"
+    (let [m (.getDeclaredMethod java.util.concurrent.Future "get" (into-array Class []))
+          rendered (-> m inspect render)]
+      (testing "renders the header section"
+        (is+ ["Class: " [:value "java.lang.reflect.Method" 0] [:newline]
+              "Name: get" [:newline]
+              "Flags: public abstract" [:newline]
+              "Declaring class: " [:value "java.util.concurrent.Future" 1] [:newline]
+              "Return type: " [:value "java.lang.Object" 2] [:newline] [:newline]]
+             (header rendered)))
+      (testing "renders the exceptios section"
+        (is+ ["--- Checked exceptions:" [:newline]
+              "  0. " [:value "java.lang.InterruptedException" pos?] [:newline]
+              "  1. " [:value "java.util.concurrent.ExecutionException" pos?]]
+             (section rendered "Checked exceptions"))))))
 
 (deftest inspect-atom-test
   (testing "inspecting an atom"
