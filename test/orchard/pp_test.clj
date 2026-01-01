@@ -193,17 +193,19 @@
   (is (= "[0\n 1]\n" (pp (find {0 1} 0) :max-width 2))))
 
 (deftest pprint-array-test
-  (is (= "[true false]\n" (pp (boolean-array [true false]))))
-  (is (= "[97 98]\n" (pp (byte-array [(int \a) (int \b)]))))
-  (is (= "[\\a \\b]\n" (pp (char-array [\a \b]))))
-  (is (= "[1.0 2.0]\n" (pp (double-array [1.0 2.0]))))
-  (is (= "[3.0 4.0]\n" (pp (float-array [3.0 4.0]))))
-  (is (= "[1 2 3]\n" (pp (int-array [1 2 3]))))
-  (is (= "[4 5 6]\n" (pp (into-array [4 5 6]))))
-  (is (= "[7 8 9]\n" (pp (long-array [7 8 9]))))
-  (is (= "[{:a 1} {:b 2}]\n" (pp (object-array [{:a 1} {:b 2}]))))
-  (is (= "[10 11 22]\n" (pp (short-array [10 11 22]))))
-  (is (= "[[1 2 3]\n [4 5 6]]\n" (pp (to-array-2d [[1 2 3] [4 5 6]])))))
+  (is (= "boolean[] {true false}\n" (pp (boolean-array [true false]))))
+  (is (= "byte[] {97 98}\n" (pp (byte-array [(int \a) (int \b)]))))
+  (is (= "char[] {\\a \\b}\n" (pp (char-array [\a \b]))))
+  (is (= "double[] {1.0 2.0}\n" (pp (double-array [1.0 2.0]))))
+  (is (= "float[] {3.0 4.0}\n" (pp (float-array [3.0 4.0]))))
+  (is (= "int[] {1 2 3}\n" (pp (int-array [1 2 3]))))
+  (is (= "java.lang.Long[] {4 5 6}\n" (pp (into-array [4 5 6]))))
+  (is (= "long[] {7 8 9}\n" (pp (long-array [7 8 9]))))
+  (is (= "java.lang.Object[] {{:a 1} {:b 2}}\n" (pp (object-array [{:a 1} {:b 2}]))))
+  (is (= "short[] {10 11 22}\n" (pp (short-array [10 11 22]))))
+  (is (= "[Ljava.lang.Object;[] {java.lang.Object[] {1 2 3}
+                       java.lang.Object[] {4 5 6}}\n"
+         (pp (to-array-2d [[1 2 3] [4 5 6]])))))
 
 (deftest pprint-meta-test
   ;; clojure.pprint prints this incorrectly with meta
@@ -249,10 +251,10 @@
     "{:a 1, :b 2}" (let [^java.util.Map x {:a 1 :b 2}]
                      (java.util.HashMap. x))
     "#TestRecord{:a 1, :b 2, :c 3, :d 4}" (orchard.print-test/->TestRecord 1 2 3 4)
-    "[1 2 3 4]" (long-array [1 2 3 4])
-    "[]" (long-array [])
-    "[0 1 2 3 4]" (into-array Long (range 5))
-    "[]" (into-array Long [])
+    "long[] {1 2 3 4}" (long-array [1 2 3 4])
+    "long[] {}" (long-array [])
+    "java.lang.Long[] {0 1 2 3 4}" (into-array Long (range 5))
+    "java.lang.Long[] {}" (into-array Long [])
     "#<MyTestType test1>" (orchard.print-test/->MyTestType "test1")
     "#atom[1]" (atom 1)
     "#delay[<pending>]" (delay 1)
@@ -274,9 +276,13 @@
       "[(1 1 1 1 1 ...)]" [(repeat 1)]
       "{:a {(0 1 2 3 4 ...) 1, 2 3, 4..." {:a {(range 10) 1, 2 3, 4 5, 6 7, 8 9, 10 11}}
       "(1 1 1 1 1..." (java.util.ArrayList. ^java.util.Collection (repeat 100 1))
-      "[0 1 2 3 4 ...]" (into-array Long (range 10))
       "{:m {:m {:m {:m {:m 1234, :e 1..." (orchard.print-test/nasty 5)
-      "{:b {:a {:..." orchard.print-test/graph-with-loop))
+      "{:b {:a {:..." orchard.print-test/graph-with-loop)
+
+    (is (= "java.lang.Long[] {0 1 2 3 4 ....."
+           (binding [print/*max-total-length* 30
+                     *print-length* 5]
+             (sut/pprint-str (into-array Long (range 10)))))))
 
   (testing "writer won't go much over total-length"
     (is (= 2003 (count (binding [print/*max-total-length* 2000]

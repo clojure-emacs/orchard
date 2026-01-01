@@ -51,7 +51,9 @@
     (map? coll) "{"
     (vector? coll) "["
     (set? coll) "#{"
-    (array? coll) "["
+    (array? coll) (let [ct (.getName (or (.getComponentType (class coll))
+                                         Object))]
+                    (str ct "[] {"))
     :else "("))
 
 (defn ^:private close-delim
@@ -61,7 +63,7 @@
     (map? coll) "}"
     (vector? coll) "]"
     (set? coll) "}"
-    (array? coll) "]"
+    (array? coll) "}"
     :else ")"))
 
 (defprotocol ^:private CountKeepingWriter
