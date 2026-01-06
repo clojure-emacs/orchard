@@ -184,8 +184,15 @@ workflows:
           matrix:
             alias: "test"
             parameters:
-              jdk_version: [jdk8, jdk11, jdk17, jdk21, jdk25]
+              jdk_version: [jdk8, jdk25]
               clojure_version: ["1.10", "1.11", "1.12"]
+          <<: *run_always
+      - test:
+          matrix:
+            alias: "test-inbetween-jdks"
+            parameters:
+              jdk_version: [jdk11, jdk17, jdk21]
+              clojure_version: ["1.12"]
           <<: *run_always
       - test:
           # Sanity check that we don't have a requirement for Clojurescript being on the classpath.
