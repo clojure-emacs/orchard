@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+## 0.38.0 (2026-01-09)
+
 - [#362](https://github.com/clojure-emacs/orchard/pull/362): Info: don't crash if symbol contains $ or /.
 - [#363](https://github.com/clojure-emacs/orchard/pull/363): Inspector: show duplicates in analytics.
 - [#365](https://github.com/clojure-emacs/orchard/pull/365): Inspector: don't datafy vars.
