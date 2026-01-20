@@ -2,6 +2,7 @@
   (:require
    [clojure.string :as str]
    [clojure.test :as test :refer [deftest is testing]]
+   [orchard.test.util :refer [is+]]
    [orchard.util.os :as os]))
 
 (when-not (= os/os-type ::os/windows)
@@ -20,4 +21,4 @@
 
 (when (= os/os-type ::os/windows)
   (deftest cache-dir-windows-test
-    (is (re-seq #"^C:\\Users\\.+\\AppData\\Local" (os/cache-dir)))))
+    (is+ #"^C:\\Users\\.+\\AppData\\Local\\Cache" (str (os/cache-dir)))))

@@ -2,6 +2,9 @@
 
 ## master (unreleased)
 
+- [#373](https://github.com/clojure-emacs/orchard/pull/373): Change how cache directory resolution is performed on Windows.
+- [#373](https://github.com/clojure-emacs/orchard/pull/373): **BREAKING:** Remove public vars from `orchard.util.os` namespace: `os-name`, `file-separator`.
+
 ## 0.38.0 (2026-01-09)
 
 - [#362](https://github.com/clojure-emacs/orchard/pull/362): Info: don't crash if symbol contains $ or /.
