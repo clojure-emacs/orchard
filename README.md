@@ -221,7 +221,7 @@ clients can make of use of the general functionality contained in
 
 ## License
 
-Copyright © 2018-2025 Bozhidar Batsov & contributors
+Copyright © 2018-2026 Bozhidar Batsov & contributors
 
 Distributed under the Eclipse Public License either version 1.0 or (at
 your option) any later version.
