@@ -4,6 +4,7 @@
 
 - [#373](https://github.com/clojure-emacs/orchard/pull/373): Change how cache directory resolution is performed on Windows.
 - [#373](https://github.com/clojure-emacs/orchard/pull/373): **BREAKING:** Remove public vars from `orchard.util.os` namespace: `os-name`, `file-separator`.
+- [#374](https://github.com/clojure-emacs/orchard/pull/374): Java: don't crash if parser-next could not be loaded.
 
 ## 0.38.0 (2026-01-09)
 
