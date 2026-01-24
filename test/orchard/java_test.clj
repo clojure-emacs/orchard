@@ -486,12 +486,3 @@
              (get-in (sut/class-info* 'java.nio.file.Path)
                      [:members 'of ['java.lang.String (symbol "java.lang.String[]")]
                       :annotated-arglists]))))))
-
-(when (and util/jdk-sources-present? jdk11+?)
-  (deftest *analyze-sources*-test
-    (with-redefs [cache (LruMap. 100)]
-      (binding [sut/*analyze-sources* false]
-        (is (nil? (:doc (sut/resolve-symbol 'user `Thread/activeCount)))
-            "Binding this var to `false` results in source info being omitted"))
-      (is (seq (:doc (sut/resolve-symbol 'user `Thread/activeCount)))
-          "Subsequent calls aren't affected, since there's no caching interference"))))

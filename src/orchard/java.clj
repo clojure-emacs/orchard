@@ -43,13 +43,11 @@
 ;;
 ;; Java parser support is available for JDK11+ via `java.parser-next`.
 
-(def parser-exception
-  "The exception found, if any, when running any parser."
-  (atom nil))
-
 (def ^:private parser-next-source-info
   (when (>= misc/java-api-version 11)
-    (requiring-resolve 'orchard.java.parser-next/source-info)))
+    (try (requiring-resolve 'orchard.java.parser-next/source-info)
+         ;; Might fail to load if running under JRE or whatever other reason.
+         (catch Exception _))))
 
 (defn source-info
   "Try to return class info from its parsed source if the source is available.
@@ -227,12 +225,6 @@
                    ;; for dynamically loaded classes:
                    :reflector (JavaReflector. (.getClassLoader c))))
 
-(def ^:dynamic *analyze-sources*
-  "Whether to analyze .java sources in addition to reflection-gathered info.
-
-  Bind this to `false` in order to increase performance / decrease the amount of information returned."
-  true)
-
 (defn class-info*
   "For the class symbol, return Java class and member info. Members are indexed
   first by name, and then by argument types to list all overloads."
@@ -257,7 +249,7 @@
                                     {:file     source-file-url
                                      :file-url source-file-url
                                      :resource relative-source-path})
-                                  (when (and *analyze-sources* source-file-url)
+                                  (when source-file-url
                                     (try (source-info c source-file-url)
                                          (catch Exception _)))
                                   {:name       (-> c .getSimpleName symbol)
@@ -315,8 +307,8 @@
       (:info cached)
 
       (let [{:keys [file-url] :as info} (class-info* class)]
-        ;; Only cache value if we discovered the source file and analyzed it.
-        (when (and *analyze-sources* file-url)
+        ;; Only cache value if we discovered the source file.
+        (when file-url
           (.put cache class
                 {:info info
                  :last-modified (util.io/last-modified-time file-url)}))
