@@ -2,13 +2,13 @@
   "Utility functions for extracting and manipulating metadata."
   (:require
    [clojure.java.io :as io]
-   [clojure.pprint :as pprint]
    [clojure.string :as str]
    [clojure.walk :as walk]
    [orchard.cljs.analysis :as cljs-ana]
    [orchard.clojuredocs :as cljdocs]
    [orchard.misc :as misc]
    [orchard.namespace :as ns]
+   [orchard.pp :as pp]
    [orchard.spec :as spec])
   (:import
    (clojure.lang Compiler LineNumberingPushbackReader Namespace Var)))
@@ -20,14 +20,13 @@
   [description]
   (if (seq? description)
     (str "(" (->> description
-                  (map #(with-out-str (pprint/pprint %)))
+                  (map pp/pprint-str)
                   str/join
                   str/trim-newline)
          ")")
-    (->>  description
-          pprint/pprint
-          with-out-str
-          str/trim-newline)))
+    (->> description
+         pp/pprint-str
+         str/trim-newline)))
 
 (defn format-spec
   "Return sequence of [role spec-description] pairs."
@@ -83,14 +82,8 @@
 (defn- maybe-protocol
   [info]
   (if-let [prot-meta (meta (:protocol info))]
-    (merge info {:file (:file prot-meta)
-                 :line (:line prot-meta)})
+    (merge info (select-keys prot-meta [:file :line]))
     info))
-
-(defn- map-seq [x]
-  (if (seq x)
-    x
-    nil))
 
 (defn resolve-var
   "Resolve `ns` and `sym` to a var.
@@ -191,8 +184,8 @@
   [target-map var-ref var-meta-fn cljs-env]
   (let [clj? (not cljs-env)
         original-meta (var-meta-fn var-ref)
-        interesting-meta-keys [:doc :arglists :style/indent :indent]
-        original-has-interesting-meta? (seq (select-keys original-meta interesting-meta-keys))
+        interesting-meta-keys #{:doc :arglists :style/indent :indent}
+        original-has-interesting-meta? (some interesting-meta-keys (keys original-meta))
         source-var-ref-from-value (delay
                                     (when clj?
                                       (let [v @var-ref]
@@ -219,14 +212,11 @@
         source-var (when-not original-has-interesting-meta?
                      (or @source-var-ref-from-value
                          @source-var-ref-from-reader))]
-    (or (when source-var
-          (when-let [copy (not-empty (select-keys (var-meta-fn source-var)
-                                                  (into []
-                                                        (remove (fn [k]
-                                                                  (contains? original-meta k)))
-                                                        interesting-meta-keys)))]
-            (merge target-map copy)))
-        target-map)))
+    (merge target-map
+           (when source-var
+             (select-keys (var-meta-fn source-var)
+                          (remove #(contains? original-meta %)
+                                  interesting-meta-keys))))))
 
 (defn merge-meta-for-indirect-var-clj
   "If `var-ref` is a var that proxies another var (expressed as a var, or as a symbol denoting a var),
@@ -267,7 +257,7 @@
          meta
          maybe-protocol
          (select-keys (or allowlist var-meta-allowlist))
-         map-seq
+         not-empty
          maybe-add-file
          maybe-add-url
          (update :ns ns-name)
@@ -358,12 +348,11 @@
                    :code code)))))))
 
 (defn ns-file
-  "Finds the path to the file defining this `ns`"
-  ^String
-  [ns]
+  "Finds the path to the file defining this `ns`."
+  ^String [ns]
   (or (some-> (ns-publics ns)
               first
-              second
+              val
               var-meta
               :file)
       (some-> (ns/canonical-source ns)
@@ -400,9 +389,7 @@
   ([form keys]
    (if (and (instance? clojure.lang.IObj form)
             (meta form))
-     (if keys
-       (with-meta form (apply dissoc (meta form) keys))
-       (with-meta form nil))
+     (with-meta form (when keys (apply dissoc (meta form) keys)))
      form)))
 
 (defn macroexpand-all
