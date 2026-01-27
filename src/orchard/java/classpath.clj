@@ -43,9 +43,8 @@
                (System/getProperty "path.separator"))))
 
 (defn classpath-urls [classloader]
-  (if-not (instance? URLClassLoader classloader)
-    nil
-    (-> ^URLClassLoader classloader .getURLs seq)))
+  (when (instance? URLClassLoader classloader)
+    (seq (.getURLs ^URLClassLoader classloader))))
 
 (defn classpath
   "Returns the URLs on the classpath."
@@ -74,12 +73,13 @@
 
        (misc/archive? url)
        (->> (enumeration-seq (.entries (JarFile. f)))
-            (filter #(not (.isDirectory ^JarEntry %)))
-            (map #(.getName ^JarEntry %)))
+            (keep (fn [^JarEntry je]
+                    (when-not (.isDirectory je) (.getName je)))))
 
        :else
        (->> (if file-seq-fn
               (file-seq-fn f)
               (file-seq f))
-            (filter #(not (.isDirectory ^File %)))
-            (map #(.getPath (.relativize (.toURI url) (.toURI ^File %)))))))))
+            (keep (fn [^File f]
+                    (when-not (.isDirectory f)
+                      (.getPath (.relativize (.toURI url) (.toURI f)))))))))))
