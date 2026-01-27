@@ -101,7 +101,8 @@
      ;; rewritten by mranderson
      (.startsWith ns-name "deps.")
      (.startsWith ns-name "mranderson")
-     (.startsWith ns-name "cider.nrepl.inlined-deps")
+     (.startsWith ns-name "cider.nrepl.inlined.deps")
+     (.contains ns-name ".inlined-deps.")
      ;; rewritten by dolly
      (.startsWith ns-name "eastwood.copieddeps"))))
 
@@ -117,7 +118,7 @@
 (defn has-tests?
   "Returns a truthy value if the namespace has any vars with `:test` metadata."
   [ns]
-  (seq (filter (comp :test meta val) (ns-interns ns))))
+  (some (comp :test meta val) (ns-interns ns)))
 
 ;;; Project Namespaces
 ;;
@@ -216,22 +217,17 @@
   {:added "0.19"}
   [ns-form]
   (->> ns-form
-       (filter (every-pred list?
-                           (comp #{:import} first)))
+       (filter #(and (seq? %) (= (first %) :import)))
        (mapcat (fn [[_import-keyword & clauses]]
-                 (->> clauses
-                      (mapcat (fn [x]
-                                (if (symbol? x)
-                                  [x]
-                                  (let [[prefix & classes] x]
-                                    (map (fn [class-symbol]
-                                           (symbol (str prefix
-                                                        "."
-                                                        class-symbol)))
-                                         classes))))))))
-       (distinct)
-       (sort-by pr-str)
-       (vec)))
+                 (mapcat (fn [x]
+                           (if (symbol? x)
+                             [x]
+                             (let [[prefix & classes] x]
+                               (for [class-symbol classes]
+                                 (symbol (str prefix "." class-symbol))))))
+                         clauses)))
+       distinct
+       (sort-by str)))
 
 (defn loaded-project-namespaces
   "Return all loaded namespaces defined in the current project."
@@ -244,9 +240,8 @@
   "Require and return all namespaces validly defined in the current project."
   []
   (->> (project-namespaces)
-       ;; don't pmap this - it performs a `require`:
-       (map ensure-namespace!)
-       (filter identity)
+       ;; Don't pmap this to avoid problems with simultaneous namespace loading.
+       (keep ensure-namespace!)
        sort))
 
 (defn loaded-namespaces
@@ -254,8 +249,7 @@
   `filter-regexps` is used to filter out namespaces matching regexps."
   [& [filter-regexps]]
   (->> (all-ns)
-       (remove inlined-dependency?)
-       (remove #(internal-namespace? % filter-regexps))
-       (map ns-name)
-       (map name)
+       (remove #(or (inlined-dependency? %)
+                    (internal-namespace? % filter-regexps)))
+       (map (comp name ns-name))
        (sort)))
