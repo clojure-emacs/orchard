@@ -54,35 +54,6 @@
       (is (contains? all n)
           n))))
 
-(deftest project-ns-forms-test
-  (is (map? (sut/project-ns-forms)))
-  (is (contains? (into #{} (sut/project-ns-forms))
-                 ['orchard.namespace-test
-                  '(ns orchard.namespace-test
-                     (:require
-                      [clojure.java.io :as io]
-                      [clojure.string :as str]
-                      [clojure.test :refer [are deftest is testing]]
-                      [orchard.misc :as misc]
-                      [orchard.namespace :as sut]))])))
-
-(deftest ns-form-imports-test
-  (let [corpus (mapcat sut/ns-form-imports (vals (sut/project-ns-forms)))]
-    (is (seq corpus))
-    (doseq [s corpus]
-      (is (symbol? s))
-      ;; Exclude classes that are JDK-dependent.
-      (when-not (some #(str/starts-with? (name s) %)
-                      ["com.sun.tools.javadoc."
-                       "com.sun.javadoc."
-                       "jdk.javadoc.doclet."
-                       "com.sun.source.tree.ClassTree"
-                       "com.sun.tools.javac.tree.JCTree"
-                       "com.sun.tools.javac.util."
-                       "com.sun.source.doctree."])
-        (is (-> s eval class?)
-            (pr-str s))))))
-
 (deftest loaded-namespaces-test
   ;; If we don't pass the second arg, some cider ns will be returned
   (is (some #(re-find #".*orchard" %) (sut/loaded-namespaces)))

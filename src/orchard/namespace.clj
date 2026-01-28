@@ -55,12 +55,6 @@
            (every-pred ns-form? ns-form->ns-name)
            ns-form->ns-name))
 
-(defn read-ns-form
-  "Returns the first top-level `ns` form in the file."
-  {:added "0.19"}
-  [url]
-  (read-ns url ns-form? identity))
-
 (defn canonical-source
   "Returns the URL of the source file for the namespace object or symbol,
   according to the canonical naming convention, if present on the classpath."
@@ -125,14 +119,6 @@
 ;; These methods search sources on the classpath. Non-classpath source
 ;; files, documentation code, etc within the project directory are ignored.
 
-(defn jvm-clojure-resource-name->ns-form
-  "Given a .clj or .cljc `resource-name`, returns its `ns` form."
-  [resource-name]
-  (when (misc/clj-file? resource-name)
-    (some-> resource-name
-            io/resource ;; can return nil for Emacs backup files, for example
-            read-ns-form)))
-
 (defn jvm-clojure-resource-name->ns-name
   "Given a .clj or .cljc `resource-name`, returns its namespace name."
   [resource-name]
@@ -191,43 +177,6 @@
                  x)))
        (filter identity)
        (classpath-namespaces)))
-
-(defn project-ns-forms
-  "Returns all JVM Clojure `ns` forms defined in sources within the current project,
-  indexed by `ns-name`."
-  {:added "0.19"}
-  []
-  (let [resources (->> (cp/classpath)
-                       (pmap (fn [x]
-                               (when ((every-pred misc/directory? in-project?) x)
-                                 x)))
-                       (filter identity))]
-    (into {}
-          (map (fn [ns-form]
-                 [(ns-form->ns-name ns-form)
-                  ns-form]))
-          (classpath-namespaces resources jvm-clojure-resource-name->ns-form))))
-
-(defn ns-form-imports
-  "Given a `ns` form, returns its `:imports` as fully-qualified Java class names,
-  expressed as symbols.
-
-  Prefix notation is undone, so that all returned members are simple symbols
-  that can be resolved to a class directly."
-  {:added "0.19"}
-  [ns-form]
-  (->> ns-form
-       (filter #(and (seq? %) (= (first %) :import)))
-       (mapcat (fn [[_import-keyword & clauses]]
-                 (mapcat (fn [x]
-                           (if (symbol? x)
-                             [x]
-                             (let [[prefix & classes] x]
-                               (for [class-symbol classes]
-                                 (symbol (str prefix "." class-symbol))))))
-                         clauses)))
-       distinct
-       (sort-by str)))
 
 (defn loaded-project-namespaces
   "Return all loaded namespaces defined in the current project."
