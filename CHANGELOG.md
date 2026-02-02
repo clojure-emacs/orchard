@@ -4,7 +4,8 @@
 
 - [#373](https://github.com/clojure-emacs/orchard/pull/373): Change how cache directory resolution is performed on Windows.
 - [#373](https://github.com/clojure-emacs/orchard/pull/373): **BREAKING:** Remove public vars from `orchard.util.os` namespace: `os-name`, `file-separator`.
-- [#377](https://github.com/clojure-emacs/orchard/pull/377): **BREAKING:** Remove public vars from `orchard.namespace` namespace: `read-ns-form`, `jvm-clojure-resource-name->ns-form`, `project-ns-forms`, `ns-form-imports`.
+- [#377](https://github.com/clojure-emacs/orchard/pull/377): **BREAKING:** Remove public vars from `orchard.namespace` namespace: `read-ns-form`, `read-ns-name`, `jvm-clojure-resource-name->ns-form`, `project-ns-forms`, `ns-form-imports`.
+- [#378](https://github.com/clojure-emacs/orchard/pull/378): Namespace: infer namespace names from filenames instead of reading ns forms.
 - [#374](https://github.com/clojure-emacs/orchard/pull/374): Java: don't crash if parser-next could not be loaded.
 
 ## 0.38.0 (2026-01-09)

@@ -1,8 +1,5 @@
 (ns orchard.namespace
-  "Utilities for resolving and loading namespaces.
-
-  Operations are parallel wherever it makes sense and it's safe to do so;
-  efficiency matters particularly for large projects/classpaths."
+  "Utilities for resolving and loading namespaces."
   {:author "Jeff Valk"
    :added "0.5"}
   (:require
@@ -11,49 +8,16 @@
    [orchard.java.classpath :as cp]
    [orchard.misc :as misc])
   (:import
-   (java.io File PushbackReader)
-   (java.net URL)
-   (java.nio.file FileVisitOption Files Path)
-   (java.util.function BiPredicate)
-   (java.util.stream Collectors)))
+   (java.net URL)))
 
 ;;; Namespace/source resolution
 
-(defn- ns-form->ns-name [x]
-  (let [s (second x)]
-    (when (symbol? s)
-      s)))
-
-(defn- ns-form? [x]
-  (and (list? x)
-       (-> x first #{`ns 'ns})))
-
-(defn- read-ns [url pred extract]
-  (with-open [r (PushbackReader. (io/reader url))]
-    (loop []
-      (let [found (try
-                    (binding [*read-eval* false]
-                      (read {:read-cond :allow
-                             :eof ::eof}
-                            r))
-                    (catch Exception _
-                      ::fail))]
-        (cond
-          (#{::eof ::fail} found)
-          nil
-
-          (pred found)
-          (extract found)
-
-          :else
-          (recur))))))
-
-(defn read-ns-name
-  "Returns the namespace name from the first top-level `ns` form in the file."
-  [url]
-  (read-ns url
-           (every-pred ns-form? ns-form->ns-name)
-           ns-form->ns-name))
+(defn- resource-name->ns-name
+  "Infer the namespace name from the classpath resource name."
+  [^String resource-name]
+  (.. (subs resource-name 0 (.lastIndexOf resource-name "."))
+      (replace "/" ".")
+      (replace "_" "-")))
 
 (defn canonical-source
   "Returns the URL of the source file for the namespace object or symbol,
@@ -122,76 +86,38 @@
 (defn jvm-clojure-resource-name->ns-name
   "Given a .clj or .cljc `resource-name`, returns its namespace name."
   [resource-name]
-  (when (misc/clj-file? resource-name)
-    (some-> resource-name
-            io/resource ;; can return nil for Emacs backup files, for example
-            read-ns-name)))
-
-(defn- find-clj+cljc-files-efficiently
-  "Finds .clj/c files as efficiently as possible.
-
-  In particular, avoids returning unnecessary files,
-  and creating objects for those.
-
-  This way, upstream consumers like `orchard.java.classpath/classpath-seq` will operate on fewer File objects,
-  improving performance for large workloads (e.g. a directory with 1M files was placed as a resource)."
-  [^File dir]
-  (let [start-path (.toPath dir)
-        matcher (reify BiPredicate
-                  (test [_this path _attrs]
-                    (boolean (and
-                              (re-find #"\.cljc*$" (.toString ^Path path)) ;; operate directly on the Path (without File conversion) for efficiency
-                              (-> ^Path path .toFile .isFile)))))]
-
-    (->> (.collect (Files/find start-path 100 matcher (into-array FileVisitOption []))
-                   (Collectors/toList))
-         (mapv (fn [^Path path]
-                 (.toFile path))))))
+  ;; io/resource can return nil for Emacs backup files, for example
+  (when (io/resource resource-name)
+    (symbol (resource-name->ns-name resource-name))))
 
 (defn classpath-namespaces
-  "Returns all namespaces (by default: of .clj or .cljc extension)
+  "Returns all namespaces (as identified by files with .clj or .cljc extension)
   defined in sources on the classpath or the specified classpath URLs."
-  ([]
-   (classpath-namespaces (cp/classpath)))
-
+  ([] (classpath-namespaces (cp/classpath)))
   ([classpath-urls]
-   (sort (classpath-namespaces classpath-urls jvm-clojure-resource-name->ns-name)))
-
-  ([classpath-urls extract-fn]
    (->> classpath-urls
-        (pmap (fn [classpath-url]
-                (cp/classpath-seq classpath-url
-                                  (when (= extract-fn jvm-clojure-resource-name->ns-name) ;; Prefer most efficient method when possible (#222)
-                                    (fn [^File dir]
-                                      (find-clj+cljc-files-efficiently dir))))))
-        (apply concat)
-        (pmap extract-fn)
-        (filter identity))))
+        (mapcat cp/clojure-sources-on-classpath)
+        (keep jvm-clojure-resource-name->ns-name)
+        distinct
+        sort)))
 
 (defn project-namespaces
   "Returns all JVM Clojure namespaces defined in sources within the current project."
   []
   (->> (cp/classpath)
-       (pmap (fn [x]
-               (when ((every-pred misc/directory? in-project?) x)
-                 x)))
-       (filter identity)
+       (filter #(and (misc/directory? %) (in-project? %)))
        (classpath-namespaces)))
 
 (defn loaded-project-namespaces
   "Return all loaded namespaces defined in the current project."
   []
   (->> (project-namespaces)
-       (filter (set (map ns-name (all-ns))))
-       sort))
+       (filterv (set (map ns-name (all-ns))))))
 
 (defn load-project-namespaces
   "Require and return all namespaces validly defined in the current project."
   []
-  (->> (project-namespaces)
-       ;; Don't pmap this to avoid problems with simultaneous namespace loading.
-       (keep ensure-namespace!)
-       sort))
+  (into [] (keep ensure-namespace!) (project-namespaces)))
 
 (defn loaded-namespaces
   "Returns all loaded namespaces, except those coming from inlined dependencies.

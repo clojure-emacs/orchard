@@ -4,15 +4,14 @@
    [clojure.set :as set]
    [clojure.string :as str]
    [clojure.test :refer [deftest is testing]]
-   [matcher-combinators.matchers :as m]
+   [matcher-combinators.matchers :as mc]
    [orchard.java]
    [orchard.java.classpath :as cp]
-   [orchard.misc :as misc])
+   [orchard.misc :as misc]
+   [orchard.test.util :refer [is+]])
   (:import
    (java.io File)
    (java.net URL)))
-
-(require 'matcher-combinators.test) ;; for `match?`
 
 ;; Simple normalization for string compare. Classpath URLs have trailing
 ;; slashes; classpath entries specified at JVM launch may or may not.
@@ -25,22 +24,20 @@
 (deftest classpath-test
   (testing "Classpath"
     (testing "URLs are absolute file paths"
-      (let [non-absolute-paths (remove #(-> ^URL % .getPath File. .isAbsolute)
-                                       (cp/classpath))]
-        (is (empty? non-absolute-paths) (pr-str non-absolute-paths))))
+      (is+ (mc/seq-of #(-> ^URL % .getPath File. .isAbsolute))
+           (cp/classpath)))
     (testing "directory paths have a trailing slash"
-      (let [dir-entries (filter misc/directory? (cp/classpath))
-            no-slash (remove #(-> ^URL % .getPath (.endsWith "/")) dir-entries)]
-        (is (empty? no-slash))))
+      (let [dir-entries (filter misc/directory? (cp/classpath))]
+        (is+ (mc/seq-of #(-> ^URL % .getPath (.endsWith "/"))) dir-entries)))
     (testing "contains expected entries"
       (let [project-root (System/getProperty "user.dir")
             directory-with-jar-extension (some #(when (re-find #"not-a\.jar" (.getPath ^URL %)) %)
                                                (cp/classpath))]
-        (is (match? (m/embeds [(trim-trailing-slash (io/as-url (io/file project-root "src")))
-                               (trim-trailing-slash (.getPath (io/as-url (io/file project-root "test"))))
-                               #".*/clojure-.*\.jar"
-                               #".*/clojure-.*-sources\.jar"])
-                    (map trim-trailing-slash (cp/classpath))))
+        (is+ (mc/embeds [(trim-trailing-slash (io/as-url (io/file project-root "src")))
+                         (trim-trailing-slash (.getPath (io/as-url (io/file project-root "test"))))
+                         #".*/clojure-.*\.jar"
+                         #".*/clojure-.*-sources\.jar"])
+             (map trim-trailing-slash (cp/classpath)))
         (testing "Directories with .jar extension"
           (is directory-with-jar-extension "Is present in the classpath")
           (is (-> directory-with-jar-extension io/file .isDirectory)
@@ -80,9 +77,8 @@
               (pr-str non-existing-jar)))
         (is (seq (mapcat cp/classpath-seq corpus)))))
     (testing "returns relative paths"
-      (let [entries (mapcat cp/classpath-seq (cp/classpath))
-            absolute (filter #(.isAbsolute (File. ^String %)) entries)]
-        (is (empty? absolute))))))
+      (is+ (mc/seq-of #(not (.isAbsolute (io/file %))))
+           (mapcat cp/classpath-seq (cp/classpath))))))
 
 (deftest classloader-test
   (testing "Classloader hierarchy contains current classloader"
