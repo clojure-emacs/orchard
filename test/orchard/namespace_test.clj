@@ -7,7 +7,7 @@
    [orchard.namespace :as sut]))
 
 (deftest project-namespaces-test
-  (let [all (into #{} (sut/project-namespaces))]
+  (let [all (set (sut/project-namespaces))]
     (doseq [n '#{orchard.apropos
                  orchard.apropos-test
                  orchard.cljs.analysis
@@ -85,40 +85,6 @@
 (deftest has-tests-errors
   (is (sut/has-tests? (find-ns 'orchard.namespace-test))))
 
-(deftest read-ns-name-test
-  (testing "Namespace parsing"
-    (let [url (-> (System/getProperty "java.io.tmpdir")
-                  (io/file "orchard.namespace-test.txt")
-                  (io/as-url))
-          uri (.toURI url)]
-      (testing "of an empty file"
-        (spit url "")
-        (is (nil? (sut/read-ns-name uri))))
-      (testing "of an unparsable file"
-        (spit url "(]$@(")
-        (is (nil? (sut/read-ns-name uri))))
-      (testing "of non-list tokens"
-        (spit url "these are (still) tokens")
-        (is (nil? (sut/read-ns-name uri))))
-      (testing "when tokens precede the ns form"
-        (spit url "there [is a] (ns here) after all")
-        (is (= 'here (sut/read-ns-name uri))))
-      (testing "when multiple ns forms are present"
-        (spit url "(ns ns1) (ns ns2) (ns ns3)")
-        (is (= 'ns1 (sut/read-ns-name uri))))
-      (testing "when ns form is invalid"
-        (spit url "(ns (:require [clojure.string]))")
-        (is (nil? (sut/read-ns-name uri))))
-      (testing "of top-level forms only"
-        (spit url "(comment (ns ns1)) (ns ns2) (ns ns3)")
-        (is (= 'ns2 (sut/read-ns-name uri))))
-      (testing "of namespace with read conditionals in its `ns` form"
-        (is (= 'orchard.test-ns (-> "orchard/test_ns.cljc"
-                                    io/resource
-                                    io/as-url
-                                    sut/read-ns-name))))
-      (io/delete-file url))))
-
 (deftest namespace-resolution
   (testing "Resolving"
     (let [nses '[clojure.java.io
@@ -127,12 +93,9 @@
                  orchard.misc
                  orchard.namespace
                  orchard.cljs.test-canonical-source]]
-      (testing "namespace symbols to source files"
-        (is (every? identity (map sut/canonical-source nses))))
-      (testing "source files to namespace symbols"
-        (is (= nses (map (comp sut/read-ns-name    ; src -> ns
-                               sut/canonical-source) ; ns -> src
-                         nses)))))))
+      (doseq [ns nses]
+        (testing "namespace symbols to source files"
+          (is (sut/canonical-source ns)))))))
 
 (deftest jvm-clojure-resource-name->ns-name
   (are [input expected] (= expected

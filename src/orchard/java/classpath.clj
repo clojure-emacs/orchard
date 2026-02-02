@@ -8,7 +8,10 @@
   (:import
    (java.io File)
    (java.net URL URLClassLoader)
-   (java.util.jar JarEntry JarFile)))
+   (java.nio.file Files FileVisitOption Path)
+   (java.util.function BiPredicate Function Predicate)
+   (java.util.jar JarEntry JarFile)
+   (java.util.stream Collectors)))
 
 ;;; Classloaders
 
@@ -59,8 +62,10 @@
 ;;; Classpath resources
 
 (defn classpath-seq
-  "Returns a sequence of all descendant non-directory files or archive entries
-  as relative paths."
+  "Returns a sequence of all descendant non-directory files or archive entries as
+  relative paths. This function is deprecated in CIDER projects because of its
+  poor performance in very large projects; use `clojure-sources-on-classpath` as
+  a more efficient alternative."
 
   ([url]
    (classpath-seq url nil))
@@ -83,3 +88,53 @@
             (keep (fn [^File f]
                     (when-not (.isDirectory f)
                       (.getPath (.relativize (.toURI url) (.toURI f)))))))))))
+
+(defn- clojure-source-file? [^String fname]
+  (and (or (.endsWith fname ".clj") (.endsWith fname ".cljc"))
+       ;; Exclude non-code files, configs, etc.
+       (not
+        (or (.startsWith fname "META-INF")
+            (= fname "data_readers.clj")))))
+
+(defn- find-clojure-source-files
+  "Find .clj/.cljc files more efficiently than by using `file-seq`. Returns a list
+  of filenames relative to `dir`."
+  [^File dir]
+  (let [start-path (.toPath dir)
+        dir-uri (.toURI dir)
+        max-depth 100
+        matcher (reify BiPredicate
+                  (test [_this path _attrs]
+                    (clojure-source-file? (str path))))]
+    (-> (Files/find start-path max-depth matcher (into-array FileVisitOption []))
+        (.map (reify Function
+                (apply [_this path]
+                  (let [f (.toFile ^Path path)]
+                    (when (.isFile f)
+                      (let [rel-fname (.getPath (.relativize dir-uri (.toURI f)))]
+                        ;; Double-check the relative path for exclusions.
+                        (when (clojure-source-file? rel-fname)
+                          rel-fname)))))))
+        (.filter (reify Predicate
+                   (test [_ x] (some? x))))
+        (.collect (Collectors/toList)))))
+
+(defn clojure-sources-on-classpath
+  "Return a list of Clojure files (with .clj and .cljc extension) as relative
+  paths that are present in the given classpath URL."
+  [^URL url]
+  (let [file (io/as-file url)]
+    (cond
+      (not (.exists file))
+      []
+
+      (misc/archive? url)
+      (->> (enumeration-seq (.entries (JarFile. file)))
+           (keep (fn [^JarEntry je]
+                   (when-not (.isDirectory je)
+                     (let [name (.getName je)]
+                       (when (clojure-source-file? name)
+                         name))))))
+
+      :else
+      (vec (find-clojure-source-files file)))))
