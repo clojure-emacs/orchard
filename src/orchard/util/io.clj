@@ -4,7 +4,33 @@
    [clojure.java.io :as io])
   (:import
    (java.io File)
-   (java.net URL JarURLConnection)))
+   (java.net URL JarURLConnection)
+   (java.nio.file Path LinkOption)))
+
+(def ^:private ^Path cwd-path
+  (let [path (.toPath (io/file ""))]
+    (try (.toRealPath path (into-array LinkOption []))
+         (catch Exception _
+           ;; .toRealPath may throw in some cases, this is a fallback that
+           ;; doesn't do normalization.
+           (.toAbsolutePath path)))))
+
+(defn- as-path ^Path [path-or-file-or-string]
+  (if (instance? Path path-or-file-or-string)
+    path-or-file-or-string
+    (.toPath (io/as-file path-or-file-or-string))))
+
+(defn file-in-project?
+  "Return true if the given file (String or File) or Path belongs to the project
+  directory (where the process was started)."
+  [path-or-file]
+  (.startsWith (as-path path-or-file) cwd-path))
+
+(defn relativize-project-path
+  "Given a file or a path which lives in current process' directory, return its
+  relative path in the project as a String."
+  [path-or-file]
+  (str (.relativize cwd-path (as-path path-or-file))))
 
 (defn url-protocol
   "Get the URL protocol as a string, e.g. http, file, jar."

@@ -13,12 +13,10 @@
    [orchard.info :as info]
    [orchard.java.resource :as resource]
    [orchard.misc :as misc :refer [assoc-some]]
-   [orchard.print :as print])
+   [orchard.print :as print]
+   [orchard.util.io :as util.io])
   (:import
-   (java.net URL)
-   (java.nio.file Path)))
-
-(def ^:private ^Path cwd-path (.toAbsolutePath (.toPath (io/file ""))))
+   (java.net URL)))
 
 (defn- print-str [value]
   ;; Limit printed collections to 5 items.
@@ -118,8 +116,7 @@
   (if file-url
     (-> frame
         (flag-frame (if (and (= (.getProtocol file-url) "file")
-                             (-> file-url .getFile io/file .toPath
-                                 (.startsWith cwd-path)))
+                             (util.io/file-in-project? (.getFile file-url)))
                       :project :dependency))
         (update :file-url str)) ;; Stringify file-url for bencode transfer.
     ;; If file-url is absent, we can't flag it as neither.
@@ -189,10 +186,9 @@
   "If the path is under the project root, return the relative path; otherwise
   return the original path."
   [path]
-  (let [child-path (.toPath (io/file path))]
-    (if (.startsWith child-path cwd-path)
-      (str (.relativize cwd-path child-path))
-      path)))
+  (if (util.io/file-in-project? path)
+    (util.io/relativize-project-path path)
+    path))
 
 (defn- extract-location
   "If the cause is a compiler exception, extract the useful location information
