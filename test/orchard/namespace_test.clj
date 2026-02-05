@@ -4,7 +4,8 @@
    [clojure.string :as str]
    [clojure.test :refer [are deftest is testing]]
    [orchard.misc :as misc]
-   [orchard.namespace :as sut]))
+   [orchard.namespace :as sut]
+   [orchard.util.io :as util.io]))
 
 (deftest project-namespaces-test
   (let [all (set (sut/project-namespaces))]
@@ -61,26 +62,13 @@
   (is (not-any? #(re-find #".*orchard" %)
                 (sut/loaded-namespaces [".*orchard"]))))
 
-(defn- change-case
-  "Utility fn to change the case of a URL path, to help with case sensitivity
-  tests that follows"
-  [url]
-  (let [string (str url)
-        upper (str/upper-case string)
-        lower (str/lower-case string)]
-    (io/as-url
-     (if (= string lower) upper lower))))
+(defn- change-case [path]
+  (.toPath (io/as-file (str/upper-case (str path)))))
 
-(deftest project-nses-ignore-case-on-windows-test
-  (let [orig-project-root sut/project-root]
-    (testing "Project nses is case sensitive on non Windows oses"
-      (with-redefs [misc/os-windows? (constantly false)
-                    sut/project-root   (change-case orig-project-root)]
-        (is (not (seq (sut/project-namespaces))))))
-    (testing "Project nses ignore cases on Windows oses"
-      (with-redefs [misc/os-windows? (constantly true)
-                    sut/project-root   (change-case orig-project-root)]
-        (is (seq (sut/project-namespaces)))))))
+(when (misc/os-windows?)
+  (deftest project-nses-ignore-case-on-windows-test
+    (with-redefs [util.io/cwd-path (change-case @#'util.io/cwd-path)]
+      (is (seq (sut/project-namespaces))))))
 
 (deftest has-tests-errors
   (is (sut/has-tests? (find-ns 'orchard.namespace-test))))

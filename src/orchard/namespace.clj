@@ -6,7 +6,8 @@
    [clojure.java.io :as io]
    [clojure.string :as str]
    [orchard.java.classpath :as cp]
-   [orchard.misc :as misc])
+   [orchard.misc :as misc]
+   [orchard.util.io :as util.io])
   (:import
    (java.net URL)))
 
@@ -40,15 +41,6 @@
        (catch Exception _)))
 
 ;;; Filters
-
-(def project-root
-  (io/as-url (io/file (System/getProperty "user.dir"))))
-
-(defn in-project?
-  "Whether the URL is in the current project's directory."
-  [url]
-  (let [path (if (misc/os-windows?) (comp str/lower-case str) str)]
-    (.startsWith ^String (path url) (path project-root))))
 
 (defn inlined-dependency?
   "Returns true if the namespace matches one of our, or eastwood's,
@@ -105,7 +97,8 @@
   "Returns all JVM Clojure namespaces defined in sources within the current project."
   []
   (->> (cp/classpath)
-       (filter #(and (misc/directory? %) (in-project? %)))
+       (filter #(and (misc/directory? %)
+                     (util.io/file-in-project? (.getFile ^URL %))))
        (classpath-namespaces)))
 
 (defn loaded-project-namespaces
