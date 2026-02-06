@@ -7,7 +7,7 @@ SHELL = /bin/bash -Ee
 
 HOME=$(shell echo $$HOME)
 CLOJURE_VERSION ?= 1.12
-TEST_PROFILES ?= "-user,-dev,+test,+cljs"
+TEST_PROFILES ?= "-user,-dev,+test"
 
 resources/clojuredocs/export.edn:
 curl -o $@ https://github.com/clojure-emacs/clojuredocs-export-edn/raw/master/exports/export.compact.edn
@@ -43,9 +43,9 @@ base-src-.zip:
 test: copy-sources-to-jdk clean
 	lein with-profile $(TEST_PROFILES),+$(CLOJURE_VERSION) test
 
-# Sanity check that we don't break if Clojurescript isn't present.
-test-no-extra-deps: copy-sources-to-jdk
-	lein with-profile -user,-dev,+test,+$(CLOJURE_VERSION) test
+# Having Clojurescript on classpath enables extra tests.
+test-with-cljs: copy-sources-to-jdk
+	lein with-profile $(TEST_PROFILES),+$(CLOJURE_VERSION),+cljs test
 
 eastwood:
 	lein with-profile $(TEST_PROFILES),+$(CLOJURE_VERSION),+eastwood eastwood

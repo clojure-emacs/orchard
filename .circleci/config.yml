@@ -195,13 +195,13 @@ workflows:
               clojure_version: ["1.12"]
           <<: *run_always
       - test:
-          # Sanity check that we don't have a requirement for Clojurescript being on the classpath.
           matrix:
-            alias: "test_no_extra_deps"
+            alias: "test_with_cljs"
             parameters:
+              # Latest Clojurescript only works with JDK21+.
               jdk_version: [jdk25]
               clojure_version: ["1.12"]
-              command: ["test-no-extra-deps"]
+              command: ["test-with-cljs"]
           <<: *run_always
       - test_windows:
           <<: *run_always
@@ -210,7 +210,7 @@ workflows:
       - deploy:
           requires:
             - test
-            - test_no_extra_deps
+            - test_with_cljs
             - test_windows
             - lint
           filters:
