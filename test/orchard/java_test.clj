@@ -119,16 +119,16 @@
                 (is (seq full-class-info-members))
                 (is (empty? (set/difference (set (keys reflector-class-info-members))
                                             (set (keys full-class-info-members))))
-                    {:reflector-arities (keys reflector-class-info-members)
-                     :only-in-full (keys full-class-info-members)}))
+                    (pr-str {:reflector-arities (keys reflector-class-info-members)
+                             :only-in-full (keys full-class-info-members)})))
               (testing "Arities info"
                 (doseq [k (keys full-class-info-members)]
                   (testing (str "arity " k)
                     (let [reflector-arities (set (keys (reflector-class-info-members k)))
                           full-arities (set (keys (full-class-info-members k)))]
                       (is (empty? (set/difference reflector-arities full-arities))
-                          {:reflector-arities reflector-arities
-                           :only-in-full full-arities}))))))
+                          (pr-str {:reflector-arities reflector-arities
+                                   :only-in-full full-arities})))))))
 
             (is (pos? (count all-annotated-arglists)))
             (doseq [[s constructor?] all-annotated-arglists]
@@ -483,6 +483,6 @@
   (deftest array-arg-doc-test
     (testing "Regression test for #278"
       (is (= "^Path [^String first, ^String[] more]"
-             (get-in (sut/class-info* 'java.nio.file.Path)
+             (get-in (class-info* 'java.nio.file.Path)
                      [:members 'of ['java.lang.String (symbol "java.lang.String[]")]
                       :annotated-arglists]))))))

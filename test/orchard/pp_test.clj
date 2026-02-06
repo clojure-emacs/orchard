@@ -117,6 +117,7 @@
 
   (is (= "@(foo)\n" (pp '@(foo))))
   (is (= "'foo\n" (pp ''foo)))
+  #_:clj-kondo/ignore
   (is (= "~foo\n" (pp '~foo)))
 
   (is (= "('#{boolean\n    char\n    floats})\n"
