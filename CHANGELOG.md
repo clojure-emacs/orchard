@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+## 0.39.0 (2026-02-07)
+
 - [#373](https://github.com/clojure-emacs/orchard/pull/373): Change how cache directory resolution is performed on Windows.
 - [#373](https://github.com/clojure-emacs/orchard/pull/373): **BREAKING:** Remove public vars from `orchard.util.os` namespace: `os-name`, `file-separator`.
 - [#377](https://github.com/clojure-emacs/orchard/pull/377): **BREAKING:** Remove public vars from `orchard.namespace` namespace: `read-ns-form`, `read-ns-name`, `jvm-clojure-resource-name->ns-form`, `project-ns-forms`, `ns-form-imports`, `project-root`, `in-project?`.
