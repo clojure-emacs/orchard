@@ -45,25 +45,25 @@
 
     ;; parsing based on the macro name:
 
-    'defprotocol '[[name & opts+sigs]]   [1 [:defn]]
+    'defprotocol '[[name & opts+sigs]]   [[:block 1] [:inner 1]]
     ;; structurally equivalent:
-    'defprotocol '[[nAme & Opts+siGs]]   [1 [:defn]]
+    'defprotocol '[[nAme & Opts+siGs]]   [[:block 1] [:inner 1]]
     ;; structurally different (`&` is special, so the 3 elements are deemed different):
     'defprotocol '[[a b c]]              nil
     ;; structurally different:
     'defprotocol '[[something-else]]     nil
     ;; name is a fuzzy match of defprotocol:
-    'defprotocolA '[[name & opts+sigs]]  [1 [:defn]]
+    'defprotocolA '[[name & opts+sigs]]  [[:block 1] [:inner 1]]
     ;; name is not a fuzzy match of defprotocol, so gets a different value:
     'dfprotocol '[[name & opts+sigs]]    1
     ;; gets the value defined for the special form `catch`:
-    'catch      '[]                      2
+    'catch      '[]                      [[:block 2]]
     ;; Does not get the value defined for the special form `catch` (it's defined in `sut/clojure-mode-indents-exact`):
     'catcha     '[]                      nil
     ;; Gets the value defined for the special form `finally`:
-    'finally    '[]                      0
+    'finally    '[]                      [[:block 0]]
     ;; Gets the value defined for the special form `finally` (it's defined in `sut/clojure-mode-indents-fuzzy`):
-    'finallyA   '[]                      0
+    'finallyA   '[]                      [[:block 0]]
 
     ;; parsing based on `&`:
 

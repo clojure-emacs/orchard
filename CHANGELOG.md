@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+- Adopt the modern indent spec tuple format (`[[:block N]]`, `[[:inner D]]`) shared with clojure-mode and clojure-ts-mode. The inferred `:style/indent` values from the spec tables now use this format. Plain integer inference from arglists is unchanged.
+
 ## 0.39.0 (2026-02-07)
 
 - [#373](https://github.com/clojure-emacs/orchard/pull/373): Change how cache directory resolution is performed on Windows.
