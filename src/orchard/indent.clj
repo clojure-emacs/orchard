@@ -17,72 +17,78 @@
   and might be a syllable/word within a larger, unrelated word/phrase.
 
   e.g. `are` can be part of `compare`, so `are` should only be looked for exact matches,
-  not for fuzzy matches."
+  not for fuzzy matches.
+
+  Uses the modern tuple format shared with clojure-mode and clojure-ts-mode:
+  [[:block N]] — N special args, then body
+  [[:inner D]] — body-style at nesting depth D
+  [[:inner D I]] — body-style at depth D, only at position I"
   (index-by-name '{clojure.core/->           nil
                    clojure.core/->>          nil
-                   clojure.test/are          2
-                   clojure.core/binding      1
-                   clojure.core/case         1
-                   catch                     2
-                   clojure.core/comment      0
-                   clojure.core/cond         0
-                   def                       :defn
-                   clojure.core/defn         :defn
-                   clojure.core/delay        0
-                   do                        0
-                   clojure.core/extend       1
-                   clojure.spec.alpha/fdef   1
-                   clojure.core/fn           :defn
-                   clojure.core/for          1
-                   clojure.core.async/go     0
-                   if                        1
-                   clojure.core/let          1
-                   clojure.core/locking      1
-                   clojure.core/loop         1
-                   clojure.core/ns           1
-                   clojure.core/proxy        [2 nil nil [:defn]]
-                   clojure.core/reify        [:defn [1]]
-                   clojure.test/testing      1
-                   this-as                   1
-                   clojure.core.async/thread 0
-                   try                       0
-                   clojure.core/when         1
-                   clojure.core/while        1}))
+                   clojure.test/are          [[:block 2]]
+                   clojure.core/binding      [[:block 1]]
+                   clojure.core/case         [[:block 1]]
+                   catch                     [[:block 2]]
+                   clojure.core/comment      [[:block 0]]
+                   clojure.core/cond         [[:block 0]]
+                   def                       [[:inner 0]]
+                   clojure.core/defn         [[:inner 0]]
+                   clojure.core/delay        [[:block 0]]
+                   do                        [[:block 0]]
+                   clojure.core/extend       [[:block 1]]
+                   clojure.spec.alpha/fdef   [[:block 1]]
+                   clojure.core/fn           [[:inner 0]]
+                   clojure.core/for          [[:block 1]]
+                   clojure.core.async/go     [[:block 0]]
+                   if                        [[:block 1]]
+                   clojure.core/let          [[:block 1]]
+                   clojure.core/locking      [[:block 1]]
+                   clojure.core/loop         [[:block 1]]
+                   clojure.core/ns           [[:block 1]]
+                   clojure.core/proxy        [[:block 2] [:inner 1]]
+                   clojure.core/reify        [[:inner 0] [:inner 1]]
+                   clojure.test/testing      [[:block 1]]
+                   this-as                   [[:block 1]]
+                   clojure.core.async/thread [[:block 0]]
+                   try                       [[:block 0]]
+                   clojure.core/when         [[:block 1]]
+                   clojure.core/while        [[:block 1]]}))
 
 (def clojure-mode-indents-fuzzy
-  "`:style/indent` rules based on clojure-mode, for names that are deemed long/unique enough."
-  (index-by-name '{clojure.core.async/alt!      0
-                   clojure.core.async/alt!!     0
-                   clojure.core/as->            2
-                   clojure.core/bound-fn        :defn
-                   clojure.core/cond->          1
-                   clojure.core/cond->>         1
-                   clojure.core/condp           2
-                   clojure.core/definterface    [1 [:defn]]
-                   clojure.core/defmethod       :defn
-                   clojure.core/defprotocol     [1 [:defn]]
-                   clojure.core/defrecord       [2 nil nil [:defn]]
-                   clojure.test/deftest         :defn
-                   clojure.core/deftype         [2 nil nil [:defn]]
-                   clojure.core/doseq           1
-                   clojure.core/dotimes         1
-                   clojure.core/doto            1
-                   clojure.core/extend-protocol [1 :defn]
-                   clojure.core/extend-type     [1 :defn]
-                   finally                      0
-                   clojure.core/future          0
-                   clojure.core.async/go-loop   1
-                   clojure.core/if-let          1
-                   clojure.core/if-not          1
-                   clojure.core/if-some         1
-                   clojure.core/letfn           [1 [[:defn]] nil]
+  "`:style/indent` rules based on clojure-mode, for names that are deemed long/unique enough.
+  See `clojure-mode-indents-exact` for format documentation."
+  (index-by-name '{clojure.core.async/alt!      [[:block 0]]
+                   clojure.core.async/alt!!     [[:block 0]]
+                   clojure.core/as->            [[:block 2]]
+                   clojure.core/bound-fn        [[:inner 0]]
+                   clojure.core/cond->          [[:block 1]]
+                   clojure.core/cond->>         [[:block 1]]
+                   clojure.core/condp           [[:block 2]]
+                   clojure.core/definterface    [[:block 1] [:inner 1]]
+                   clojure.core/defmethod       [[:inner 0]]
+                   clojure.core/defprotocol     [[:block 1] [:inner 1]]
+                   clojure.core/defrecord       [[:block 2] [:inner 1]]
+                   clojure.test/deftest         [[:inner 0]]
+                   clojure.core/deftype         [[:block 2] [:inner 1]]
+                   clojure.core/doseq           [[:block 1]]
+                   clojure.core/dotimes         [[:block 1]]
+                   clojure.core/doto            [[:block 1]]
+                   clojure.core/extend-protocol [[:block 1] [:inner 0]]
+                   clojure.core/extend-type     [[:block 1] [:inner 0]]
+                   finally                      [[:block 0]]
+                   clojure.core/future          [[:block 0]]
+                   clojure.core.async/go-loop   [[:block 1]]
+                   clojure.core/if-let          [[:block 1]]
+                   clojure.core/if-not          [[:block 1]]
+                   clojure.core/if-some         [[:block 1]]
+                   clojure.core/letfn           [[:block 1] [:inner 2 0]]
                    clojure.core/some->          nil
                    clojure.core/some->>         nil
-                   clojure.test/use-fixtures    :defn
-                   clojure.core/when-first      1
-                   clojure.core/when-let        1
-                   clojure.core/when-not        1
-                   clojure.core/when-some       1}))
+                   clojure.test/use-fixtures    [[:inner 0]]
+                   clojure.core/when-first      [[:block 1]]
+                   clojure.core/when-let        [[:block 1]]
+                   clojure.core/when-not        [[:block 1]]
+                   clojure.core/when-some       [[:block 1]]}))
 
 (defn- symbolize [x]
   (case x
