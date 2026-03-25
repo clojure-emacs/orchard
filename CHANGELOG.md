@@ -2,7 +2,7 @@
 
 ## master (unreleased)
 
-- Adopt the modern indent spec tuple format (`[[:block N]]`, `[[:inner D]]`) shared with clojure-mode and clojure-ts-mode. The inferred `:style/indent` values from the spec tables now use this format. Plain integer inference from arglists is unchanged.
+- Adopt the modern indent spec format (`[[:block N]]`, `[[:inner D]]`) shared with cljfmt, clojure-mode and clojure-ts-mode.
 
 ## 0.39.0 (2026-02-07)
 
@@ -265,7 +265,7 @@
 ### Changes
 
 * `orchard.inspect`: don't render keyword/symbol/number values as strings.
-* `orchard.inspect`: don't use `pr-str` over the main `Value: ` being inspected. 
+* `orchard.inspect`: don't use `pr-str` over the main `Value: ` being inspected.
   * All values are already formatted as strings, so this `pr-str` was redundant.
 * `orchard.inspect`: render non-accessible fields better.
   * If a given field cannot be inspected (because it's private and the JDK module system prevents opening it), we return the fixed symbol `<non-inspectable value>` for representing its value, clients being free to elide its rendering.
@@ -323,7 +323,7 @@
 
 ### Changes
 
-- [#173](https://github.com/clojure-emacs/orchard/issues/173): Parallelize `orchard.xref/fn-refs`. 
+- [#173](https://github.com/clojure-emacs/orchard/issues/173): Parallelize `orchard.xref/fn-refs`.
 
 ## 0.14.0 (2023-08-03)
 
