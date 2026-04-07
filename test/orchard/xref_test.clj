@@ -21,14 +21,13 @@
       "Is garbage-safe (important, as it uses `eval` which can return anything)")
 
   (is (set/superset? (xref/fn-deps-class (.getClass ^Object xref/fn-deps-class))
-                     #{#'clojure.core/keep
+                     #{#'clojure.core/symbol?
+                       #'clojure.core/keep
                        #'clojure.core/into
-                       #'clojure.core/class?
-                       #'orchard.xref/eval-lock})))
+                       #'clojure.core/class?})))
 
 ;; Supports #'fn-deps-test
 (deftest sample-test
-  (is (some? xref/eval-lock))
   (is (some? (xref/fn-refs #'dummy-fn))))
 
 (deftest fn-deps-test
@@ -44,7 +43,6 @@
 
   (testing "with a var that backs a deftest"
     (is (= #{#'orchard.xref-test/dummy-fn
-             #'orchard.xref/eval-lock
              #'clojure.test/do-report
              #'clojure.core/cons
              #'clojure.core/some?
