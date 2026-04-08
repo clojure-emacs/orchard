@@ -90,82 +90,63 @@
                    clojure.core/when-not        [[:block 1]]
                    clojure.core/when-some       [[:block 1]]}))
 
-(defn- symbolize [x]
-  (case x
-    & '&
-    '_))
+(defn- symbolize-arglist [arglist]
+  (mapv #(if (= % '&) % '_) arglist))
 
 (defn- structure= [candidate reference]
-  (set/subset? (->> candidate (map (partial mapv symbolize)) set)
-               (->> reference (map (partial mapv symbolize)) set)))
+  (set/subset? (into #{} (map symbolize-arglist) candidate)
+               (into #{} (map symbolize-arglist) reference)))
 
-(def ^:private try-requiring-resolve
-  (memoize (fn [x]
-             (try
-               (-> x namespace symbol require)
-               (resolve x)
-               (catch Throwable _
-                 nil)))))
+(defn- acceptably-similar? [candidate-arglists var-symbol]
+  (or (nil? (namespace var-symbol))
+      (let [resolved (resolve var-symbol)]
+        (or (nil? resolved)
+            (structure= candidate-arglists (:arglists (meta resolved)))))))
 
-(defn- acceptably-analog? [candidate-arglists clojure-core-symbol]
-  (or (and (symbol? clojure-core-symbol)
-           (not (namespace clojure-core-symbol)))
-      (let [resolved (try-requiring-resolve clojure-core-symbol)]
-        (or (not resolved)
-            (structure= candidate-arglists (-> resolved meta :arglists))))))
+(defn- find-idx [^List coll element]
+  (let [idx (some-> coll (.indexOf element))]
+    (when (and idx (> idx -1)) idx)))
 
 (defn- compute-style-indent [^String macro-name [^List arglist :as arglists]]
-  (let [[_ [exact-clojure-core-symbol exact-indentation] :as exact-match] (find clojure-mode-indents-exact macro-name)
-        [_ [fuzzy-clojure-core-symbol fuzzy-indentation] :as fuzzy-match] (or
-                                                                           ;; an exact match, when available, is of course faster and more desirable:
-                                                                           (find clojure-mode-indents-fuzzy macro-name)
-                                                                           (->> clojure-mode-indents-fuzzy
-                                                                                (some (fn [[k _v :as entry]]
-                                                                                        (when (str/includes? macro-name k)
-                                                                                          entry)))))
-        one-arglist? (-> arglists count (= 1))
-        def-like? (re-find #"^def" macro-name)
-        result (cond
-                 exact-match
-                 (when (acceptably-analog? arglists exact-clojure-core-symbol)
-                   exact-indentation)
+  (let [[exact-sym exact-indentation] (clojure-mode-indents-exact macro-name)
+        [fuzzy-sym fuzzy-indentation] (or
+                                       ;; An exact match is preferable
+                                       (clojure-mode-indents-fuzzy macro-name)
+                                       (some (fn [[k v]]
+                                               (when (str/includes? macro-name k)
+                                                 v))
+                                             clojure-mode-indents-fuzzy))
+        one-arglist? (= (count arglists) 1)
+        &-idx (find-idx arglist '&)
+        then-idx (find-idx arglist 'then)
+        else-idx (find-idx arglist 'else)]
+    (cond
+      (and exact-sym (acceptably-similar? arglists exact-sym))
+      exact-indentation
 
-                 fuzzy-match
-                 (when (acceptably-analog? arglists fuzzy-clojure-core-symbol)
-                   fuzzy-indentation)
+      (and fuzzy-sym (acceptably-similar? arglists fuzzy-sym))
+      fuzzy-indentation
 
-                 ;; def-like macros get no inference - these tend to be risky to make any assumption about
-                 def-like?
-                 nil
+      ;; def-like macros get no inference - these tend to be risky to make any assumption about
+      (str/starts-with? macro-name "def")
+      nil
 
-                 (and one-arglist?
-                      (->> arglists first (some #{'&})))
-                 (let [^List arglist (first arglists)]
-                   (.indexOf arglist '&))
+      (and one-arglist? &-idx)
+      &-idx
 
-                 (and one-arglist?
-                      (some #{'then} arglist)
-                      (some #{'else} arglist))
-                 (let [t (.indexOf arglist 'then)
-                       e (.indexOf arglist 'else)]
-                   (when (and (> e t)
-                              (= e (-> arglist count dec)))
-                     t))
+      (and one-arglist? then-idx else-idx (> else-idx then-idx)
+           (= else-idx (dec (count arglist))))
+      then-idx
 
-                 one-arglist?
-                 (->> ['body
-                       'forms
-                       'clauses
-                       'args
-                       'body-expr
-                       'fntail
-                       'fn-tail]
-                      (reduce (fn [_ v]
-                                (let [i (.indexOf arglist v)]
-                                  (when-not (= -1 i)
-                                    (reduced i))))
-                              nil)))]
-    result))
+      one-arglist?
+      (some #(find-idx arglist %)
+            ['body
+             'forms
+             'clauses
+             'args
+             'body-expr
+             'fntail
+             'fn-tail]))))
 
 (defn infer-style-indent
   "Given a `metadata` map obtained from a Clojure var object,
@@ -179,10 +160,7 @@
   The exact inference logic is an implementation detail.
 
   `:style/indent` will be not associated if no rule matched."
-  [{:keys [arglists]
-    macro-name :name
-    :as metadata}]
-  (let [result (compute-style-indent (str macro-name)
-                                     arglists)]
+  [{:keys [name arglists] :as metadata}]
+  (let [result (compute-style-indent (str name) arglists)]
     (cond-> metadata
       result (assoc :style/indent result))))

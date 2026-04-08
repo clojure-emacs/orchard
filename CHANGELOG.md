@@ -3,6 +3,7 @@
 ## master (unreleased)
 
 - [#382](https://github.com/clojure-emacs/orchard/pull/382): Rewrite and optimize `orchard.xref`.
+- [#383](https://github.com/clojure-emacs/orchard/pull/383): Refactor `orchard.indent`.
 
 ## 0.40.0 (2026-03-25)
 
