@@ -1,6 +1,7 @@
 (ns orchard.eldoc-test
   (:require
-   [clojure.test :refer [deftest is testing]]
+   [clojure.test :refer [deftest testing]]
+   [matcher-combinators.matchers :as mc]
    [orchard.eldoc :as eldoc]
    [orchard.info :as info]
    [orchard.test.util :refer [is+]]))
@@ -24,10 +25,10 @@
                        :special-form true}))
 
     ;; sanity checks and special cases
-    (is (:eldoc (eldoc/eldoc (info/info 'clojure.core 'map))))
-    (is (:eldoc (eldoc/eldoc (info/info 'clojure.core '.toString))))
-    (is (:eldoc (eldoc/eldoc (info/info 'clojure.core '.))))
-    (is (nil? (:eldoc (eldoc/eldoc (info/info 'clojure.core 'non-existing))))))
+    (is+ {:eldoc some?} (eldoc/eldoc (info/info 'clojure.core 'map)))
+    (is+ {:eldoc some?} (eldoc/eldoc (info/info 'clojure.core '.toString)))
+    (is+ {:eldoc some?} (eldoc/eldoc (info/info 'clojure.core '.)))
+    (is+ {:eldoc mc/absent} (eldoc/eldoc (info/info 'clojure.core 'non-existing))))
 
   (testing "Clojure result structure"
     (is+ {:ns some?

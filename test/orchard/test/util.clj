@@ -1,5 +1,6 @@
 (ns orchard.test.util
   (:require [clojure.string :as str]
+            [clojure.template :as template]
             [clojure.test :refer [is]]
             [matcher-combinators.test]
             [orchard.java.source-files :as src-files]))
@@ -26,3 +27,8 @@
    `(is+ ~expected ~actual nil))
   ([expected actual message]
    `(is (~'match? ~expected ~actual) ~message)))
+
+(defmacro are*
+  "Like `are` but doesn't wrap test expression is `is`, instead allowing the user to use `is+` or any other assertion code."
+  [argv expr & args]
+  `(template/do-template ~argv ~expr ~@args))

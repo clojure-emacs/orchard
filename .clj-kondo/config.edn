@@ -6,4 +6,5 @@
                      :unresolved-symbol  {:exclude [(clojure.test/is [match?])]}
                      :consistent-alias   {:aliases {clojure.string str}}
                      ;; Enable this opt-in linter:
-                     :unsorted-required-namespaces {:level :warning}}}
+                     :unsorted-required-namespaces {:level :warning}}
+ :lint-as {orchard.test.util/are* clojure.test/are}}

@@ -52,7 +52,8 @@
              :dev ~dev-test-common-profile
 
              :cljfmt {:plugins [[dev.weavejester/lein-cljfmt "0.15.6"]]
-                      :cljfmt {:extra-indents {merge-meta [[:inner 0]]}}}
+                      :cljfmt {:extra-indents {merge-meta [[:inner 0]]
+                                               are* [[:inner 0]]}}}
 
              :clj-kondo {:plugins [[com.github.clj-kondo/lein-clj-kondo "2026.01.19"]]}
 
