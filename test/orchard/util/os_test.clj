@@ -1,7 +1,6 @@
 (ns orchard.util.os-test
   (:require
-   [clojure.string :as str]
-   [clojure.test :as test :refer [deftest is testing]]
+   [clojure.test :as test :refer [deftest testing]]
    [orchard.test.util :refer [is+]]
    [orchard.util.os :as os]))
 
@@ -9,15 +8,15 @@
   (deftest cache-dir-test
     (testing "BSD"
       (with-redefs [os/os-type ::os/bsd]
-        (is (str/ends-with? (os/cache-dir) "/.cache"))))
+        (is+ #"/\.cache$" (str (os/cache-dir)))))
 
     (testing "Linux"
       (with-redefs [os/os-type ::os/linux]
-        (is (str/ends-with? (os/cache-dir) "/.cache"))))
+        (is+ #"/\.cache$" (str (os/cache-dir)))))
 
     (testing "Mac"
       (with-redefs [os/os-type ::os/mac]
-        (is (str/ends-with? (os/cache-dir) "/Library/Caches"))))))
+        (is+ #"/Library/Caches$" (str (os/cache-dir)))))))
 
 (when (= os/os-type ::os/windows)
   (deftest cache-dir-windows-test

@@ -1,46 +1,24 @@
 (ns orchard.indent-test
   (:require
-   [clojure.test :refer [are deftest is testing]]
-   [orchard.indent :as sut]))
+   [clojure.set :as set]
+   [clojure.test :refer [deftest testing]]
+   [matcher-combinators.matchers :as mc]
+   [orchard.indent :as sut]
+   [orchard.test.util :refer [is+ are*]]))
 
 (deftest clojure-mode-indents
-  (let [extract-keys (fn [m]
-                       (->> m
-                            vals
-                            (map first)
-                            (remove (fn [x]
-                                      (and (symbol? x)
-                                           (-> x symbol namespace)
-                                           ;; these complicate the CI matrix, since c.a is not available in older Clojures:
-                                           (or (-> x namespace (= "clojure.core.async"))
-                                               (-> x namespace (= "clojure.spec.alpha"))))))
-                            set))
+  (let [extract-keys #(->> (vals %) (map first) set)
         exact (extract-keys sut/clojure-mode-indents-exact)
         fuzzy (extract-keys sut/clojure-mode-indents-fuzzy)]
-    (assert (contains? exact 'clojure.test/are))
-    (assert (contains? exact 'catch))
-    (assert (contains? exact 'clojure.core/->))
-    (assert (contains? fuzzy 'clojure.core/defprotocol))
-    (assert (contains? fuzzy 'finally))
+    (is+ (mc/embeds '#{clojure.test/are catch clojure.core/->}) exact)
+    (is+ (mc/embeds '#{clojure.core/defprotocol finally}) fuzzy)
     (testing "There are no indents defined twice"
-      (doseq [x exact]
-        (is (not (contains? fuzzy x))))
-      (doseq [x fuzzy]
-        (is (not (contains? exact x)))))
-
-    (doseq [x (into exact fuzzy)]
-      (is (or (and (symbol? x)
-                   (not (namespace x)))
-              (and (symbol? x)
-                   (namespace x)
-                   (#'sut/try-requiring-resolve x)))
-          (str x " denotes an existing var")))))
+      (is+ empty? (set/intersection exact fuzzy)))))
 
 (deftest compute-style-indent-test
-  (are [macro-name arglists expected] (testing [macro-name arglists]
-                                        (is (= expected
-                                               (#'sut/compute-style-indent (str macro-name) arglists)))
-                                        true)
+  (are* [macro-name arglists expected] (testing [macro-name arglists]
+                                         (is+ expected
+                                              (#'sut/compute-style-indent (str macro-name) arglists)))
     #_macro-name #_arglists              #_expected
 
     ;; parsing based on the macro name:

@@ -5,7 +5,6 @@
    [clojure.string :as str]
    [clojure.test :refer [deftest is testing]]
    [matcher-combinators.matchers :as mc]
-   [orchard.java]
    [orchard.java.classpath :as cp]
    [orchard.misc :as misc]
    [orchard.test.util :refer [is+]])

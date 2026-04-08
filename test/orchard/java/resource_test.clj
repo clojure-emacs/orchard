@@ -1,21 +1,15 @@
 (ns orchard.java.resource-test
   (:require
-   [clojure.string :as str]
-   [clojure.test :refer [deftest is testing]]
-   [matcher-combinators.matchers :as m]
-   [orchard.java.resource :as resource]))
-
-(require 'matcher-combinators.test) ;; for `match?`
+   [clojure.test :refer [deftest testing]]
+   [matcher-combinators.matchers :as mc]
+   [orchard.java.resource :as resource]
+   [orchard.test.util :refer [is+]]))
 
 (deftest resource-path-tuple-test
-  (is (nil? (resource/resource-path-tuple "jar:file:fake.jar!/fake/file.clj"))))
+  (is+ nil (resource/resource-path-tuple "jar:file:fake.jar!/fake/file.clj")))
 
 (deftest project-resources-test
   (testing "get the correct resources for the orchard project"
-    (let [test-export (some (fn [{:keys [relpath] :as res}]
-                              (when (str/ends-with? relpath "test_export.edn")
-                                res))
-                            (resource/project-resources))]
-      (is (match? {:relpath "clojuredocs/test_export.edn"
-                   :url (m/via class java.net.URL)}
-                  test-export)))))
+    (is+ (mc/embeds [{:relpath "clojuredocs/test_export.edn"
+                      :url (mc/via class java.net.URL)}])
+         (resource/project-resources))))
