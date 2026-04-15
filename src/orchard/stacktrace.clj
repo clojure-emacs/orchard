@@ -313,4 +313,7 @@
   (cond (instance? Throwable exception)
         (analyze-causes (Throwable->map-with-traces exception))
         (and (map? exception) (:trace exception))
-        (analyze-causes exception)))
+        (analyze-causes exception)
+        :else
+        (throw (ex-info "Expected a Throwable or a map with a :trace key"
+                        {:exception exception}))))
