@@ -15,7 +15,7 @@
 
 ;;; ## Extractors
 
-(defn- format-spec-descripton
+(defn- format-spec-description
   "Format the spec description to display each predicate on a new line."
   [description]
   (if (seq? description)
@@ -34,12 +34,12 @@
   (for [role [:args :ret :fn]
         :let [spec (get fnspec role)]
         :when spec]
-    [role (-> spec spec/describe format-spec-descripton)]))
+    [role (-> spec spec/describe format-spec-description)]))
 
 (declare var-name)
 
 (defn- maybe-add-spec
-  "If the var `v` has a spec has associated with it, assoc that into meta-map.
+  "If the var `v` has a spec associated with it, assoc that into meta-map.
   The spec is formatted to avoid processing in the client (e.g. CIDER)."
   [meta-map v]
   (if-let [spec (when v (spec/spec-form (var-name v)))]
@@ -70,7 +70,7 @@
     meta-map))
 
 (defn- maybe-add-see-also
-  "If the var `v` has a see-also has associated with it, assoc that into meta-map."
+  "If the var `v` has a see-also associated with it, assoc that into meta-map."
   [meta-map v]
   (if-let [see-also (try
                       (cljdocs/see-also (var-name v))

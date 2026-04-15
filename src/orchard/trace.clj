@@ -14,7 +14,7 @@
        ~@(map (fn [x] `(.append ~sbsym ~x)) args))))
 
 (defn- funcall-to-string
-  "Print the invokation of a function and arguments to a string."
+  "Print the invocation of a function and arguments to a string."
   ([fname args]
    (funcall-to-string fname args ""))
   ([fname, args, ^String outer-prefix]

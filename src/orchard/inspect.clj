@@ -229,13 +229,13 @@
         inspector)))
 
 (defn previous-sibling
-  "Attempt to inspect the item previous to the currenlty inspected value in the
+  "Attempt to inspect the item previous to the currently inspected value in the
   parent sequential collection."
   [inspector]
   (sibling* inspector -1))
 
 (defn next-sibling
-  "Attempt to inspect the item next to the currenlty inspected value in the parent
+  "Attempt to inspect the item next to the currently inspected value in the parent
   sequential collection."
   [inspector]
   (sibling* inspector 1))
@@ -1228,7 +1228,7 @@
 ;; Public entrypoints
 
 (defn start
-  "Create a new inspector for the `value`. Optinally accepts a `config` map (which
+  "Create a new inspector for the `value`. Optionally accepts a `config` map (which
   can be an existing inspector with changed config). See `refresh` for the list
   of supported keys."
   ([value] (start {} value))

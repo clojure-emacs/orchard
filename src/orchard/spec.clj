@@ -64,7 +64,7 @@
 ;;; Utility functions
 
 (defn str-non-colls
-  "Given a form, convert all non collection childs to str."
+  "Given a form, convert all non-collection children to str."
   [form]
   (walk/postwalk #(if (coll? %)
                     %
@@ -152,7 +152,7 @@
                          r)))
 
 (defn normalize-spec-form
-  "Applys normalize-spec-fn-form to any fn* sub form."
+  "Applies normalize-spec-fn-form to any fn* sub form."
   [sub-form]
   (walk/postwalk (fn [form]
                    (if (and (seq? form) (= 'fn* (first form)))
