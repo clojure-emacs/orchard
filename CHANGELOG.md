@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+- [#386](https://github.com/clojure-emacs/orchard/pull/386): Inspector: rename default view mode for unknown objects to `:object`.
+
 ## 0.41.0 (2026-04-13)
 
 - [#382](https://github.com/clojure-emacs/orchard/pull/382): Rewrite and optimize `orchard.xref`.

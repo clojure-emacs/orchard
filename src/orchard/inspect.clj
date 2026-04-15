@@ -25,7 +25,7 @@
 ;; Navigating Inspector State
 ;;
 
-(declare inspect-render supported-view-modes)
+(declare inspect inspect-render supported-view-modes)
 
 (defn push-item-to-path
   "Takes `path` and the role and key of the value to be navigated to, and returns
@@ -308,13 +308,12 @@
 
 (defmulti view-mode-supported? (fn [_inspector view-mode] view-mode))
 
-(defmethod view-mode-supported? :normal [_ _] true)
+(defmethod view-mode-supported? :normal [{:keys [value]} _]
+  ;; "Normal" mode is supported when an object has a non-fallthrough renderer.
+  (not (identical? (get-method inspect (object-type value))
+                   (get-method inspect :default))))
 
-(defmethod view-mode-supported? :object [{:keys [value]} _]
-  ;; A hack - for all "known" types `object-type` returns a keyword. If it's not
-  ;; a keyword, it means we render it using object renderer, so :object
-  ;; view-mode is redundant for it.
-  (keyword? (object-type value)))
+(defmethod view-mode-supported? :object [_ _] true)
 
 (defmethod view-mode-supported? :table [{:keys [chunk value]} _]
   (let [chunk (or chunk value)]
