@@ -143,12 +143,11 @@
   (instance? clojure.lang.Namespace ns))
 
 (defn require-and-resolve
-  "Like `clojure.core/requiring-resolve`, but doesn't throw exception if namespace
-  was not found or failed to load. Also, returns derefs the resolved var."
+  "Like `clojure.core/requiring-resolve`, but doesn't throw if the namespace
+  was not found or failed to load. Returns the var's value, not the var itself."
   {:added "0.5"}
   [sym]
   (try (some-> sym requiring-resolve var-get)
-       (var-get (resolve sym))
        (catch Exception _)))
 
 (defn call-when-resolved
