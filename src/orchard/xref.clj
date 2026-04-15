@@ -91,13 +91,13 @@
     (loop [checked #{}
            to-check (into [] deps)
            deps deps]
-      (cond
-        (empty? to-check) deps
-        :else (let [[current & remaining] to-check
-                    new-deps (fn-deps current)]
-                (recur (conj checked current)
-                       (concat remaining (filter #(contains? deps %) new-deps))
-                       (set/union deps new-deps)))))))
+      (if (empty? to-check)
+        deps
+        (let [[current & remaining] to-check
+              new-deps (fn-deps current)]
+          (recur (conj checked current)
+                 (into (vec remaining) (remove checked new-deps))
+                 (set/union deps new-deps)))))))
 
 (defn- fn->sym
   "Convert a function value `f` to symbol."
