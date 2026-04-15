@@ -344,15 +344,20 @@
 ;; Rendering
 
 (defn render
+  "Append one or more rendered elements to the inspector's :rendered output."
   ([inspector value]
    (update inspector :rendered conj! value))
   ([inspector value & values]
    (reduce render (render inspector value) values)))
 
-(defn render-onto [inspector coll]
+(defn render-onto
+  "Append all elements in `coll` to the inspector's :rendered output."
+  [inspector coll]
   (reduce render inspector coll))
 
-(defn render-ln [inspector]
+(defn render-ln
+  "Append a newline to the inspector's :rendered output."
+  [inspector]
   (render inspector '(:newline)))
 
 (defn- indent
@@ -407,7 +412,9 @@
                               :key value-key})
          (update :rendered conj! expr)))))
 
-(defn render-indented-value [inspector value & [value-opts]]
+(defn render-indented-value
+  "Render `value` as an inspectable element on its own indented line."
+  [inspector value & [value-opts]]
   (-> inspector
       (render-indent)
       (render-value value value-opts)
@@ -612,7 +619,9 @@
                        :mark-values? (not= type :set)})
         (render-trailing-page-ellipsis))))
 
-(defn render-meta-information [inspector obj]
+(defn render-meta-information
+  "Render a 'Meta Information' section for `obj` if it has metadata."
+  [inspector obj]
   (if (seq (meta obj))
     (-> inspector
         (render-section-header "Meta Information")
@@ -1129,7 +1138,9 @@
         (render-labeled-value "Right" d2)
         (unindent))))
 
-(defn ns-refers-by-ns [^clojure.lang.Namespace ns]
+(defn ns-refers-by-ns
+  "Group the refers of `ns` by the namespace they come from."
+  [^clojure.lang.Namespace ns]
   (group-by (fn [^clojure.lang.Var v] (.ns v))
             (map val (ns-refers ns))))
 
@@ -1168,7 +1179,9 @@
       (render-ns-interns obj)
       (render-datafy)))
 
-(defn render-path [inspector]
+(defn render-path
+  "Render the navigation path to the currently inspected value."
+  [inspector]
   (let [path (:path inspector)]
     (if (and (seq path) (not-any? #(= % '<unknown>) path))
       (-> (render-section-header inspector "Path")
@@ -1177,7 +1190,9 @@
           (unindent))
       inspector)))
 
-(defn render-view-mode [{:keys [value view-mode pretty-print sort-maps only-diff] :as inspector}]
+(defn render-view-mode
+  "Render the view mode indicator showing available modes and current selection."
+  [{:keys [value view-mode pretty-print sort-maps only-diff] :as inspector}]
   (if (some? value)
     (let [supported (filter #(view-mode-supported? inspector %) view-mode-order)
           add-circle #(if %2 (str "●" %1) %1)
@@ -1201,6 +1216,8 @@
   (seq (persistent! rendered)))
 
 (defn inspect-render
+  "Render the inspector's current value into :rendered instructions for the client.
+  Binds print limits from the inspector config during rendering."
   ([{:keys [max-atom-length max-value-length max-coll-size max-nested-depth value
             pretty-print only-diff pov-ns]
      :as inspector}]

@@ -63,7 +63,7 @@
          {:docstring (:doc info)}))
 
 (defn datomic-query
-  "Generate an eldoc string for a datomic query."
+  "Return a map with :inputs for a Datomic query's :in clause, formatted for eldoc display."
   [ns sym]
   (let [ns (read-string ns)
         sym (read-string sym)

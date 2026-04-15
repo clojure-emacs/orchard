@@ -359,6 +359,7 @@
               .getPath)))
 
 (defn ns-meta
+  "Return a metadata map for the namespace `ns`, including :ns, :name, :file, and :line."
   [ns]
   (when ns
     (merge

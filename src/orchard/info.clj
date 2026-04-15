@@ -51,6 +51,9 @@
       (assoc :qualified-sym (qualify-sym (or ns context-ns) sym)))))
 
 (defn clj-meta
+  "Resolve metadata for `sym` in the Clojure (JVM) dialect.
+  Tries, in order: special forms, vars, munged printed vars, Java symbols,
+  ns aliases, and namespace lookups. Returns a metadata map or nil."
   {:added "0.5"}
   [{:keys [dialect ns sym computed-ns unqualified-sym var-meta-allowlist]}]
   {:pre [(= dialect :clj)]}
@@ -79,6 +82,8 @@
      (some-> (find-ns unqualified-sym) (m/ns-meta)))))
 
 (defn cljs-meta
+  "Resolve metadata for `sym` in the ClojureScript dialect.
+  Requires the compiler state to be passed as :env. Returns a metadata map or nil."
   {:added "0.5"}
   [{:keys [dialect ns sym env context-ns unqualified-sym]}]
   {:pre [(= dialect :cljs)]}
@@ -165,6 +170,7 @@
    (info* (assoc params :ns ns :sym sym))))
 
 (defn info-java
+  "Return Java member info for `member` in `class`. Delegates to `orchard.java/member-info`."
   [class member]
   (java/member-info class member))
 
@@ -179,6 +185,8 @@
         (io/as-url f)))))
 
 (defn file-info
+  "Return a map with :file (as URL) and optionally :resource (classpath-relative path)
+  for the given file path."
   [path]
   (let [[resource-relative resource-full] (resource/resource-path-tuple path)]
     (merge {:file (or (file-path path) resource-full path)}

@@ -87,6 +87,7 @@
 ;; types.
 
 (defn typesym
+  "Return the type name of a reflected object as a symbol, or nil."
   [o]
   (some-> o reflect/typename symbol))
 
@@ -167,19 +168,28 @@
       (when (pos? idx)
         (subs kls 0 idx)))))
 
-(defn +this [xs]
+(defn +this
+  "Prepend 'this to the argument list `xs` (for instance methods)."
+  [xs]
   (into ['this] xs))
 
-(defn extract-arglist [static? xs]
+(defn extract-arglist
+  "Extract the argument list from member info `xs`, prepending 'this for instance members."
+  [static? xs]
   ((if static? identity +this)
    (or (:argnames xs) (:argtypes xs))))
 
-(defn extract-parameter-type [static? xs]
+(defn extract-parameter-type
+  "Extract parameter types from member info `xs`, prepending 'this for instance members."
+  [static? xs]
   ((if static? identity +this)
    (or (:non-generic-argtypes xs)
        (:parameter-types xs))))
 
-(defn extract-annotated-arglists [static? package {:keys [returns] :as x}]
+(defn extract-annotated-arglists
+  "Build a type-annotated arglist string like \"^String [^int this, ^int beginIndex]\"
+  for display in editors. Strips the package prefix for brevity."
+  [static? package {:keys [returns] :as x}]
   (let [arglist (extract-arglist static? x)
         parameter-type (extract-parameter-type static? x)
         sb (StringBuilder.)

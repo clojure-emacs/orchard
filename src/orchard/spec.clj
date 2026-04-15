@@ -31,23 +31,33 @@
 (defn- try-fn [f & args]
   (try (apply f args) (catch Exception _)))
 
-(defn get-spec [k]
+(defn get-spec
+  "Look up the spec for key `k`. Tries clojure.alpha.spec first, then clojure.spec.alpha."
+  [k]
   (or (clojure-alpha-spec-get-spec k)
       (spec1/get-spec k)))
 
-(defn describe [s]
+(defn describe
+  "Return the human-readable description of spec `s`."
+  [s]
   (or (try-fn clojure-alpha-spec-describe s)
       (spec1/describe s)))
 
-(defn registry []
+(defn registry
+  "Return the merged spec registry from both spec versions."
+  []
   (merge (spec1/registry)
          (clojure-alpha-spec-registry)))
 
-(defn form [s]
+(defn form
+  "Return the spec form for spec `s`."
+  [s]
   (or (try-fn clojure-alpha-spec-form s)
       (spec1/form s)))
 
-(defn gen [s]
+(defn gen
+  "Return a generator for spec `s`."
+  [s]
   (or (try-fn clojure-alpha-spec-gen s)
       (spec1/gen s)))
 
@@ -57,7 +67,9 @@
   various Spec versions again."
   (misc/call-when-resolved 'clojure.test.check.generators/generate))
 
-(defn generate [s]
+(defn generate
+  "Generate a random example value from spec `s` using test.check."
+  [s]
   (when-let [gen (gen s)]
     (generate* gen)))
 
