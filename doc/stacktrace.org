@@ -1,0 +1,135 @@
+* Stacktrace Analysis
+
+The =orchard.stacktrace= namespace takes raw Java exceptions and turns
+them into structured, annotated data that editors can use to build
+richer debugging experiences. It handles the full cause chain,
+demunges Clojure class names, classifies frames by origin, and
+extracts spec failure details.
+
+** Basic usage
+
+#+begin_src clojure :exports code :results silent
+  (require '[orchard.stacktrace :as stacktrace])
+#+end_src
+
+=analyze= is the main entry point. Pass it an exception (or a map in
+=Throwable->map= format) and get back a vector of analyzed causes:
+
+#+begin_src clojure
+  (try
+    (/ 1 0)
+    (catch Exception e
+      (stacktrace/analyze e)))
+  ;; => [{:class "java.lang.ArithmeticException"
+  ;;       :message "Divide by zero"
+  ;;       :stacktrace [{:name "clojure.lang.Numbers/divide"
+  ;;                      :file "Numbers.java"
+  ;;                      :line 190
+  ;;                      :type :java
+  ;;                      :flags #{:tooling :java}
+  ;;                      ...}
+  ;;                     {:name "my.app/handler"
+  ;;                      :file "handler.clj"
+  ;;                      :line 42
+  ;;                      :ns "my.app"
+  ;;                      :fn "handler"
+  ;;                      :var "my.app/handler"
+  ;;                      :type :clj
+  ;;                      :flags #{:project :clj}
+  ;;                      ...}
+  ;;                     ...]}]
+#+end_src
+
+The function also accepts pre-serialized exception data, which is
+useful when working across process boundaries:
+
+#+begin_src clojure
+  (stacktrace/analyze (Throwable->map some-exception))
+#+end_src
+
+** Cause chains
+
+When exceptions are chained (as with =ex-info='s cause parameter),
+=analyze= returns one entry per cause, ordered from the thrown
+exception to the root cause:
+
+#+begin_src clojure
+  (try
+    (throw (ex-info "failed to save" {:id 42}
+                    (ex-info "connection lost" {:host "db.local"})))
+    (catch Exception e
+      (stacktrace/analyze e)))
+  ;; => [{:class "clojure.lang.ExceptionInfo"
+  ;;       :message "failed to save"
+  ;;       :data "{:id 42}"
+  ;;       :stacktrace [...]}
+  ;;      {:class "clojure.lang.ExceptionInfo"
+  ;;       :message "connection lost"
+  ;;       :data "{:host \"db.local\"}"
+  ;;       :stacktrace [...]}]
+#+end_src
+
+** Frame anatomy
+
+Each frame in the =:stacktrace= vector is a map with these keys:
+
+| Key        | Description                                                  |
+|------------+--------------------------------------------------------------|
+| =:name=    | Full frame name ("class/method")                             |
+| =:file=    | Source filename                                              |
+| =:line=    | Line number                                                  |
+| =:class=   | Class name                                                   |
+| =:method=  | Method name                                                  |
+| =:type=    | File type: =:clj=, =:cljc=, =:java=, or =:unknown=         |
+| =:flags=   | Set of classification flags (see below)                      |
+| =:ns=      | Clojure namespace (Clojure frames only)                      |
+| =:fn=      | Clojure function name (Clojure frames only)                  |
+| =:var=     | Qualified var name as "ns/fn" (Clojure frames only)          |
+| =:file-url= | URL to the source file on the classpath                    |
+
+** Frame flags
+
+The =:flags= set on each frame tells editors how to present it:
+
+- =:project= - Frame comes from project source (on the filesystem, not in a JAR)
+- =:dependency= - Frame comes from a dependency JAR
+- =:tooling= - Internal Clojure/nREPL/CIDER machinery (typically hidden by default)
+- =:dup= - Duplicate of the adjacent frame (same location, can be collapsed)
+- =:repl= - Frame originates from REPL evaluation
+- =:clj=, =:cljc=, =:java= - The source language
+
+Editors typically use these flags to filter the stacktrace display.
+For instance, CIDER lets users toggle visibility of tooling,
+duplicate, and dependency frames to focus on project code.
+
+The tooling detection covers Clojure internals (=clojure.lang.*=),
+nREPL, CIDER middleware, Shadow CLJS compilation, and common
+concurrency infrastructure (=java.util.concurrent.*=,
+=java.lang.Thread/run=).
+
+** Spec failures
+
+When an exception is a spec assertion failure, =analyze= extracts
+structured spec data into a =:spec= key on the cause:
+
+#+begin_src clojure
+  ;; Given a spec failure:
+  ;; => [{:class "clojure.lang.ExceptionInfo"
+  ;;       :message "Spec assertion failed."
+  ;;       :spec {:spec "..."
+  ;;              :value "..."
+  ;;              :problems [{:in "..."
+  ;;                          :val "..."
+  ;;                          :predicate "..."
+  ;;                          ...}]}
+  ;;       :stacktrace [...]}]
+#+end_src
+
+** Compiler errors
+
+For =CompilerException= and similar errors, the cause map includes
+additional location information:
+
+- =:location= - A map with =:clojure.error/line=, =:clojure.error/column=,
+  =:clojure.error/source=, and =:clojure.error/phase=
+- =:triage= - A human-readable explanation from =clojure.main/ex-triage=
