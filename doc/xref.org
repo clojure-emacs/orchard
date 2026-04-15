@@ -1,0 +1,94 @@
+* Cross-referencing with orchard.xref
+
+The =orchard.xref= namespace lets you find function dependencies (what
+does this function call?) and function references (what calls this
+function?). It works by inspecting the compiled bytecode of Clojure
+functions at runtime, which makes it fast but comes with a few
+trade-offs.
+
+** How it works
+
+The Clojure compiler stores references to invoked vars as static
+fields (named =const__0=, =const__1=, etc.) on the generated class
+for each function. =orchard.xref= reads these fields via reflection to
+discover which vars a function depends on.
+
+For anonymous functions and lambdas, the compiler names their classes
+by prefixing them with the enclosing function's class name. The
+library exploits this by scanning the compiler's internal class cache
+for all classes that share a prefix, so =fn-deps= picks up
+dependencies from nested lambdas too.
+
+** Usage
+
+#+begin_src clojure :exports code :results silent
+  (require '[orchard.xref :as xref])
+#+end_src
+
+*** Finding what a function calls
+
+=fn-deps= returns the set of vars invoked by a function. You can pass
+a function value, a var, or a qualified symbol:
+
+#+begin_src clojure
+  (xref/fn-deps #'clojure.set/difference)
+  ;; => #{#'clojure.core/disj #'clojure.core/reduce}
+
+  ;; All three forms work:
+  (xref/fn-deps clojure.set/difference)
+  (xref/fn-deps #'clojure.set/difference)
+  (xref/fn-deps 'clojure.set/difference)
+#+end_src
+
+For a deeper view, =fn-transitive-deps= follows the dependency graph
+recursively:
+
+#+begin_src clojure
+  (xref/fn-transitive-deps 'clojure.set/difference)
+  ;; => #{#'clojure.core/disj #'clojure.core/reduce
+  ;;      #'clojure.core/seq ...}
+#+end_src
+
+There's also =fn-deps-class= if you need to inspect a single class
+without following nested lambdas:
+
+#+begin_src clojure
+  (xref/fn-deps-class clojure.set$difference)
+#+end_src
+
+*** Finding what calls a function
+
+=fn-refs= is the inverse of =fn-deps=. It searches all project vars
+to find which ones reference a given var:
+
+#+begin_src clojure
+  (xref/fn-refs #'my.app/db-query)
+  ;; => [#'my.app/get-user #'my.app/list-orders ...]
+#+end_src
+
+Note that =fn-refs= only searches project vars (not standard library
+or dependency code). This is by design to keep results relevant and
+the search fast.
+
+** Limitations
+
+The bytecode inspection approach is fast but has inherent limitations:
+
+- *Inlined functions are invisible.* Functions marked with =:inline=
+  metadata (like =inc=, =+=, =<=) are expanded at compile time and
+  don't appear as var references in the bytecode.
+
+- *AoT-compiled functions may not work fully.* The class cache lookup
+  only covers JIT-compiled functions. There's a fallback that inspects
+  the function's own class directly, but it won't find dependencies in
+  nested lambdas for AoT code.
+
+- *Redefining functions with lambdas accumulates stale entries.* If
+  you redefine a function that contains anonymous functions, the old
+  lambda classes linger in the class cache until garbage collected.
+  During that window, =fn-deps= may return dependencies from both the
+  old and new definitions.
+
+For a deeper dive into the compiler internals behind this, see
+[[https://lukas-domagala.de/blog/clojure-analysis-and-introspection.html][Clojure Analysis and Introspection]] and
+[[https://lukas-domagala.de/blog/clojure-compiler-class-cache.html][Clojure Compiler Class Cache]].
