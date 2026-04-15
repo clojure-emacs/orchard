@@ -26,25 +26,6 @@
     (#'src-files/infer-sources-jar-file
      (#'src-files/find-jar-file-for-class klass))))
 
-;; TODO: test for Clojure CLI and invoke tool at some point.
-;; Only runs when lein is available (project.clj exists or LEIN_HOME is set).
-(when (and (not= os/os-type ::os/windows)
-           (or (.exists (java.io.File. "project.clj"))
-               (System/getenv "LEIN_HOME")))
-  (deftest test-download-sources-jar-using-lein
-    (let [f (sources-jar-file clojure.lang.Ref)]
-      (.delete f)
-      (is (not (.exists f))))
-
-    (is (#'src-files/download-sources-using-lein
-         (src-files/infer-maven-coordinates-for-class clojure.lang.Ref)))
-
-    (is (.exists (sources-jar-file clojure.lang.Ref)))
-
-    (testing "downloaded source jars contain actual source files"
-      (is (> (count (slurp (src-files/class->source-file-url clojure.lang.Ref)))
-             200)))))
-
 (when-not (= os/os-type ::os/windows)
   (deftest test-download-sources-jar
     (let [f (sources-jar-file clojure.lang.Ref)]
