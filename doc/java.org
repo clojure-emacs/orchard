@@ -1,0 +1,194 @@
+* Java Interop Support
+
+Orchard provides rich support for working with Java classes, methods,
+and fields. It combines runtime reflection with source code parsing to
+give editors accurate type information, Javadoc, argument names, and
+source locations.
+
+** Inspecting classes and members
+
+#+begin_src clojure :exports code :results silent
+  (require '[orchard.java :as java])
+#+end_src
+
+=class-info= returns a comprehensive map of everything known about a
+class - its hierarchy, interfaces, and all members with their types
+and documentation:
+
+#+begin_src clojure
+  (java/class-info 'java.util.HashMap)
+  ;; => {:name HashMap
+  ;;     :class java.util.HashMap
+  ;;     :package java.util
+  ;;     :super java.util.AbstractMap
+  ;;     :interfaces [java.util.Map java.lang.Cloneable java.io.Serializable]
+  ;;     :members {:get {[java.lang.Object] {:argtypes [java.lang.Object]
+  ;;                                          :returns java.lang.Object
+  ;;                                          :doc "Returns the value to which..."
+  ;;                                          :argnames [key]
+  ;;                                          :line 557
+  ;;                                          ...}}
+  ;;              ...}
+  ;;     ...}
+#+end_src
+
+For a single member, =member-info= is more direct:
+
+#+begin_src clojure
+  (java/member-info 'java.lang.String 'substring)
+  ;; => {:class java.lang.String
+  ;;     :member substring
+  ;;     :argtypes [int int]
+  ;;     :returns java.lang.String
+  ;;     :arglists [[this ^int beginIndex ^int endIndex]]
+  ;;     :doc "Returns a string that is a substring of this string..."
+  ;;     :line 1963
+  ;;     ...}
+#+end_src
+
+Results are cached in an LRU cache (250 entries) that invalidates
+when the source file's modification time changes. Use =class-info*=
+if you need to bypass the cache.
+
+** Resolving symbols
+
+Editors send raw symbols to the REPL and need to figure out what Java
+thing they refer to. =resolve-symbol= handles all the common
+patterns:
+
+#+begin_src clojure
+  ;; Classes (simple or fully qualified)
+  (java/resolve-symbol 'user 'String)
+  (java/resolve-symbol 'user 'java.lang.String)
+
+  ;; Static members
+  (java/resolve-symbol 'user 'Thread/currentThread)
+  (java/resolve-symbol 'user 'Class/forName)
+
+  ;; Instance members
+  (java/resolve-symbol 'user '.start)
+  (java/resolve-symbol 'user 'Thread/.start)
+
+  ;; Constructors
+  (java/resolve-symbol 'user 'Exception.)
+#+end_src
+
+For ambiguous instance members (e.g. =.toString= could belong to any
+imported class), the result includes a =:candidates= map keyed by
+class.
+
+There are also more targeted resolvers if you know what you're looking
+for: =resolve-class=, =resolve-member=, and =resolve-constructor=.
+
+** Javadoc URLs
+
+Orchard can produce Javadoc URLs for classes and members:
+
+#+begin_src clojure
+  (java/javadoc-url 'java.lang.String)
+  ;; => "java.base/java/lang/String.html"
+
+  (java/resolve-javadoc-path "java/lang/String.html")
+  ;; => "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html"
+#+end_src
+
+=resolve-javadoc-path= checks classpath resources first (for bundled
+Javadoc), then falls back to Oracle's online docs. It also respects
+custom Javadoc sources registered via
+=clojure.java.javadoc/add-remote-javadoc=.
+
+** Source file discovery
+
+Getting source code unlocks the richest metadata (Javadoc comments,
+argument names, exact line numbers). Orchard looks for Java sources in
+three places, in order:
+
+1. *On the classpath* - works for your own project's Java files.
+2. *In the JDK's =src.zip=* - ships with most JDK distributions,
+   covers the standard library. Requires JDK 11+.
+3. *In Maven's =-sources.jar=* - for third-party dependencies. The
+   artifact must already exist in =~/.m2=.
+
+#+begin_src clojure :exports code :results silent
+  (require '[orchard.java.source-files :as src-files])
+#+end_src
+
+#+begin_src clojure
+  (src-files/class->source-file-url java.util.HashMap)
+  ;; => #<URL jar:file:.../lib/src.zip!/java.base/java/util/HashMap.java>
+#+end_src
+
+*** Automatic source downloading
+
+If a source file can't be found, Orchard can try to download it. Bind
+=*download-sources-jar-fn*= to a function that takes a Class and
+attempts the download:
+
+#+begin_src clojure
+  (binding [src-files/*download-sources-jar-fn*
+            #(some-> (src-files/infer-maven-coordinates-for-class %)
+                     src-files/download-sources-jar-for-coordinates)]
+    (src-files/class->source-file-url some.library.ClassName))
+#+end_src
+
+=infer-maven-coordinates-for-class= parses the JAR path to extract
+Maven group/artifact/version, and
+=download-sources-jar-for-coordinates= fetches the =-sources.jar=
+using whichever build tool is available (Clojure CLI, or Leiningen).
+
+This is how CIDER's =cider-nrepl= middleware wires up automatic source
+downloads.
+
+** Source parsing
+
+When source files are available, Orchard parses them using the Java
+Compiler API to extract information that reflection alone can't
+provide: Javadoc comments, parameter names, and exact source
+positions.
+
+This happens automatically when you call =class-info= or
+=member-info= - the reflection data and parsed source data are merged,
+with source info taking precedence.
+
+The parser requires JDK 11+. On JDK 8, you still get reflection-based
+info (types, modifiers, inheritance) but not Javadoc or argument
+names.
+
+*** Documentation fragments
+
+Javadoc comments are parsed into a list of fragments rather than a
+plain string, so editors can render them with formatting:
+
+#+begin_src clojure
+  ;; Each fragment is a map:
+  {:type "text" :content "Returns the value to which the specified key is mapped."}
+  {:type "html" :content "<code>null</code>"}
+#+end_src
+
+Three fragment lists are provided for each documented member:
+
+- =:doc-fragments= - the full Javadoc body
+- =:doc-first-sentence-fragments= - just the first sentence (for
+  summaries)
+- =:doc-block-tags-fragments= - =@param=, =@return=, =@throws= tags
+
+There's also a plain =:doc= key with the text content concatenated
+for simpler clients.
+
+** Classpath utilities
+
+=orchard.java.classpath= provides lower-level classpath inspection:
+
+#+begin_src clojure :exports code :results silent
+  (require '[orchard.java.classpath :as cp])
+#+end_src
+
+#+begin_src clojure
+  ;; All classpath entries (deduplicated, from all classloaders)
+  (cp/classpath)
+  ;; => (#<URL file:.../target/classes/> #<URL file:.../.m2/...jar> ...)
+
+  ;; Find Clojure source files efficiently
+  (cp/clojure-sources-on-classpath (first (cp/classpath)))
+  ;; => ["my/app/core.clj" "my/app/handler.clj" ...]
+#+end_src
