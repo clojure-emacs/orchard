@@ -27,9 +27,10 @@
      (#'src-files/find-jar-file-for-class klass))))
 
 ;; TODO: test for Clojure CLI and invoke tool at some point.
-;; TODO: doesn't currently pass on Windows because it can't find "lein".
-;; Probably a CI setup problem.
-(when-not (= os/os-type ::os/windows)
+;; Only runs when lein is available (project.clj exists or LEIN_HOME is set).
+(when (and (not= os/os-type ::os/windows)
+           (or (.exists (java.io.File. "project.clj"))
+               (System/getenv "LEIN_HOME")))
   (deftest test-download-sources-jar-using-lein
     (let [f (sources-jar-file clojure.lang.Ref)]
       (.delete f)

@@ -177,6 +177,10 @@ Documentation for the master branch as well as tagged releases are available
 Just add `orchard` as a dependency and start hacking.
 
 ```clojure
+;; deps.edn
+cider/orchard {:mvn/version "0.41.0"}
+
+;; Leiningen
 [cider/orchard "0.41.0"]
 ```
 
