@@ -15,23 +15,23 @@ defaults: &defaults
 executors:
   jdk8:
     docker:
-      - image: clojure:temurin-8-lein-2.12.0-noble
+      - image: clojure:temurin-8-tools-deps-noble
     <<: *defaults
   jdk11:
     docker:
-      - image: clojure:temurin-11-lein-2.12.0-noble
+      - image: clojure:temurin-11-tools-deps-noble
     <<: *defaults
   jdk17:
     docker:
-      - image: clojure:temurin-17-lein-2.12.0-noble
+      - image: clojure:temurin-17-tools-deps-noble
     <<: *defaults
   jdk21:
     docker:
-      - image: clojure:temurin-21-lein-2.12.0-noble
+      - image: clojure:temurin-21-tools-deps-noble
     <<: *defaults
   jdk25:
     docker:
-      - image: clojure:temurin-25-lein-2.12.0-noble
+      - image: clojure:temurin-25-tools-deps-noble
     <<: *defaults
 
 # Runs a given set of steps, with some standard pre- and post-
@@ -54,16 +54,12 @@ commands:
       files:
         description: Files to consider when creating the cache key
         type: string
-        default: "deps.edn project.clj download-jdk-sources.sh"
+        default: "deps.edn build.clj download-jdk-sources.sh"
       cache_version:
         type: string
         description: "Key used to identify unique cache"
         default: "1"
     steps:
-      - run:
-          name: Install wget
-          command: |
-            apt-get update && apt-get install -y wget unzip zip
       - run:
           name: Generate Cache Checksum
           command: |
@@ -78,6 +74,7 @@ commands:
           paths:
             - ~/.m2
             - .cpcache
+            - .gitlibs
             - base-src-jdk11.zip
             - base-src-jdk17.zip
             - base-src-jdk21.zip
@@ -88,8 +85,10 @@ commands:
     steps:
       - checkout
       - run:
-          name: Install Leiningen
-          command: choco install lein
+          name: Install Clojure CLI
+          command: |
+            Invoke-WebRequest -Uri https://github.com/clojure/brew-install/releases/latest/download/win-install.ps1 -OutFile win-install.ps1
+            powershell -File win-install.ps1
 
 jobs:
 
@@ -101,11 +100,10 @@ jobs:
     executor: jdk25
     environment:
       CLOJURE_VERSION: << parameters.clojure_version >>
-      TEST_PROFILES: "-user,-dev,+test,+cljs"
     steps:
       - checkout
       - with_cache:
-          cache_version: "lint_v2_<< parameters.clojure_version >>"
+          cache_version: "lint_v3_<< parameters.clojure_version >>"
           steps:
             - run:
                 name: Running cljfmt
@@ -118,7 +116,7 @@ jobs:
                 command: make eastwood
 
   deploy:
-    executor: jdk8
+    executor: jdk11
     steps:
       - checkout
       - run:
@@ -146,7 +144,7 @@ jobs:
     steps:
       - checkout
       - with_cache:
-          cache_version: "test_v1_<< parameters.clojure_version >>_<< parameters.jdk_version >>_<< parameters.command >>"
+          cache_version: "test_v2_<< parameters.clojure_version >>_<< parameters.jdk_version >>_<< parameters.command >>"
           steps:
             - run:
                 name: Running tests (make << parameters.command >>)
@@ -162,7 +160,9 @@ jobs:
           name: Running tests on Windows
           command: |
             java -version; if(-not $?){exit 9}
-            lein with-profile "-user,-dev,+test,+cljs,+1.12" test; if(-not $?){exit 9}
+            clojure -T:build compile-java; if(-not $?){exit 9}
+            clojure -T:build compile-test-java; if(-not $?){exit 9}
+            clojure -M:test:cljs:1.12; if(-not $?){exit 9}
 
 # The ci-test-matrix does the following:
 #
@@ -210,6 +210,7 @@ workflows:
       - deploy:
           requires:
             - test
+            - test-inbetween-jdks
             - test_with_cljs
             - test_windows
             - lint
