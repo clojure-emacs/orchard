@@ -113,12 +113,13 @@
                                            [(str kw)])))))
                            sort)]
      (if (not-empty filter-regex)
-       (filter (fn [spec-symbol-str]
-                 (let [checkable-part (if (.startsWith ^String spec-symbol-str ":")
-                                        (subs spec-symbol-str 1)
-                                        spec-symbol-str)]
-                   (re-find (re-pattern filter-regex) checkable-part)))
-               sorted-specs)
+       (let [pattern (re-pattern filter-regex)]
+         (filter (fn [spec-symbol-str]
+                   (let [checkable-part (if (.startsWith ^String spec-symbol-str ":")
+                                          (subs spec-symbol-str 1)
+                                          spec-symbol-str)]
+                     (re-find pattern checkable-part)))
+                 sorted-specs))
        sorted-specs))))
 
 (defn get-multi-spec-sub-specs
