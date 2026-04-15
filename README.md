@@ -9,22 +9,109 @@
 A Clojure library designed to provide common functionality for Clojure
 development tools (e.g. Clojure editor plugins and IDEs).
 
-Right now `orchard` provides functionality like:
+Orchard provides the building blocks that Clojure editors and IDEs need:
 
-- enhanced apropos
-- classpath utils (alternative for `java.classpath`)
-- value [inspector](https://github.com/clojure-emacs/orchard/blob/master/doc/inspector.org)
-- Java class handling utilities
-- utilities for dealing with metadata
-- namespace utilities
-- fetching ClojureDocs documentation
-- finding function dependencies (other functions invoked by a function) and usages
-- function tracer (alternative for `tools.trace`)
-- simple function profiler
-- fast pretty printing (alternative for `clojure.pprint`)
-- eldoc (function signature) utilities
-- indention data inference
-- stacktrace analysis
+### Code Navigation
+
+Jump to definitions and trace how code connects.
+
+```clojure
+(require '[orchard.info :as info])
+(info/info 'clojure.core 'map)
+;; => {:ns clojure.core, :name map, :file "clojure/core.clj", :arglists ([f] [f coll] ...), ...}
+
+(require '[orchard.xref :as xref])
+(xref/fn-deps 'my.app/handler)
+;; => #{#'ring.util.response/response #'my.app/render-page ...}
+```
+
+- Var info and metadata lookup
+- Find function dependencies and usages
+- Namespace utilities and classpath access
+
+### Documentation
+
+Surface the right docs at the right time.
+
+```clojure
+(require '[orchard.eldoc :as eldoc])
+(-> (info/info 'clojure.core '+) eldoc/eldoc)
+;; => {:ns "clojure.core", :name "+", :type "function", :eldoc [[] ["x"] ["x" "y"] ["x" "y" "&" "more"]], ...}
+
+(require '[orchard.clojuredocs :as clojuredocs])
+(clojuredocs/find-doc "clojure.core" "map")
+;; => {:examples [...], :see-also [...], :notes [...], ...}
+```
+
+- Eldoc (function signature) display
+- ClojureDocs integration
+- Spec lookups (supports both `clojure.spec.alpha` and `clojure.alpha.spec`)
+
+### Exploration
+
+Discover and understand code and data.
+
+```clojure
+(require '[orchard.apropos :as apropos])
+(apropos/find-symbols {:var-query {:search #"^print"}})
+;; => [{:name clojure.core/print, :doc "Prints the object(s)...", :type "function"} ...]
+
+(require '[orchard.inspect :as inspect])
+(inspect/start {:page-size 32} (range 100))
+;; => {:rendered ("Class: ..." "--- Contents:" ...), :counter 1, :value (0 1 2 ...), ...}
+```
+
+- Enhanced apropos (regex search across namespaces)
+- Namespace and var querying
+- Value [inspector](https://github.com/clojure-emacs/orchard/blob/master/doc/inspector.org)
+
+### Debugging & Profiling
+
+Make sense of what went wrong and where time is spent.
+
+```clojure
+(require '[orchard.stacktrace :as stacktrace])
+(try (/ 1 0) (catch Exception e (stacktrace/analyze e)))
+;; => [{:class "java.lang.ArithmeticException", :message "Divide by zero", :stacktrace [...], ...}]
+
+(require '[orchard.trace :as trace])
+(trace/trace-var* #'my.app/process)
+;; All calls to my.app/process will now be traced
+```
+
+- Stacktrace analysis
+- Function tracing (alternative for `tools.trace`)
+- Simple function profiler
+
+### Java Interop
+
+First-class support for navigating and documenting Java code.
+
+```clojure
+(require '[orchard.java :as java])
+(java/member-info 'java.util.Map 'size)
+;; => {:name size, :type java.util.Map, :argtypes [], :returns int, ...}
+```
+
+- Class and member info via reflection
+- Java source navigation and Javadoc extraction
+- Classpath utilities (alternative for `java.classpath`)
+
+### Editor Support
+
+Small but essential pieces for a polished editing experience.
+
+```clojure
+(require '[orchard.pp :as pp])
+(pp/pprint-str {:a 1 :b {:c 2 :d [3 4 5]}} {:max-width 30})
+
+(require '[orchard.indent :as indent])
+(indent/infer-style-indent (meta #'clojure.core/let))
+;; => {:name let, ..., :style/indent [[:block 1]]}
+```
+
+- Indentation inference
+- Pretty printing (alternative for `clojure.pprint`)
 
 ## Why?
 
@@ -112,7 +199,7 @@ Currently, Orchard is able to find Java source files in the following places:
 
 - On the classpath.
 - In the `src.zip` archive that comes together with most JDK distributions.
-- For clases that come from Maven-downloaded dependencies — in the special
+- For classes that come from Maven-downloaded dependencies - in the special
   `-sources.jar` artifact that resides next to the main artifact in the `~/.m2`
   directory. The sources artifact has to be downloaded ahead of time.
 
