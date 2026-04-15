@@ -756,23 +756,20 @@
 (deftest inspect-java-object-test
   (testing "inspecting any Java object prints its fields"
     (is+ (matchers/prefix
-          ["Class: "
-           [:value "clojure.lang.TaggedLiteral" 0]
+          ["Class: " [:value "clojure.lang.TaggedLiteral" 0] [:newline]
+           "Value: " [:value "#foo ()" 1] [:newline]
+           #"Identity hash code: " [:newline]
            [:newline]
-           "Value: " [:value "#foo ()" 1]
+           "--- Instance fields:" [:newline]
+           "  " [:value "form" 2] " = " [:value "()" 3] [:newline]
+           "  " [:value "tag" 4] " = " [:value "foo" 5] [:newline]
            [:newline]
-           #"Identity hash code: "
+           "--- Static fields:" [:newline]
+           "  " [:value "FORM_KW" 6] " = " [:value ":form" 7] [:newline]
+           "  " [:value "TAG_KW" 8] " = " [:value ":tag" 9] [:newline]
            [:newline]
-           [:newline]
-           "--- Instance fields:"
-           [:newline] "  " [:value "form" 2] " = " [:value "()" 3]
-           [:newline] "  " [:value "tag" 4] " = " [:value "foo" 5]
-           [:newline]
-           [:newline]
-           "--- Static fields:"
-           [:newline] "  " [:value "FORM_KW" 6] " = " [:value ":form" 7]
-           [:newline] "  " [:value "TAG_KW" 8] " = " [:value ":tag" 9]
-           [:newline]])
+           #"View mode" [:newline]
+           "  ●object pretty sort-maps"])
          (render (inspect (clojure.lang.TaggedLiteral/create 'foo ()))))))
 
 (deftest inspect-path
@@ -1761,7 +1758,7 @@
          "  3. " [:value "#±[3 ~~ 4]" pos?]]
 
         "View mode"
-        ["  ●normal pretty sort-maps only-diff"]}
+        ["  ●normal object pretty sort-maps only-diff"]}
        (-> (inspect/diff data1 data2)
            inspect
            render
@@ -1805,7 +1802,7 @@
            "  3. " [:value "#±[3 ~~ 4]" pos?]]
 
           "View mode"
-          ["  ●normal pretty sort-maps ●only-diff"]}
+          ["  ●normal object pretty sort-maps ●only-diff"]}
          (-> (inspect/diff data1 data2)
              (inspect {:only-diff true})
              render
