@@ -1,1 +1,6 @@
-{:cljdoc/languages ["clj"]}
+{:cljdoc/languages ["clj"]
+ :cljdoc.doc/tree [["Inspector" {:file "doc/inspector.org"}]
+                   ["Cross-referencing" {:file "doc/xref.org"}]
+                   ["Tracing and Profiling" {:file "doc/tracing-and-profiling.org"}]
+                   ["Stacktrace Analysis" {:file "doc/stacktrace.org"}]
+                   ["Java Interop Support" {:file "doc/java.org"}]]}
