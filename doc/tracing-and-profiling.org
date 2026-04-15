@@ -1,0 +1,150 @@
+* Tracing and Profiling
+
+Orchard provides a function tracer (=orchard.trace=) and a simple
+profiler (=orchard.profile=). Both work by temporarily replacing the
+function stored in a var with a wrapped version that records
+information about each call. The original function is stashed in the
+var's metadata so it can be restored later.
+
+** Tracing
+
+=orchard.trace= is a faster reimplementation of =clojure.tools.trace=
+that produces indented call trees showing function arguments and
+return values.
+
+#+begin_src clojure :exports code :results silent
+  (require '[orchard.trace :as trace])
+#+end_src
+
+*** Tracing individual functions
+
+Use =trace-var*= to start tracing a function and =untrace-var*= to
+stop:
+
+#+begin_src clojure
+  (trace/trace-var* #'my.app/process)
+
+  (my.app/process {:id 1})
+  ;; Prints:
+  ;; (my.app/process {:id 1})
+  ;; |
+  ;; | (my.app/fetch-record {:id 1})
+  ;; | |
+  ;; | +-> {:id 1, :name "Alice"}
+  ;; |
+  ;; +-> {:status :ok, :record {:id 1, :name "Alice"}}
+
+  (trace/untrace-var* #'my.app/process)
+#+end_src
+
+*** Tracing entire namespaces
+
+=trace-ns*= traces all eligible functions in a namespace (it
+automatically skips macros):
+
+#+begin_src clojure
+  (trace/trace-ns* 'my.app)
+
+  ;; ... do some work ...
+
+  (trace/untrace-ns* 'my.app)
+#+end_src
+
+*** Checking trace state
+
+#+begin_src clojure
+  (trace/traced? #'my.app/process)    ;; => true if currently traced
+  (trace/traceable? #'my.app/process) ;; => true if it can be traced (IFn, not a macro)
+#+end_src
+
+*** Global cleanup
+
+#+begin_src clojure
+  (trace/untrace-all) ;; Reverts all tracing everywhere
+#+end_src
+
+*** Output formatting
+
+The tracer indents nested calls with tree-drawing characters and
+prefixes return values with =+->= to distinguish them from calls.
+Large values are truncated to keep output readable: collections are
+limited by =*print-length*= and =*print-level*=, and individual atoms
+are capped at 150 characters.
+
+** Profiling
+
+=orchard.profile= collects timing data for function calls. It's meant
+for interactive exploration, not production benchmarking - think of it
+as a quick way to see where time goes without leaving your REPL.
+
+#+begin_src clojure :exports code :results silent
+  (require '[orchard.profile :as profile])
+#+end_src
+
+*** Profiling functions
+
+The API mirrors the tracing one:
+
+#+begin_src clojure
+  ;; Profile a single function
+  (profile/profile-var #'my.app/process)
+
+  ;; Or an entire namespace
+  (profile/profile-ns 'my.app)
+
+  ;; There's also a toggle for convenience
+  (profile/toggle-profile-ns 'my.app) ;; => true (now profiling)
+  (profile/toggle-profile-ns 'my.app) ;; => false (stopped)
+#+end_src
+
+*** Running code and reading results
+
+After profiling some functions, just use them normally. Then call
+=summary= to see what happened:
+
+#+begin_src clojure
+  (profile/profile-ns 'my.app)
+
+  ;; Exercise the code
+  (dotimes [_ 100] (my.app/process {:id 1}))
+
+  (profile/summary)
+  ;; => {#'my.app/process   {:name #'my.app/process, :n 100,
+  ;;                          :mean 45000, :std 12000, :min 30000,
+  ;;                          :max 120000, :med 42000, :sum 4500000,
+  ;;                          :samples [30000 31000 ...]},
+  ;;     #'my.app/fetch-record {...}}
+#+end_src
+
+All times are in nanoseconds. For a human-readable version formatted
+for the Orchard inspector, use:
+
+#+begin_src clojure
+  (profile/summary-for-inspector)
+  ;; => [{:name #'my.app/process, :n 100, :mean '45 us, :std '+-12 us, ...} ...]
+#+end_src
+
+*** Clearing data
+
+=clear= resets all collected timings without removing the profiling
+wrappers, so you can start a fresh measurement run:
+
+#+begin_src clojure
+  (profile/clear)
+#+end_src
+
+To fully remove profiling:
+
+#+begin_src clojure
+  (profile/unprofile-var #'my.app/process)
+  (profile/unprofile-ns 'my.app)
+  (profile/unprofile-all)
+#+end_src
+
+*** How timing data is stored
+
+Each profiled function gets an array that accumulates nanosecond
+timings. Arrays start small (256 slots) and grow as needed up to a cap
+of 131,072 samples. Once full, new samples overwrite random old ones
+to keep memory bounded while still providing a representative
+distribution. All recording is thread-safe.
