@@ -136,7 +136,7 @@ In simple terms - only code that's loaded (evaluated) will be taken under consid
 from the static analysis approach taken by tools for most programming languages where it's not possible to
 easily inspect the state of running program.
 
-Some other design goals are listed bellow.
+Some other design goals are listed below.
 
 ### No Runtime Dependencies
 
@@ -185,43 +185,11 @@ functionality that's provided.
 
 ## Dealing with Java sources
 
-Orchard interacts with Java source files (`.java` files) in several ways:
-
-- Locates the Java source files to enable the "jump to definition" functionality.
-  - Also enables "jump to file:line" from the printed stacktrace (a CIDER feature).
-- Parses Java sources to extract additional information about Java interop
-  targets (constructors, methods).
-  - Allows jumping directly to method definition in the Java source file.
-  - Extends the documentation for interop targets with Javadoc comments, exact
-    method argument names.
-
-Currently, Orchard is able to find Java source files in the following places:
-
-- On the classpath.
-- In the `src.zip` archive that comes together with most JDK distributions.
-- For classes that come from Maven-downloaded dependencies - in the special
-  `-sources.jar` artifact that resides next to the main artifact in the `~/.m2`
-  directory. The sources artifact has to be downloaded ahead of time.
-
-Orchard provides
-`orchard.java.source-files/download-sources-jar-for-coordinates` function to
-download the sources by invoking a subprocess with one of the supported build
-tools (Clojure CLI or Leiningen). You can call this function at any point of
-time on your own. Alternatively, you can bind the dynamic variable
-`orchard.java.source-files/*download-sources-jar-fn*` to a function which
-accepts a Class object, and Orchard will call this function automatically when
-it fails to locate a Java source file for the class. Usage example:
-
-```clj
-(binding [src-files/*download-sources-jar-fn*
-          #(src-files/download-sources-jar-for-coordinates
-            (src-files/infer-maven-coordinates-for-class %))]
-  (class->source-file-url <class-arg>))
-```
-
-If the source file can be located, this is usually enough for basic "jump to
-source" functionality. For a more precise "jump to definition" and for
-Javadoc-based documentation, Orcard will attempt to parse the source file.
+Orchard can locate Java source files (on the classpath, in the JDK's `src.zip`,
+or in Maven `-sources.jar` artifacts), parse them for Javadoc and argument
+names, and even download missing source JARs automatically. See the
+[Java interop guide](https://cljdoc.org/d/cider/orchard/CURRENT/doc/java-interop-support)
+for details.
 
 ## Development
 
@@ -265,13 +233,13 @@ The important implications from this are:
 - very fast
 - functions marked with meta `:inline` will not be found (`inc`, `+`, ...)
 - redefining function vars that include lambdas will still return the dependencies of the old plus the new ones
--[explanation](https://lukas-domagala.de/blog/clojure-compiler-class-cache.html))
+- ([explanation](https://lukas-domagala.de/blog/clojure-compiler-class-cache.html))
 - does not work on AoT compiled functions
 
 ### Java 8 support
 
 As noted earlier Java 8 is soft-deprecated in Orchard since version 0.29. Core
-Orchard funcitonality continues to work on JDK 8, but the following features
+Orchard functionality continues to work on JDK 8, but the following features
 don't:
 
 - Java sources parsing
