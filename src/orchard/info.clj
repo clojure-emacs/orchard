@@ -10,10 +10,9 @@
    [orchard.misc :as misc]))
 
 (defn qualify-sym
-  "Qualify a symbol, if any in `sym`, with `ns`.
+  "Qualify `sym` with `ns`, returning a namespace-qualified symbol.
 
-  Return nil if `sym` is nil, attempting to generate a valid symbol even
-  in case some `ns` is missing."
+  Return nil if `sym` is nil. If `ns` is nil, returns an unqualified symbol."
   {:added "0.5"}
   [ns sym]
   (when sym (symbol (some-> ns str) (str sym))))
@@ -24,7 +23,7 @@
   If :sym is unqualified we assoc a :qualified-sym key with it. The
   namespace used is :ns first and then :context-ns.
 
-  If :sym is already qualified with assoc a :computed-ns key
+  If :sym is already qualified, assoc a :computed-ns key
   and :unqualified-sym key.
 
   If :dialect is nil, we assoc :clj, our default."
@@ -141,6 +140,10 @@
 
 (defn info*
   "Provide the info map for the input `:ns` and `:sym`.
+
+  Returns a map with keys like :ns, :name, :arglists, :doc, :file, :line, etc.
+  The exact keys depend on what `sym` resolves to (var, special form, Java member,
+  namespace). Returns nil if the symbol can't be resolved.
 
   The default `:dialect` is `:clj` but it can be specified as part of `params`.
 
