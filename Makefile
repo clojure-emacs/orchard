@@ -71,7 +71,7 @@ test-with-cljs: copy-sources-to-jdk compile-java compile-test-java download-sour
 	clojure -Sdeps '{:deps {org.clojure/clojure-sources {:local/root "$(SOURCES_JAR)"}}}' \
 	  -M:test:cljs:$(CLOJURE_VERSION)
 
-eastwood: compile-java
+eastwood: compile-java compile-test-java
 	clojure -M:test:$(CLOJURE_VERSION):eastwood
 
 cljfmt:
