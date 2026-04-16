@@ -42,8 +42,6 @@
   (is+ "Test1. Test2. Test3." (var-doc #'public-var))
   (is+ "Test1." (var-doc 1 #'public-var)))
 
-(find-symbols {:ns (find-ns 'orchard.apropos-test)})
-
 (deftest namespaces-test
   (testing "Namespace sort order"
     (is+ (mc/prefix [{:name #"^orchard\.apropos-test/"}])

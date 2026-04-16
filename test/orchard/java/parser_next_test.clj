@@ -32,7 +32,7 @@
                 nil
                 (catch Exception e e))]
         (is (some? e) "parse-java should throw on invalid code")
-        (is+ {:out #"illegal start of expression"} (ex-data e)))))))
+        (is+ {:out #"illegal start of expression"} (ex-data e))))))
 
 (when jdk11+?
   (deftest source-info-test

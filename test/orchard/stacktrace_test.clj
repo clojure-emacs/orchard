@@ -306,7 +306,7 @@
                               {:name "clojure.lang.RestFn/invoke"}
                               {:name "don't touch me 2"}
                               {:name "java.lang.Thread/run"}]))
-      "Adds the flag when appropiate, leaving other entries untouched")
+      "Adds the flag when appropriate, leaving other entries untouched")
 
   (let [frames [{:name "don't touch me"}
                 {:name "java.util.concurrent.FutureTask/run"}
