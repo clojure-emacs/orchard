@@ -76,8 +76,8 @@
     (is+ [some?] (find-symbols {:var-query {:search #"some-random-function"}})
          "Search for specific fn should return it.")
     (doseq [private? [true false]]
-      (is (find-symbols {:var-query {:search #".*"
-                                     :private? private?}})
+      (is (seq (find-symbols {:var-query {:search #".*"
+                                          :private? private?}}))
           "Everything is searchable; it won't throw errors")))
 
   (testing "Types are correct"
@@ -103,12 +103,14 @@
           "Symbol search should return an abbreviated docstring.")))
 
   (testing "Includes special forms when `search-ns` is nil"
-    (is+ (mc/embeds [{:name "if"}]) (find-symbols {:search #"if"})))
+    (is+ (mc/embeds [{:name "if"}])
+         (find-symbols {:var-query {:search #"if"}})))
 
   (testing "Includes special forms when `search-ns` is \"clojure.core\""
     (is+ (mc/embeds [{:name "if"}])
-         (find-symbols {:search #"if"
-                        :ns-query {:exactly [(the-ns 'clojure.core)]}})))
+         (find-symbols {:var-query
+                        {:search #"if"
+                         :ns-query {:exactly [(the-ns 'clojure.core)]}}})))
 
   (testing "Excludes special forms when `search-ns` is some other ns"
     (is+ (mc/mismatch (mc/embeds [{:name "if"}]))
