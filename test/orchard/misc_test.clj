@@ -36,7 +36,7 @@
   (is (= (misc/parse-java-version "11") 11))
   (is (= (misc/parse-java-version "14") 14)))
 
-(deftest macros-suffix-add-remove
+(deftest macros-suffix-add-remove-test
   (testing "add-ns-macros"
     (is (nil? (misc/add-ns-macros nil)))
     (is (= 'mount.tools.macro$macros (misc/add-ns-macros 'mount.tools.macro))))
@@ -47,25 +47,25 @@
     (is (= 'cljs.core.async/go (misc/remove-macros 'cljs.core.async$macros/go)) "it should remove $macros from a namespaced var")
     (is (= 'mount.tools.macro (misc/remove-macros 'mount.tools.macro$macros)) "it should remove $macros from a namespace")))
 
-(deftest name-sym
+(deftest name-sym-test
   (is (nil? (misc/name-sym nil)))
   (is (= 'unqualified (misc/name-sym 'unqualified)))
   (is (= 'sym (misc/name-sym 'qualified/sym))))
 
-(deftest namespace-sym
+(deftest namespace-sym-test
   (is (nil? (misc/namespace-sym nil)))
   (is (= 'unqualified (misc/namespace-sym 'unqualified)))
   (is (= 'qualified (misc/namespace-sym 'qualified/sym))))
 
-(deftest file-ext?
+(deftest file-ext?-test
   (is (misc/file-ext? (.toURL (java.net.URI. "file:/tmp/foo.jar")) ".jar"))
   (is (not (misc/file-ext? (.toURL (java.net.URI. "file:/tmp/foo.war")) ".jar")))
   (is (not (misc/file-ext? (.toURL (java.net.URI. "jar:file:/tmp/foo.jar!/BOOT-INF/lib/test.jar")) ".jar"))))
 
-(deftest directory?
+(deftest directory?-test
   (is (misc/directory? (.toURL (.toURI (java.io.File. ""))))))
 
-(deftest call-when-resolved
+(deftest call-when-resolved-test
   (let [f (misc/call-when-resolved 'clojure.core/identity)]
     (is (= 1 (f 1))))
   (let [f (misc/call-when-resolved 'com.example/unknown)]

@@ -14,7 +14,7 @@
 
 ;; Download sources testing
 
-(deftest test-infer-maven-coordinates
+(deftest infer-maven-coordinates-test
   (is (= (src-files/infer-maven-coordinates-for-class clojure.lang.Ref)
          {:artifact "clojure", :group "org.clojure", :version (clojure-version)}))
 
@@ -30,7 +30,7 @@
 ;; TODO: doesn't currently pass on Windows because it can't find "lein".
 ;; Probably a CI setup problem.
 (when-not (= os/os-type ::os/windows)
-  (deftest test-download-sources-jar-using-lein
+  (deftest download-sources-jar-using-lein-test
     (let [f (sources-jar-file clojure.lang.Ref)]
       (.delete f)
       (is (not (.exists f))))
@@ -45,7 +45,7 @@
              200)))))
 
 (when-not (= os/os-type ::os/windows)
-  (deftest test-download-sources-jar
+  (deftest download-sources-jar-test
     (let [f (sources-jar-file clojure.lang.Ref)]
       (.delete f)
       (is (not (.exists f))))

@@ -6,7 +6,7 @@
    [orchard.info :as info]
    [orchard.test.util :refer [is+]]))
 
-(deftest test-eldoc
+(deftest eldoc-test
   (testing "arglist extraction"
     (is+ {:eldoc '(["x"] ["x" "y"])}
          (eldoc/eldoc {:arglists '([x] [x y])}))
