@@ -50,7 +50,7 @@
 (deftest classpath-resources-test
   (testing "Iterating classpath resources"
     (testing "returns non-empty lists"
-      ;; The non-existing .jar can get misteriously created (is it Lein?).
+      ;; The non-existing .jar can get mysteriously created (is it Lein?).
       ;; Work around it:
       (-> "does-not-exist.jar" File. .delete)
 
