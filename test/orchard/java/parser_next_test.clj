@@ -27,11 +27,12 @@
 (when jdk11+?
   (deftest parse-java-test
     (testing "Throws an informative exception on invalid code"
-      (try
-        (parse-java (io/resource "orchard/java/InvalidClass.java") nil)
-        (assert false)
-        (catch Exception e
-          (is+ {:out #"illegal start of expression"} (ex-data e)))))))
+      (let [e (try
+                (parse-java (io/resource "orchard/java/InvalidClass.java") nil)
+                nil
+                (catch Exception e e))]
+        (is (some? e) "parse-java should throw on invalid code")
+        (is+ {:out #"illegal start of expression"} (ex-data e)))))))
 
 (when jdk11+?
   (deftest source-info-test
