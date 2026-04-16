@@ -29,6 +29,6 @@
    `(is (~'match? ~expected ~actual) ~message)))
 
 (defmacro are*
-  "Like `are` but doesn't wrap test expression is `is`, instead allowing the user to use `is+` or any other assertion code."
+  "Like `are` but doesn't wrap test expression in `is`, instead allowing the user to use `is+` or any other assertion code."
   [argv expr & args]
   `(template/do-template ~argv ~expr ~@args))

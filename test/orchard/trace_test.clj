@@ -140,69 +140,6 @@
          (with-out-str-rn (sample-ns/fibo 5))))
 
   (is (= "
-(orchard.trace-test.sample-ns/fibo 5)
-│ 
-│ (orchard.trace-test.sample-ns/fibo 3)
-│ │ 
-│ │ (orchard.trace-test.sample-ns/fibo 1)
-│ │ │ 
-│ │ └─→ 1
-│ │ 
-│ │ (orchard.trace-test.sample-ns/fibo 2)
-│ │ │ 
-│ │ │ (orchard.trace-test.sample-ns/fibo 0)
-│ │ │ │ 
-│ │ │ └─→ 1
-│ │ │ 
-│ │ │ (orchard.trace-test.sample-ns/fibo 1)
-│ │ │ │ 
-│ │ │ └─→ 1
-│ │ │ 
-│ │ └─→ 2
-│ │ 
-│ └─→ 3
-│ 
-│ (orchard.trace-test.sample-ns/fibo 4)
-│ │ 
-│ │ (orchard.trace-test.sample-ns/fibo 2)
-│ │ │ 
-│ │ │ (orchard.trace-test.sample-ns/fibo 0)
-│ │ │ │ 
-│ │ │ └─→ 1
-│ │ │ 
-│ │ │ (orchard.trace-test.sample-ns/fibo 1)
-│ │ │ │ 
-│ │ │ └─→ 1
-│ │ │ 
-│ │ └─→ 2
-│ │ 
-│ │ (orchard.trace-test.sample-ns/fibo 3)
-│ │ │ 
-│ │ │ (orchard.trace-test.sample-ns/fibo 1)
-│ │ │ │ 
-│ │ │ └─→ 1
-│ │ │ 
-│ │ │ (orchard.trace-test.sample-ns/fibo 2)
-│ │ │ │ 
-│ │ │ │ (orchard.trace-test.sample-ns/fibo 0)
-│ │ │ │ │ 
-│ │ │ │ └─→ 1
-│ │ │ │ 
-│ │ │ │ (orchard.trace-test.sample-ns/fibo 1)
-│ │ │ │ │ 
-│ │ │ │ └─→ 1
-│ │ │ │ 
-│ │ │ └─→ 2
-│ │ │ 
-│ │ └─→ 3
-│ │ 
-│ └─→ 5
-│ 
-└─→ 8
-"
-         (with-out-str-rn (sample-ns/fibo 5))))
-
-  (is (= "
 (orchard.trace-test.sample-ns/fibo2 0 1 10)
 │ 
 │ (orchard.trace-test.sample-ns/fibo2 1 1 9)

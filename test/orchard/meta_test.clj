@@ -44,11 +44,11 @@
   `(do ~@x))
 
 (deftest macroexpand-all-test
-  (is (->> (sut/macroexpand-all '(test-macro ^{:random meta} (hi)))
-           second
-           meta
-           :random
-           (= 'meta))))
+  (is (= 'meta
+         (->> (sut/macroexpand-all '(test-macro ^{:random meta} (hi)))
+              second
+              meta
+              :random))))
 
 (deftest special-sym-meta-test
   (testing "Names are correct for `&`, `catch`, `finally`"
