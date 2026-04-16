@@ -46,7 +46,7 @@
         :strings {:n 5, :blank 3, :ascii 4, :max-len 6, :min-len 0, :avg-len (approx 2.8)}}
        (analytics [nil "" " " "  " "hello" "привіт"])))
 
-(deftest colls-stats
+(deftest colls-stats-test
   (is+ {:count 20
         :types {clojure.lang.LongRange 19, clojure.lang.PersistentList$EmptyList 1}
         :collections {:n 20, :empty 1, :max-size 19, :min-size 0, :avg-size 9.5}}
