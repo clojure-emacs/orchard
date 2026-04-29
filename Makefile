@@ -1,4 +1,4 @@
-.PHONY: test eastwood cljfmt kondo install deploy clean lint copy-sources-to-jdk
+.PHONY: test eastwood cljfmt kondo install deploy clean lint copy-sources-to-jdk javac javac-test
 .DEFAULT_GOAL := install
 
 # Set bash instead of sh for the @if [[ conditions,
@@ -7,10 +7,9 @@ SHELL = /bin/bash -Ee
 
 HOME=$(shell echo $$HOME)
 CLOJURE_VERSION ?= 1.12
-TEST_PROFILES ?= "-user,-dev,+test"
 
 resources/clojuredocs/export.edn:
-curl -o $@ https://github.com/clojure-emacs/clojuredocs-export-edn/raw/master/exports/export.compact.edn
+	curl -o $@ https://github.com/clojure-emacs/clojuredocs-export-edn/raw/master/exports/export.compact.edn
 
 # We need Java sources to test Java parsing functionality, but the Docker images
 # we use on CircleCI doesn't include src.zip. So we have to download them from
@@ -23,6 +22,8 @@ base-src-jdk8.zip:
 
 base-src-jdk11.zip:
 	bash .circleci/download-jdk-sources.sh https://github.com/adoptium/jdk11u/archive/refs/tags/jdk-11.0.28+0.zip jdk11 $@
+javac:
+	clojure -T:build javac
 
 base-src-jdk17.zip:
 	bash .circleci/download-jdk-sources.sh https://github.com/adoptium/jdk17u/archive/refs/tags/jdk-17.0.15+5.zip jdk17 $@
@@ -39,41 +40,44 @@ copy-sources-to-jdk: base-src-$(JDK_SRC_VERSION).zip
 # Placeholder job for When JDK_SRC_VERSION is unset.
 base-src-.zip:
 	echo 'JDK_SRC_VERSION is unset.'
+javac-test:
+	clojure -T:build javac :with-tests true
 
-test: copy-sources-to-jdk clean
-	lein with-profile $(TEST_PROFILES),+$(CLOJURE_VERSION) test
+test: download-jdk-src javac-test
+	clojure -X:$(CLOJURE_VERSION):dev:test
 
 # Having Clojurescript on classpath enables extra tests.
-test-with-cljs: copy-sources-to-jdk
-	lein with-profile $(TEST_PROFILES),+$(CLOJURE_VERSION),+cljs test
+test-with-cljs: download-jdk-src javac-test
+	clojure -X:$(CLOJURE_VERSION):dev:test:+cljs
 
-eastwood:
-	lein with-profile $(TEST_PROFILES),+$(CLOJURE_VERSION),+eastwood eastwood
+eastwood: clean javac-test
+	clojure -M:eastwood
 
 cljfmt:
-	lein with-profile -user,-dev,+$(CLOJURE_VERSION),+cljfmt cljfmt check
+	clojure -M:cljfmt check
 
-kondo: clean
-	lein with-profile -dev,+test,+clj-kondo clj-kondo
+kondo:
+	clojure -M:kondo
 
 lint: kondo cljfmt eastwood
 
 # Deployment is performed via CI by creating a git tag prefixed with "v".
 # Please do not deploy locally as it skips various measures.
-deploy: check-env clean
+deploy: check-env
 	@if ! echo "$(CIRCLE_TAG)" | grep -q "^v"; then \
 		echo "[Error] CIRCLE_TAG $(CIRCLE_TAG) must start with 'v'."; \
 		exit 1; \
 	fi
 	export PROJECT_VERSION=$$(echo "$(CIRCLE_TAG)" | sed 's/^v//'); \
-	lein with-profile -user,-dev,+$(CLOJURE_VERSION),-provided deploy clojars
+	# Clean is performed inside deploy task, no need to clean in Make
+	clojure -T:build deploy :version "$PROJECT_VERSION"
 
 # Usage: PROJECT_VERSION=99.99 make install
-install: clean check-install-env
-	lein with-profile -user,-dev,+$(CLOJURE_VERSION),-provided install
+install: check-install-env clean
+	clojure -T:build install :version '"$(PROJECT_VERSION)"'
 
 clean:
-	lein with-profile -user,-dev clean
+	clojure -T:build clean
 
 check-env:
 ifndef CLOJARS_USERNAME

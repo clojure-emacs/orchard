@@ -26,16 +26,13 @@
     (#'src-files/infer-sources-jar-file
      (#'src-files/find-jar-file-for-class klass))))
 
-;; TODO: test for Clojure CLI and invoke tool at some point.
-;; TODO: doesn't currently pass on Windows because it can't find "lein".
-;; Probably a CI setup problem.
 (when-not (= os/os-type ::os/windows)
-  (deftest download-sources-jar-using-lein-test
+  (deftest download-sources-jar-using-clojure-cli-test
     (let [f (sources-jar-file clojure.lang.Ref)]
       (.delete f)
       (is (not (.exists f))))
 
-    (is (#'src-files/download-sources-using-lein
+    (is (#'src-files/download-sources-using-clojure-cli
          (src-files/infer-maven-coordinates-for-class clojure.lang.Ref)))
 
     (is (.exists (sources-jar-file clojure.lang.Ref)))
