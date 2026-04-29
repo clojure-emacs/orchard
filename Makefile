@@ -16,30 +16,12 @@ resources/clojuredocs/export.edn:
 # Github and repackage in a form that is resemblant to src.zip from normal
 # distributions.
 
-base-src-jdk8.zip:
-	# echo 'Placeholder. We dont parse sources on JDK8.'
-	touch $@
+download-jdk-src:
+	clojure -T:build download-jdk-src
 
-base-src-jdk11.zip:
-	bash .circleci/download-jdk-sources.sh https://github.com/adoptium/jdk11u/archive/refs/tags/jdk-11.0.28+0.zip jdk11 $@
 javac:
 	clojure -T:build javac
 
-base-src-jdk17.zip:
-	bash .circleci/download-jdk-sources.sh https://github.com/adoptium/jdk17u/archive/refs/tags/jdk-17.0.15+5.zip jdk17 $@
-
-base-src-jdk21.zip:
-	bash .circleci/download-jdk-sources.sh https://github.com/adoptium/jdk21u/archive/refs/tags/jdk-21.0.7+5.zip jdk21 $@
-
-base-src-jdk25.zip:
-	bash .circleci/download-jdk-sources.sh https://github.com/adoptium/jdk/archive/refs/tags/jdk-25+36.zip jdk25 $@
-
-copy-sources-to-jdk: base-src-$(JDK_SRC_VERSION).zip
-	mkdir -p $(JAVA_HOME)/lib && cp base-src-$(JDK_SRC_VERSION).zip $(JAVA_HOME)/lib/src.zip
-
-# Placeholder job for When JDK_SRC_VERSION is unset.
-base-src-.zip:
-	echo 'JDK_SRC_VERSION is unset.'
 javac-test:
 	clojure -T:build javac :with-tests true
 
