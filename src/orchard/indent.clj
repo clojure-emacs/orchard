@@ -148,6 +148,20 @@
              'fntail
              'fn-tail]))))
 
+(defn- normalize-arglists
+  "Unwrap a `(quote ...)` wrapper around `arglists`, if present.
+
+  ClojureScript's analyzer preserves `:arglists` as the raw form when it
+  comes from a macro-written macro (i.e. a macro whose body emits
+  `'([x])` for `:arglists` instead of a bare `([x])`).  Most consumers
+  expect the bare seq of arglist vectors, so peel the `quote` off before
+  processing."
+  [arglists]
+  (if (and (seq? arglists)
+           (= 'quote (first arglists)))
+    (second arglists)
+    arglists))
+
 (defn infer-style-indent
   "Given a `metadata` map obtained from a Clojure var object,
   associates a `:style/indent` value based on inference (rule of thumb) rules:
@@ -161,6 +175,6 @@
 
   `:style/indent` will be not associated if no rule matched."
   [{:keys [name arglists] :as metadata}]
-  (let [result (compute-style-indent (str name) arglists)]
+  (let [result (compute-style-indent (str name) (normalize-arglists arglists))]
     (cond-> metadata
       result (assoc :style/indent result))))

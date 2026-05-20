@@ -85,3 +85,27 @@
     '->>         '[[x & forms]]          nil
     'some->      '[[x & forms]]          nil
     'some->>     '[[x & forms]]          nil))
+
+(deftest infer-style-indent-test
+  (testing "unwraps `(quote ...)`-wrapped arglists"
+    ;; ClojureScript's analyzer preserves `:arglists` as the raw form
+    ;; for macro-written macros, so it shows up as `(quote (...))`
+    ;; rather than `(...)`.  See clojure-emacs/cider#3923.
+    (is+ {:name 'with-ctx
+          :arglists '(quote ([ctx & body]))
+          :style/indent 1}
+         (sut/infer-style-indent
+          {:name 'with-ctx
+           :arglists '(quote ([ctx & body]))})))
+
+  (testing "passes through bare arglists unchanged (regression test for the common path)"
+    (is+ {:name 'with-ctx
+          :arglists '([ctx & body])
+          :style/indent 1}
+         (sut/infer-style-indent
+          {:name 'with-ctx
+           :arglists '([ctx & body])})))
+
+  (testing "doesn't crash on metadata without arglists"
+    (is+ {:name 'foo}
+         (sut/infer-style-indent {:name 'foo}))))

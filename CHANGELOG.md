@@ -3,6 +3,7 @@
 ## master (unreleased)
 
 - [#386](https://github.com/clojure-emacs/orchard/pull/386): Inspector: rename default view mode for unknown objects to `:object`.
+- [#396](https://github.com/clojure-emacs/orchard/pull/396): Indent: don't crash on `(quote (...))`-wrapped `:arglists` (clojure-emacs/cider#3923).
 - [#397](https://github.com/clojure-emacs/orchard/pull/397): Inspector: add support for diffing sets.
 
 ## 0.41.0 (2026-04-13)
