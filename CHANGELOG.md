@@ -3,6 +3,7 @@
 ## master (unreleased)
 
 - [#386](https://github.com/clojure-emacs/orchard/pull/386): Inspector: rename default view mode for unknown objects to `:object`.
+- [#397](https://github.com/clojure-emacs/orchard/pull/397): Inspector: add support for diffing sets.
 
 ## 0.41.0 (2026-04-13)
 
