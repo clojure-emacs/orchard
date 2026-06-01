@@ -11,6 +11,7 @@
   (:require
    [clojure.core.protocols :refer [datafy nav]]
    [clojure.reflect :as reflect]
+   [clojure.set :as set]
    [clojure.string :as str]
    [orchard.inspect.analytics :as analytics]
    [orchard.java.compatibility :as compat]
@@ -1250,6 +1251,13 @@
          (assoc :view-mode (first (supported-view-modes inspector)))
          inspect-render))))
 
+(declare diff)
+
+(defn- diff-sequences [s1 s2]
+  (let [n (max (count s1) (count s2))]
+    (mapv #(diff (nth s1 % print/nothing) (nth s2 % print/nothing))
+          (range n))))
+
 (defn diff
   "Perform a recursive diff on two values and return a structure suitable to be
   viewed with the inspector."
@@ -1258,10 +1266,7 @@
         (not= (class d1) (class d2)) (print/->Diff d1 d2)
 
         (and (sequential? d1) (sequential? d2))
-        (let [n (max (count d1) (count d2))]
-          (->> (mapv #(diff (nth d1 % print/nothing) (nth d2 % print/nothing))
-                     (range n))
-               print/->DiffColl))
+        (print/->DiffColl (diff-sequences d1 d2))
 
         (and (map? d1) (map? d2))
         (print/->DiffColl
@@ -1270,5 +1275,13 @@
               (mapv (fn [k]
                       [k (diff (get d1 k print/nothing) (get d2 k print/nothing))]))
               (into {})))
+
+        (and (set? d1) (set? d2))
+        (let [common (set/intersection d1 d2)
+              subset1 (vec (set/difference d1 d2))
+              subset2 (vec (set/difference d2 d1))]
+          (print/->DiffColl
+           (-> (into #{} common) ;; If common is a sorted-set, turn into regular.
+               (into (diff-sequences subset1 subset2)))))
 
         :else (print/->Diff d1 d2)))

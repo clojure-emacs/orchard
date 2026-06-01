@@ -271,6 +271,7 @@
                                      coll))
         (sequential? coll) (mapv #(if (diff-result? %) % nothing)
                                  coll)
+        (set? coll) (set (filter diff-result? coll))
         :else coll))
 
 (defmethod print DiffColl [^DiffColl x, ^Writer w]

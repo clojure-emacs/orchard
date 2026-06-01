@@ -85,4 +85,4 @@
   (b/install opts))
 
 ;; To recompile Java class at runtime:
-;; ((requiring-resolve 'virgil/compile-java) ["src"])
+;; ((requiring-resolve 'virgil/compile-java) ["src" "test"])

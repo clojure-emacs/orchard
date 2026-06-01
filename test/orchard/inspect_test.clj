@@ -1787,6 +1787,15 @@
            render
            (section "Diff contents")))
 
+  (testing "diff sets"
+    ;; Complicated regexp is used to match because the order of elements in a
+    ;; set is not predictable.
+    (is+ ["  " [:value ":a" pos?] " = " [:value #"#≠#\{((2|3|#±\[1 ~~ 4\]) ?){3}\}" pos?]]
+         (-> (inspect/diff {:a #{1 2 3}} {:a #{2 3 4}})
+             inspect
+             render
+             (section "Diff contents"))))
+
   (testing "in :only-diff mode, render only differing subvalues"
     (is+ {"Diff contents"
           ["  0. " [:value "#≠{:tea/type #±[\"Jinxuan Oolong\" ~~ \"Jinxuan Wulong\"], :aliases #≠[ #±[\"Jinxuan\" ~~ \"金宣\"] #±[ ~~ \"Jinxuan\"]], :temperature #±[80 ~~ 75]}" pos?] [:newline]
