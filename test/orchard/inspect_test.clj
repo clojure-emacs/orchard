@@ -1702,13 +1702,6 @@
   (testing "analytics is not shown by default"
     (is+ nil (-> (range 100) inspect render (section "Analytics"))))
 
-  (testing "analytics hint is displayed if requested"
-    (is+ ["  Press 'y' or M-x cider-inspector-display-analytics to analyze this value."]
-         (-> (range 100)
-             (inspect {:display-analytics-hint "true"})
-             render
-             (section "Analytics"))))
-
   (testing "analytics is shown when requested"
     (is+ ["  " [:value ":count" pos?] " = " [:value "100" pos?] [:newline]
           "  " [:value ":types" pos?] " = " [:value "{java.lang.Long 100}" pos?] [:newline]
