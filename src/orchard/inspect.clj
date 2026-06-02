@@ -45,7 +45,6 @@
    :max-value-length 10000   ; To avoid printing huge graphs and Exceptions.
    :max-coll-size    5
    :max-nested-depth nil
-   :display-analytics-hint nil
    :analytics-size-cutoff  100000
    :sort-maps false
    :only-diff false
@@ -241,7 +240,7 @@
   (sibling* inspector 1))
 
 (defn- validate-config [{:keys [page-size max-atom-length max-value-length
-                                max-coll-size max-nested-depth display-analytics-hint
+                                max-coll-size max-nested-depth
                                 analytics-size-cutoff pretty-print]
                          :as config}]
   (when (some? page-size) (pre-ex (pos-int? page-size)))
@@ -249,7 +248,6 @@
   (when (some? max-value-length) (pre-ex (pos-int? max-value-length)))
   (when (some? max-coll-size) (pre-ex (pos-int? max-coll-size)))
   (when (some? max-nested-depth) (pre-ex (pos-int? max-nested-depth)))
-  (when (some? display-analytics-hint) (pre-ex (= display-analytics-hint "true")))
   (when (some? analytics-size-cutoff) (pre-ex (pos-int? analytics-size-cutoff)))
   (when (some? pretty-print) (pre-ex (contains? #{true false} pretty-print)))
   (select-keys config (keys default-inspector-config)))
@@ -298,8 +296,7 @@
      (-> inspector
          (assoc :value-analysis
                 (binding [analytics/*size-cutoff* analytics-size-cutoff]
-                  (analytics/analytics value)))
-         (dissoc :display-analytics-hint))
+                  (analytics/analytics value))))
      inspector)))
 
 ;; View modes
@@ -631,16 +628,13 @@
     inspector))
 
 (defn- render-analytics
-  [{:keys [display-analytics-hint value-analysis] :as inspector}]
-  (if (or value-analysis display-analytics-hint)
-    (as-> inspector ins
-      (render-section-header ins "Analytics")
-      (indent ins)
-      (if value-analysis
-        (render-value-maybe-expand ins value-analysis)
-        (render-indent-ln
-         ins "Press 'y' or M-x cider-inspector-display-analytics to analyze this value."))
-      (unindent ins))
+  [{:keys [value-analysis] :as inspector}]
+  (if value-analysis
+    (-> inspector
+        (render-section-header "Analytics")
+        (indent)
+        (render-value-maybe-expand value-analysis)
+        (unindent))
     inspector))
 
 ;;;; Datafy
@@ -1203,10 +1197,8 @@
                              " " (add-circle "pretty" pretty-print)
                              " " (add-circle "sort-maps" sort-maps)
                              (when diff?
-                               (str " " (add-circle "only-diff" only-diff))))
-          caption (format "View mode (press 'v' to cycle, 'P' to pretty-print, 'S' to sort maps%s)"
-                          (if diff? ", 'D' to show only diffs" ""))]
-      (-> (render-section-header inspector caption)
+                               (str " " (add-circle "only-diff" only-diff))))]
+      (-> (render-section-header inspector "View mode")
           (indent)
           (render-indent view-mode-str)
           (unindent)))
