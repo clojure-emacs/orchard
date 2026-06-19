@@ -2,9 +2,12 @@
 
 ## master (unreleased)
 
+## 0.42.0 (2026-06-19)
+
 - [#386](https://github.com/clojure-emacs/orchard/pull/386): Inspector: rename default view mode for unknown objects to `:object`.
 - [#396](https://github.com/clojure-emacs/orchard/pull/396): Indent: don't crash on `(quote (...))`-wrapped `:arglists` (clojure-emacs/cider#3923).
 - [#397](https://github.com/clojure-emacs/orchard/pull/397): Inspector: add support for diffing sets.
+- [#398](https://github.com/clojure-emacs/orchard/pull/398): Inspector: remove the hints (including the analytics hint).
 - [#399](https://github.com/clojure-emacs/orchard/pull/399): Add `orchard.meta/classify-symbol` to classify a symbol as a macro, inline-expandable function, special form, or plain function.
 
 ## 0.41.0 (2026-04-13)
