@@ -30,7 +30,11 @@
 (defmacro defcmd [name args & body]
   (assert (= (count args) 1))
   `(defn ~name [~'opts]
-     (let [~(first args) (merge (default-opts ~'opts) ~'opts)]
+     ;; `-T:build` parses an unquoted version like `0.42.0` as a symbol; coerce
+     ;; it to a string so it flows correctly into the pom and the Clojars deploy.
+     (let [~'opts (cond-> ~'opts
+                    (:version ~'opts) (update :version str))
+           ~(first args) (merge (default-opts ~'opts) ~'opts)]
        ~@body)))
 
 (defn log [fmt & args] (println (apply format fmt args)))
