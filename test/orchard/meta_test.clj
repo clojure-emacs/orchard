@@ -69,6 +69,34 @@
   (testing "Returns nil for unknown symbol"
     (is (nil? (sut/special-sym-meta 'unknown)))))
 
+(deftest classify-symbol-test
+  (testing "classifies macros"
+    (is (= :macro (sut/classify-symbol 'clojure.core 'when)))
+    (is (= :macro (sut/classify-symbol 'clojure.core 'defn))))
+
+  (testing "classifies inline-expandable functions"
+    (is (= :inline (sut/classify-symbol 'clojure.core '+)))
+    (is (= :inline (sut/classify-symbol 'clojure.core 'inc))))
+
+  (testing "classifies special forms"
+    (is (= :special (sut/classify-symbol 'clojure.core 'if)))
+    (is (= :special (sut/classify-symbol 'clojure.core 'let*)))
+    (is (= :special (sut/classify-symbol 'clojure.core 'quote))))
+
+  (testing "classifies plain functions"
+    (is (= :function (sut/classify-symbol 'clojure.core 'map)))
+    (is (= :function (sut/classify-symbol 'clojure.core 'reduce))))
+
+  (testing "returns nil for unresolvable symbols"
+    (is (nil? (sut/classify-symbol 'clojure.core 'no-such-var-here))))
+
+  (testing "returns nil for symbols that resolve to a class"
+    (is (nil? (sut/classify-symbol 'clojure.core 'String))))
+
+  (testing "resolves namespace-qualified symbols"
+    (is (= :macro (sut/classify-symbol 'clojure.core 'clojure.core/when)))
+    (is (= :function (sut/classify-symbol 'clojure.core 'clojure.string/upper-case)))))
+
 (deftest special-sym-meta-without-see-also-test
   (with-redefs [;; do not load documents
                 docs/load-docs-if-not-loaded! (constantly nil)]

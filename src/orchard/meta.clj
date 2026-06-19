@@ -178,6 +178,29 @@
                              (catch Exception _ nil)))
           maybe-add-url))))
 
+(defn classify-symbol
+  "Classify `sym`, resolved in `ns`, by what kind of operator it is.
+  Returns one of:
+
+  * `:macro`    - a macro
+  * `:inline`   - a function carrying an `:inline` expander in its metadata
+  * `:special`  - a special form
+  * `:function` - any other resolved var
+
+  Returns nil for symbols that don't resolve (or that resolve to a class).
+  `ns` and `sym` are both symbols; `sym` may be namespace-qualified or aliased,
+  in which case it is resolved the way it would be in `ns`."
+  [ns sym]
+  (if (special-symbol? sym)
+    :special
+    (when-let [v (resolve-var ns sym)]
+      (when (var? v)
+        (let [m (meta v)]
+          (cond
+            (:macro m) :macro
+            (:inline m) :inline
+            :else :function))))))
+
 (declare var-code)
 
 (defn- merge-meta-for-indirect-var*
