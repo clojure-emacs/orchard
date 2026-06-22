@@ -1,7 +1,7 @@
 (ns orchard.trace-test
   (:require
    [clojure.edn]
-   [clojure.test :as t :refer [is are deftest]]
+   [clojure.test :as t :refer [is are deftest testing]]
    [orchard.test.util :refer [with-out-str-rn]]
    [orchard.trace :as sut]
    [orchard.trace-test.sample-ns :as sample-ns]))
@@ -196,3 +196,44 @@
   (sut/trace-var* 'orchard.trace-test/function-that-prints)
   (is (map? (function-that-prints))
       "Map is read back correctly, so it was printed in full."))
+
+(deftest trace-listener-test
+  ;; Earlier tests may leave the sample namespace traced; start from a clean
+  ;; slate so only `bar` is wrapped and exactly its two events show up.
+  (sut/untrace-all)
+  (testing ":listeners mode emits structured events instead of printing"
+    (let [events   (atom [])
+          listener (fn [e] (swap! events conj e))]
+      (sut/set-output-mode! :listeners)
+      (sut/add-trace-listener listener)
+      (sut/trace-var* #'sample-ns/bar)
+      (try
+        (let [out (with-out-str-rn (sample-ns/bar arg1))]
+          (is (= "" out) "nothing is printed in :listeners mode")
+          (is (= 2 (count @events)))
+          (let [[call ret] @events]
+            (is (= :call (:phase call)))
+            (is (= :return (:phase ret)))
+            (is (= "orchard.trace-test.sample-ns/bar" (:name call) (:name ret)))
+            (is (= (:id call) (:id ret)) "call and return share an id")
+            (is (= 0 (:depth call)))
+            (is (= 1 (count (:args call))))
+            (is (every? string? (:args call)))
+            (is (string? (:value ret)))
+            (is (re-find #"hello" (:value ret)))))
+        (finally
+          (sut/remove-trace-listener listener)
+          (sut/untrace-var* #'sample-ns/bar)
+          (sut/set-output-mode! :repl)))))
+
+  (testing "the default :repl mode emits no events"
+    (let [events   (atom [])
+          listener (fn [e] (swap! events conj e))]
+      (sut/add-trace-listener listener)
+      (sut/trace-var* #'sample-ns/bar)
+      (try
+        (sample-ns/bar arg1)
+        (is (empty? @events))
+        (finally
+          (sut/remove-trace-listener listener)
+          (sut/untrace-var* #'sample-ns/bar))))))
