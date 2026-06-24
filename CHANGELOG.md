@@ -2,6 +2,7 @@
 
 ## master (unreleased)
 
+- [#402](https://github.com/clojure-emacs/orchard/pull/402): Add `orchard.xref/type-protocols` (the protocols a type implements, both `extend`-style and inline) and `orchard.xref/protocols-with-method` (the protocols declaring a method of a given name).
 - [#401](https://github.com/clojure-emacs/orchard/pull/401): Add `orchard.xref/protocol-impls` (the types implementing a protocol, including inline `defrecord`/`deftype` implementers, with source locations) and `orchard.xref/multimethod-dispatch-values`.
 - [#400](https://github.com/clojure-emacs/orchard/pull/400): Trace: allow structured trace events to be consumed programmatically via `orchard.trace/add-trace-listener`, with `orchard.trace/set-output-mode!` selecting whether output goes to the REPL (`:repl`, the default), to listeners (`:listeners`), or both.
 

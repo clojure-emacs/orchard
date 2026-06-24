@@ -142,3 +142,17 @@
 (deftest multimethod-dispatch-values-test
   (is+ [":circle" ":square"]
        (xref/multimethod-dispatch-values #'test-describe)))
+
+(deftest type-protocols-test
+  (testing "finds a protocol implemented inline by a defrecord"
+    (is (contains? (set (xref/type-protocols TestSquare)) #'TestShape)))
+  (testing "finds a protocol extended onto an existing class"
+    (is (contains? (set (xref/type-protocols String)) #'TestShape)))
+  (testing "returns nil for a non-class argument"
+    (is (nil? (xref/type-protocols nil)))))
+
+(deftest protocols-with-method-test
+  (testing "finds protocols declaring a method of the given name"
+    (is (contains? (set (xref/protocols-with-method "test-area")) #'TestShape)))
+  (testing "returns an empty result for an unknown method name"
+    (is (empty? (xref/protocols-with-method "no-such-method-xyzzy")))))
