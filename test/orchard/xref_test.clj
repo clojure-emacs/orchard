@@ -108,3 +108,37 @@
   (testing "that usage from inside an anonymous function is found"
     (is+ (mc/embeds [#'orchard.xref-test/dummy-fn])
          (xref/fn-refs #'fn-dep))))
+
+;;; Protocol and multimethod implementations
+
+(defprotocol TestShape
+  (test-area [_]))
+
+(defrecord TestSquare [side]
+  TestShape
+  (test-area [_] (* side side)))
+
+(extend-type String
+  TestShape
+  (test-area [s] (count s)))
+
+(defmulti test-describe :kind)
+(defmethod test-describe :circle [_] "circle")
+(defmethod test-describe :square [_] "square")
+
+(deftest protocol-impls-test
+  (let [impls (xref/protocol-impls #'TestShape)
+        names (set (map :name impls))]
+    (testing "includes extend-type targets"
+      (is (contains? names "java.lang.String")))
+    (testing "includes inline defrecord implementers"
+      (is (contains? names "orchard.xref_test.TestSquare")))
+    (testing "resolves a source location for a record implementer"
+      (is+ {:name "orchard.xref_test.TestSquare"
+            :file string?
+            :line number?}
+           (first (filter #(= "orchard.xref_test.TestSquare" (:name %)) impls))))))
+
+(deftest multimethod-dispatch-values-test
+  (is+ [":circle" ":square"]
+       (xref/multimethod-dispatch-values #'test-describe)))
