@@ -120,3 +120,65 @@
   (let [var (as-var var)
         all-vars (doall (q/vars {:ns-query {:project? true} :private? true}))]
     (filterv (fn [v2] (contains? (fn-deps v2) var)) all-vars)))
+
+;;; Protocol and multimethod implementations
+
+(defn- cached-classes
+  "Return the classes currently held in Clojure's `DynamicClassLoader` cache."
+  []
+  (let [acc (volatile! (transient []))]
+    (.forEach class-cache
+              (reify BiConsumer
+                (accept [_ _k v]
+                  (when-let [c (.get ^Reference v)]
+                    (when (class? c)
+                      (vswap! acc conj! c))))))
+    (persistent! @acc)))
+
+(defn- class->location
+  "Best-effort source location for the Clojure type named `class-name`.
+  Records and types expose a `->Name` factory var that carries :file/:line; we
+  go through it because the class object itself doesn't keep that metadata.
+  Returns a map with :file/:line/:column, or nil for Java classes and the like."
+  [^String class-name]
+  (when-let [dot (str/last-index-of class-name ".")]
+    (let [ns-part (clojure.lang.Compiler/demunge (subs class-name 0 dot))
+          tname (subs class-name (inc dot))
+          factory (try (resolve (symbol ns-part (str "->" tname)))
+                       (catch Throwable _ nil))]
+      (when factory
+        (not-empty (select-keys (meta factory) [:file :line :column]))))))
+
+(defn protocol-impls
+  "Return the implementations of protocol `p` (a protocol var or its value).
+  Covers both `extend`/`extend-type`/`extend-protocol` targets and inline
+  `defrecord`/`deftype` implementers - the latter found by scanning loaded
+  classes for the protocol's generated interface.  Each entry is a map with
+  :name and, when resolvable, :file/:line/:column.  Only loaded code is visible."
+  {:added "0.43"}
+  [p]
+  (let [proto (if (var? p) (deref p) p)
+        ^Class iface (:on-interface proto)
+        extend-names (map #(.getName ^Class %) (extenders proto))
+        inline-names (keep (fn [^Class c]
+                             (let [n (.getName c)]
+                               (when (and (not (identical? c iface))
+                                          (not (str/starts-with? n "compile__stub."))
+                                          ;; skip reify/anonymous classes
+                                          (not (str/includes? n "$"))
+                                          (.isAssignableFrom iface c))
+                                 n)))
+                           (cached-classes))]
+    (->> (distinct (concat extend-names inline-names))
+         (map (fn [n] (merge {:name n} (class->location n))))
+         (sort-by :name)
+         vec)))
+
+(defn multimethod-dispatch-values
+  "Return the dispatch values of multimethod `m` (a var or a `MultiFn`).
+  Each value is rendered with `pr-str`.  Per-`defmethod` source locations are
+  not available at runtime, so none are included."
+  {:added "0.43"}
+  [m]
+  (let [mf (if (var? m) (deref m) m)]
+    (->> (methods mf) keys (map pr-str) sort vec)))
