@@ -182,3 +182,41 @@
   [m]
   (let [mf (if (var? m) (deref m) m)]
     (->> (methods mf) keys (map pr-str) sort vec)))
+
+(defn- protocol-map?
+  "True when `val` is a protocol map.
+  Defensive: a keyword lookup on a sorted map with non-keyword keys throws, so
+  guard the access - any var in any loaded namespace can hold such a value."
+  [val]
+  (boolean (and (map? val)
+                (try (:on-interface val) (catch Throwable _ nil)))))
+
+(defn- loaded-protocols
+  "Return a seq of [protocol-var protocol-map] for every loaded protocol."
+  []
+  (for [ns (all-ns)
+        [_ v] (ns-publics ns)
+        :let [val (try (deref v) (catch Throwable _ nil))]
+        :when (protocol-map? val)]
+    [v val]))
+
+(defn type-protocols
+  "Return the protocol vars implemented by class `c`.
+  Covers both `extend`/`extend-type`/`extend-protocol` and inline
+  `defrecord`/`deftype` implementations.  Only loaded code is visible."
+  {:added "0.43"}
+  [c]
+  (when (class? c)
+    (vec (for [[v proto] (loaded-protocols)
+               :when (or (extends? proto c)
+                         (.isAssignableFrom ^Class (:on-interface proto) ^Class c))]
+           v))))
+
+(defn protocols-with-method
+  "Return the protocol vars declaring a method named `method-name` (a string).
+  Only loaded code is visible."
+  {:added "0.43"}
+  [method-name]
+  (vec (for [[v proto] (loaded-protocols)
+             :when (some #(= method-name (name %)) (keys (:sigs proto)))]
+         v)))
