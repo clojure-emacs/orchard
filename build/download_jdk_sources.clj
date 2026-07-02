@@ -18,7 +18,8 @@
     "11" "https://github.com/adoptium/jdk11u/archive/refs/tags/jdk-11.0.28+0.zip"
     "17" "https://github.com/adoptium/jdk17u/archive/refs/tags/jdk-17.0.15+5.zip"
     "21" "https://github.com/adoptium/jdk21u/archive/refs/tags/jdk-21.0.7+5.zip"
-    "25" "https://github.com/adoptium/jdk/archive/refs/tags/jdk-25+36.zip"
+    "25" "https://github.com/adoptium/jdk/archive/refs/tags/jdk-25.0.4+6.zip"
+    "26" "https://github.com/adoptium/jdk/archive/refs/tags/jdk-26+35.zip"
     nil))
 
 (defn path [& parts]
