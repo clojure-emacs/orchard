@@ -114,6 +114,10 @@
 (defprotocol TestShape
   (test-area [_]))
 
+(extend-protocol TestShape
+  nil
+  (test-area [_] 0))
+
 (defrecord TestSquare [side]
   TestShape
   (test-area [_] (* side side)))

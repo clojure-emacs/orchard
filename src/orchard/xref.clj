@@ -159,7 +159,8 @@
   [p]
   (let [proto (if (var? p) (deref p) p)
         ^Class iface (:on-interface proto)
-        extend-names (map #(.getName ^Class %) (extenders proto))
+        extend-names (keep #(when (class? %) (.getName ^Class %))
+                           (extenders proto))
         inline-names (keep (fn [^Class c]
                              (let [n (.getName c)]
                                (when (and (not (identical? c iface))
@@ -188,8 +189,8 @@
   Defensive: a keyword lookup on a sorted map with non-keyword keys throws, so
   guard the access - any var in any loaded namespace can hold such a value."
   [val]
-  (boolean (and (map? val)
-                (try (:on-interface val) (catch Throwable _ nil)))))
+  (and (map? val)
+       (try (some? (:on-interface val)) (catch Exception _ false))))
 
 (defn- loaded-protocols
   "Return a seq of [protocol-var protocol-map] for every loaded protocol."
