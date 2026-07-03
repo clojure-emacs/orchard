@@ -2,28 +2,12 @@
   (:require
    [clojure.string :as str]
    [clojure.test :refer [deftest is testing]]
-   [clojure.walk :as walk]
    [matcher-combinators.matchers :as matchers]
    [orchard.inspect :as inspect]
    [orchard.misc :as misc :refer [java-api-version]]
    [orchard.test.util :refer [is+]])
   (:import
    (orchard.java PrivateFieldClass)))
-
-(defn- demunge-str [s]
-  (-> s
-      (str/replace #"(?i)\$([a-z-]+)__([0-9]+)(@[a-f0-9]+)?" "\\$$1")
-      (str/replace #"(?i)(fn|eval)--([0-9]+)" "$1")))
-
-(defn- demunge
-  ([rendered]
-   (demunge rendered demunge-str))
-  ([rendered demunge-fn]
-   (walk/prewalk (fn [form]
-                   (if (string? form)
-                     (demunge-fn form)
-                     form))
-                 rendered)))
 
 ;; Simplifies writing test structures for `match?`.
 
@@ -83,9 +67,6 @@
 (defn- section [rendered name]
   (get (group-sections rendered) name))
 
-(defn- datafy-section [rendered]
-  (section rendered "Datafy"))
-
 (defn- contents-section [rendered]
   (section rendered "Contents"))
 
@@ -95,12 +76,6 @@
 (defn- page-size-info [rendered]
   (when-let [sec (section rendered "Page Info")]
     (last sec)))
-
-(defn- extend-datafy-class [m]
-  (vary-meta m assoc 'clojure.core.protocols/datafy (fn [x] (assoc x :class (.getSimpleName (class x))))))
-
-(defn- extend-nav-vector [m]
-  (vary-meta m assoc 'clojure.core.protocols/nav (fn [coll k v] [k (get coll k v)])))
 
 (defn inspect
   [value & [config]]
@@ -650,42 +625,6 @@
                render
                (section "Meta Information"))))))
 
-(deftest inspect-coll-nav-test
-  (testing "inspecting a collection extended with the Datafiable and Navigable protocols"
-    (is+ {"Contents"
-          ["  0. " [:value "{:x 0}" pos?] [:newline]
-           "  1. " [:value "{:x 1}" pos?] [:newline]
-           "  ..."]
-
-          "Datafy"
-          ["  0. " [:value "{:class \"PersistentHashMap\", :x 0}" pos?] [:newline]
-           "  1. " [:value "{:class \"PersistentHashMap\", :x 1}" pos?] [:newline]
-           "  ..."]
-
-          "Page Info"
-          ["  Page size: 2, showing page: 1 of ?"]}
-         (-> (inspect (->> (iterate inc 0)
-                           (map #(hash-map :x %))
-                           (map extend-datafy-class)
-                           (map extend-nav-vector)))
-             (set-page-size 2)
-             render
-             group-sections))
-    (testing "follows the same pagination rules"
-      (is+ ["  ..." [:newline]
-            "  4. " [:value "{:class \"PersistentHashMap\", :x 4}" pos?] [:newline]
-            "  5. " [:value "{:class \"PersistentHashMap\", :x 5}" pos?] [:newline]
-            "  ..."]
-           (-> (inspect (->> (iterate inc 0)
-                             (map #(hash-map :x %))
-                             (map extend-datafy-class)
-                             (map extend-nav-vector)))
-               (set-page-size 2)
-               (inspect/next-page)
-               (inspect/next-page)
-               render
-               datafy-section)))))
-
 (deftest inspect-configure-length-test
   (testing "inspect respects :max-atom-length and :max-coll-size configuration"
     (is+ (matchers/prefix
@@ -936,10 +875,7 @@
            "  Count: 1" [:newline]
            [:newline]
            "  --- Contents:" [:newline]
-           "    " [:value ":a" 2] " = " [:value "1" 3]]
-
-          "Datafy"
-          matchers/absent}
+           "    " [:value ":a" 2] " = " [:value "1" 3]]}
          (-> (inspect (atom {:a 1})) render group-sections)))
 
   (testing "small collection is rendered fully"
@@ -1005,57 +941,8 @@
           ["  " [:value #=(str "{ends-with? #'clojure.string/ends-with?, "
                                "replace-first-char #'clojure.string/replace-first-char, "
                                "capitalize #'clojure.string/capitalize, "
-                               "reverse #'clojure.string/reverse, join #'clojure.string/join, ...}") pos?]]
-
-          "Datafy"
-          ["  " [:value ":name" 9] " = " [:value "clojure.string" pos?]
-           [:newline]
-           "  " [:value ":publics" pos?] " = "
-           [:value #=(str "{blank? #'clojure.string/blank?, capitalize "
-                          "#'clojure.string/capitalize, ends-with? #'clojure.string/ends-with?, "
-                          "escape #'clojure.string/escape, includes? #'clojure.string/includes?, ...}") pos?]
-           [:newline]
-           "  " [:value ":imports" pos?] " = "
-           [:value #=(str "{AbstractMethodError java.lang.AbstractMethodError, Appendable java.lang.Appendable, "
-                          "ArithmeticException java.lang.ArithmeticException, ArrayIndexOutOfBoundsException "
-                          "java.lang.ArrayIndexOutOfBoundsException, ArrayStoreException java.lang.ArrayStoreException, ...}") pos?]
-           [:newline]
-           "  " [:value ":interns" pos?] " = "
-           [:value #=(str "{blank? #'clojure.string/blank?, capitalize #'clojure.string/capitalize, ends-with? #'clojure.string/ends-with?, "
-                          "escape #'clojure.string/escape, includes? #'clojure.string/includes?, ...}") pos?]]}
+                               "reverse #'clojure.string/reverse, join #'clojure.string/join, ...}") pos?]]}
          (-> (find-ns 'clojure.string) inspect render group-sections))))
-
-(deftest inspect-datafiable-metadata-extension-test
-  (testing "inspecting a map extended with the Datafiable protocol"
-    (is+ {nil
-          ["Class: " [:value "clojure.lang.PersistentArrayMap" 0] [:newline]
-           "Count: 1"]
-
-          "Meta Information"
-          ["  " [:value "clojure.core.protocols/datafy" 1]
-           " = "
-           [:value "#function[orchard.inspect-test/extend-datafy-class/fn]" 2]]
-
-          "Datafy"
-          ["  " [:value ":name" pos?] " = " [:value "\"John Doe\"" pos?] [:newline]
-           "  " [:value ":class" pos?] " = " [:value "\"PersistentArrayMap\"" pos?]]}
-         (-> (extend-datafy-class {:name "John Doe"})
-             inspect render demunge group-sections))))
-
-(deftest inspect-navigable-metadata-extension-test
-  (testing "inspecting a map extended with the Navigable protocol"
-    (is+ {nil
-          ["Class: " [:value "clojure.lang.PersistentArrayMap" 0] [:newline]
-           "Count: 1"]
-
-          "Meta Information"
-          ["  " [:value "clojure.core.protocols/nav" pos?]
-           " = " [:value "#function[orchard.inspect-test/extend-nav-vector/fn]" pos?]]
-
-          "Datafy"
-          ["  " [:value ":name" pos?] " = " [:value "[:name \"John Doe\"]" pos?]]}
-         (-> (extend-nav-vector {:name "John Doe"})
-             inspect render demunge group-sections))))
 
 (deftest inspect-throwable-test
   (testing "inspecting a throwable"
@@ -1532,10 +1419,10 @@
   (testing "when :pov-ns is passed, use it to compact qualified keywords"
     (is+ ["  " [:value "::foo" pos?] " = " [:value "1" pos?] [:newline]
           "  " [:value "::str/bar" pos?] " = " [:value "2" pos?] [:newline]
-          "  " [:value "::walk/baz" pos?] " = " [:value "3" pos?]]
+          "  " [:value "::misc/baz" pos?] " = " [:value "3" pos?]]
          (-> {::foo 1
               ::str/bar 2
-              :clojure.walk/baz 3}
+              :orchard.misc/baz 3}
              (inspect {:pov-ns 'orchard.inspect-test})
              render contents-section))))
 
@@ -1604,84 +1491,6 @@
         (is (= expected @proof)))
 
       (remove-tap test-tap-handler))))
-
-(deftest datafy-test
-  (testing "When `(datafy x)` is identical to `x`, no Datafy section is included"
-    (is+ nil (-> {:foo :bar} inspect render datafy-section))
-    (is+ nil (-> {:foo :bar :nilable nil} inspect render datafy-section)))
-  (testing "datafy is not included for records"
-    (is+ nil (-> (->TestRecord 1 2 3 4) inspect render datafy-section)))
-  (testing "if datafied repr doesn't mirror the original, don't page datafied"
-    (is+ {"Contents"
-          ["  " [:value ":a" pos?]
-           " = "
-           [:value "1" pos?]
-           [:newline]
-           "  ..."]
-
-          "Datafy"
-          ["  " [:value "[0 1 2 3 4 ...]" pos?]]}
-         (-> {:a 1, :b 2}
-             (with-meta {'clojure.core.protocols/datafy
-                         (fn [_] (range 30))})
-             inspect
-             (set-page-size 1)
-             render
-             group-sections))
-
-    (testing "if datafied is small enough, render it as a collection"
-      (is+ ["  0. " [:value "0" pos?]
-            [:newline]
-            "  1. " [:value "1" pos?]
-            [:newline]
-            "  2. " [:value "2" pos?]]
-           (-> {:a 1, :b 2}
-               (with-meta {'clojure.core.protocols/datafy
-                           (fn [_] (range 3))})
-               inspect
-               (set-page-size 5)
-               render
-               datafy-section))))
-  (testing "datafy doesn't show if the differing datafied is not on the current page"
-    (is+ nil (-> {:a 1, :b (with-meta [] {'clojure.core.protocols/datafy
-                                          (fn [_] :datafied)})}
-                 inspect
-                 (set-page-size 1)
-                 render
-                 datafy-section))
-    (is+ ["  ..." [:newline]
-          "  " [:value ":b" pos?] " = " [:value ":datafied" pos?]]
-         (-> {:a 1, :b (with-meta [] {'clojure.core.protocols/datafy
-                                      (fn [_] :datafied)})}
-             inspect
-             (set-page-size 1)
-             inspect/next-page
-             render
-             datafy-section))
-    (is+ nil (-> [1 2 3 (with-meta [] {'clojure.core.protocols/datafy
-                                       (fn [_] :datafied)})]
-                 inspect
-                 (set-page-size 2)
-                 render
-                 datafy-section))
-    (is+ ["  ..." [:newline]
-          "  3. " [:value ":datafied" pos?]]
-         (-> [1 2 3 (with-meta [] {'clojure.core.protocols/datafy
-                                   (fn [_] :datafied)})]
-             inspect
-             (set-page-size 2)
-             inspect/next-page
-             render
-             datafy-section)))
-  (testing "only show those items in collection that have unique datafication"
-    (is+ ["  3. " [:value string? pos?]]
-         (-> [1 2 3 (with-meta [] {'clojure.core.protocols/datafy
-                                   (fn [_] (range 3))})]
-             inspect render datafy-section))
-    (is+ ["  " [:value ":c" pos?] " = " [:value string? pos?]]
-         (-> {:a 1 :b 2 :c (with-meta [] {'clojure.core.protocols/datafy
-                                          (fn [_] (range 3))})}
-             inspect render datafy-section))))
 
 (deftest private-field-access-test
   (testing "Inspection of private fields is attempted (may fail depending on the JDK and the module of the given class)"
