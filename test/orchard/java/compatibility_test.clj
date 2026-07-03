@@ -29,11 +29,14 @@
       (is (false? (compat/is-in-boot-module? PrivateFieldClass)))
       (is (false? (compat/is-in-boot-module? clojure.lang.PersistentVector)))))
 
-  (deftest access-denied-test
-    (testing "returns ::access-denied for inaccessible JDK internals"
-      (let [field (.getDeclaredField String "value")]
-        (is (= ::compat/access-denied
-               (compat/get-field-value field "hello")))))))
+  ;; Reflective access to JDK internals merely warns on JDK 9-16; it's
+  ;; denied only from JDK 17 (JEP 403).
+  (when (>= misc/java-api-version 17)
+    (deftest access-denied-test
+      (testing "returns ::access-denied for inaccessible JDK internals"
+        (let [field (.getDeclaredField String "value")]
+          (is (= ::compat/access-denied
+                 (compat/get-field-value field "hello"))))))))
 
 (deftest get-field-value-test
   (testing "reads private fields of classpath classes"
