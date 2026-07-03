@@ -9,7 +9,6 @@
 
   Pretty wild, right?"
   (:require
-   [clojure.core.protocols :refer [datafy nav]]
    [clojure.reflect :as reflect]
    [clojure.set :as set]
    [clojure.string :as str]
@@ -638,98 +637,6 @@
         (unindent))
     inspector))
 
-;;;; Datafy
-
-(defn- datafy* [o]
-  ;; Don't datafy known types which we already render nicely, because datafying
-  ;; them causes the Datafy section to unnecessarily appear in the inspector.
-  (if (or (var? o) (class? o) (instance? clojure.lang.ARef o) (instance? Throwable o))
-    o
-    (datafy o)))
-
-(defn- datafy-kvs [original-object kvs keep-same?]
-  ;; keep-same? should be true for datafying collections that were produced by
-  ;; datafying the root, and false if we datafy elements of the original coll.
-  (let [differs? (volatile! false)
-        result (into {}
-                     (keep (fn [[k v]]
-                             (when-some [dat (some->> (nav original-object k v)
-                                                      datafy*)]
-                               (let [same? (= dat v)]
-                                 (when-not same?
-                                   (vreset! differs? true))
-                                 (when (or (not same?) keep-same?)
-                                   [k dat])))))
-                     kvs)]
-    (when-not (empty? result)
-      result)))
-
-(defn- datafy-seq [s keep-same?]
-  (let [differs? (volatile! false)
-        result (mapv #(let [dat (datafy* %)
-                            same? (= dat %)]
-                        (when-not same?
-                          (vreset! differs? true))
-                        (when (or (not same?) keep-same?)
-                          dat))
-                     s)]
-    (when (or @differs? keep-same?)
-      result)))
-
-(defn- datafy-root [obj]
-  (let [datafied (datafy* obj)]
-    (when-not (identical? obj datafied)
-      datafied)))
-
-(defn- datafy-displayed-value
-  "Datafy either the current value or its paginated view. Return datafied
-  representation if it differs from value and boolean `mirror?` that tells if
-  the datafied representation mirrors the structure of the input collection."
-  [{:keys [value chunk]}]
-  (if-let [datafied (datafy-root value)]
-    ;; If the root value has datafy representation, check if it's a collection.
-    ;; If so, additionally datafy its items or map values.
-    (let [datafied (case (object-type datafied)
-                     :map (datafy-kvs datafied datafied true)
-                     (:list :set) (datafy-seq datafied true)
-                     datafied)]
-      ;; Only render the datafy section if the datafied version of the object is
-      ;; different than object, since we don't want to show the same data twice.
-      (when-not (identical? datafied value)
-        [datafied false]))
-
-    (when (pageable? value)
-      ;; If the value is a type that can be paged, then only datafy the
-      ;; displayed chunk.
-      (let [chunk (or chunk value)
-            datafied (if (= (object-type value) :map)
-                       (datafy-kvs value chunk false)
-                       (datafy-seq chunk false))]
-        (when datafied
-          [datafied true])))))
-
-(defn- render-datafy [{:keys [start-idx] :as inspector}]
-  (if-let [[datafied mirror?] (datafy-displayed-value inspector)]
-    (as-> inspector ins
-      (render-section-header ins "Datafy")
-      (indent ins)
-
-      (if mirror?
-        ;; If datafy is a "mirror" of the inspected object, then display it
-        ;; using the same pagination rules as the main chunk.
-        (-> ins
-            (render-leading-page-ellipsis)
-            (render-items datafied {:map? (map? datafied)
-                                    :start-idx start-idx
-                                    :skip-nils? true})
-            (render-trailing-page-ellipsis))
-        ;; Otherwise, render datafied representation as a collection if it is
-        ;; small enough, or as a single value.
-        (render-value-maybe-expand ins datafied))
-
-      (unindent ins))
-    inspector))
-
 ;; Hex view mode
 
 (defn- byte->ascii [b]
@@ -805,7 +712,6 @@
       (indent)
       (render-collection-paged)
       (unindent)
-      (render-datafy)
       (render-page-info)))
 
 (defmethod inspect :list [inspector obj] (inspect-coll inspector obj))
@@ -823,7 +729,6 @@
       (render-hexdump ins)
       (render-collection-paged ins))
     (unindent ins)
-    (render-datafy ins)
     (render-page-info ins)))
 
 (defn- render-var-value [inspector ^clojure.lang.Var obj]
@@ -834,8 +739,7 @@
 (defmethod inspect :var [inspector obj]
   (-> (render-class-name inspector obj)
       (render-var-value obj)
-      (render-meta-information obj)
-      (render-datafy)))
+      (render-meta-information obj)))
 
 (defn- render-indent-str-lines [inspector s]
   (reduce #(-> (render-indent %1 (str %2))
@@ -931,8 +835,7 @@
         (seq non-static-accessible)    (render-fields "Instance fields" non-static-accessible)
         (seq static-accessible)        (render-fields "Static fields" static-accessible)
         (seq non-static-nonaccessible) (render-fields "Private instance fields" non-static-nonaccessible)
-        (seq static-nonaccessible)     (render-fields "Private static fields" static-nonaccessible)
-        true                           (render-datafy)))))
+        (seq static-nonaccessible)     (render-fields "Private static fields" static-nonaccessible)))))
 
 (defn- render-class-section [inspector section elements print-fn & [sort-fn]]
   (if-not (seq elements)
@@ -1016,8 +919,7 @@
                               (print-fn #(.toGenericString ^Constructor %)))
         (render-class-section :Fields (.getFields obj)
                               (print-fn #(.toGenericString ^Field %)))
-        (render-class-methods obj (print-fn #(.toGenericString ^Method %)))
-        (render-datafy))))
+        (render-class-methods obj (print-fn #(.toGenericString ^Method %))))))
 
 (defmethod inspect :method [inspector ^Method obj]
   (as-> inspector ins
@@ -1088,8 +990,7 @@
       (render-section-header ins "Trace")
       (indent ins)
       (render-items ins (.getStackTrace root-cause) {})
-      (unindent ins)
-      (render-datafy ins))))
+      (unindent ins))))
 
 (defmethod inspect :stack-trace-element [inspector ^StackTraceElement obj]
   (-> inspector
@@ -1171,8 +1072,7 @@
       (render-meta-information obj)
       (render-ns-refers obj)
       (render-ns-imports obj)
-      (render-ns-interns obj)
-      (render-datafy)))
+      (render-ns-interns obj)))
 
 (defn render-path
   "Render the navigation path to the currently inspected value."

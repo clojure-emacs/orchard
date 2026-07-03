@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+- [#406](https://github.com/clojure-emacs/orchard/pull/406): Inspector: remove Datafy section.
+
 ## 0.43.0 (2026-06-24)
 
 - [#402](https://github.com/clojure-emacs/orchard/pull/402): Add `orchard.xref/type-protocols` (the protocols a type implements, both `extend`-style and inline) and `orchard.xref/protocols-with-method` (the protocols declaring a method of a given name).
