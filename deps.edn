@@ -16,8 +16,10 @@
                          org.clojure/clojure$sources {:mvn/version "1.10.3"}}}
   :1.11 {:override-deps {org.clojure/clojure {:mvn/version "1.11.4"}
                          org.clojure/clojure$sources {:mvn/version "1.11.4"}}}
-  :1.12 {:override-deps {org.clojure/clojure {:mvn/version "1.12.4"}
-                         org.clojure/clojure$sources {:mvn/version "1.12.4"}}}
+  :1.12 {:override-deps {org.clojure/clojure {:mvn/version "1.12.5"}
+                         org.clojure/clojure$sources {:mvn/version "1.12.5"}}}
+  :1.13 {:override-deps {org.clojure/clojure {:mvn/version "1.13.0-alpha2"}
+                         org.clojure/clojure$sources {:mvn/version "1.13.0-alpha2"}}}
 
   ;; Should be run together with :dev alias.
   :test {:extra-paths ["test-resources/not-a.jar"
