@@ -90,7 +90,10 @@
      (throw (ex-info (str "Precondition failed: " (pr-str '~x)) {}))))
 
 (defn- pageable? [obj]
-  (contains? #{:list :map :set :array} (object-type obj)))
+  (let [ot (object-type obj)
+        pageable-colls #{:list :map :set :array}]
+    (or (contains? pageable-colls ot)
+        (and (= ot :aref) (contains? pageable-colls (object-type @obj))))))
 
 (defn- counted-length [{:keys [page-size]} obj]
   (cond (instance? clojure.lang.Counted obj) (count obj)
@@ -109,6 +112,9 @@
                     (* page-size 16) ;; In hex view mode, each row is 16 bytes.
                     page-size)
         start-idx (* current-page page-size)
+        ;; Deref early to paginate ARef contents
+        value (cond-> value
+                (instance? clojure.lang.ARef value) deref)
         ;; Sort maps early to ensure proper paging.
         sort-map? (and (= (object-type value) :map) sort-maps)
         value (if sort-map?
@@ -605,7 +611,7 @@
 
 (defn- render-collection-paged
   "Render a single page of either an indexed or associative collection."
-  [{:keys [value chunk start-idx] :as inspector}]
+  [{:keys [chunk start-idx] :as inspector} value]
   (let [type (object-type value)]
     (-> inspector
         (render-leading-page-ellipsis)
@@ -676,6 +682,13 @@
               ins lines)
       (render-trailing-page-ellipsis ins))))
 
+(defn- render-identity-hash-code [inspector obj]
+  (let [code (System/identityHashCode obj)]
+    (-> inspector
+        (render-indent (format "Identity hash code: %s (0x%s)"
+                               (str code) (Integer/toHexString code)))
+        (render-ln))))
+
 ;; Inspector multimethod
 (defn- dispatch-inspect [{:keys [view-mode] :as _ins} obj]
   (if (= view-mode :object)
@@ -710,7 +723,7 @@
       (render-analytics)
       (render-section-header "Contents")
       (indent)
-      (render-collection-paged)
+      (render-collection-paged obj)
       (unindent)
       (render-page-info)))
 
@@ -727,7 +740,7 @@
     (indent ins)
     (if (= (:view-mode inspector) :hex)
       (render-hexdump ins)
-      (render-collection-paged ins))
+      (render-collection-paged ins obj))
     (unindent ins)
     (render-page-info ins)))
 
@@ -748,7 +761,7 @@
 
 (defmethod inspect :string [inspector ^java.lang.String obj]
   (-> (render-class-name inspector obj)
-      (render "Value: " (print-string inspector obj))
+      (render-indent "Value: " (print-string inspector obj))
       (render-ln)
       (render-indent-ln "Length: " (str (.length obj)))
       (render-section-header "Print")
@@ -821,17 +834,11 @@
                           (into (sorted-map)))
                      false)
                     (unindent))
-                inspector))
-            (render-ident-hashcode [inspector]
-              (let [code (System/identityHashCode obj)]
-                (-> inspector
-                    (render "Identity hash code: " (str code) " "
-                            (format "(0x%s)" (Integer/toHexString code)))
-                    (render-ln))))]
+                inspector))]
       (cond-> inspector
         true                           (render-labeled-value "Class" (class obj))
         true                           (render-labeled-value "Value" obj {:display-value printed})
-        true                           (render-ident-hashcode)
+        true                           (render-identity-hash-code obj)
         (seq non-static-accessible)    (render-fields "Instance fields" non-static-accessible)
         (seq static-accessible)        (render-fields "Static fields" static-accessible)
         (seq non-static-nonaccessible) (render-fields "Private instance fields" non-static-nonaccessible)
@@ -1002,15 +1009,12 @@
 (defmethod inspect :aref [inspector ^clojure.lang.ARef obj]
   (let [val (deref obj)]
     (-> (render-class-name inspector obj)
+        (render-identity-hash-code obj)
+        (render-labeled-value "Deref" val)
         (render-meta-information obj)
         (render-section-header "Deref")
         (indent)
-        (render-class-name val)
-        (render-counted-length val)
-        (render-section-header "Contents")
-        (indent)
-        (render-value-maybe-expand val)
-        (unindent)
+        (inspect val)
         (unindent))))
 
 (defmethod inspect DiffColl [{:keys [only-diff] :as inspector} ^DiffColl obj]

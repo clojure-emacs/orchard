@@ -868,48 +868,63 @@
 (deftest inspect-atom-test
   (testing "inspecting an atom"
     (is+ {nil
-          ["Class: " [:value "clojure.lang.Atom" 0]]
+          ["Class: " [:value "clojure.lang.Atom" 0] [:newline]
+           #"^Identity hash code:" [:newline]
+           "Deref: " [:value "{:a 1}" pos?]]
 
           "Deref"
-          ["  Class: " [:value "clojure.lang.PersistentArrayMap" 1] [:newline]
+          ["  Class: " [:value "clojure.lang.PersistentArrayMap" pos?] [:newline]
            "  Count: 1" [:newline]
            [:newline]
            "  --- Contents:" [:newline]
-           "    " [:value ":a" 2] " = " [:value "1" 3]]}
+           "    " [:value ":a" pos?] " = " [:value "1" pos?]]}
          (-> (inspect (atom {:a 1})) render group-sections)))
 
   (testing "small collection is rendered fully"
-    (is+ ["  Class: " [:value "clojure.lang.LongRange" 1] [:newline]
+    (is+ ["  Class: " [:value "clojure.lang.LongRange" pos?] [:newline]
           "  Count: 3" [:newline]
           [:newline]
           "  --- Contents:" [:newline]
-          "    0. " [:value "0" 2] [:newline]
-          "    1. " [:value "1" 3] [:newline]
-          "    2. " [:value "2" 4]]
+          "    0. " [:value "0" pos?] [:newline]
+          "    1. " [:value "1" pos?] [:newline]
+          "    2. " [:value "2" pos?]]
          (-> (atom (range 3)) inspect render (section "Deref"))))
 
-  (testing "larger collection is rendered as a single value"
-    (is+ ["  Class: " [:value "clojure.lang.LongRange" 1] [:newline]
+  (testing "larger collection is paged"
+    (is+ ["  Class: " [:value "clojure.lang.LongRange" pos?] [:newline]
           "  Count: 100" [:newline]
           [:newline]
           "  --- Contents:" [:newline]
-          "    " [:value "(0 1 2 3 4 ...)" 2]]
-         (-> (atom (range 100)) inspect render (section "Deref"))))
+          "    0. " [:value "0" pos?] [:newline]
+          "    1. " [:value "1" pos?] [:newline]
+          "    2. " [:value "2" pos?] [:newline]
+          "    ..." [:newline]
+          [:newline]
+          "  --- Page Info:" [:newline]
+          "    Page size: 3, showing page: 1 of 34"]
+         (-> (atom (range 100)) (inspect {:page-size 3}) render (section "Deref"))))
 
   (testing "meta is shown on atoms"
-    (is+ ["  " [:value ":foo" 1] " = " [:value "\"bar\"" 2]]
+    (is+ ["  " [:value ":foo" pos?] " = " [:value "\"bar\"" pos?]]
          (-> (atom [1 2 3] :meta {:foo "bar"}) inspect render (section "Meta Information")))))
 
 (deftest inspect-atom-infinite-seq-test
   (testing "inspecting an atom holding an infinite seq"
     (is+ {nil
-          ["Class: " [:value "clojure.lang.Atom" 0]]
+          ["Class: " [:value "clojure.lang.Atom" 0] [:newline]
+           #"^Identity hash code:" [:newline]
+           "Deref: " [:value "(1 1 1 1 1 ...)" pos?]]
 
           "Deref"
-          ["  Class: " [:value "clojure.lang.Repeat" 1] [:newline]
+          ["  Class: " [:value "clojure.lang.Repeat" pos?] [:newline]
            [:newline]
            "  --- Contents:" [:newline]
-           "    " [:value "(1 1 1 1 1 ...)" 2]]}
+           "    0. " [:value "1" pos?] [:newline]
+           "    1. " [:value "1" pos?] [:newline]
+           "    2. " [:value "1" pos?] [:newline]
+           "    ..." [:newline] [:newline]
+           "  --- Page Info:" [:newline]
+           "    Page size: 3, showing page: 1 of ?"]}
          (-> (inspect (atom (repeat 1)))
              (set-page-size 3)
              render
