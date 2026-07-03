@@ -3,6 +3,7 @@
 ## master (unreleased)
 
 - [#406](https://github.com/clojure-emacs/orchard/pull/406): Inspector: remove Datafy section.
+- [#408](https://github.com/clojure-emacs/orchard/pull/408): Inspector: render ARef contents fully.
 
 ## 0.43.0 (2026-06-24)
 
