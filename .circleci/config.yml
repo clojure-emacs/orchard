@@ -184,7 +184,7 @@ workflows:
             alias: "test"
             parameters:
               jdk_version: [jdk8, jdk26]
-              clojure_version: ["1.10", "1.11", "1.12"]
+              clojure_version: ["1.10", "1.11", "1.12", "1.13"]
           <<: *run_always
       - test:
           matrix:
