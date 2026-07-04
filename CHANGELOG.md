@@ -2,6 +2,8 @@
 
 ## master (unreleased)
 
+## 0.44.0 (2026-07-04)
+
 - [#406](https://github.com/clojure-emacs/orchard/pull/406): Inspector: remove Datafy section.
 - [#408](https://github.com/clojure-emacs/orchard/pull/408): Inspector: render ARef contents fully.
 - [#409](https://github.com/clojure-emacs/orchard/pull/409): Inspector: truncate wide columns in table mode.
