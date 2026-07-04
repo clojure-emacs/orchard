@@ -19,10 +19,10 @@ public class TruncatingStringWriter extends StringWriter {
 
     public TruncatingStringWriter(int singleWriteLimit, int totalLimit) {
         super();
-        if (singleWriteLimit < 5) {
+        if (singleWriteLimit < 2) {
             throw new IllegalArgumentException("Bad singleWriteLimit: " + singleWriteLimit);
         }
-        if (totalLimit < 10) {
+        if (totalLimit < 5) {
             throw new IllegalArgumentException("Bad totalLimit: " + totalLimit);
         }
         this.singleWriteLimit = singleWriteLimit;
@@ -45,46 +45,43 @@ public class TruncatingStringWriter extends StringWriter {
         }
     }
 
-    @Override
-    public void write(char[] cbuf, int off, int len) {
+    private void superWriteStringOrChars(Object stringOrChars, int off, int len) {
+        if (stringOrChars instanceof String)
+            super.write((String)stringOrChars, off, len);
+        else
+            super.write((char[])stringOrChars, off, len);
+    }
+
+    private void writeStringOrChars(Object stringOrChars, int off, int len) {
         boolean singleTooBig = (len > singleWriteLimit);
         len = Math.min(len, singleWriteLimit);
         if (len <= totalLimit) {
-            super.write(cbuf, off, len);
+            superWriteStringOrChars(stringOrChars, off, len);
             totalLimit -= len;
             if (singleTooBig)
                 writeEllipsis();
         } else {
             if (totalLimit >= 0) {
-                super.write(cbuf, off, totalLimit);
+                superWriteStringOrChars(stringOrChars, off, totalLimit);
                 totalLimit = 0;
                 writeEllipsis();
             }
             throw new TotalLimitExceeded();
         }
+    }
+
+    @Override
+    public void write(char[] cbuf, int off, int len) {
+        writeStringOrChars(cbuf, off, len);
     }
 
     @Override
     public void write(String str) {
-        this.write(str, 0, str.length());
+        writeStringOrChars(str, 0, str.length());
     }
 
     @Override
     public void write(String str, int off, int len) {
-        boolean singleTooBig = (len > singleWriteLimit);
-        len = Math.min(len, singleWriteLimit);
-        if (len <= totalLimit) {
-            super.write(str, off, len);
-            totalLimit -= len;
-            if (singleTooBig)
-                writeEllipsis();
-        } else {
-            if (totalLimit >= 0) {
-                super.write(str, off, totalLimit);
-                totalLimit = 0;
-                writeEllipsis();
-            }
-            throw new TotalLimitExceeded();
-        }
+        writeStringOrChars(str, off, len);
     }
 }
