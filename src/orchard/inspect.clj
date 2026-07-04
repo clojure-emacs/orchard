@@ -8,6 +8,7 @@
   was split into two libraries and the code ended up here.
 
   Pretty wild, right?"
+  (:refer-clojure :exclude [replace])
   (:require
    [clojure.reflect :as reflect]
    [clojure.set :as set]
@@ -219,6 +220,11 @@
   (if-let [{:keys [value role key]} (get (:index inspector) idx)]
     (inspect-render (down* inspector value role key))
     inspector))
+
+(defn replace
+  "Push the given value onto the inspector stack, replacing its current value."
+  [inspector new-value]
+  (inspect-render (down* inspector new-value nil nil)))
 
 (defn- sibling* [inspector offset]
   (let [path (:path inspector)

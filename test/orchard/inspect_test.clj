@@ -477,6 +477,19 @@
              (inspect/next-sibling)
              (inspect/next-sibling)))))
 
+(deftest replace-test
+  (let [ins (inspect [5 4 3 2 1])]
+    (is+ ["  0. " [:value "5" 1] [:newline] "  1. " [:value "4" 2] [:newline] "  2. " [:value "3" 3] [:newline] "  3. " [:value "2" 4] [:newline] "  4. " [:value "1" 5]]
+         (-> ins render contents-section))
+
+    (let [ins (inspect/replace ins [1 2 3 4 5])]
+      (is+ ["  0. " [:value "1" 1] [:newline] "  1. " [:value "2" 2] [:newline] "  2. " [:value "3" 3] [:newline] "  3. " [:value "4" 4] [:newline] "  4. " [:value "5" 5]]
+           (-> ins render contents-section))
+
+      (testing "upping recovers old value"
+        (is+ ["  0. " [:value "5" 1] [:newline] "  1. " [:value "4" 2] [:newline] "  2. " [:value "3" 3] [:newline] "  3. " [:value "2" 4] [:newline] "  4. " [:value "1" 5]]
+             (-> ins inspect/up render contents-section))))))
+
 (deftest path-test
   (is+ ["  :a (nth 2) :b :c (nth 73)"]
        (-> (inspect {:a (list 1 2 {:b {:c (vec (map (fn [x] {:foo (* x 10)}) (range 100)))}})
