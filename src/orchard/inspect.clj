@@ -43,6 +43,7 @@
   {:page-size        32      ; = Clojure's default chunked sequences chunk size.
    :max-atom-length  150
    :max-value-length 10000   ; To avoid printing huge graphs and Exceptions.
+   :table-column-width 70
    :max-coll-size    5
    :max-nested-depth nil
    :analytics-size-cutoff  100000
@@ -62,6 +63,10 @@
   [{:keys [indentation pretty-print]} value]
   (if pretty-print
     (pp/pprint-str value {:indentation (or indentation 0)})
+    (print/print-str value)))
+
+(defn- print-str-truncated [value char-limit]
+  (binding [print/*max-total-length* char-limit]
     (print/print-str value)))
 
 (defn- array? [obj]
@@ -493,6 +498,7 @@
 (defn- render-chunk-as-table [inspector chunk idx-starts-from]
   (let [m-i map-indexed
         fst (first chunk)
+        width (:table-column-width inspector)
         ;; If items are maps, use map keys as keys. Otherwise assume items are
         ;; lists/vectors, so we use indices as keys.
         getter (if (map? fst) get nth)
@@ -503,9 +509,8 @@
                       (m-i (fn [i row]
                              (let [i (+ i idx-starts-from)]
                                (into [[i (str i)]]
-                                     (map (fn [k]
-                                            (let [v (getter row k)]
-                                              [v (print/print-str v)])))
+                                     (map #(let [v (getter row %)]
+                                             [v (print-str-truncated v width)]))
                                      ks))))
                       chunk)
         pr-ks (into [["#" "#"]] (map (fn [k] [k (print/print-str k)])) ks)
