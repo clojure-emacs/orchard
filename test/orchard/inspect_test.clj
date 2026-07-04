@@ -1096,6 +1096,18 @@
              render
              group-sections)))
 
+  (testing "wide columns are truncated"
+    (is+ ["  | " [:value "#" pos?] " |       " [:value ":a" pos?] " |      " [:value ":bb" pos?] " | " [:newline]
+          "  |---+----------+----------|" [:newline]
+          "  | " [:value "0" pos?] " | " [:value "\"aaaa..." pos?] " | " [:value "\"bbbb..." pos?] " | " [:newline]
+          "  | " [:value "1" pos?] " | " [:value "\"aaaa..." pos?] " | " [:value "\"bbbb..." pos?] " | " [:newline]
+          "  | " [:value "2" pos?] " | " [:value "\"aaaa..." pos?] " | " [:value "\"bbbb..." pos?] " | "]
+         (-> (repeat 3 {:a "aaaaaaaaaa", :bb "bbbbbbbbb"})
+             (inspect {:table-column-width 5})
+             (inspect/set-view-mode :table)
+             render
+             (contents-section))))
+
   (testing "in :table view-mode lists of vectors are rendered as tables"
     (is+ {"Contents"
           ["  | " [:value "#" pos?] " |  " [:value "0" pos?] " |     "
