@@ -299,6 +299,9 @@
   limit is reached."
   [x]
   (let [writer (TruncatingStringWriter. *max-atom-length* *max-total-length*)]
-    (try (print x writer)
-         (catch TruncatingStringWriter$TotalLimitExceeded _))
+    ;; Protect against self-referencing collections by ensuring
+    ;; print-level is always set to at least an unreasonably large value.
+    (binding [*print-level* (or *print-level* 100)]
+      (try (print x writer)
+           (catch TruncatingStringWriter$TotalLimitExceeded _)))
     (.toString writer)))

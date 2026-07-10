@@ -121,7 +121,10 @@
 
   (testing "writer won't go much over total-length"
     (is (= 2003 (count (binding [sut/*max-total-length* 2000]
-                         (sut/print-str infinite-map)))))))
+                         (sut/print-str infinite-map))))))
+
+  (testing "doesn't stack overflow when printing self-referential collections"
+    (is (= 5105 (count (sut/print-str infinite-map))))))
 
 (deftest print-clojure-limits
   (are [result form] (= result (binding [*print-length* 5
