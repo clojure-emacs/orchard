@@ -141,3 +141,21 @@
           :values {:types {java.lang.Long 100}}}
          (binding [orchard.inspect.analytics/*size-cutoff* 100]
            (analytics (zipmap (range 200) (range 200)))))))
+
+(deftest string-test
+  (is+ {:non-ascii 0, :non-bmp 0, :lines 1}
+       (analytics "Quick brown fox jumps over the lazy dog."))
+
+  (is+ {:non-ascii 50, :non-bmp 0, :lines 2}
+       (analytics "Та слави людської зовсiм ми не бажали,
+                   Бо не герої ми i не богатирi."))
+
+  (is+ {:non-ascii 55, :non-bmp 0, :lines 5}
+       (analytics "Ω≈ç√∫˜µ≤≥÷
+åß∂ƒ©˙∆˚¬…æ
+œ∑´®†¥¨ˆøπ“‘
+¡™£¢∞§¶•ªº–≠
+¸˛Ç◊ı˜Â¯˘¿"))
+
+  (is+ {:non-ascii 31, :non-bmp 14, :lines 1}
+       (analytics "表ポあA鷗ŒéＢ逍Üßªąñ丂㐀❤️ 💔 💌 💕 💞 💓 💗 💖 💘 💝 💟 💜 💛 💚 💙")))

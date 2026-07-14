@@ -8,6 +8,7 @@
 - [#408](https://github.com/clojure-emacs/orchard/pull/408): Inspector: render ARef contents fully.
 - [#409](https://github.com/clojure-emacs/orchard/pull/409): Inspector: truncate wide columns in table mode.
 - [#413](https://github.com/clojure-emacs/orchard/pull/413): Print: protect against StackOverflow when printing recursive collections.
+- [#416](https://github.com/clojure-emacs/orchard/pull/416): Inspector: add string analytics.
 
 ## 0.43.0 (2026-06-24)
 
