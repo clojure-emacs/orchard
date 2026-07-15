@@ -16,70 +16,40 @@
                  RT Symbol TaggedLiteral Var)
    (java.io Writer)
    (java.util Iterator List Map Map$Entry)
-   (java.util.concurrent ConcurrentHashMap)
    (mx.cider.orchard TruncatingStringWriter
                      TruncatingStringWriter$TotalLimitExceeded)))
 
-(def ^:private structural-print-interfaces
-  "The generic collection interfaces that orchard prints structurally on its
-  own.  A value whose `print-method` resolves to one of their implementations
-  has no custom representation (see `custom-print-method?`)."
-  [clojure.lang.IPersistentMap clojure.lang.IPersistentSet
-   clojure.lang.IPersistentVector clojure.lang.IRecord clojure.lang.ISeq
-   java.util.List java.util.Map java.util.RandomAccess java.util.Set])
+(def ^:dynamic *honor-print-method*
+  "When true, records and collections whose type defines a custom
+  `print-method` are printed with it instead of orchard's structural printer.
+  Bind to false where structural output is preferable regardless of the type's
+  own representation."
+  true)
 
-(deftype PrintMethodCache [table prefers structural ^ConcurrentHashMap classes])
-
-(def ^:private print-method-cache
-  "Caches per class whether it has a custom `print-method` (see
-  `custom-print-method?`).  The whole cache is dropped whenever `print-method`
-  gains or loses implementations or preferences, so re-registering a method -
-  e.g. when reloading a namespace - can't leave stale results behind."
-  (atom nil))
-
-(defn- current-print-method-cache
-  "Return the up-to-date cache, rebuilding it if `print-method`'s method or
-  preference tables have changed since it was built."
-  ^PrintMethodCache []
-  (let [table (methods print-method)
-        prefs (prefers print-method)
-        ^PrintMethodCache cache @print-method-cache]
-    (if (and cache
-             (identical? table (.-table cache))
-             (identical? prefs (.-prefers cache)))
-      cache
-      ;; A thread caching into a cache that is being replaced is harmless: it
-      ;; writes into an object that no one will look at again.
-      (reset! print-method-cache
-              (PrintMethodCache. table prefs
-                                 (into #{}
-                                       (keep #(get-method print-method %))
-                                       structural-print-interfaces)
-                                 (ConcurrentHashMap.))))))
+(def ^:private generic-print-methods
+  "The collection interfaces whose `print-method` implementations orchard
+  replaces with its own structural printing.  A value whose `print-method` is
+  more specific than these has a deliberate custom representation (see
+  `custom-print-method?`)."
+  [clojure.lang.IPersistentMap clojure.lang.ISeq clojure.lang.IPersistentVector
+   clojure.lang.IRecord clojure.lang.IPersistentSet java.util.Map
+   java.util.RandomAccess java.util.List java.util.Set])
 
 (defn- custom-print-method?
   "True if `x` has a `print-method` more specific than the generic collection
   implementations - i.e. a deliberate custom textual representation that orchard
-  should use instead of traversing the value's structure.  This keeps records
-  and collections that define their own `print-method` (e.g. `tech.ml.dataset`
-  datasets) rendered as intended, and avoids descending into - and potentially
-  looping on - such objects' internals."
+  should use instead of traversing the value's structure (e.g. `tech.ml.dataset`
+  datasets).  Relies on the multimethod's own dispatch cache, so redefined
+  `print-method` implementations are always picked up."
   [x]
-  (let [c (class x)
-        cache (current-print-method-cache)
-        ^ConcurrentHashMap classes (.-classes cache)
-        cached (.get classes c)]
-    (if (some? cached)
-      cached
-      (let [v (if-let [m (try (get-method print-method c)
-                              ;; get-method throws when several implementations
-                              ;; match `c` and none is preferred.  Print such
-                              ;; values structurally.
-                              (catch Exception _ nil))]
-                (not (contains? (.-structural cache) m))
-                false)]
-        (.put classes c v)
-        v))))
+  (when *honor-print-method*
+    (try
+      (when-let [m (get-method print-method (class x))]
+        (not (some #(identical? m (get-method print-method %))
+                   generic-print-methods)))
+      ;; get-method throws when several implementations match a class and none
+      ;; is preferred.  Print such values structurally.
+      (catch Exception _ nil))))
 
 (defn- structural-tag
   "Return the `print` dispatch value for the collection types that orchard

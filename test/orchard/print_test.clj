@@ -288,6 +288,11 @@
            (sut/print-str (AmbiguousPrintList. (java.util.ArrayList. [1 2 3])))))
     (is (= "()" (sut/print-str (AmbiguousPrintList. (java.util.ArrayList.))))))
 
+  (testing "binding *honor-print-method* to false forces structural printing"
+    (binding [sut/*honor-print-method* false]
+      (is (= "#PrintMethodRecord{:id 1, :peer nil}"
+             (sut/print-str (->PrintMethodRecord 1 nil))))))
+
   (testing "re-registering a generic print-method doesn't disable structural printing"
     (let [orig (get-method print-method java.util.Map)]
       (try
