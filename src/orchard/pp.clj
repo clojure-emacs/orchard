@@ -148,14 +148,48 @@
   [level]
   (and (int? *print-level*) (= level *print-level*)))
 
+(defn ^:private descend-print-level
+  "Return the *print-level* value to bind when rendering a whole subform at
+  nesting level (:level opts)."
+  [opts]
+  (when *print-level*
+    (- *print-level* (:level opts 0))))
+
 (defn- print-str-linear
   "Print an object in linear style (without regard to line length) and return as a
   string. Options:
   - :level (long) - the current nesting level."
   ^String [x opts]
-  (binding [*print-level* (when *print-level*
-                            (- *print-level* (:level opts 0)))]
+  (binding [*print-level* (descend-print-level opts)]
     (print/print-str x)))
+
+(defn ^:private write-multiline
+  "Write a pre-rendered, possibly multi-line string, keeping the writer's line
+  accounting correct and indenting continuation lines."
+  [writer ^String s ^String indentation]
+  (if (neg? (.indexOf s "\n"))
+    (write writer s)
+    (let [[line & more] (str/split s #"\n" -1)]
+      (write writer line)
+      (doseq [^String line more]
+        (nl writer)
+        (write writer indentation)
+        (write writer line)))))
+
+(defn ^:private custom-print-str
+  "Render `x` via its custom `print-method` (see
+  `orchard.print/custom-print-method?`), bounded by orchard.print's limits.
+  Return nil if the print-method throws or overflows the stack, so the caller
+  can fall back to structural printing."
+  ^String [x opts]
+  (let [w (TruncatingStringWriter. print/*max-atom-length*
+                                   print/*max-total-length*)]
+    (binding [*print-level* (descend-print-level opts)]
+      (try (print-method x w)
+           (str w)
+           (catch TruncatingStringWriter$TotalLimitExceeded _ (str w))
+           (catch StackOverflowError _ nil)
+           (catch Exception _ nil)))))
 
 (defn ^:private print-mode
   "Given a CountKeepingWriter, a form, and an options map, return a keyword
@@ -334,6 +368,20 @@
       (write writer "#≠")
       (-pprint coll writer (update opts :indentation str "  ")))))
 
+(defn ^:private -pprint-or-custom
+  "Like the structural pretty-printer `f`, but if `this` defines a custom
+  `print-method`, print with that instead (multi-line aware, honoring
+  *print-meta* and *print-level*). Fall back to `f` when the custom
+  print-method fails."
+  [f this writer opts]
+  (if-some [s (when (and (print/custom-print-method? this)
+                         ;; At *print-level*, `f` prints just "#".
+                         (not (meets-print-level? (:level opts))))
+                (custom-print-str this opts))]
+    (do (pprint-meta this writer opts :linear)
+        (write-multiline writer s (:indentation opts)))
+    (f this writer opts)))
+
 (extend-protocol PrettyPrintable
   nil
   (-pprint [_ writer _]
@@ -341,23 +389,23 @@
 
   clojure.lang.AMapEntry
   (-pprint [this writer opts]
-    (-pprint-coll this writer opts))
+    (-pprint-or-custom -pprint-coll this writer opts))
 
   clojure.lang.ISeq
   (-pprint [this writer opts]
-    (-pprint-seq this writer opts))
+    (-pprint-or-custom -pprint-seq this writer opts))
 
   clojure.lang.IPersistentMap
   (-pprint [this writer opts]
-    (-pprint-map this writer opts))
+    (-pprint-or-custom -pprint-map this writer opts))
 
   clojure.lang.IPersistentVector
   (-pprint [this writer opts]
-    (-pprint-coll this writer opts))
+    (-pprint-or-custom -pprint-coll this writer opts))
 
   clojure.lang.IPersistentSet
   (-pprint [this writer opts]
-    (-pprint-coll this writer opts))
+    (-pprint-or-custom -pprint-coll this writer opts))
 
   clojure.lang.PersistentQueue
   (-pprint [this writer opts]
@@ -371,7 +419,9 @@
   (-pprint [this writer opts]
     (if (array? this)
       (-pprint-seq this writer opts)
-      (write writer (print-str-linear this opts)))))
+      ;; Multi-line aware: e.g. a deftype's custom print-method may render
+      ;; a multi-line representation (a tech.ml.dataset table, say).
+      (write-multiline writer (print-str-linear this opts) (:indentation opts)))))
 
 (defn pprint
   "Pretty-print an object into `writer` (*out* by default). Options:

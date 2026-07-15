@@ -57,7 +57,7 @@
                                        structural-print-interfaces)
                                  (ConcurrentHashMap.))))))
 
-(defn- custom-print-method?
+(defn custom-print-method?
   "True if `x` has a `print-method` more specific than the generic collection
   implementations - i.e. a deliberate custom textual representation that orchard
   should use instead of traversing the value's structure.  This keeps records

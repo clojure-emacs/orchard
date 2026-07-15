@@ -289,6 +289,65 @@
     (is (= 2003 (count (binding [print/*max-total-length* 2000]
                          (print/print-str orchard.print-test/infinite-map)))))))
 
+;; A tech.ml.dataset-shaped type whose print-method renders a multi-line
+;; table, like the real thing.
+(deftype MultilinePrintDataset []
+  java.util.Map
+  clojure.lang.IPersistentMap)
+(defmethod print-method MultilinePrintDataset [_ ^java.io.Writer w]
+  (.write w "| :a |\n|----|\n|  1 |"))
+
+(deftest honor-print-method-test
+  (testing "records with a custom print-method are rendered with it, not structurally"
+    (is (= "#<PrintMethodRecord 1>\n"
+           (pp (orchard.print-test/->PrintMethodRecord 1 nil)))))
+
+  (testing "types implementing both IPersistentMap and java.util.Map honor their print-method (tech.ml.dataset shape)"
+    (is (= "#dataset[5x2]\n" (pp (orchard.print-test/->PrintMethodDataset)))))
+
+  (testing "Clojure vector and set types with a custom print-method are rendered with it"
+    (is (= "#custom-vec[1 2 3]\n"
+           (pp (orchard.print-test/->PrintMethodVector [1 2 3]))))
+    (is (= "#custom-set[1 2 3]\n"
+           (pp (orchard.print-test/->PrintMethodSet (sorted-set 1 2 3))))))
+
+  (testing "custom representations nest in miser mode"
+    (is (= "{:dataset\n #dataset[5x2],\n :other-key\n 42}\n"
+           (pp {:dataset (orchard.print-test/->PrintMethodDataset) :other-key 42}
+               :max-width 12))))
+
+  (testing "multi-line custom representations keep indentation and line accounting"
+    (is (= "| :a |\n|----|\n|  1 |\n" (pp (MultilinePrintDataset.))))
+    (is (= "{:dataset | :a |\n |----|\n |  1 |, :key-2 [1 2 3]}\n"
+           (pp {:dataset (MultilinePrintDataset.) :key-2 [1 2 3]})))
+    (is (= "{:dataset\n | :a |\n |----|\n |  1 |,\n :key-2\n [1 2 3]}\n"
+           (pp {:dataset (MultilinePrintDataset.) :key-2 [1 2 3]} :max-width 10))))
+
+  (testing "*print-level* still truncates custom-printed values"
+    (is (= "{#}\n"
+           (pp {:a (orchard.print-test/->PrintMethodDataset)} :print-level 1))))
+
+  (testing "*print-meta* is still honored for custom-printed values"
+    (is (= "^{:m 1} #<PrintMethodRecord 1>\n"
+           (pp (with-meta (orchard.print-test/->PrintMethodRecord 1 nil) {:m 1})
+               :print-meta true))))
+
+  (testing "a throwing print-method falls back to structural pretty-printing"
+    (is (= "#ThrowingPrintRecord{:id 1}\n"
+           (pp (orchard.print-test/->ThrowingPrintRecord 1))))
+    ;; A wide value still gets wrapped structural output, not one long line.
+    (is (str/starts-with?
+         (pp (orchard.print-test/->ThrowingPrintRecord (vec (range 20))) :max-width 20)
+         "#ThrowingPrintRecord{:id\n")))
+
+  (testing "plain records and collections are still printed structurally"
+    (is (= "#TestRecord{:a 1, :b 2, :c 3, :d 4}\n"
+           (pp (orchard.print-test/->TestRecord 1 2 3 4))))
+    (is (= "{:a 1}\n" (pp {:a 1})))
+    (is (= "[1 2 3]\n" (pp [1 2 3])))
+    (is (= "#{1 2 3}\n" (pp (sorted-set 1 2 3))))
+    (is (= "(1 2 3)\n" (pp '(1 2 3))))))
+
 (deftest short-record-names-test
   (testing "*short-record-names* controls how records are printed"
     (is (= "#TestRecord{:a (0 1 2 3 4 5 6 7 8 9 10 11 12 13 14),

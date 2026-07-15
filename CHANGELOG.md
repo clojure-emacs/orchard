@@ -9,6 +9,7 @@
 - [#413](https://github.com/clojure-emacs/orchard/pull/413): Print: protect against StackOverflow when printing recursive collections.
 - [#416](https://github.com/clojure-emacs/orchard/pull/416): Inspector: add string analytics.
 - [#415](https://github.com/clojure-emacs/orchard/pull/415): Print: honor a custom `print-method` for records and collections instead of traversing them structurally.
+- [#417](https://github.com/clojure-emacs/orchard/pull/417): Pretty-print: honor a custom `print-method` for records and collections (follow-up to [#415](https://github.com/clojure-emacs/orchard/pull/415)).
 
 ## 0.44.0 (2026-07-04)
 
