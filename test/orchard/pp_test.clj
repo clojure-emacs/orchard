@@ -289,6 +289,18 @@
     (is (= 2003 (count (binding [print/*max-total-length* 2000]
                          (print/print-str orchard.print-test/infinite-map)))))))
 
+;; A type whose print-method renders multiple lines (like a tech.ml.dataset
+;; table). Such representations reach the Object branch of PrettyPrintable.
+(deftype MultilineObject [])
+(defmethod print-method MultilineObject [_ ^java.io.Writer w]
+  (.write w "| :a |\n|----|\n|  1 |"))
+
+(deftest multiline-object-repr-test
+  (testing "multi-line representations keep indentation and line accounting"
+    (is (= "| :a |\n|----|\n|  1 |\n" (pp (MultilineObject.))))
+    (is (= "{:table | :a |\n |----|\n |  1 |, :x 1}\n"
+           (pp {:table (MultilineObject.) :x 1})))))
+
 (deftest short-record-names-test
   (testing "*short-record-names* controls how records are printed"
     (is (= "#TestRecord{:a (0 1 2 3 4 5 6 7 8 9 10 11 12 13 14),
