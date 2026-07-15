@@ -2,13 +2,14 @@
 
 ## master (unreleased)
 
+- [#413](https://github.com/clojure-emacs/orchard/pull/413): Print: protect against StackOverflow when printing recursive collections.
+- [#416](https://github.com/clojure-emacs/orchard/pull/416): Inspector: add string analytics.
+
 ## 0.44.0 (2026-07-04)
 
 - [#406](https://github.com/clojure-emacs/orchard/pull/406): Inspector: remove Datafy section.
 - [#408](https://github.com/clojure-emacs/orchard/pull/408): Inspector: render ARef contents fully.
 - [#409](https://github.com/clojure-emacs/orchard/pull/409): Inspector: truncate wide columns in table mode.
-- [#413](https://github.com/clojure-emacs/orchard/pull/413): Print: protect against StackOverflow when printing recursive collections.
-- [#416](https://github.com/clojure-emacs/orchard/pull/416): Inspector: add string analytics.
 
 ## 0.43.0 (2026-06-24)
 
@@ -294,7 +295,7 @@
 ### Changes
 
 * `orchard.inspect`: don't render keyword/symbol/number values as strings.
-* `orchard.inspect`: don't use `pr-str` over the main `Value: ` being inspected. 
+* `orchard.inspect`: don't use `pr-str` over the main `Value: ` being inspected.
   * All values are already formatted as strings, so this `pr-str` was redundant.
 * `orchard.inspect`: render non-accessible fields better.
   * If a given field cannot be inspected (because it's private and the JDK module system prevents opening it), we return the fixed symbol `<non-inspectable value>` for representing its value, clients being free to elide its rendering.
@@ -352,7 +353,7 @@
 
 ### Changes
 
-- [#173](https://github.com/clojure-emacs/orchard/issues/173): Parallelize `orchard.xref/fn-refs`. 
+- [#173](https://github.com/clojure-emacs/orchard/issues/173): Parallelize `orchard.xref/fn-refs`.
 
 ## 0.14.0 (2023-08-03)
 
