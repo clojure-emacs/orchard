@@ -40,6 +40,86 @@
 (defrecord TestRecord [a b c d])
 (defrecord EmptyRecord [])
 
+;; A record and a java.util.Map that define their own `print-method` - like
+;; `overtone.at-at`'s RecurringJob (#412) or `tech.ml.dataset` datasets (CIDER
+;; #4088).  Orchard should render them with that method instead of traversing.
+(defrecord PrintMethodRecord [id peer])
+(defmethod print-method PrintMethodRecord [x ^java.io.Writer w]
+  (.write w (str "#<PrintMethodRecord " (:id x) ">")))
+
+;; Only the interfaces matter for these fixtures: values with a custom
+;; print-method are never traversed, so no method bodies are needed.
+(deftype PrintMethodMap []
+  java.util.Map)
+(defmethod print-method PrintMethodMap [_ ^java.io.Writer w]
+  (.write w "#dataset[...]"))
+
+;; The exact shape of a `tech.ml.dataset` dataset: implements both
+;; java.util.Map and IPersistentMap, and defines its own `print-method`.
+(deftype PrintMethodDataset []
+  java.util.Map
+  clojure.lang.IPersistentMap)
+(defmethod print-method PrintMethodDataset [_ ^java.io.Writer w]
+  (.write w "#dataset[5x2]"))
+
+(deftype PrintMethodList []
+  java.util.List)
+(defmethod print-method PrintMethodList [_ ^java.io.Writer w]
+  (.write w "#custom-list[...]"))
+
+;; An IPersistentMap that does NOT implement java.util.Map. Orchard's :map
+;; printer requires java.util.Map, so such types must print via print-method.
+(deftype PurePersistentMap [^clojure.lang.IPersistentMap m]
+  clojure.lang.IPersistentMap
+  (seq [_] (seq m)) (count [_] (count m))
+  (iterator [_] (.iterator ^Iterable m))
+  (valAt [_ k] (get m k)) (valAt [_ k d] (get m k d))
+  (equiv [this that] (identical? this that)))
+
+;; Clojure collection types (not just Java ones) with their own print-method.
+(deftype PrintMethodVector [v]
+  clojure.lang.IPersistentVector)
+(defmethod print-method PrintMethodVector [^PrintMethodVector x ^java.io.Writer w]
+  (.write w (str "#custom-vec" (.-v x))))
+
+(deftype PrintMethodSet [s]
+  clojure.lang.IPersistentSet)
+(defmethod print-method PrintMethodSet [^PrintMethodSet x ^java.io.Writer w]
+  (.write w (str "#custom-set" (vec (.-s x)))))
+
+;; Custom print-methods are arbitrary user code and may misbehave; orchard
+;; must fall back to structural printing instead of crashing.
+(defrecord ThrowingPrintRecord [id])
+(defmethod print-method ThrowingPrintRecord [_ _]
+  (throw (ex-info "boom" {})))
+
+(defrecord RecursivePrintRecord [id peer])
+(defmethod print-method RecursivePrintRecord [x ^java.io.Writer w]
+  ;; Loops forever, like a print-method descending a cyclic value (#412).
+  (print-method x w))
+
+;; A java.util.Map whose print-method resolution is ambiguous (two matching
+;; implementations, no preference). get-method throws for such values, but
+;; printing them must survive that and fall back to structural.
+(definterface AmbiguousPrintA)
+(definterface AmbiguousPrintB)
+(deftype AmbiguousPrintMap [^java.util.Map m]
+  AmbiguousPrintA AmbiguousPrintB
+  java.util.Map
+  (get [_ k] (.get m k)) (size [_] (.size m)) (isEmpty [_] (.isEmpty m))
+  (entrySet [_] (.entrySet m)) (keySet [_] (.keySet m)) (values [_] (.values m))
+  (containsKey [_ k] (.containsKey m k)))
+(defmethod print-method AmbiguousPrintA [_ ^java.io.Writer w] (.write w "A"))
+(defmethod print-method AmbiguousPrintB [_ ^java.io.Writer w] (.write w "B"))
+
+;; Same ambiguity for a List: the empty case takes a different code path
+;; (print-coll delegates empty collections to print-method).
+(deftype AmbiguousPrintList [^java.util.List l]
+  AmbiguousPrintA AmbiguousPrintB
+  java.util.List
+  (size [_] (.size l)) (isEmpty [_] (.isEmpty l))
+  (iterator [_] (.iterator l)))
+
 (defn sample-writer [atom-limit total-limit & strings]
   (let [writer (TruncatingStringWriter. atom-limit total-limit)]
     (try (run! #(.write writer ^String %) strings)
@@ -162,6 +242,62 @@
 (deftest print-custom-print-method
   (is (= "hello"
          (sut/print-str (with-meta (->TestRecord 1 2 3 4) {:type ::custom-rec})))))
+
+(deftest honor-print-method-test
+  (testing "records with a custom print-method are rendered with it, not structurally"
+    (is (= "#<PrintMethodRecord 1>" (sut/print-str (->PrintMethodRecord 1 nil)))))
+
+  (testing "Java collections with a custom print-method are rendered with it (CIDER #4088)"
+    (is (= "#dataset[...]" (sut/print-str (PrintMethodMap.)))))
+
+  (testing "types implementing both IPersistentMap and java.util.Map honor their print-method (tech.ml.dataset shape)"
+    (is (= "#dataset[5x2]" (sut/print-str (PrintMethodDataset.)))))
+
+  (testing "Java lists with a custom print-method are rendered with it"
+    (is (= "#custom-list[...]" (sut/print-str (PrintMethodList.)))))
+
+  (testing "a self-referential value uses its print-method instead of overflowing (#412)"
+    (let [x (->PrintMethodRecord 2 nil)]
+      (is (= "#<PrintMethodRecord 2>" (sut/print-str (assoc x :peer x))))))
+
+  (testing "plain records and collections are still printed structurally"
+    (is (= "#TestRecord{:a 1, :b 2, :c 3, :d 4}" (sut/print-str (->TestRecord 1 2 3 4))))
+    (is (= "{:a 1}" (sut/print-str {:a 1})))
+    (is (= "[1 2 3]" (sut/print-str [1 2 3])))
+    (is (= "{\"a\" 1}" (sut/print-str (java.util.HashMap. {"a" 1}))))
+    (is (= "(1 2 3)" (sut/print-str (java.util.ArrayList. [1 2 3])))))
+
+  (testing "Clojure vector and set types with a custom print-method are rendered with it"
+    (is (= "#custom-vec[1 2 3]" (sut/print-str (PrintMethodVector. [1 2 3]))))
+    (is (= "#custom-set[1 2 3]" (sut/print-str (PrintMethodSet. (sorted-set 1 2 3))))))
+
+  (testing "IPersistentMap-only types still print via their print-method"
+    (is (= "{:a 1}" (sut/print-str (PurePersistentMap. {:a 1})))))
+
+  (testing "a throwing print-method falls back to structural printing"
+    (is (= "#ThrowingPrintRecord{:id 1}" (sut/print-str (->ThrowingPrintRecord 1)))))
+
+  (testing "a print-method that overflows the stack falls back to structural printing (#412)"
+    (is (= "#RecursivePrintRecord{:id 1, :peer nil}"
+           (sut/print-str (->RecursivePrintRecord 1 nil)))))
+
+  (testing "ambiguous print-method implementations don't break printing"
+    (is (= "{\"a\" 1}"
+           (sut/print-str (AmbiguousPrintMap. (java.util.HashMap. {"a" 1})))))
+    (is (= "(1 2 3)"
+           (sut/print-str (AmbiguousPrintList. (java.util.ArrayList. [1 2 3])))))
+    (is (= "()" (sut/print-str (AmbiguousPrintList. (java.util.ArrayList.))))))
+
+  (testing "re-registering a generic print-method doesn't disable structural printing"
+    (let [orig (get-method print-method java.util.Map)]
+      (try
+        ;; Simulates a namespace reload: a fresh fn is registered for the
+        ;; same generic interface.
+        (.addMethod ^clojure.lang.MultiFn print-method java.util.Map
+                    (fn [m w] (orig m w)))
+        (is (= "{\"a\" 1}" (sut/print-str (java.util.HashMap. {"a" 1}))))
+        (finally
+          (.addMethod ^clojure.lang.MultiFn print-method java.util.Map orig))))))
 
 (deftest qualified-keywords-compaction
   (are [kw repr] (= repr (sut/print-str kw))
