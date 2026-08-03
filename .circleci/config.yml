@@ -150,7 +150,7 @@ jobs:
                 name: Running tests (make << parameters.command >>)
                 command: make << parameters.command >>
 
-  test_windows:
+  test-windows:
     description: |
       Run tests on MS-Windows using the system's JDK version and Clojure 1.12.
     executor: win/default
@@ -181,36 +181,47 @@ workflows:
     jobs:
       - test:
           matrix:
-            alias: "test"
+            # Test latest stable Clojure with all supported JDKs.
+            alias: "test-1.12"
             parameters:
-              jdk_version: [jdk8, jdk26]
-              clojure_version: ["1.10", "1.11", "1.12", "1.13"]
-          <<: *run_always
-      - test:
-          matrix:
-            alias: "test-inbetween-jdks"
-            parameters:
-              jdk_version: [jdk11, jdk17, jdk21, jdk25]
+              jdk_version: [jdk8, jdk11, jdk17, jdk21, jdk25, jdk26]
               clojure_version: ["1.12"]
           <<: *run_always
       - test:
           matrix:
-            alias: "test_with_cljs"
+            # Test future Clojure with all JDKs it supports (17+).
+            alias: "test-1.13"
+            parameters:
+              jdk_version: [jdk17, jdk21, jdk25, jdk26]
+              clojure_version: ["1.13"]
+          <<: *run_always
+      - test:
+          matrix:
+            # Test older Clojure versions against min and max supported JDK version.
+            alias: "test-older"
+            parameters:
+              jdk_version: [jdk8, jdk26]
+              clojure_version: ["1.10", "1.11"]
+          <<: *run_always
+      - test:
+          matrix:
+            alias: "test-with-cljs"
             parameters:
               jdk_version: [jdk26]
               clojure_version: ["1.12"]
               command: ["test-with-cljs"]
           <<: *run_always
-      - test_windows:
+      - test-windows:
           <<: *run_always
       - lint:
           <<: *run_always
       - deploy:
           requires:
-            - test
-            - test-inbetween-jdks
-            - test_with_cljs
-            - test_windows
+            - test-1.12
+            - test-1.13
+            - test-older
+            - test-with-cljs
+            - test-windows
             - lint
           filters:
             branches:
