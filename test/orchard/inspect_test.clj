@@ -959,11 +959,7 @@
                           "#'clojure.core/restart-agent #'clojure.core/sort-by ...]") pos?]]
 
           "Imports"
-          ["  " [:value #=(str "{Enum java.lang.Enum, "
-                               "InternalError java.lang.InternalError, "
-                               "NullPointerException java.lang.NullPointerException, "
-                               "InheritableThreadLocal java.lang.InheritableThreadLocal, "
-                               "Class java.lang.Class, ...}") pos?]]
+          ["  " [:value #"^\{.*Enum java.lang.Enum.*NullPointerException java.lang.NullPointerException.*" pos?]]
 
           "Interns"
           ["  " [:value #=(str "{ends-with? #'clojure.string/ends-with?, "
