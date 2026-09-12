@@ -212,6 +212,9 @@ git push --tags
 git push
 ```
 
+A `vX.Y.Z-SNAPSHOT` tag runs the same pipeline, tests included, and deploys a
+snapshot, which is a cheap way to exercise the whole release path first.
+
 ### Tests and formatting
 
 To run the CI tasks locally use:
