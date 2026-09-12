@@ -1,11 +1,10 @@
-.PHONY: test eastwood cljfmt kondo install deploy clean lint copy-sources-to-jdk javac javac-test
+.PHONY: test test-with-cljs eastwood cljfmt kondo install deploy clean lint download-jdk-src javac javac-test check-env check-install-env
 .DEFAULT_GOAL := install
 
 # Set bash instead of sh for the @if [[ conditions,
 # and use the usual safety flags:
 SHELL = /bin/bash -Ee
 
-HOME=$(shell echo $$HOME)
 CLOJURE_VERSION ?= 1.12
 
 resources/clojuredocs/export.edn:
