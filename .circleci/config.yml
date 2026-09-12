@@ -117,15 +117,6 @@ commands:
               sleep 5
             done
 
-  setup-windows:
-    steps:
-      - checkout
-      - run:
-          name: Install Clojure CLI
-          command: |
-            Invoke-WebRequest -Uri https://github.com/clojure/brew-install/releases/latest/download/win-install.ps1 -OutFile win-install.ps1
-            powershell -File win-install.ps1
-
 jobs:
 
   lint:
@@ -195,16 +186,32 @@ jobs:
 
   test-windows:
     description: |
-      Run tests on MS-Windows using the system's JDK version and Clojure 1.12.
+      Run tests on MS-Windows with Temurin JDK 21 and Clojure 1.12.
     executor: win/default
     steps:
-      - setup-windows
+      - checkout
+      - run:
+          name: Install the JDK and the Clojure CLI
+          command: |
+            choco install temurin21 --no-progress -y; if(-not $?){exit 9}
+            Invoke-WebRequest -Uri https://github.com/clojure/brew-install/releases/latest/download/win-install.ps1 -OutFile win-install.ps1
+            powershell -File win-install.ps1
+      - restore_cache:
+          key: windows-cache-1-{{ checksum "deps.edn" }}
       - run:
           name: Running tests on Windows
           command: |
+            $env:JAVA_HOME = (Get-ChildItem 'C:\Program Files\Eclipse Adoptium\jdk-21*' | Select-Object -First 1).FullName
+            if (-not $env:JAVA_HOME) { Write-Error "Temurin JDK 21 not found"; exit 9 }
+            $env:Path = "$env:JAVA_HOME\bin;$env:Path"
             java -version; if(-not $?){exit 9}
             clojure -T:build javac :with-tests true; if(-not $?){exit 9}
             clojure -X:1.12:dev:test:+cljs; if(-not $?){exit 9}
+      - save_cache:
+          key: windows-cache-1-{{ checksum "deps.edn" }}
+          paths:
+            - C:\Users\circleci\.m2
+            - .cpcache
 
 # The ci-test-matrix does the following:
 #
