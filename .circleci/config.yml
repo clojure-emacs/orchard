@@ -86,6 +86,40 @@ commands:
             - base-jdk-src.zip
           key: cache2-<< parameters.cache_version >>-{{ checksum "/tmp/clojure_cache_seed" }}
 
+  prepare_deps:
+    description: |
+      Resolve the dependencies for the build tooling and the given alias
+      groups up front, retrying on failure. Computing a classpath occasionally
+      dies with a ClassCastException from HashMap internals: Maven's model
+      validator caches the coordinates it has validated in an unsynchronized
+      HashSet, and tools.deps resolves on several threads at once. It strikes
+      whenever .cpcache misses, and a retry is all it takes.
+    parameters:
+      aliases:
+        description: |
+          Space-separated alias groups to prepare, e.g. ":1.12:dev:test :kondo"
+        type: string
+    steps:
+      - run:
+          name: Preparing dependencies
+          command: |
+            prepare() {
+              clojure -P -T:build || return 1
+              for aliases in << parameters.aliases >>; do
+                clojure -P -M"$aliases" || return 1
+              done
+            }
+            attempt=1
+            until prepare; do
+              if [ "$attempt" -ge 3 ]; then
+                echo "Giving up after $attempt attempts."
+                exit 1
+              fi
+              attempt=$((attempt + 1))
+              echo "Resolving dependencies failed, retrying..."
+              sleep 5
+            done
+
   setup-windows:
     steps:
       - checkout
@@ -110,6 +144,8 @@ jobs:
       - with_cache:
           cache_version: "lint_v3_<< parameters.clojure_version >>"
           steps:
+            - prepare_deps:
+                aliases: ":cljfmt :kondo :eastwood"
             - run:
                 name: Running cljfmt
                 command: make cljfmt
@@ -142,6 +178,10 @@ jobs:
       clojure_version:
         description: Version of Clojure to test against
         type: string
+      extra_aliases:
+        description: Extra aliases the command's tests need, e.g. ":+cljs"
+        type: string
+        default: ""
     executor: << parameters.jdk_version >>
     environment:
       CLOJURE_VERSION: << parameters.clojure_version >>
@@ -150,6 +190,8 @@ jobs:
       - with_cache:
           cache_version: "test_v3_<< parameters.clojure_version >>_<< parameters.jdk_version >>_<< parameters.command >>"
           steps:
+            - prepare_deps:
+                aliases: ":<< parameters.clojure_version >>:dev:test<< parameters.extra_aliases >>"
             - run:
                 name: Running tests (make << parameters.command >>)
                 command: make << parameters.command >>
@@ -214,6 +256,7 @@ workflows:
               jdk_version: [jdk26]
               clojure_version: ["1.12"]
               command: ["test-with-cljs"]
+              extra_aliases: [":+cljs"]
           <<: *run_always
       - test-windows:
           <<: *run_always
