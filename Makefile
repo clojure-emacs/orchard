@@ -32,7 +32,7 @@ test: download-jdk-src javac-test
 test-with-cljs: download-jdk-src javac-test
 	clojure -X:$(CLOJURE_VERSION):dev:test:+cljs
 
-eastwood: clean javac-test
+eastwood: javac-test
 	clojure -M:eastwood
 
 cljfmt:
