@@ -201,8 +201,11 @@ classpath, it just need to exist in the distribution.
 You can install Orchard locally like this:
 
 ```shell
-PROJECT_VERSION=99.99 make install
+make install
 ```
+
+That installs it as version `99.99` into your local Maven repository; set
+`PROJECT_VERSION` to pick another one.
 
 For releasing to [Clojars](https://clojars.org/):
 
