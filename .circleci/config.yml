@@ -8,7 +8,11 @@ orbs:
 defaults: &defaults
   working_directory: ~/repo
   environment:
-    JVM_OPTS: -Xmx3200m -Dclojure.main.report=stderr
+    # The Clojure CLI honors JAVA_OPTS, not JVM_OPTS (a Leiningen convention),
+    # so the earlier JVM_OPTS was silently ignored. Without a heap cap JDK 11,
+    # which lacks the cgroup memory-limit detection JDK 17+ have, sizes its
+    # heap off the host's RAM and gets OOM-killed inside the container.
+    JAVA_OPTS: -Xmx2500m -Dclojure.main.report=stderr
 
 # Runners for each major OpenJDK
 
