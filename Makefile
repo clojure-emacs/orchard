@@ -1,4 +1,4 @@
-.PHONY: test test-with-cljs eastwood cljfmt kondo install deploy clean lint download-jdk-src javac javac-test check-env check-install-env
+.PHONY: test test-with-cljs eastwood cljfmt kondo install deploy clean lint download-jdk-src javac javac-test check-env
 .DEFAULT_GOAL := install
 
 # Set bash instead of sh for the @if [[ conditions,
@@ -6,6 +6,8 @@
 SHELL = /bin/bash -Ee
 
 CLOJURE_VERSION ?= 1.12
+# The version local installs get. Releases take theirs from the git tag.
+PROJECT_VERSION ?= 99.99
 
 resources/clojuredocs/export.edn:
 	curl -o $@ https://github.com/clojure-emacs/clojuredocs-export-edn/raw/master/exports/export.compact.edn
@@ -53,8 +55,8 @@ deploy: check-env
 	export PROJECT_VERSION=$$(echo "$(CIRCLE_TAG)" | sed 's/^v//'); \
 	clojure -T:build deploy :version "\"$$PROJECT_VERSION\""
 
-# Usage: PROJECT_VERSION=99.99 make install
-install: check-install-env clean
+# Usage: make install (or PROJECT_VERSION=1.2.3 make install)
+install:
 	clojure -T:build install :version '"$(PROJECT_VERSION)"'
 
 clean:
@@ -69,9 +71,4 @@ ifndef CLOJARS_PASSWORD
 endif
 ifndef CIRCLE_TAG
 	$(error CIRCLE_TAG is undefined. Please only perform deployments by publishing git tags. CI will do the rest.)
-endif
-
-check-install-env:
-ifndef PROJECT_VERSION
-	$(error Please set PROJECT_VERSION as an env var beforehand.)
 endif
