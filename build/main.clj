@@ -13,7 +13,7 @@
     {;; Pom section
      :lib lib
      :version version
-     :scm {:url url, :tag version}
+     :scm {:url url, :tag (str "v" version)}
      :pom-data [[:description "A fertile ground for Clojure tooling"]
                 [:url url]
                 [:licenses
