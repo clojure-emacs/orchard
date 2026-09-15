@@ -85,16 +85,17 @@ commands:
 
   prepare_deps:
     description: |
-      Resolve the dependencies for the build tooling and the given alias
-      groups up front, retrying on failure. Computing a classpath occasionally
-      dies with a ClassCastException from HashMap internals: Maven's model
-      validator caches the coordinates it has validated in an unsynchronized
-      HashSet, and tools.deps resolves on several threads at once. It strikes
-      whenever .cpcache misses, and a retry is all it takes.
+      Resolve the dependencies for the build tooling and the given alias specs
+      up front, retrying on failure. Computing a classpath occasionally dies
+      with a ClassCastException from HashMap internals: Maven's model validator
+      caches the coordinates it has validated in an unsynchronized HashSet,
+      and tools.deps resolves on several threads at once. It strikes whenever
+      .cpcache misses, and a retry is all it takes. The specs carry their
+      -M/-X, because the CLI keys its classpath cache on that as well.
     parameters:
       aliases:
         description: |
-          Space-separated alias groups to prepare, e.g. ":1.12:dev:test :kondo"
+          Space-separated alias specs to prepare, e.g. "-X:1.12:dev:test -M:kondo"
         type: string
     steps:
       - run:
@@ -102,8 +103,8 @@ commands:
           command: |
             prepare() {
               clojure -P -T:build || return 1
-              for aliases in << parameters.aliases >>; do
-                clojure -P -M"$aliases" || return 1
+              for spec in << parameters.aliases >>; do
+                clojure -P "$spec" || return 1
               done
             }
             attempt=1
@@ -133,7 +134,7 @@ jobs:
           cache_version: "lint_v3_<< parameters.clojure_version >>"
           steps:
             - prepare_deps:
-                aliases: ":cljfmt :kondo :eastwood"
+                aliases: "-M:cljfmt -M:kondo -M:eastwood"
             - run:
                 name: Running cljfmt
                 command: make cljfmt
@@ -179,7 +180,7 @@ jobs:
           cache_version: "test_v3_<< parameters.clojure_version >>_<< parameters.jdk_version >>_<< parameters.command >>"
           steps:
             - prepare_deps:
-                aliases: ":<< parameters.clojure_version >>:dev:test<< parameters.extra_aliases >>"
+                aliases: "-X:<< parameters.clojure_version >>:dev:test<< parameters.extra_aliases >>"
             - run:
                 name: Running tests (make << parameters.command >>)
                 command: make << parameters.command >>
