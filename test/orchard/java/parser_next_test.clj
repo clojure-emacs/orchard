@@ -24,15 +24,47 @@
   (when jdk11+?
     (requiring-resolve 'orchard.java.parser-next/parse-java)))
 
+(defn- observe-temporary-source
+  [f]
+  (let [source    (atom nil)
+        make-file io/file]
+    (with-redefs [io/file
+                  (fn [& args]
+                    (let [file (apply make-file args)]
+                      (when (and (= 2 (count args))
+                                 (instance? java.io.File (first args))
+                                 (re-matches #"tmp\d+"
+                                             (.. ^java.io.File file getParentFile getName)))
+                        (reset! source file))
+                      file))]
+      [(f) @source])))
+
 (when jdk11+?
   (deftest parse-java-test
     (testing "Throws an informative exception on invalid code"
       (let [e (try
-                (parse-java (io/resource "orchard/java/InvalidClass.java") nil)
+                (parse-java (io/resource "orchard/java/InvalidClass.java") nil identity)
                 nil
                 (catch Exception e e))]
         (is (some? e) "parse-java should throw on invalid code")
         (is+ {:out #"illegal start of expression"} (ex-data e))))))
+
+(when jdk11+?
+  (deftest source-info-removes-temporary-source
+    (let [[info source] (observe-temporary-source
+                         #(source-info 'orchard.java.DummyClass))
+          parent        (some-> ^java.io.File source .getParentFile)]
+      (try
+        (is (some? info))
+        (is (some? source))
+        (when (and source parent)
+          (is (not (.exists ^java.io.File source)))
+          (is (not (.exists ^java.io.File parent))))
+        (finally
+          (when source
+            (.delete ^java.io.File source))
+          (when parent
+            (.delete ^java.io.File parent)))))))
 
 (when jdk11+?
   (deftest source-info-test
