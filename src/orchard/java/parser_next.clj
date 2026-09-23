@@ -36,7 +36,7 @@
    (java.util.concurrent.locks ReentrantLock)
    (javax.lang.model.element Element ElementKind ExecutableElement TypeElement VariableElement)
    (javax.lang.model.type ArrayType TypeKind TypeVariable)
-   (javax.tools DocumentationTool DocumentationTool$DocumentationTask ToolProvider)
+   (javax.tools DocumentationTool$DocumentationTask ToolProvider)
    (jdk.javadoc.doclet Doclet DocletEnvironment)))
 
 ;;; ## Java Parsing
@@ -72,30 +72,30 @@
 ;;    written to a temp file and passed to the compiler from disk. Design-wise,
 ;;    this is admittedly imperfect, but the performance cost is low and it works.
 
-;; This atom must be in top-level, not a local in `parse-java`, otherwise the
-;; reify will capture it as a closure and thus will no longer have 0-arg
-;; constructor, and the latter is required.
+;; This atom must be in top-level, not a field in CapturingDoclet, otherwise the
+;; type won't have a 0-arg constructor, and the latter is required.
 (def ^:private result (atom nil))
+
+(deftype CapturingDoclet []
+  Doclet
+  (init [_this _ _] (reset! result nil))
+  (getSupportedOptions [_this] #{})
+  (run [_this root]
+    (reset! result root)
+    true))
+
+(def ^:private top-level-parse-java-tmp-dir
+  (delay
+    (Files/createTempDirectory "orchard-parse-java" (into-array FileAttribute []))))
 
 (defn- parse-java
   "Load and parse the resource url, returning a `DocletEnvironment` object."
   [^URL url, module]
   (let [fname    (.getName (io/file (.getFile url)))
-        tmpdir   (.toFile (Files/createTempDirectory "tmp" (into-array FileAttribute [])))
+        tmpdir   (.toFile (Files/createTempDirectory
+                           @top-level-parse-java-tmp-dir "tmp" (into-array FileAttribute [])))
         tmpfile  (io/file tmpdir fname)
-        ^DocumentationTool compiler (ToolProvider/getSystemDocumentationTool)
-        sources  (-> (.getStandardFileManager compiler nil nil nil)
-                     (.getJavaFileObjectsFromFiles [tmpfile]))
-        doclet   (class (reify Doclet
-                          (init [_this _ _]
-                            (reset! result nil))
-
-                          (run [_this root]
-                            (reset! result root)
-                            true)
-
-                          (getSupportedOptions [_this]
-                            #{})))
+        compiler (ToolProvider/getSystemDocumentationTool)
         out      (StringWriter.)        ; discard compiler messages
         opts     (concat ["--show-members" "private"
                           "--show-types" "private"
@@ -103,17 +103,20 @@
                           "--show-module-contents" "all"
                           "-quiet"]
                          (when module
-                           ["--patch-module" (str module "=" tmpdir)]))
-        _ (spit tmpfile (slurp url))
-        task (.getTask compiler out nil nil doclet opts sources)]
+                           ["--patch-module" (str module "=" tmpdir)]))]
     (try
-      (if (false? (.call ^DocumentationTool$DocumentationTask task))
-        (throw (ex-info "Failed to parse Java source code"
-                        {:path url
-                         :module module
-                         :out (str out)}))
-        @result)
+      (spit tmpfile (slurp url))
+      (with-open [file-mgr (.getStandardFileManager compiler nil nil nil)]
+        (let [sources (.getJavaFileObjectsFromFiles file-mgr [tmpfile])
+              task (.getTask compiler out nil nil CapturingDoclet opts sources)]
+          (if (false? (.call ^DocumentationTool$DocumentationTask task))
+            (throw (ex-info "Failed to parse Java source code"
+                            {:path url
+                             :module module
+                             :out (str out)}))
+            @result)))
       (finally
+        (.delete tmpfile)
         (.delete tmpdir)))))
 
 ;;; ## Java Parse Tree Traversal
