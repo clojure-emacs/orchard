@@ -8,6 +8,7 @@
    [orchard.misc :as misc]
    [orchard.test.util :as util :refer [is+]])
   (:import
+   (java.nio.file Path)
    (orchard.java DummyClass)))
 
 (def ^:private jdk11+? (>= misc/java-api-version 11))
@@ -86,6 +87,12 @@
              :doc
              "Class level docstring.\n\n <pre>\n   DummyClass dc = new DummyClass();\n </pre>\n\n @author Arne Brasseur"}
            (source-info 'orchard.java.DummyClass)))))
+
+(when jdk11+?
+  (deftest source-info-cleans-up-tmp-files
+    (source-info 'orchard.java.DummyClass)
+    (source-info `Thread)
+    (is (empty? (.listFiles (.toFile ^Path @@(requiring-resolve 'orchard.java.parser-next/top-level-parse-java-tmp-dir)))))))
 
 (when (and jdk11+? util/jdk-sources-present?)
   (deftest doc-fragments-test
