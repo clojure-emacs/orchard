@@ -6,6 +6,8 @@
 
 ## master (unreleased)
 
+## 0.45.0 (2026-10-02)
+
 - [#430](https://github.com/clojure-emacs/orchard/pull/430): Add `orchard.test`, a `clojure.test` runner (moved from cider-nrepl) that can report progress while tests run.
 - [#413](https://github.com/clojure-emacs/orchard/pull/413): Print: protect against StackOverflow when printing recursive collections.
 - [#416](https://github.com/clojure-emacs/orchard/pull/416): Inspector: add string analytics.
