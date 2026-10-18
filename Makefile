@@ -5,6 +5,7 @@
 # and use the usual safety flags:
 SHELL = /bin/bash -Ee
 
+CLOJURE ?= clojure
 CLOJURE_VERSION ?= 1.12
 # The version local installs get. Releases take theirs from the git tag.
 PROJECT_VERSION ?= 99.99
@@ -18,29 +19,29 @@ resources/clojuredocs/export.edn:
 # distributions.
 
 download-jdk-src:
-	clojure -T:build download-jdk-src
+	$(CLOJURE) -T:build download-jdk-src
 
 javac:
-	clojure -T:build javac
+	$(CLOJURE) -T:build javac
 
 javac-test:
-	clojure -T:build javac :with-tests true
+	$(CLOJURE) -T:build javac :with-tests true
 
 test: download-jdk-src javac-test
-	clojure -X:$(CLOJURE_VERSION):dev:test
+	$(CLOJURE) -X:$(CLOJURE_VERSION):dev:test
 
 # Having Clojurescript on classpath enables extra tests.
 test-with-cljs: download-jdk-src javac-test
-	clojure -X:$(CLOJURE_VERSION):dev:test:+cljs
+	$(CLOJURE) -X:$(CLOJURE_VERSION):dev:test:+cljs
 
 eastwood: javac-test
-	clojure -M:eastwood
+	$(CLOJURE) -M:eastwood
 
 cljfmt:
-	clojure -M:cljfmt check
+	$(CLOJURE) -M:cljfmt check
 
 kondo:
-	clojure -M:kondo
+	$(CLOJURE) -M:kondo
 
 lint: kondo cljfmt eastwood
 
@@ -53,14 +54,14 @@ deploy: check-env
 	fi
 	# Clean is performed inside deploy task, no need to clean in Make
 	export PROJECT_VERSION=$$(echo "$(CIRCLE_TAG)" | sed 's/^v//'); \
-	clojure -T:build deploy :version "\"$$PROJECT_VERSION\""
+	$(CLOJURE) -T:build deploy :version "\"$$PROJECT_VERSION\""
 
 # Usage: make install (or PROJECT_VERSION=1.2.3 make install)
 install:
-	clojure -T:build install :version '"$(PROJECT_VERSION)"'
+	$(CLOJURE) -T:build install :version '"$(PROJECT_VERSION)"'
 
 clean:
-	clojure -T:build clean
+	$(CLOJURE) -T:build clean
 
 check-env:
 ifndef CLOJARS_USERNAME

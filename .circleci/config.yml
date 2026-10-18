@@ -13,6 +13,11 @@ defaults: &defaults
     # which lacks the cgroup memory-limit detection JDK 17+ have, sizes its
     # heap off the host's RAM and gets OOM-killed inside the container.
     JAVA_OPTS: -Xmx2500m -Dclojure.main.report=stderr
+    # Resolving dependencies on several threads occasionally dies with a
+    # ClassCastException from HashMap internals: Maven's model validator caches
+    # the coordinates it has validated in an unsynchronized HashSet. -Sthreads 1
+    # makes sure the resolution happens sequentially and thus rules out the race.
+    CLOJURE: clojure -Sthreads 1
 
 # Runners for each major OpenJDK
 
@@ -37,9 +42,9 @@ executors:
     docker:
       - image: clojure:temurin-25-noble
     <<: *defaults
-  jdk26:
+  jdk27:
     docker:
-      - image: clojure:temurin-26-noble
+      - image: clojure:temurin-27-resolute
     <<: *defaults
 
 # Runs a given set of steps, with some standard pre- and post-
@@ -73,7 +78,7 @@ commands:
           command: |
             cat << parameters.files >> | sha256sum | awk '{print $1}' > /tmp/clojure_cache_seed
       - restore_cache:
-          key: cache2-<< parameters.cache_version >>-{{ checksum "/tmp/clojure_cache_seed" }}
+          key: cache3-<< parameters.cache_version >>-{{ checksum "/tmp/clojure_cache_seed" }}
       - steps: << parameters.steps >>
       - save_cache:
           paths:
@@ -81,42 +86,7 @@ commands:
             - ~/.gitlibs
             - .cpcache
             - base-jdk-src.zip
-          key: cache2-<< parameters.cache_version >>-{{ checksum "/tmp/clojure_cache_seed" }}
-
-  prepare_deps:
-    description: |
-      Resolve the dependencies for the build tooling and the given alias specs
-      up front, retrying on failure. Computing a classpath occasionally dies
-      with a ClassCastException from HashMap internals: Maven's model validator
-      caches the coordinates it has validated in an unsynchronized HashSet,
-      and tools.deps resolves on several threads at once. It strikes whenever
-      .cpcache misses, and a retry is all it takes. The specs carry their
-      -M/-X, because the CLI keys its classpath cache on that as well.
-    parameters:
-      aliases:
-        description: |
-          Space-separated alias specs to prepare, e.g. "-X:1.12:dev:test -M:kondo"
-        type: string
-    steps:
-      - run:
-          name: Preparing dependencies
-          command: |
-            prepare() {
-              clojure -P -T:build || return 1
-              for spec in << parameters.aliases >>; do
-                clojure -P "$spec" || return 1
-              done
-            }
-            attempt=1
-            until prepare; do
-              if [ "$attempt" -ge 3 ]; then
-                echo "Giving up after $attempt attempts."
-                exit 1
-              fi
-              attempt=$((attempt + 1))
-              echo "Resolving dependencies failed, retrying..."
-              sleep 5
-            done
+          key: cache3-<< parameters.cache_version >>-{{ checksum "/tmp/clojure_cache_seed" }}
 
 jobs:
 
@@ -125,16 +95,14 @@ jobs:
       clojure_version:
         type: string
         default: "1.12"
-    executor: jdk26
+    executor: jdk27
     environment:
       CLOJURE_VERSION: << parameters.clojure_version >>
     steps:
       - checkout
       - with_cache:
-          cache_version: "lint_v3_<< parameters.clojure_version >>"
+          cache_version: "lint_v4_<< parameters.clojure_version >>"
           steps:
-            - prepare_deps:
-                aliases: "-M:cljfmt -M:kondo -M:eastwood"
             - run:
                 name: Running cljfmt
                 command: make cljfmt
@@ -167,20 +135,14 @@ jobs:
       clojure_version:
         description: Version of Clojure to test against
         type: string
-      extra_aliases:
-        description: Extra aliases the command's tests need, e.g. ":+cljs"
-        type: string
-        default: ""
     executor: << parameters.jdk_version >>
     environment:
       CLOJURE_VERSION: << parameters.clojure_version >>
     steps:
       - checkout
       - with_cache:
-          cache_version: "test_v3_<< parameters.clojure_version >>_<< parameters.jdk_version >>_<< parameters.command >>"
+          cache_version: "test_v4_<< parameters.clojure_version >>_<< parameters.jdk_version >>_<< parameters.command >>"
           steps:
-            - prepare_deps:
-                aliases: "-X:<< parameters.clojure_version >>:dev:test<< parameters.extra_aliases >>"
             - run:
                 name: Running tests (make << parameters.command >>)
                 command: make << parameters.command >>
@@ -235,7 +197,7 @@ workflows:
             # Test latest stable Clojure with all supported JDKs.
             alias: "test-1.12"
             parameters:
-              jdk_version: [jdk8, jdk11, jdk17, jdk21, jdk25, jdk26]
+              jdk_version: [jdk8, jdk11, jdk17, jdk21, jdk25, jdk27]
               clojure_version: ["1.12"]
           <<: *run_always
       - test:
@@ -243,7 +205,7 @@ workflows:
             # Test future Clojure with all JDKs it supports (17+).
             alias: "test-1.13"
             parameters:
-              jdk_version: [jdk17, jdk21, jdk25, jdk26]
+              jdk_version: [jdk17, jdk21, jdk25, jdk27]
               clojure_version: ["1.13"]
           <<: *run_always
       - test:
@@ -251,17 +213,16 @@ workflows:
             # Test older Clojure versions against min and max supported JDK version.
             alias: "test-older"
             parameters:
-              jdk_version: [jdk8, jdk26]
+              jdk_version: [jdk8, jdk27]
               clojure_version: ["1.10", "1.11"]
           <<: *run_always
       - test:
           matrix:
             alias: "test-with-cljs"
             parameters:
-              jdk_version: [jdk26]
+              jdk_version: [jdk27]
               clojure_version: ["1.12"]
               command: ["test-with-cljs"]
-              extra_aliases: [":+cljs"]
           <<: *run_always
       - test-windows:
           <<: *run_always

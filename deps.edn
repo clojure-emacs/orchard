@@ -1,4 +1,7 @@
 {:paths ["src" "resources" "target/classes"]
+ ;; A Maven central with more generous request limits.
+ :mvn/repos {"central" {:url "https://maven-central.storage.googleapis.com/maven2/"}}
+
  :deps {org.clojure/clojure {:mvn/version "1.12.5" :mvn/scope "provided"}}
 
  :aliases
@@ -37,4 +40,5 @@
           :main-opts ["-m" "clj-kondo.main" "--lint" "src" "test"]}
 
   :eastwood {:extra-deps {jonase/eastwood {:mvn/version "1.4.3"}}
-             :main-opts ["-m" "eastwood.lint"]}}}
+             :main-opts ["-m" "eastwood.lint"
+                         {:ignored-faults {:deprecations {orchard.java.parser-next true}}}]}}}
