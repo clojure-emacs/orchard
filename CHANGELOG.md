@@ -6,6 +6,8 @@
 
 ## master (unreleased)
 
+- [#437](https://github.com/clojure-emacs/orchard/pull/437): Add `orchard.ns-form`, which reads the `ns` form of a source file without loading it and takes apart its libspecs, aliases and imports.
+
 ## 0.45.0 (2026-10-02)
 
 - [#430](https://github.com/clojure-emacs/orchard/pull/430): Add `orchard.test`, a `clojure.test` runner (moved from cider-nrepl) that can report progress while tests run.
