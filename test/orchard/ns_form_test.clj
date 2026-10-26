@@ -1,7 +1,7 @@
 (ns orchard.ns-form-test
   (:require
    [clojure.java.io :as io]
-   [clojure.test :refer [deftest is testing]]
+   [clojure.test :refer [are deftest is testing]]
    [orchard.ns-form :as sut])
   (:import
    (clojure.lang TaggedLiteral)
@@ -169,3 +169,179 @@
          (sut/imports '(ns x (:import (java.util Date UUID) java.io.File [java.time Instant])
                            (:require foo)
                            (:import [goog.string StringBuffer]))))))
+
+(defn- unused-in
+  ([s] (unused-in s :clj))
+  ([s platform] (sut/unused (StringReader. s) platform)))
+
+(defn- unused-libspecs
+  ([s] (unused-libspecs s :clj))
+  ([s platform] (:libspecs (unused-in s platform))))
+
+(deftest unused-libspecs-test
+  (testing "an alias nothing uses"
+    (is (= [{:ns 'clojure.string, :clause :require, :remove true}]
+           (unused-libspecs "(ns foo (:require [clojure.string :as str])) (str \"a\" 1)"))))
+
+  (testing "an alias in use"
+    (are [code] (= [] (unused-libspecs (str "(ns foo (:require [clojure.string :as str])) " code)))
+      "(str/join [])"
+      "::str/kw"
+      "{::str/keys [a]}"
+      "#::str{:a 1}"
+      "`(str/join [])"
+      "#?(:cljs (str/join []))"
+      "#js {:a (str/join [])}"
+      "(comment (str/join []))"))
+
+  (testing "an alias whose namespace is still used fully qualified"
+    (is (= [{:ns 'clojure.string, :clause :require, :as 'str}]
+           (unused-libspecs "(ns foo (:require [clojure.string :as str])) (clojure.string/join [])"))))
+
+  (testing "referred names"
+    (is (= [{:ns 'clojure.string, :clause :require, :refer '[split]}]
+           (unused-libspecs "(ns foo (:require [clojure.string :refer [join split]])) (join [])")))
+    (is (= [{:ns 'clojure.string, :clause :require, :remove true}]
+           (unused-libspecs "(ns foo (:require [clojure.string :refer [join]])) (str/join [])")))
+    (are [code] (= [] (unused-libspecs (str "(ns foo (:require [clojure.string :refer [join]])) " code)))
+      "`(join [])"
+      "#'join"
+      "(let [join 1] join)"))
+
+  (testing "an alias and referred names"
+    (is (= [{:ns 'clojure.string, :clause :require, :as 'str}]
+           (unused-libspecs "(ns foo (:require [clojure.string :as str :refer [join]])) (join [])")))
+    (is (= [{:ns 'clojure.string, :clause :require, :refer '[join]}]
+           (unused-libspecs "(ns foo (:require [clojure.string :as str :refer [join]])) (str/split \"\" #\"a\")")))
+    (is (= [{:ns 'clojure.string, :clause :require, :as 'str, :refer '[join]}]
+           (unused-libspecs "(ns foo (:require [clojure.string :as str :refer [join]])) clojure.string/split"))))
+
+  (testing ":as-alias"
+    (is (= [{:ns 'foo.spec, :clause :require, :remove true}]
+           (unused-libspecs "(ns foo (:require [foo.spec :as-alias spec]))")))
+    (is (= [] (unused-libspecs "(ns foo (:require [foo.spec :as-alias spec])) ::spec/id")))
+    (testing "doesn't load its namespace, so it goes even when that's used"
+      (is (= [{:ns 'foo.spec, :clause :require, :remove true}]
+             (unused-libspecs "(ns foo (:require [foo.spec :as-alias spec])) foo.spec/x")))))
+
+  (testing "what's left alone"
+    (are [libspec] (= [] (unused-libspecs (str "(ns foo (:require " libspec "))")))
+      "clojure.string"
+      "[clojure.string]"
+      "\"react\""
+      "[clojure.string :refer :all]"
+      "[clojure.string :refer [join] :rename {join j}]"
+      "[clojure [string :as str] [set :as set]]"
+      "#?(:clj [clojure.string :as str])"
+      "[clojure.string :as]"
+      "[clojure.string :as \"str\"]"
+      "[clojure.string :as str] [clojure.string :refer [join]]")
+    (is (= [] (unused-libspecs "(ns foo (:use [clojure.string :only [join]]))"))))
+
+  (testing "a namespace mentioned some other way only loses its alias"
+    (are [code] (= [{:ns 'foo-bar.records, :clause :require, :as 'r}]
+                   (unused-libspecs (str "(ns foo (:require [foo-bar.records :as r])) " code)))
+      "(foo_bar.records.Rec. 1)"
+      "(instance? foo_bar.records.Rec x)"
+      "(foo_bar.records.Rec/create {})"
+      "(defn f [^foo_bar.records.Rec x])"
+      "(ns-publics 'foo-bar.records)"
+      "(s/valid? :foo-bar.records/user {})"))
+
+  (testing "a referred name used as a qualifier or with a dot"
+    (are [code] (= [] (unused-libspecs (str "(ns foo (:require [goog.events :refer [EventTarget]])) " code)))
+      "(EventTarget/foo)"
+      "EventTarget.prototype"))
+
+  (testing "an empty refer list is a bare require"
+    (is (= [] (unused-libspecs "(ns foo (:require [foo.side :refer []]))"))))
+
+  (testing "names referred twice"
+    (is (= [{:ns 'foo.core, :clause :require, :refer '[b]}]
+           (unused-libspecs "(ns foo (:require [foo.core :refer [a b b]])) (a)"))))
+
+  (testing "the ns form's own symbols don't count"
+    (is (= [{:ns 'clojure.string, :clause :require, :remove true}]
+           (unused-libspecs "(ns foo (:require [clojure.string :as str] [str.core :as core])) core/x"))))
+
+  (testing "ClojureScript"
+    (is (= [{:ns "react", :clause :require, :remove true}]
+           (unused-libspecs "(ns foo (:require [\"react\" :as react]))")))
+    (are [code] (= [] (unused-libspecs (str "(ns foo (:require [\"react\" :as react])) " code)))
+      "(react/createElement)"
+      "(.createElement react \"div\")"
+      "(react. 1)")
+    (testing "a namespace's alias used as a value"
+      (is (= [] (unused-libspecs "(ns foo (:require [react :as react])) (.createElement react)" :cljs)))
+      (is (= [] (unused-libspecs "(ns foo (:require [react :as react])) (.createElement react)" nil)))
+      (is (= [{:ns 'react, :clause :require, :remove true}]
+             (unused-libspecs "(ns foo (:require [react :as react])) (.createElement react)" :cljc))))
+    (testing "a Closure namespace used fully qualified"
+      (is (= [{:ns 'goog.string, :clause :require, :as 'gstr}]
+             (unused-libspecs "(ns foo (:require [goog.string :as gstr])) (goog.string.format \"%s\" 1)" :cljs))))
+    (is (= [{:ns 'foo.macros, :clause :require-macros, :remove true}]
+           (unused-libspecs "(ns foo (:require-macros [foo.macros :as m]))")))
+    (is (= [{:ns 'foo.core, :clause :require, :refer-macros '[b]}]
+           (unused-libspecs "(ns foo (:require [foo.core :refer-macros [a b]])) (a)"))))
+
+  (testing "a namespace whose classes get imported stays"
+    (is (= [{:ns 'foo.records, :clause :require, :as 'r}]
+           (unused-libspecs "(ns foo (:require [foo.records :as r]) (:import (foo.records Rec))) (Rec. 1)")))
+    (is (= [{:ns 'foo-bar.records, :clause :require, :as 'r}]
+           (unused-libspecs "(ns foo (:require [foo-bar.records :as r]) (:import foo_bar.records.Rec)) Rec")))))
+
+(deftest unused-imports-test
+  (testing "classes nothing uses"
+    (is (= '[java.util.List java.io.File]
+           (:imports (unused-in "(ns foo (:import (java.util Date List) java.io.File)) (Date.)")))))
+
+  (testing "classes in use"
+    (are [code] (= [] (:imports (unused-in (str "(ns foo (:import java.io.File)) " code))))
+      "(File. \"a\")"
+      "File/separator"
+      "(defn f [^File x])"
+      "(fn ^File [])"
+      "`(File. \"a\")"
+      "`File/separator"
+      "(catch File e)"))
+
+  (testing "a string type hint"
+    (are [code] (= [] (:imports (unused-in (str "(ns foo (:import java.io.File)) " code))))
+      "(defn f [^\"File\" x])"
+      "(defn f ^\"File\" [])"
+      "(defn f [^{:tag \"File\"} x])"
+      "(defmacro m [] `(fn [^\"File\" x#] (.getName x#)))"))
+
+  (testing "a fully qualified use doesn't need the import"
+    (is (= '[java.io.File] (:imports (unused-in "(ns foo (:import java.io.File)) java.io.File/separator")))))
+
+  (testing "but in ClojureScript it does"
+    (is (= [] (:imports (unused-in "(ns foo (:import [goog.events EventType])) goog.events.EventType.CLICK" :cljs))))
+    (is (= [] (:imports (unused-in "(ns foo (:import [goog.events EventType])) goog.events.EventType.CLICK" nil))))
+    (is (= [] (:imports (unused-in "(ns foo (:import [goog.events EventType])) EventType.CLICK" :cljs)))))
+
+  (testing ":gen-class can use a class"
+    (is (= [] (:imports (unused-in "(ns foo (:import (javax.swing JFrame)) (:gen-class :extends JFrame))")))))
+
+  (testing "a class imported twice is left alone"
+    (is (= [] (:imports (unused-in "(ns foo (:import java.io.File (java.io File)))"))))))
+
+(deftest unused-test
+  (testing "no ns form"
+    (is (nil? (unused-in "(defn foo [])")))
+    (is (nil? (unused-in "::str/kw")))
+    (is (nil? (unused-in "#?(:clj (ns foo) :cljs (ns foo))"))))
+
+  (testing "nothing unused"
+    (is (= {:libspecs [], :imports []} (unused-in "(ns foo)"))))
+
+  (testing "something that doesn't read"
+    (is (thrown? Exception (unused-in "(ns foo (:require [clojure.string :as str])) (str/join")))
+    (is (thrown? Exception (unused-in "(ns foo) #=(java.lang.System/exit 1)")))
+    (testing "a line numbering reader keeps its line"
+      (let [reader (doto (clojure.lang.LineNumberingPushbackReader. (StringReader. "(ns foo)\n(str/join []))"))
+                     (.setLineNumber 10))]
+        (is (= 11 (try (sut/unused reader)
+                       (catch Exception e (:clojure.error/line (ex-data e))))))))
+    (is (thrown-with-msg? clojure.lang.ExceptionInfo #"nested too deep"
+                          (unused-in (str "(ns foo) " (apply str (repeat 100000 "["))))))))
