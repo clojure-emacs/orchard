@@ -92,7 +92,12 @@
       (is+ {:type "html", :content #"<li>Like <i>Fahrvergn&uuml;gen</i>, in one word\.</li>"}
            (-> (source-info 'orchard.java.DummyClass)
                (get-in [:members 'htmlMethod [] :doc-fragments])
-               last)))))
+               last)))
+
+    (testing "code as HTML text, as it goes in HTML"
+      (is+ {:type "html", :content "<pre>Map&lt;String, Object&gt;</pre> "}
+           (-> (source-info 'orchard.java.DummyClass)
+               (get-in [:members 'htmlMethod [] :doc-fragments 1]))))))
 
 (when jdk11+?
   (deftest source-info-cleans-up-tmp-files

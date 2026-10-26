@@ -174,6 +174,11 @@
 (def node-reducer-init {:stack []
                         :result []})
 
+(defn- escape-html
+  "s as HTML text, for code and signatures, which can have < and &."
+  [s]
+  (str/escape s {\& "&amp;" \< "&lt;" \> "&gt;"}))
+
 (def newline-fragment
   "A newline intended to separate html fragments.
   We choose text, because inserting <p> elements could unbalance the tags,
@@ -233,7 +238,7 @@
       [stack
        (if (= (-> node .getKind .tagName) "code")
          [{:type "html"
-           :content (format "<pre>%s</pre> " body)}]
+           :content (format "<pre>%s</pre> " (escape-html body))}]
          [{:type "text"
            :content body}])]))
 
@@ -276,7 +281,7 @@
   (process-node [^LinkTree node stack _]
     [stack
      [{:type "html"
-       :content (format "<pre>%s</pre> " (-> node .getReference .getSignature))}]])
+       :content (format "<pre>%s</pre> " (escape-html (-> node .getReference .getSignature)))}]])
 
   ;; Default
   Object
