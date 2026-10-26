@@ -18,4 +18,14 @@ public class DummyClass {
     public String dummyMethod() {
         return "hello";
     }
+
+    /**
+     * Method-level docstring with HTML.
+     *
+     * <ul>
+     *   <li>Like <i>Fahrvergn&uuml;gen</i>, in one word.</li>
+     * </ul>
+     */
+    public void htmlMethod() {
+    }
 }

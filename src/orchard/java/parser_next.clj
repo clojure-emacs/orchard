@@ -293,7 +293,8 @@
                                        :content (str prev-content
                                                      (if (= prev-type "text")
                                                        "\n\n"
-                                                       " ")
+                                                       ;; Its text keeps its own whitespace, and a space would split a word at an entity or a tag.
+                                                       "")
                                                      next-content)))
                 (conj acc next-item))))
           [] xs))

@@ -49,7 +49,7 @@
              [{:type "text", :content "Class level docstring.\n\n"}
               {:type "html",
                :content
-               #"<pre> \n\s+DummyClass dc = new DummyClass\(\);\n\s+</pre>"}],
+               #"<pre>\n\s+DummyClass dc = new DummyClass\(\);\n\s*</pre>"}],
              :members
              {dummyMethod
               {[]
@@ -86,7 +86,13 @@
              :doc-block-tags-fragments [],
              :doc
              "Class level docstring.\n\n <pre>\n   DummyClass dc = new DummyClass();\n </pre>\n\n @author Arne Brasseur"}
-           (source-info 'orchard.java.DummyClass)))))
+           (source-info 'orchard.java.DummyClass)))
+
+    (testing "HTML, with nothing between its tags, entities and text but what the docstring has"
+      (is+ {:type "html", :content #"<li>Like <i>Fahrvergn&uuml;gen</i>, in one word\.</li>"}
+           (-> (source-info 'orchard.java.DummyClass)
+               (get-in [:members 'htmlMethod [] :doc-fragments])
+               last)))))
 
 (when jdk11+?
   (deftest source-info-cleans-up-tmp-files
