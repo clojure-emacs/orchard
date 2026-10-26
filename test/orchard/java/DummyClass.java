@@ -20,7 +20,7 @@ public class DummyClass {
     }
 
     /**
-     * Method-level docstring with HTML.
+     * Method-level docstring with HTML, for a {@code Map<String, Object>}.
      *
      * <ul>
      *   <li>Like <i>Fahrvergn&uuml;gen</i>, in one word.</li>

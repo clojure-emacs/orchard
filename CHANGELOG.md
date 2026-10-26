@@ -7,6 +7,7 @@
 ## master (unreleased)
 
 - [#438](https://github.com/clojure-emacs/orchard/pull/438): Java: join the nodes of an HTML doc fragment without spaces, which split words at entities and tags.
+- [#438](https://github.com/clojure-emacs/orchard/pull/438): Java: escape `{@code}` bodies and `{@link}` signatures in HTML doc fragments.
 
 ## 0.46.0 (2026-10-24)
 
