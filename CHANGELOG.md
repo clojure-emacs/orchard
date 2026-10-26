@@ -6,6 +6,8 @@
 
 ## master (unreleased)
 
+- [#438](https://github.com/clojure-emacs/orchard/pull/438): Java: join the nodes of an HTML doc fragment without spaces, which split words at entities and tags.
+
 ## 0.46.0 (2026-10-24)
 
 - [#437](https://github.com/clojure-emacs/orchard/pull/437): Add `orchard.ns-form`, which reads the `ns` form of a source file without loading it and takes apart its libspecs, aliases and imports.
