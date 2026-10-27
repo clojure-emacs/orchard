@@ -6,6 +6,8 @@
 
 ## master (unreleased)
 
+## 0.47.0 (2026-10-27)
+
 - [#439](https://github.com/clojure-emacs/orchard/pull/439): Add `orchard.ns-form/unused`, which tells what an `ns` form requires, refers and imports that the code after it doesn't use, reading the code without loading it.
 - [#438](https://github.com/clojure-emacs/orchard/pull/438): Java: join the nodes of an HTML doc fragment without spaces, which split words at entities and tags.
 - [#438](https://github.com/clojure-emacs/orchard/pull/438): Java: escape `{@code}` bodies and `{@link}` signatures in HTML doc fragments.
