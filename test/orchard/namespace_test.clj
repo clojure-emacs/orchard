@@ -70,6 +70,18 @@
     (with-redefs [util.io/cwd-path (change-case @#'util.io/cwd-path)]
       (is (seq (sut/project-namespaces))))))
 
+(deftest ensure-namespace!-test
+  (is (= 'orchard.misc (sut/ensure-namespace! 'orchard.misc)))
+  (is (nil? (sut/ensure-namespace! 'orchard.no-such-namespace)))
+  (is (nil? (sut/ensure-namespace! nil)))
+  (testing "a namespace that threw while loading"
+    (try (load-string "(ns orchard.namespace-test.broken)
+                       (throw (ex-info \"Doesn't load\" {}))")
+         (catch Exception _))
+    ;; As require does when a namespace throws while loading.
+    (remove-ns 'orchard.namespace-test.broken)
+    (is (nil? (sut/ensure-namespace! 'orchard.namespace-test.broken)))))
+
 (deftest has-tests-errors
   (is (sut/has-tests? (find-ns 'orchard.namespace-test))))
 
