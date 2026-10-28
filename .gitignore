@@ -20,3 +20,7 @@ nashorn_code_cache/
 /.cpcache
 /.clj-kondo
 /.eastwood
+# JDK sources repackaged by `make download-jdk-src`, and the directory it
+# downloads them to
+/base-jdk-src.zip
+/tmp
