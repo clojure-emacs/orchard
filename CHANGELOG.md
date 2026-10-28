@@ -6,6 +6,7 @@
 
 ## master (unreleased)
 
+- [#441](https://github.com/clojure-emacs/orchard/pull/441): Leave the Maven Central mirror the build uses out of the published pom, where 0.47.0 listed it.
 - [#434](https://github.com/clojure-emacs/orchard/issues/434): Query: leave the project namespaces that didn't load out of `namespaces`, which threw a NullPointerException once one had failed.
 
 ## 0.47.0 (2026-10-27)
