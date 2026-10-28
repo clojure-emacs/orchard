@@ -83,6 +83,10 @@
       (> (bounded-count (inc max-event-args) args) max-event-args)
       (conj "..."))))
 
+(defn- throwable-str [^Throwable e]
+  (cond-> (.getName (class e))
+    (ex-message e) (str ": " (ex-message e))))
+
 (defn- trace-fn-call [name f args]
   ;; Good defaults for orchard.print.
   (let [repl? (print-to-repl?)
@@ -98,17 +102,20 @@
      (when events?
        (emit {:id id :phase :call :name sname :depth depth
               :args (event-args args)})))
-    (let [value (binding [*depth* (inc *depth*)]
-                  (apply f args))]
+    (let [[value thrown] (binding [*depth* (inc *depth*)]
+                           (try [(apply f args)]
+                                (catch Throwable e [nil e])))]
       (limit-printing
-       (when repl?
-         (binding [*depth* (inc *depth*)]
-           (println (trace-indent)))
-         (println (str (trace-indent) "└─→ " (print/print-str value))))
-       (when events?
-         (emit {:id id :phase :return :name sname :depth depth
-                :value (print/print-str value)})))
-      value)))
+       (let [shown (if thrown (throwable-str thrown) (print/print-str value))]
+         (when repl?
+           (binding [*depth* (inc *depth*)]
+             (println (trace-indent)))
+           (println (str (trace-indent) (if thrown "└─✗ " "└─→ ") shown)))
+         (when events?
+           (emit (if thrown
+                   {:id id :phase :throw :name sname :depth depth :error shown}
+                   {:id id :phase :return :name sname :depth depth :value shown})))))
+      (if thrown (throw thrown) value))))
 
 (defn- resolve-var ^clojure.lang.Var [v]
   (if (var? v) v (resolve v)))
@@ -120,9 +127,10 @@
 
 (defn add-trace-listener
   "Register F to be called with each structured trace event, and return F.
-  An event is a map with keys `:id`, `:phase` (`:call` or `:return`), `:name`,
-  `:depth`, and either `:args` (on `:call`) or `:value` (on `:return`); `:id`
-  pairs a call with its return.  Events are only produced when the output mode
+  An event is a map with keys `:id`, `:phase` (`:call`, `:return` or `:throw`),
+  `:name`, `:depth`, and `:args` (on `:call`), `:value` (on `:return`) or
+  `:error`, the class and message of what the call threw (on `:throw`); `:id`
+  pairs a call with its return or throw.  Events are only produced when the output mode
   includes `:listeners` (see `set-output-mode!`)."
   [f]
   (swap! listeners conj f)

@@ -237,3 +237,35 @@
         (finally
           (sut/remove-trace-listener listener)
           (sut/untrace-var* #'sample-ns/bar))))))
+
+(defn function-that-throws [x]
+  (throw (ex-info "Boom" {:x x})))
+
+(deftest throw-test
+  (sut/trace-var* #'function-that-throws)
+  (try
+    (testing "printed, with the exception going on"
+      (is (= "
+(orchard.trace-test/function-that-throws 1)
+│ 
+└─✗ clojure.lang.ExceptionInfo: Boom
+"
+             (with-out-str-rn
+               (is (thrown-with-msg? clojure.lang.ExceptionInfo #"Boom"
+                                     (function-that-throws 1)))))))
+    (testing "as an event, which shares the call's id"
+      (let [events (atom [])
+            listener #(swap! events conj %)]
+        (sut/set-output-mode! :listeners)
+        (sut/add-trace-listener listener)
+        (try
+          (is (thrown? clojure.lang.ExceptionInfo (function-that-throws 1)))
+          (let [[call thrown] @events]
+            (is (= :throw (:phase thrown)))
+            (is (= (:id call) (:id thrown)))
+            (is (= "clojure.lang.ExceptionInfo: Boom" (:error thrown))))
+          (finally
+            (sut/remove-trace-listener listener)
+            (sut/set-output-mode! :repl)))))
+    (finally
+      (sut/untrace-var* #'function-that-throws))))
