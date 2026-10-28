@@ -83,11 +83,33 @@
       (> (bounded-count (inc max-event-args) args) max-event-args)
       (conj "..."))))
 
+(def ^:private ^:dynamic *tracing*
+  "True while orchard.trace prints or sends a traced call, when the traced fns
+  of the namespaces it calls into go straight to the fn."
+  false)
+
+(defn- tooling-ns?
+  "Whether `ns` is one that tracing calls into, printing a call or sending it
+  to the listeners: Clojure's and orchard's, and nREPL's and cider-nrepl's for
+  cider-nrepl's listener."
+  [ns]
+  (let [ns-str (str ns)]
+    (boolean (some #(str/starts-with? ns-str %)
+                   ["clojure." "orchard." "nrepl." "cider."]))))
+
+(defmacro ^:private with-interop-bindings
+  "Like `binding`, for a map of vars to values, without calling `hash-map` or
+  `push-thread-bindings`, which may be traced."
+  [bindings & body]
+  `(do (clojure.lang.Var/pushThreadBindings ~bindings)
+       (try ~@body
+            (finally (clojure.lang.Var/popThreadBindings)))))
+
 (defn- throwable-str [^Throwable e]
   (cond-> (.getName (class e))
     (ex-message e) (str ": " (ex-message e))))
 
-(defn- trace-fn-call [name f args]
+(defn- trace-call [name ^clojure.lang.IFn f ^clojure.lang.ISeq args]
   ;; Good defaults for orchard.print.
   (let [repl? (print-to-repl?)
         events? (emit-events?)
@@ -102,8 +124,10 @@
      (when events?
        (emit {:id id :phase :call :name sname :depth depth
               :args (event-args args)})))
-    (let [[value thrown] (binding [*depth* (inc *depth*)]
-                           (try [(apply f args)]
+    (let [[value thrown] (with-interop-bindings {#'*tracing* false
+                                                 #'*depth* (inc *depth*)}
+                           ;; Not apply, which may be traced.
+                           (try [(.applyTo f args)]
                                 (catch Throwable e [nil e])))]
       (limit-printing
        (let [shown (if thrown (throwable-str thrown) (print/print-str value))]
@@ -116,6 +140,14 @@
                    {:id id :phase :throw :name sname :depth depth :error shown}
                    {:id id :phase :return :name sname :depth depth :value shown})))))
       (if thrown (throw thrown) value))))
+
+(defn- trace-fn-call [name tooling? ^clojure.lang.IFn f ^clojure.lang.ISeq args]
+  (if (and tooling? *tracing*)
+    ;; Most likely a call from orchard.trace's own code, which tracing would
+    ;; recurse into. Interop only, since anything else may be traced too.
+    (.applyTo f args)
+    (with-interop-bindings {#'*tracing* true}
+      (trace-call name f args))))
 
 (defn- resolve-var ^clojure.lang.Var [v]
   (if (var? v) v (resolve v)))
@@ -177,10 +209,11 @@
         s  (.sym v)]
     (when (and (traceable? v) (not (traced? v)))
       (let [f @v
-            vname (symbol (str ns "/" s))]
+            vname (symbol (str ns "/" s))
+            tooling? (tooling-ns? ns)]
         (swap! traced-vars conj v)
         (alter-var-root v #(fn tracing-wrapper [& args]
-                             (trace-fn-call vname % args)))
+                             (trace-fn-call vname tooling? % args)))
         (alter-meta! v assoc ::traced f)
         v))))
 

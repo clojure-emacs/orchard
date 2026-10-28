@@ -1,6 +1,7 @@
 (ns orchard.trace-test
   (:require
    [clojure.edn]
+   [clojure.string :as str]
    [clojure.test :as t :refer [is are deftest testing]]
    [orchard.test.util :refer [with-out-str-rn]]
    [orchard.trace :as sut]
@@ -269,3 +270,47 @@
             (sut/set-output-mode! :repl)))))
     (finally
       (sut/untrace-var* #'function-that-throws))))
+
+(deftest trace-what-tracing-calls-test
+  ;; Calling any of these through its var used to recurse into tracing.
+  (doseq [mode [:repl :listeners]
+          [v f expected] [[#'clojure.core/str #(str "a" 1) "a1"]
+                          [#'clojure.core/apply #(apply + [1 2]) 3]
+                          [#'clojure.core/map #(doall (map inc [1 2])) [2 3]]
+                          [#'clojure.core/hash-map #(hash-map :a 1) {:a 1}]
+                          [#'clojure.core/swap! #(swap! (atom 1) inc) 2]
+                          [#'clojure.core/into #(into [] [1]) [1]]]]
+    (testing (str v " in " mode)
+      (let [events (atom [])
+            listener #(swap! events conj %)
+            result (atom nil)]
+        (sut/set-output-mode! mode)
+        (sut/add-trace-listener listener)
+        (try
+          (let [out (with-out-str-rn
+                      (sut/trace-var* v)
+                      (try (reset! result (f))
+                           (catch StackOverflowError e (reset! result e))
+                           (finally (sut/untrace-var* v))))]
+            (is (= expected @result))
+            (is (str/includes? (if (= :repl mode) out (pr-str @events))
+                               (str (symbol v)))))
+          (finally
+            (sut/remove-trace-listener listener)
+            (sut/set-output-mode! :repl)))))))
+
+(deftest lazy-value-test
+  ;; Printing a lazy value realizes it, and the traced fns that calls outside
+  ;; the tooling namespaces get traced as usual.
+  (let [ns (create-ns 'trace-test.lazy)
+        g (intern ns 'g inc)
+        f (intern ns 'f (fn [n] (map g (range n))))]
+    (sut/trace-var* g)
+    (sut/trace-var* f)
+    (try
+      (is (= 200 (count (re-seq #"\(trace-test.lazy/g \d+\)"
+                                (with-out-str-rn (doall (f 200)))))))
+      (finally
+        (sut/untrace-var* g)
+        (sut/untrace-var* f)
+        (remove-ns 'trace-test.lazy)))))
