@@ -6,6 +6,8 @@
 
 ## master (unreleased)
 
+- [#434](https://github.com/clojure-emacs/orchard/issues/434): Query: leave the project namespaces that didn't load out of `namespaces`, which threw a NullPointerException once one had failed.
+
 ## 0.47.0 (2026-10-27)
 
 - [#439](https://github.com/clojure-emacs/orchard/pull/439): Add `orchard.ns-form/unused`, which tells what an `ns` form requires, refers and imports that the code after it doesn't use, reading the code without loading it.
