@@ -6,6 +6,8 @@
 
 ## master (unreleased)
 
+- [#446](https://github.com/clojure-emacs/orchard/pull/446): Namespaces: keep the namespaces whose names start with `deps.` in `loaded-namespaces` and namespace queries, which took them for the dependencies mranderson inlined in 2015.
+
 ## 0.48.0 (2026-10-28)
 
 - [#418](https://github.com/clojure-emacs/orchard/pull/418): Pretty-print: keep indentation and line accounting intact for multi-line object representations.
