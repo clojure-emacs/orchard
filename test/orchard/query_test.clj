@@ -24,7 +24,9 @@
      :has-tests? true} #{'orchard.namespace-test 'orchard.query-test}
     {:include-regexps [#"query"]} #{'orchard.query 'orchard.query-test}
     {:include-regexps [#"query"]
-     :exclude-regexps [#"test$"]} #{'orchard.query})
+     :exclude-regexps [#"test$"]} #{'orchard.query}
+    ;; orchard is the project here, so its namespaces aren't the tooling's.
+    {:exclude-tooling? true} #{'orchard.query 'clojure.core})
   (are [ns-query subset] (empty? (set/intersection
                                   (set (map the-ns subset))
                                   (set (namespaces ns-query))))
@@ -37,7 +39,13 @@
     {:include-regexps [#"query"]
      :exclude-regexps [#"test$"]} #{'orchard.query-test})
   (is (= (namespaces {:exactly [(the-ns 'clojure.core) (the-ns 'clojure.set)]})
-         [(the-ns 'clojure.core) (the-ns 'clojure.set)])))
+         [(the-ns 'clojure.core) (the-ns 'clojure.set)]))
+  (let [tooling (create-ns 'nrepl.query-test.no-source)]
+    (try
+      (is (some #{tooling} (namespaces {})))
+      (is (not-any? #{tooling} (namespaces {:exclude-tooling? true})))
+      (finally
+        (remove-ns 'nrepl.query-test.no-source)))))
 
 (deftest vars-test
   (are [var-query subset] (set/subset?

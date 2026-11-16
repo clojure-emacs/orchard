@@ -5,7 +5,9 @@
    [clojure.test :refer [are deftest is testing]]
    [orchard.misc :as misc]
    [orchard.namespace :as sut]
-   [orchard.util.io :as util.io]))
+   [orchard.util.io :as util.io])
+  (:import
+   (java.net URL)))
 
 (deftest project-namespaces-test
   (let [all (set (sut/project-namespaces))]
@@ -75,6 +77,20 @@
     'refactor-nrepl.inlined-deps.cljfmt.v0v9v2.cljfmt.core true
     'eastwood.copieddeps.dep1.clojure.tools.reader true
     'deps.core false))
+
+(deftest tooling-namespace?-test
+  (testing "The namespaces of a project the tooling's are don't count"
+    (is (false? (sut/tooling-namespace? (the-ns 'orchard.namespace)))))
+  (testing "Nor do namespaces of other names"
+    (is (false? (sut/tooling-namespace? (the-ns 'clojure.core)))))
+  (testing "A tooling namespace from a jar, a checkout elsewhere or no source does"
+    (doseq [url ["jar:file:/home/me/.m2/repository/cider/orchard/0.48.0/orchard-0.48.0.jar!/orchard/namespace.clj"
+                 "file:/home/me/.gitlibs/libs/cider/orchard/5598984/src/orchard/namespace.clj"
+                 "file:/home/me/src/orchard/src/orchard/namespace.clj"]]
+      (with-redefs [sut/canonical-source (constantly (URL. url))]
+        (is (true? (sut/tooling-namespace? (the-ns 'orchard.namespace))) url)))
+    (with-redefs [sut/canonical-source (constantly nil)]
+      (is (true? (sut/tooling-namespace? (the-ns 'orchard.namespace)))))))
 
 (defn- change-case [path]
   (.toPath (io/as-file (str/upper-case (str path)))))
