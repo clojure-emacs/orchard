@@ -13,6 +13,8 @@
   `:has-tests?` If true, only return namespaces containing tests.
   `:include-regexps` A list of regexps which the namespaces must match.
   `:exclude-regexps` A list of regexps which the namespaces must not match.
+  `:exclude-tooling?` If true, leave out the namespaces of the REPL's tooling,
+  as `orchard.namespace/tooling-namespace?` tells them.
 
   Returns a list of namespaces as `find-ns` would return them on the host."
   [{:keys [project? load-project-ns?] :as ns-query}]
@@ -38,7 +40,10 @@
     (filter #(ns/internal-namespace? % (:include-regexps ns-query)))
 
     (:exclude-regexps ns-query)
-    (remove #(ns/internal-namespace? % (:exclude-regexps ns-query)))))
+    (remove #(ns/internal-namespace? % (:exclude-regexps ns-query)))
+
+    (:exclude-tooling? ns-query)
+    (remove ns/tooling-namespace?)))
 
 (defn vars
   "Takes a map containing these keys:

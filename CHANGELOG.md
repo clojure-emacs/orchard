@@ -7,6 +7,7 @@
 ## master (unreleased)
 
 - [#446](https://github.com/clojure-emacs/orchard/pull/446): Namespaces: keep the namespaces whose names start with `deps.` in `loaded-namespaces` and namespace queries, which took them for the dependencies mranderson inlined in 2015.
+- [#447](https://github.com/clojure-emacs/orchard/pull/447): Namespaces: add `tooling-namespace?`, true of the namespaces of nREPL, refactor-nrepl, cider-nrepl and the libraries cider-nrepl uses when their sources aren't in the project's directory, and the `:exclude-tooling?` key of namespace queries, which leaves them out.
 
 ## 0.48.0 (2026-10-28)
 

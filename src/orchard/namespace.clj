@@ -68,6 +68,29 @@
          (map #(re-find % ns-name))
          (some (complement nil?)))))
 
+(def ^:private tooling-ns-regex
+  "The names of the namespaces of nREPL, refactor-nrepl and cider-nrepl, and
+  of the libraries cider-nrepl brings along for its own use."
+  #"^(cider|nrepl|refactor-nrepl|orchard|compliment|suitable|logjam)(\.|$)")
+
+(defn- in-project?
+  "Whether the source file at `url` is in the project's directory, where
+  `project-namespaces` finds the project's sources, rather than in a jar or
+  in the checkout of a dependency elsewhere."
+  [^URL url]
+  (and (util.io/direct-url-to-file? url)
+       (util.io/file-in-project? (io/as-file url))))
+
+(defn tooling-namespace?
+  "Returns true if the namespace belongs to the tooling of the REPL rather
+  than the program in it: nREPL's, refactor-nrepl's, cider-nrepl's or one of
+  the libraries cider-nrepl uses, from outside the project's directory. When
+  the project is one of those, its sources are in it, so they don't count."
+  [namespace]
+  (boolean
+   (and (re-find tooling-ns-regex (str (ns-name namespace)))
+        (not (some-> (canonical-source namespace) in-project?)))))
+
 (defn has-tests?
   "Returns a truthy value if the namespace has any vars with `:test` metadata."
   [ns]
