@@ -53,7 +53,6 @@
   (let [ns-name (str (ns-name namespace))]
     (or
      ;; rewritten by mranderson
-     (.startsWith ns-name "deps.")
      (.startsWith ns-name "mranderson")
      (.startsWith ns-name "cider.nrepl.inlined.deps")
      (.contains ns-name ".inlined-deps.")

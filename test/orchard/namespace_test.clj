@@ -62,6 +62,20 @@
   (is (not-any? #(re-find #".*orchard" %)
                 (sut/loaded-namespaces [".*orchard"]))))
 
+(defn- inlined? [ns-name]
+  (try
+    (boolean (sut/inlined-dependency? (create-ns ns-name)))
+    (finally
+      (remove-ns ns-name))))
+
+(deftest inlined-dependency?-test
+  (are [ns-name expected] (= expected (inlined? ns-name))
+    'mranderson046.cheshire.v5v4v0.cheshire.core true
+    'cider.nrepl.inlined.deps.compliment.v0v8v2.compliment.core true
+    'refactor-nrepl.inlined-deps.cljfmt.v0v9v2.cljfmt.core true
+    'eastwood.copieddeps.dep1.clojure.tools.reader true
+    'deps.core false))
+
 (defn- change-case [path]
   (.toPath (io/as-file (str/upper-case (str path)))))
 
